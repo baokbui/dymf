@@ -1,0 +1,296 @@
+# Brainrots vs. Zombies Cursor Rules
+
+You are the lead Roblox engineer for Brainrots vs. Zombies (BVZ).
+
+Always prioritize scalable, production-quality architecture over quick solutions.
+
+---
+
+# Before Coding
+
+Always read the documentation inside the `/docs` folder before making architectural decisions.
+
+In particular:
+
+- docs/GAME_DESIGN.md
+
+If code conflicts with the documentation, ask before changing architecture.
+
+---
+
+# Tech Stack
+
+- Roblox Studio
+- Luau
+- Rojo
+- Cursor
+- Claude
+
+---
+
+# Core Principles
+
+Prioritize:
+
+1. Maintainability
+2. Readability
+3. Scalability
+4. Performance
+5. Server Authority
+
+Never write hacky code.
+
+Never duplicate logic.
+
+If logic is reused, create a ModuleScript.
+
+---
+
+# Architecture
+
+Every major gameplay feature belongs inside its own Service.
+
+Examples:
+
+- PlotService
+- SaveService
+- WaveService
+- CombatService
+- EnemyService
+- BrainrotService
+- CoinService
+- MergeService
+
+Never create massive scripts.
+
+Aim for files under ~300 lines.
+
+Split functionality into focused modules when needed.
+
+---
+
+# Client vs Server
+
+The server owns:
+
+- Coins
+- Damage
+- Health
+- Waves
+- Brainrot placement
+- Zombie spawning
+- Saving
+- Merging
+- Rewards
+
+The client owns:
+
+- UI
+- Camera
+- Input
+- Animations
+- Visual Effects
+- Sound Playback
+
+Never trust RemoteEvents.
+
+Validate everything on the server.
+
+---
+
+# Configuration
+
+Never hardcode gameplay values.
+
+Store balancing inside Config modules.
+
+Examples:
+
+- Cost
+- Health
+- Damage
+- Range
+- Cooldown
+- Attack Speed
+- Coin Generation
+
+Everything should be configurable.
+
+---
+
+# Brainrots
+
+Every Brainrot should implement a common interface.
+
+Each Brainrot defines:
+
+- Name
+- Cost
+- Health
+- Damage
+- Range
+- Cooldown
+- Ability
+- Merge Rules
+
+Behavior should be data-driven.
+
+Avoid large if/elseif chains.
+
+---
+
+# Zombies
+
+All zombies derive from one base implementation.
+
+Special zombies extend shared behavior.
+
+Avoid duplicated AI.
+
+---
+
+# Combat
+
+CombatService exclusively controls:
+
+- Damage
+- Healing
+- Death
+- Status Effects
+
+Objects should never directly modify another object's health.
+
+---
+
+# Wave System
+
+WaveService exclusively controls:
+
+- Preparation Phase
+- Countdown
+- Wave Start
+- Enemy Spawning
+- Wave Completion
+- Rewards
+- Difficulty Scaling
+
+No other service advances waves.
+
+---
+
+# Save System
+
+Only SaveService communicates with DataStore.
+
+No other service accesses DataStore.
+
+Persist:
+
+- Current Wave
+- Coins
+- Player Health
+- Planted Brainrots
+- Brainrot Positions
+- Brainrot Health
+- Merge States
+- Unlocks
+- Upgrades
+- Statistics
+- Future player-owned progression
+
+Do NOT persist:
+
+- Zombies
+- Zombie Positions
+- Projectiles
+- Ground Coins
+- Temporary Combat Effects
+- Wave Timers
+
+If the player leaves during a wave:
+
+- Save the battlefield.
+- Save the current wave number.
+- End the active wave.
+
+When they return:
+
+- Restore the battlefield.
+- Restore Brainrots.
+- Restore coins.
+- Restore progression.
+- Restart the saved wave from its beginning.
+
+Never erase save data unless Reset Progress is confirmed.
+
+Use versioned save data for future compatibility.
+
+---
+
+# UI
+
+UI should only display state.
+
+UI should never perform gameplay logic.
+
+Gameplay calculations belong on the server.
+
+---
+
+# Performance
+
+Prefer events over polling.
+
+Disconnect unused connections.
+
+Avoid Heartbeat unless necessary.
+
+Cache services.
+
+Avoid unnecessary Instance creation.
+
+Reuse objects when practical.
+
+---
+
+# Code Style
+
+Use PascalCase:
+
+- Modules
+- Classes
+- Services
+- Folders
+
+Use camelCase:
+
+- Variables
+- Functions
+- Parameters
+
+Use ALL_CAPS:
+
+- Constants
+
+Prefer early returns.
+
+Keep functions focused.
+
+Avoid nesting deeper than three levels.
+
+Use Luau type annotations for public APIs whenever practical.
+
+---
+
+# When Generating Code
+
+Always:
+
+- Explain the architecture briefly.
+- Generate complete, production-ready files.
+- Preserve existing APIs unless asked to change them.
+- Modify only the requested files.
+- Avoid placeholders whenever possible.
+- Follow Roblox best practices.
+
+If requirements are unclear, ask for clarification instead of making assumptions.
