@@ -1,15 +1,18 @@
 --!strict
 --[[
 	CameraController
-	Owns the player's camera: positioning it over the assigned plot and any
-	combat juice (shake, etc.). Purely client-side presentation.
+	The game intentionally uses Roblox's default third-person camera (mouse
+	scroll zooms all the way into first person), so this controller does not
+	override the camera.
 
-	Milestone 1 (positioning), Milestone 13 (shake). Stub: lifecycle only.
+	It is the designated home for client-side camera juice added later
+	(e.g. combat shake in Milestone 13), layered on top of the default camera.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Logger = require(Shared.Utilities.Logger)
 
 local CameraController = {}
 CameraController.Name = "CameraController"
@@ -20,7 +23,7 @@ function CameraController.init()
 end
 
 function CameraController.start()
-	log:info("started (stub)")
+	log:info("started (default camera)")
 end
 
 return CameraController

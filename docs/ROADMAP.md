@@ -322,7 +322,6 @@ Potential additions
 * Projectiles
 * Explosions
 * Particles
-* Camera shake
 * Death effects
 * Coin effects
 * Merge effects

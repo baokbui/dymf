@@ -7,7 +7,7 @@
 local GridConfig = {
 	ROWS = 5,
 	COLUMNS = 9,
-	TILE_SIZE = 8, -- studs per square tile
+	TILE_SIZE = 16, -- studs per square tile
 	TILE_HEIGHT = 1, -- visual thickness of a tile
 }
 

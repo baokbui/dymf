@@ -15,6 +15,7 @@ local Config = {
 	Grid = require(script.GridConfig),
 	Economy = require(script.EconomyConfig),
 	Wave = require(script.WaveConfig),
+	Plot = require(script.PlotConfig),
 }
 
 table.freeze(Config)

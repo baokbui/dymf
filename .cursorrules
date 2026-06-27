@@ -10,11 +10,25 @@ Always prioritize scalable, production-quality architecture over quick solutions
 
 Always read the documentation inside the `/docs` folder before making architectural decisions.
 
-In particular:
+Start with these:
 
-- docs/GAME_DESIGN.md
+- docs/GAME_DESIGN.md — what the game is
+- docs/ARCHITECTURE.md — how the codebase is structured (conventions, lifecycle, folders)
+- docs/ROADMAP.md — build order and milestones
+
+Then consult the system-specific docs relevant to the task:
+
+- docs/NETWORKING.md — client/server boundary, Remotes, validation
+- docs/BRAINROTS.md — Brainrot registry and definitions
+- docs/ZOMBIES.md — Zombie registry and definitions
+- docs/WAVES.md — wave loop, phases, scaling
+- docs/ECONOMY.md — coins and currency rules
+- docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
+- docs/UI.md — UI structure and rules
 
 If code conflicts with the documentation, ask before changing architecture.
+
+Keep the docs in sync: when a milestone changes behavior, update the relevant doc (and its ✅/🔜 status markers).
 
 ---
 
