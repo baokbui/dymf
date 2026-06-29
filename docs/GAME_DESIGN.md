@@ -124,33 +124,12 @@ Each Brainrot defines:
 - Attack Speed
 - Range
 - Ability
-- Merge Rules
 - Animations
 - Sounds
 
 Brainrots are data-driven.
 
 Behavior should never be hardcoded into giant if-statements.
-
----
-
-# Merging
-
-Certain Brainrots may merge together.
-
-Example
-
-Money Brainrot
-
-+
-
-Shooter Brainrot
-
-↓
-
-Golden Shooter
-
-Merge rules are stored inside one registry.
 
 ---
 
@@ -253,7 +232,6 @@ Saved:
 - Planted Brainrots
 - Brainrot Positions
 - Brainrot Health
-- Merge States
 - Unlocks
 - Upgrades
 - Statistics
@@ -328,7 +306,6 @@ ServerScriptService
         CoinService
         EnemyService
         BrainrotService
-        MergeService
         SaveService
 
 StarterPlayer
@@ -382,7 +359,6 @@ Phase 3
 
 Phase 4
 
-- Merge system
 - Bosses
 - Special enemies
 

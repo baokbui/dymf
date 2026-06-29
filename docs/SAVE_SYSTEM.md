@@ -15,7 +15,6 @@ Saved (player-owned progression):
 - Coins
 - Player health
 - Planted Brainrots (+ positions, + health)
-- Merge states
 - Unlocks
 - Upgrades
 - Statistics

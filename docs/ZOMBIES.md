@@ -66,7 +66,7 @@ Zombies and their positions are **never saved** (see `SAVE_SYSTEM.md`).
 
 ---
 
-## Planned roster (Milestone 11)
+## Planned roster (Milestone 10)
 
 | Type    | Notes                                            |
 | ------- | ------------------------------------------------ |

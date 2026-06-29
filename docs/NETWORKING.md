@@ -38,17 +38,20 @@ Remotes module. That is the only required step.
 | ------------------ | --------------- | ------ | --------------------------------------- |
 | `PlaceBrainrot`    | client → server | 🔜 M4  | Request to place a Brainrot on a tile   |
 | `RemoveBrainrot`   | client → server | 🔜 M4  | Request to remove a placed Brainrot     |
-| `CollectCoin`      | client → server | 🔜 M3  | Request to collect a ground coin        |
-| `CoinsUpdated`     | server → client | 🔜 M3  | Pushes the authoritative coin balance   |
+| `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
+| `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `StartWave`        | client → server | 🔜 M8  | Player presses Start Wave                |
 | `WaveStateChanged` | server → client | 🔜 M8  | Phase / wave number / countdown updates  |
-| `ResetProgress`    | client → server | 🔜 M15 | Confirmed reset of all save data         |
+| `ResetProgress`    | client → server | 🔜 M14 | Confirmed reset of all save data         |
 
 ### RemoteFunctions
 
 | Name           | Direction       | Status | Purpose                              |
 | -------------- | --------------- | ------ | ------------------------------------ |
-| `RequestState` | client → server | 🔜     | Initial full-state pull on join/UI   |
+| `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
+
+`RequestState` currently returns `{ coins }` (answered by `CoinService`). As more
+state is added it will grow into / be replaced by a central aggregator.
 
 ---
 
@@ -59,6 +62,23 @@ Plot assignment is fully server-side and needs no remotes: on `PlayerAdded`,
 plot's `SpawnLocation`, and spawns the character there. The camera uses Roblox's
 default third-person behavior, so no client handshake is required. Clients
 cannot choose, move, or learn about other players' plots.
+
+---
+
+## Coin collection (Milestone 3) ✅
+
+Passive drops spawn collectible **ground coins** on each player's plot (server,
+`CoinService`). Collection is client-intent + server-authority:
+
+1. The owning client's `CoinController` detects its character touching one of its
+   own coins (coins are tagged `Coin` with `CoinId`/`OwnerUserId`/`Value`) and
+   fires `CollectCoin(coinId)`.
+2. The server re-validates: the coin exists, the caller owns it, and the caller's
+   authoritative `HumanoidRootPart` is within `COIN_COLLECT_RADIUS`. Only then is
+   the coin's (server-side) value credited and `CoinsUpdated` pushed.
+
+The client never sends an amount and cannot collect coins it doesn't own or
+isn't near, so balances can't be exploited.
 
 ---
 

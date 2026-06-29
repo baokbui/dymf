@@ -33,7 +33,6 @@ export type BrainrotDefinition = {
 	attackSpeed: number, -- attacks per second
 	range: number, -- in studs
 	ability: string?,
-	mergeRules: { [string]: string }?, -- otherBrainrotId -> resultBrainrotId
 	coinGeneration: number?, -- coins per cycle for money producers
 }
 

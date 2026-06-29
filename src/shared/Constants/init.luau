@@ -29,6 +29,7 @@ Constants.TAGS = {
 	Zombie = "Zombie",
 	GridTile = "GridTile",
 	Plot = "Plot",
+	Coin = "Coin",
 }
 
 -- Game phase identifiers used by WaveService.

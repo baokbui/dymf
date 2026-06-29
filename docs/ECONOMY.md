@@ -29,24 +29,44 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
 | `WAVE_COMPLETION_REWARD`| 50   | Base reward for finishing a wave         |
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
+| `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
 Related Brainrot income: `MoneyGenerator.coinGeneration = 25` per cycle.
 
 ---
 
-## Responsibilities (Milestone 3) 🔜
+## Responsibilities (Milestone 3) ✅
 
-`CoinService` (server) will be the **sole authority** over currency:
+`CoinService` (server) is the **sole authority** over currency:
 
-- Hold each player's authoritative coin balance.
-- Grant passive drops on `PASSIVE_DROP_INTERVAL`.
-- Grant money-Brainrot income and wave-completion rewards
-  (called by `WaveService`).
-- Validate `CollectCoin` requests (ownership, distance, existence) before
-  crediting; never trust a client-supplied amount.
-- Push updates to clients via `CoinsUpdated` (see `NETWORKING.md`).
-- Deduct costs on placement/merge (in cooperation with `BrainrotService` /
-  `MergeService`).
+- Holds each player's authoritative coin balance (starts at `STARTING_COINS`;
+  in-memory until `SaveService` adds persistence).
+- Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
+  coins** (one per active player per interval), each worth
+  `PASSIVE_DROP_AMOUNT`, spawned at a random spot on the player's grid via the
+  plot's `CoinSpawner` marker. Uncollected coins despawn after
+  `GROUND_COIN_LIFETIME`.
+- Validates `CollectCoin` intents — ownership, existence, and distance (against
+  the authoritative `HumanoidRootPart` position, within `COIN_COLLECT_RADIUS`) —
+  before crediting. The coin's value is server-side; client-supplied amounts are
+  never trusted.
+- Pushes balances to clients via `CoinsUpdated`, and answers the initial
+  `RequestState` pull with `{ coins }` (see `NETWORKING.md`).
+
+### Public API (for other services)
+
+| Function                          | Use                                          |
+| --------------------------------- | -------------------------------------------- |
+| `getBalance(player) -> number`    | read a balance                               |
+| `addCoins(player, amount)`        | credit rewards/income (e.g. wave rewards M8) |
+| `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4/M5)  |
+
+### Implementation
+
+`CoinService/` is split into the service (`init.luau`) and `GroundCoin.luau`
+(builds a single coin part, tagged `Coin` with `CoinId`/`OwnerUserId`/`Value`
+attributes). The client `CoinController` detects the local player touching their
+own coin and fires the `CollectCoin` intent; `UIController` renders the balance.
 
 ---
 

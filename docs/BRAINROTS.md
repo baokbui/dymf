@@ -39,7 +39,6 @@ From `Shared.Types.BrainrotDefinition`:
 | `attackSpeed`    | number                | Attacks per second (0 = non-attacker)|
 | `range`          | number                | Attack range in studs                |
 | `ability`        | string?               | Optional special ability id          |
-| `mergeRules`     | `{[otherId]: resultId}`? | Merge outcomes (see `MERGE`/M10)  |
 | `coinGeneration` | number?               | Coins per cycle for money producers  |
 
 ---
@@ -75,15 +74,13 @@ Produces coins on a timer instead of attacking (handled by `CoinService` /
 - `BrainrotService` (server) 🔜 M4–5 — placement, instance lifecycle, per-instance
   state on a plot. Reads definitions from the registry.
 - `CombatService` (server) 🔜 M7 — the only system that applies damage/health.
-- `MergeService` (server) 🔜 M10 — combines Brainrots per `mergeRules`. See
-  `GAME_DESIGN.md` (e.g. Money + Shooter → Golden Shooter).
 
 Placement validation, cost deduction, and one-Brainrot-per-tile are all
 server-authoritative (see `NETWORKING.md`).
 
 ---
 
-## Planned roster (Milestone 12)
+## Planned roster (Milestone 11)
 
 Target of at least 15 Brainrots. Candidates: Freeze, Fire, Cannon, Wall,
 Electric, Poison, Sniper, Healer, Bomb, Support, Laser, Summoner.

@@ -24,7 +24,6 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		attackSpeed = 1,
 		range = 24,
 		ability = nil,
-		mergeRules = nil,
 	},
 
 	MoneyGenerator = {
@@ -37,7 +36,6 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		range = 0,
 		ability = "GenerateCoins",
 		coinGeneration = 25,
-		mergeRules = nil,
 	},
 }
 

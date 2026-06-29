@@ -16,6 +16,10 @@ local EconomyConfig = {
 
 	-- How long an uncollected ground coin persists before despawning.
 	GROUND_COIN_LIFETIME = 60, -- seconds
+
+	-- Max distance (studs) a player may be from a ground coin to collect it.
+	-- The server re-checks this against the authoritative character position.
+	COIN_COLLECT_RADIUS = 16,
 }
 
 table.freeze(EconomyConfig)

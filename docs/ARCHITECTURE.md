@@ -68,7 +68,7 @@ entry-point Script / LocalScript.
 
 ```
 ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Wave, Plot, Camera + aggregator init
+    Config/        Grid, Economy, Wave, Plot + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
     Utilities/     Logger, GridUtil + aggregator init
@@ -79,18 +79,20 @@ ReplicatedStorage/Shared/
 ServerScriptService/Server/            (init.server.luau = bootstrap)
     Services/
         PlotService/      (init + Plot + PlotBuilder)
-        CoinService/
+        GridService/      (battlefield tile grid + occupancy)
+        CoinService/      (init + GroundCoin)
         BrainrotService/
         EnemyService/
         CombatService/
         WaveService/
-        MergeService/
         SaveService/
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/
+        UIController/     (coin counter + HUD)
+        CoinController/   (ground-coin pickup intent)
         PlacementController/
+        GridController/   (hover highlight on own plot)
         CameraController/
         InputController/
 
@@ -144,7 +146,8 @@ to call, e.g. `PlotService.getPlot(player)`.
 - **Types** — shared Luau types (`BrainrotDefinition`, `ZombieDefinition`,
   `Tile`, `PlantedBrainrot`, `SaveData`, status effects). No behavior.
 - **Utilities** — reusable helpers: `Logger` (scoped print/warn) and `GridUtil`
-  (pure, side-effect-free grid math usable on client and server).
+  (pure, side-effect-free grid math usable on client and server — see
+  `GRID.md`).
 - **Brainrots / Zombies** — data-driven registries with `get`, `exists`,
   `getAll`. Behavior is resolved from data; never branch on names.
 - **Remotes** — the single client/server boundary. See `NETWORKING.md`.
@@ -156,7 +159,7 @@ to call, e.g. `PlotService.getPlot(player)`.
 | Server owns                                   | Client owns                       |
 | --------------------------------------------- | --------------------------------- |
 | Coins, damage, health, waves, spawning        | UI                                |
-| Brainrot placement, merging, saving, rewards  | Camera, input, animations         |
+| Brainrot placement, saving, rewards           | Camera, input, animations         |
 | Plot assignment & ownership                   | Visual effects, sound playback    |
 
 The client sends **intent**; the server **decides**. UI only displays state.
@@ -185,7 +188,7 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   West/East are the field edges), a `SpawnLocation` at the play area's left edge
   facing the enemy (+X), `HouseAnchor` (−X, behind player) / `EnemySpawn` (+X) /
   `CoinSpawner` attachment markers, and empty `Grid` / `Path` / `Decorations`
-  folders. Lane layout left→right: house zone, play area (grid, later), enemy
+  folders. Lane layout left→right: house zone, play area (grid), enemy
   zone.
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
   clears dynamic folders; plots are reused, never destroyed).
@@ -199,6 +202,41 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   camera in place (scroll to first person).
 
 Public API: `PlotService.getPlot(player)`, `PlotService.getPlotModel(player)`.
+
+### Milestone 2 — Grid System ✅
+
+Full details in `GRID.md`. Summary:
+
+- **GridService** (server, authoritative) builds a static `ROWS` × `COLUMNS`
+  tile lawn into each plot's `Grid` folder at `start()` (after the plot pool is
+  built), centered on the plot's `GridCenter` marker. The grid **fills the play
+  area**: tile size is derived in `PlotConfig` from the lane depth, and the
+  house/enemy strips are the reserved leftover lane length (the grid never covers
+  them). Tiles are tagged `GridTile` with `Row`/`Column`/`Occupied` attributes.
+  It tracks occupancy per plot and exposes `getTile`, `isOccupied`,
+  `getWorldPosition`, `tryOccupy`, `release`, `resetPlot`. Tiles are reused
+  across owners — `PlotService` calls `GridService.resetPlot` on release instead
+  of rebuilding (the `Grid` folder is excluded from `Plot.release`'s wipe).
+- **GridUtil** (shared, pure) is the single home for grid coordinate math, used
+  identically on client (preview) and server (validation).
+- **GridController** (client, visual only) highlights the hovered tile on the
+  player's own plot, event-driven via `InputChanged`, colored by the tile's
+  replicated `Occupied` attribute. No remotes — tiles and attributes replicate.
+
+### Milestone 3 — Coin System ✅
+
+Full details in `ECONOMY.md` / `NETWORKING.md`. Summary:
+
+- **CoinService** (server, authoritative) owns every balance. It grants passive
+  drops as collectible ground coins on each player's plot, validates
+  `CollectCoin` intents (ownership / existence / distance) before crediting, and
+  pushes `CoinsUpdated`. It answers `RequestState` with the balance and exposes
+  `getBalance` / `addCoins` / `trySpend` for other services (wave rewards,
+  placement costs). Coin parts are built by `CoinService/GroundCoin.luau`.
+- **CoinController** (client) detects the local player touching their own coins
+  and fires the `CollectCoin` intent — no balance logic.
+- **UIController** (client) renders the coin counter from `CoinsUpdated` and the
+  initial `RequestState` pull; it displays state only.
 
 ---
 

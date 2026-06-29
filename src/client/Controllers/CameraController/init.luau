@@ -6,7 +6,7 @@
 	override the camera.
 
 	It is the designated home for client-side camera juice added later
-	(e.g. combat shake in Milestone 13), layered on top of the default camera.
+	(e.g. combat shake in Milestone 12), layered on top of the default camera.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

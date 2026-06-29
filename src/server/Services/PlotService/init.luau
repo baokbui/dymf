@@ -23,6 +23,7 @@ local Logger = require(Shared.Utilities.Logger)
 
 local Plot = require(script.Plot)
 local PlotBuilder = require(script.PlotBuilder)
+local GridService = require(script.Parent.GridService)
 
 local PlotService = {}
 PlotService.Name = "PlotService"
@@ -66,6 +67,7 @@ local function releasePlot(player: Player)
 	local plot = plotsByUserId[player.UserId]
 	if plot then
 		plot:release()
+		GridService.resetPlot(plot.model)
 		plotsByUserId[player.UserId] = nil
 		log:info(string.format("released Plot%d from %s", plot.index, player.Name))
 	end

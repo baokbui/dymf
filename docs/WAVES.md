@@ -46,7 +46,7 @@ Multiplicative per wave number:
 | enemySpeed  | 1.02   |
 | enemyDamage | 1.08   |
 
-These are the knobs Milestone 16 (Balancing) will tune.
+These are the knobs Milestone 15 (Balancing) will tune.
 
 ---
 

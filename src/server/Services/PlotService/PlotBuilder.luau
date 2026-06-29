@@ -6,7 +6,7 @@
 
 	The whole world floor is one grass baseplate; plots are lanes of it divided
 	by clear glass barriers. Within a lane, left (-X) -> right (+X) is:
-	house zone, play area (grid, added later), enemy zone. A plot contains:
+	house zone, play area (grid), enemy zone. A plot contains:
 
 		Base           - INVISIBLE, non-colliding region marker (origin + future
 		                 placement raycast target)
@@ -16,7 +16,10 @@
 		HouseAnchor    - attachment marking the house spot behind the player (M-later)
 		EnemySpawn     - attachment at the right where zombies enter (M6)
 		CoinSpawner    - attachment at the lane center (M3)
-		Grid/Path/Decorations - empty folders populated by later milestones
+		GridCenter     - attachment at the play-area center; GridService lays the
+		                 tile grid out from here (M2)
+		Grid           - folder GridService fills with static tiles (M2)
+		Path/Decorations - empty folders populated by later milestones
 
 	build() returns the model, its base part, and the spawn location.
 ]]
@@ -52,8 +55,10 @@ end
 local function addMarker(name: string, worldPosition: Vector3, parent: BasePart)
 	local attachment = Instance.new("Attachment")
 	attachment.Name = name
-	attachment.WorldPosition = worldPosition
+	-- Parent BEFORE setting WorldPosition: while unparented, WorldPosition is
+	-- treated as a local offset and would be doubled once parented to the base.
 	attachment.Parent = parent
+	attachment.WorldPosition = worldPosition
 end
 
 local function addFolder(name: string, parent: Instance)
@@ -114,6 +119,7 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 		- PlotConfig.ENEMY_ZONE)
 	local houseCenterX = leftEdge + PlotConfig.MARGIN_X + PlotConfig.HOUSE_ZONE / 2
 	local enemyCenterX = playRightX + PlotConfig.ENEMY_ZONE / 2
+	local playCenterX = (playLeftX + playRightX) / 2
 
 	-- Spawn at the left edge of the play area, facing the enemy (+X). A real
 	-- SpawnLocation (directed per-player via RespawnLocation) avoids teleport-
@@ -139,6 +145,8 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addMarker("HouseAnchor", originPosition + Vector3.new(houseCenterX, PlotConfig.SPAWN_HEIGHT, 0), base)
 	addMarker("EnemySpawn", originPosition + Vector3.new(enemyCenterX, PlotConfig.SPAWN_HEIGHT, 0), base)
 	addMarker("CoinSpawner", originPosition + Vector3.new(0, PlotConfig.SPAWN_HEIGHT, 0), base)
+	-- Grid anchor at the play-area center (grass level); GridService builds from here.
+	addMarker("GridCenter", originPosition + Vector3.new(playCenterX, 0, 0), base)
 
 	-- Empty folders for content added by later milestones.
 	addFolder("Grid", model)

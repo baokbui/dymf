@@ -229,7 +229,6 @@ Persist player progress.
 * Brainrots
 * Brainrot positions
 * Brainrot health
-* Merge states
 * Unlocks
 * Upgrades
 * Statistics
@@ -254,26 +253,7 @@ Persist player progress.
 
 ---
 
-# Milestone 10 — Merge System
-
-## Goal
-
-Allow Brainrots to combine.
-
-## Tasks
-
-* MergeService
-* Merge registry
-* Merge validation
-* Merge animations
-
-## Complete When
-
-* Brainrots successfully merge into stronger variants.
-
----
-
-# Milestone 11 — Additional Zombies
+# Milestone 10 — Additional Zombies
 
 ## Add
 
@@ -290,7 +270,7 @@ Allow Brainrots to combine.
 
 ---
 
-# Milestone 12 — Additional Brainrots
+# Milestone 11 — Additional Brainrots
 
 ## Expand the roster.
 
@@ -315,7 +295,7 @@ Potential additions
 
 ---
 
-# Milestone 13 — Visual Effects
+# Milestone 12 — Visual Effects
 
 ## Add
 
@@ -324,7 +304,6 @@ Potential additions
 * Particles
 * Death effects
 * Coin effects
-* Merge effects
 
 ## Complete When
 
@@ -332,7 +311,7 @@ Potential additions
 
 ---
 
-# Milestone 14 — Audio
+# Milestone 13 — Audio
 
 ## Add
 
@@ -349,7 +328,7 @@ Potential additions
 
 ---
 
-# Milestone 15 — UI Polish
+# Milestone 14 — UI Polish
 
 ## Improve
 
@@ -367,7 +346,7 @@ Potential additions
 
 ---
 
-# Milestone 16 — Balancing
+# Milestone 15 — Balancing
 
 ## Tune
 
@@ -385,7 +364,7 @@ Potential additions
 
 ---
 
-# Milestone 17 — Optimization
+# Milestone 16 — Optimization
 
 ## Improve
 
@@ -401,7 +380,7 @@ Potential additions
 
 ---
 
-# Milestone 18 — Testing
+# Milestone 17 — Testing
 
 ## Test
 
@@ -410,7 +389,6 @@ Potential additions
 * Multiplayer
 * Placement
 * Combat
-* Merging
 * Bosses
 * Exploit prevention
 * Edge cases
@@ -421,7 +399,7 @@ Potential additions
 
 ---
 
-# Milestone 19 — Release
+# Milestone 18 — Release
 
 ## Final Tasks
 
@@ -439,7 +417,7 @@ Potential additions
 
 ---
 
-# Milestone 20 — Post-Launch
+# Milestone 19 — Post-Launch
 
 ## Continue Development
 

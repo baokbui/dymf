@@ -19,6 +19,7 @@ Start with these:
 Then consult the system-specific docs relevant to the task:
 
 - docs/NETWORKING.md — client/server boundary, Remotes, validation
+- docs/GRID.md — battlefield grid, tiles, occupancy, highlighting
 - docs/BRAINROTS.md — Brainrot registry and definitions
 - docs/ZOMBIES.md — Zombie registry and definitions
 - docs/WAVES.md — wave loop, phases, scaling
@@ -73,7 +74,6 @@ Examples:
 - EnemyService
 - BrainrotService
 - CoinService
-- MergeService
 
 Never create massive scripts.
 
@@ -94,7 +94,6 @@ The server owns:
 - Brainrot placement
 - Zombie spawning
 - Saving
-- Merging
 - Rewards
 
 The client owns:
@@ -145,7 +144,6 @@ Each Brainrot defines:
 - Range
 - Cooldown
 - Ability
-- Merge Rules
 
 Behavior should be data-driven.
 
@@ -206,7 +204,6 @@ Persist:
 - Planted Brainrots
 - Brainrot Positions
 - Brainrot Health
-- Merge States
 - Unlocks
 - Upgrades
 - Statistics

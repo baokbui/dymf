@@ -6,7 +6,10 @@
 	never destroyed at runtime (reuse over re-allocation).
 ]]
 
-local DYNAMIC_FOLDERS = { "Grid", "Path", "Decorations" }
+-- Folders whose children are per-owner and wiped on release. The "Grid" folder
+-- is intentionally excluded: its tiles are static and reused across owners
+-- (GridService resets their occupancy instead of rebuilding them).
+local DYNAMIC_FOLDERS = { "Path", "Decorations" }
 
 local Plot = {}
 Plot.__index = Plot
