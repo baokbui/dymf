@@ -26,7 +26,7 @@ Constants.WORKSPACE_FOLDERS = {
 -- CollectionService tags used to classify instances at runtime.
 Constants.TAGS = {
 	Brainrot = "Brainrot",
-	Zombie = "Zombie",
+	Monster = "Monster",
 	GridTile = "GridTile",
 	Plot = "Plot",
 	Coin = "Coin",

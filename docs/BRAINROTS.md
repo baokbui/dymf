@@ -1,4 +1,4 @@
-# BVZ Brainrots
+# BVM Brainrots
 
 Brainrots are the player's defensive units, placed on the grid. They are
 **data-driven**: behavior is resolved from definition data, never from giant
@@ -40,14 +40,16 @@ From `Shared.Types.BrainrotDefinition`:
 | `range`          | number                | Attack range in studs                |
 | `ability`        | string?               | Optional special ability id          |
 | `coinGeneration` | number?               | Coins per cycle for money producers  |
+| `color`          | Color3?               | Placement visual tint (ghost + body) |
 
 ---
 
-## Implemented Brainrots ✅ (data only)
+## Implemented Brainrots ✅
 
-The two Milestone 5 starters are seeded as data. Their **behavior** (attacking,
-coin generation) is implemented in Milestones 5–7; only the definitions exist
-today.
+The two Milestone 5 starters are seeded as data and can be **purchased and
+placed** today (Milestone 4). Their **combat/income behavior** (attacking, coin
+generation) is implemented in Milestones 5–7; a placed Brainrot currently just
+holds its state (health, position, owner) as a tinted body on its tile.
 
 ### Shooter
 
@@ -55,7 +57,7 @@ today.
 | ---- | ------ | ------ | ----------- | ----- | ------- |
 | 50   | 100    | 10     | 1/s         | 24    | —       |
 
-Basic single-target attacker. Will fire at the nearest in-range zombie via
+Basic single-target attacker. Will fire at the nearest in-range monster via
 `CombatService` (Milestone 7).
 
 ### Money Generator
@@ -71,12 +73,21 @@ Produces coins on a timer instead of attacking (handled by `CoinService` /
 
 ## Service ownership
 
-- `BrainrotService` (server) 🔜 M4–5 — placement, instance lifecycle, per-instance
-  state on a plot. Reads definitions from the registry.
+- `BrainrotService` (server) ✅ M4 (placement & lifecycle) / 🔜 M5 (behavior) —
+  owns placement, instance lifecycle, and per-instance state on a plot. Reads
+  definitions from the registry; never branches on names. It handles the
+  `PlaceBrainrot` / `RemoveBrainrot` remotes, reserves tiles through
+  `GridService`, charges through `CoinService` (removal is **not** refunded),
+  builds models via its `BrainrotModel` builder (mirroring the `CoinService`/
+  `GroundCoin` split), and clears a leaving player's instances. Public:
+  `getPlacements(plotModel)`.
 - `CombatService` (server) 🔜 M7 — the only system that applies damage/health.
 
 Placement validation, cost deduction, and one-Brainrot-per-tile are all
-server-authoritative (see `NETWORKING.md`).
+server-authoritative (see `NETWORKING.md`); removal frees the tile without a
+refund. The placed model is tagged
+`Brainrot` and carries `InstanceId` / `BrainrotId` / `OwnerUserId` / `Row` /
+`Column` / `Health` attributes so later combat/save systems can resolve it.
 
 ---
 

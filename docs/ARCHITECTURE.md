@@ -1,6 +1,6 @@
-# BVZ Architecture
+# BVM Architecture
 
-This document describes how the Brainrots vs. Zombies codebase is structured and
+This document describes how the Brainrots vs. Monsters codebase is structured and
 the conventions every contributor (human or AI) must follow. It is the technical
 companion to `GAME_DESIGN.md` (what the game is) and `ROADMAP.md` (build order).
 
@@ -38,11 +38,11 @@ Supporting rules:
 Build the place from source:
 
 ```bash
-rojo build -o bvz.rbxlx   # one-off build
+rojo build -o bvm.rbxlx   # one-off build
 rojo serve                 # live sync into Studio
 ```
 
-`bvz.rbxlx` is git-ignored; only source is committed.
+`bvm.rbxlx` is git-ignored; only source is committed.
 
 ---
 
@@ -73,7 +73,7 @@ ReplicatedStorage/Shared/
     Types/         shared Luau type definitions
     Utilities/     Logger, GridUtil + aggregator init
     Brainrots/     data-driven Brainrot registry
-    Zombies/       data-driven Zombie registry
+    Monsters/      data-driven Monster registry
     Remotes/       single network-boundary definition
 
 ServerScriptService/Server/            (init.server.luau = bootstrap)
@@ -81,7 +81,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         PlotService/      (init + Plot + PlotBuilder)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
-        BrainrotService/
+        BrainrotService/  (init + BrainrotModel — placement & lifecycle)
         EnemyService/
         CombatService/
         WaveService/
@@ -89,12 +89,12 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/     (coin counter + HUD)
+        UIController/     (init + Shop — coin counter + shop HUD)
         CoinController/   (ground-coin pickup intent)
-        PlacementController/
-        GridController/   (hover highlight on own plot)
+        PlacementController/ (selection, ghost preview, place/remove intent)
+        GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
-        InputController/
+        InputController/  (primary/secondary intent signals)
 
 Workspace/
     Plots/        plot models are generated here at runtime
@@ -143,12 +143,12 @@ to call, e.g. `PlotService.getPlot(player)`.
   `require(Shared.Config)` (aggregated) or a specific submodule.
 - **Constants** — structural, non-balancing identifiers (save version, DataStore
   name, CollectionService tags, phase names, Workspace folder names). Frozen.
-- **Types** — shared Luau types (`BrainrotDefinition`, `ZombieDefinition`,
+- **Types** — shared Luau types (`BrainrotDefinition`, `MonsterDefinition`,
   `Tile`, `PlantedBrainrot`, `SaveData`, status effects). No behavior.
 - **Utilities** — reusable helpers: `Logger` (scoped print/warn) and `GridUtil`
   (pure, side-effect-free grid math usable on client and server — see
   `GRID.md`).
-- **Brainrots / Zombies** — data-driven registries with `get`, `exists`,
+- **Brainrots / Monsters** — data-driven registries with `get`, `exists`,
   `getAll`. Behavior is resolved from data; never branch on names.
 - **Remotes** — the single client/server boundary. See `NETWORKING.md`.
 
@@ -237,6 +237,34 @@ Full details in `ECONOMY.md` / `NETWORKING.md`. Summary:
   and fires the `CollectCoin` intent — no balance logic.
 - **UIController** (client) renders the coin counter from `CoinsUpdated` and the
   initial `RequestState` pull; it displays state only.
+
+### Milestone 4 — Placement System ✅
+
+Full details in `NETWORKING.md` / `UI.md` / `BRAINROTS.md`. Summary:
+
+- **BrainrotService** (server, authoritative) owns Brainrot placement and
+  instance lifecycle. It handles the `PlaceBrainrot` / `RemoveBrainrot` remotes,
+  validating every step server-side: argument shapes + in-bounds, registry
+  lookup (`Shared.Brainrots`, never name-branching), plot ownership
+  (`PlotService`), affordability + spend (`CoinService`), and tile reservation
+  (`GridService.tryOccupy`) — reserving the tile *before* charging so two
+  requests can't claim one cell, and releasing it if the charge loses a race.
+  Models are built by its `BrainrotModel` submodule (the `CoinService`/
+  `GroundCoin` pattern) and tagged `Brainrot` with identity attributes. Removal
+  is owner-checked and frees the tile **without a refund**. It clears a leaving
+  player's instances. Public: `getPlacements(plotModel)`.
+- **InputController** (client) centralizes input into `primaryAction` /
+  `secondaryAction` intent signals (ignoring GUI-consumed input).
+- **PlacementController** (client) owns selection, the cosmetic ghost preview
+  (reusing `GridController.resolveTileAt`), and forwarding place/remove intent.
+  It exposes `select`/`cancel`/`isPlacing` and a `selectionChanged` signal.
+- **UIController** gains the **Shop** (`UIController/Shop.luau`): the registry
+  roster with affordability, routing card clicks to `PlacementController` and
+  mirroring its selection.
+
+Dependency direction (no cycles): `UIController → PlacementController →
+{GridController, InputController}`; `BrainrotService → {PlotService, GridService,
+CoinService}`.
 
 ---
 

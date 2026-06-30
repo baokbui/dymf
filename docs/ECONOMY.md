@@ -1,4 +1,4 @@
-# BVZ Economy
+# BVM Economy
 
 The single currency is **Coins**. Only the server controls currency — clients
 send collection intent and display balances, never set them (`.cursorrules`).
@@ -57,9 +57,13 @@ Related Brainrot income: `MoneyGenerator.coinGeneration = 25` per cycle.
 
 | Function                          | Use                                          |
 | --------------------------------- | -------------------------------------------- |
-| `getBalance(player) -> number`    | read a balance                               |
+| `getBalance(player) -> number`    | read a balance (placement pre-check, M4)     |
 | `addCoins(player, amount)`        | credit rewards/income (e.g. wave rewards M8) |
-| `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4/M5)  |
+| `trySpend(player, amount) -> bool`| charge costs; false if unaffordable. Brainrot placement (M4) ✅ |
+
+Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
+with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
+— the coins spent placing it are lost (see `BRAINROTS.md` / `NETWORKING.md`).
 
 ### Implementation
 

@@ -1,4 +1,4 @@
-# BVZ Save System
+# BVM Save System
 
 Player progress is persistent across sessions. **Only `SaveService` touches
 DataStore** — no other service accesses it (`.cursorrules`).
@@ -22,7 +22,7 @@ Saved (player-owned progression):
 
 Not saved (transient / runtime):
 
-- Active zombies & their positions
+- Active monsters & their positions
 - Active projectiles
 - Ground coins
 - Temporary combat effects
@@ -51,6 +51,8 @@ Relevant constants (`Shared.Constants`):
 
 - `SAVE_VERSION = 1` — bump when the schema changes; migrate older payloads.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
+  Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
+  player saves are never orphaned (the DataStore key is identity, not branding).
 
 ---
 

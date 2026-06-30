@@ -24,6 +24,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		attackSpeed = 1,
 		range = 24,
 		ability = nil,
+		color = Color3.fromRGB(90, 160, 235),
 	},
 
 	MoneyGenerator = {
@@ -36,6 +37,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		range = 0,
 		ability = "GenerateCoins",
 		coinGeneration = 25,
+		color = Color3.fromRGB(245, 195, 70),
 	},
 }
 

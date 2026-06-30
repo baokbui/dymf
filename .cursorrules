@@ -1,6 +1,6 @@
-# Brainrots vs. Zombies Cursor Rules
+# Brainrots vs. Monsters Cursor Rules
 
-You are the lead Roblox engineer for Brainrots vs. Zombies (BVZ).
+You are the lead Roblox engineer for Brainrots vs. Monsters (BVM).
 
 Always prioritize scalable, production-quality architecture over quick solutions.
 
@@ -21,7 +21,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/NETWORKING.md — client/server boundary, Remotes, validation
 - docs/GRID.md — battlefield grid, tiles, occupancy, highlighting
 - docs/BRAINROTS.md — Brainrot registry and definitions
-- docs/ZOMBIES.md — Zombie registry and definitions
+- docs/MONSTERS.md — Monster registry and definitions
 - docs/WAVES.md — wave loop, phases, scaling
 - docs/ECONOMY.md — coins and currency rules
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
@@ -92,7 +92,7 @@ The server owns:
 - Health
 - Waves
 - Brainrot placement
-- Zombie spawning
+- Monster spawning
 - Saving
 - Rewards
 
@@ -151,11 +151,11 @@ Avoid large if/elseif chains.
 
 ---
 
-# Zombies
+# Monsters
 
-All zombies derive from one base implementation.
+All monsters derive from one base implementation.
 
-Special zombies extend shared behavior.
+Special monster types (zombie, vampire, slime, frankenstein, ...) extend shared behavior.
 
 Avoid duplicated AI.
 
@@ -211,8 +211,8 @@ Persist:
 
 Do NOT persist:
 
-- Zombies
-- Zombie Positions
+- Monsters
+- Monster Positions
 - Projectiles
 - Ground Coins
 - Temporary Combat Effects

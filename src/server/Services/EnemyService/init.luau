@@ -1,11 +1,11 @@
 --!strict
 --[[
 	EnemyService
-	Owns zombie spawning, pathfinding, and per-instance state. All zombies
-	derive from one base; types are data entries in Shared.Zombies. Spawning is
-	driven by WaveService, never advanced here.
+	Owns monster spawning, pathfinding, and per-instance state. All monsters
+	derive from one base; types (zombie, vampire, slime, ...) are data entries in
+	Shared.Monsters. Spawning is driven by WaveService, never advanced here.
 
-	Milestones 6 & 11. Stub: lifecycle only, no behavior yet.
+	Milestones 6 & 10. Stub: lifecycle only, no behavior yet.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

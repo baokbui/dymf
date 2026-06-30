@@ -3,7 +3,7 @@
 	Types
 	Shared Luau type definitions used across client and server.
 
-	These types describe the data-driven shapes for Brainrots, Zombies,
+	These types describe the data-driven shapes for Brainrots, Monsters,
 	grid state, and save data. Keep gameplay behavior out of this module;
 	it should only declare contracts.
 ]]
@@ -34,10 +34,11 @@ export type BrainrotDefinition = {
 	range: number, -- in studs
 	ability: string?,
 	coinGeneration: number?, -- coins per cycle for money producers
+	color: Color3?, -- placement visual tint (preview ghost + placed body)
 }
 
--- Data-driven definition for a Zombie type.
-export type ZombieDefinition = {
+-- Data-driven definition for a Monster type (zombie, vampire, slime, ...).
+export type MonsterDefinition = {
 	id: string,
 	name: string,
 	health: number,

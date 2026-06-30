@@ -1,4 +1,4 @@
-# BVZ Networking
+# BVM Networking
 
 How the client and server communicate. The guiding rule from `.cursorrules`:
 **never trust RemoteEvents — validate everything on the server.**
@@ -36,8 +36,8 @@ Remotes module. That is the only required step.
 
 | Name               | Direction       | Status | Purpose                                 |
 | ------------------ | --------------- | ------ | --------------------------------------- |
-| `PlaceBrainrot`    | client → server | 🔜 M4  | Request to place a Brainrot on a tile   |
-| `RemoveBrainrot`   | client → server | 🔜 M4  | Request to remove a placed Brainrot     |
+| `PlaceBrainrot`    | client → server | ✅ M4  | Request to place a Brainrot on a tile   |
+| `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `StartWave`        | client → server | 🔜 M8  | Player presses Start Wave                |
@@ -79,6 +79,41 @@ Passive drops spawn collectible **ground coins** on each player's plot (server,
 
 The client never sends an amount and cannot collect coins it doesn't own or
 isn't near, so balances can't be exploited.
+
+---
+
+## Brainrot placement & removal (Milestone 4) ✅
+
+Placement is client-intent + server-authority, owned by `BrainrotService`.
+
+**Place** — the client sends `PlaceBrainrot(brainrotId, { row, column })`. It
+never sends a cost or a world position; it only names a registry id and a tile.
+The server validates, in order:
+
+1. Argument shapes — `brainrotId` is a string, the position is a table of
+   integers, and the tile is in-bounds (`GridUtil.isInBounds`).
+2. The id exists in the `Shared.Brainrots` registry (definition resolved here;
+   never branch on names).
+3. The caller owns a plot (`PlotService.getPlot`).
+4. The caller can afford the definition's `cost` (against the authoritative
+   balance from `CoinService`).
+5. The target tile is free — reserved via `GridService.tryOccupy` *before*
+   charging, so two requests can't claim the same tile.
+6. The coins are spent (`CoinService.trySpend`); the tile is released if the
+   charge fails (guards a balance race between steps 4 and 6).
+
+Only then is the model built and the instance recorded.
+
+**Remove** — the client sends `RemoveBrainrot({ row, column })`. The server
+resolves the Brainrot occupying that tile (via the tile's
+`brainrotInstanceId`), confirms the **caller owns it**, frees the tile, and
+destroys the model. Digging up a Brainrot is **not refunded** — the coins spent
+placing it are lost. A client can never remove another player's Brainrot.
+
+The placement **ghost** is a purely cosmetic client preview
+(`PlacementController`); it carries no authority. The client tracks its balance
+only to tint the ghost and grey unaffordable Shop cards — the server is the
+sole judge of affordability.
 
 ---
 

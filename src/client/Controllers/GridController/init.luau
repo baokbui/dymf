@@ -79,27 +79,36 @@ local function showHighlight(tile: BasePart)
 	hl.Color = if occupied then GridConfig.HIGHLIGHT_BLOCKED_COLOR else GridConfig.HIGHLIGHT_VALID_COLOR
 end
 
-local function updateFromScreenPoint(x: number, y: number)
+-- Pure resolver: which of the player's own grid tiles (if any) sits under a
+-- screen point. Side-effect free so both the hover highlight and the M4
+-- placement preview can share one raycast definition. Returns nil for misses,
+-- non-tiles, and tiles on other players' plots.
+local function resolveTileAt(x: number, y: number): BasePart?
 	local camera = Workspace.CurrentCamera
 	if not camera then
-		hideHighlight()
-		return
+		return nil
 	end
 
 	local ray = camera:ScreenPointToRay(x, y)
 	local result = Workspace:Raycast(ray.Origin, ray.Direction * RAY_DISTANCE, rayParams)
 	if not result then
-		hideHighlight()
-		return
+		return nil
 	end
 
 	local hit = result.Instance
 	if not CollectionService:HasTag(hit, Constants.TAGS.GridTile) or not isOwnTile(hit) then
-		hideHighlight()
-		return
+		return nil
 	end
+	return hit
+end
 
-	showHighlight(hit)
+local function updateFromScreenPoint(x: number, y: number)
+	local tile = resolveTileAt(x, y)
+	if tile then
+		showHighlight(tile)
+	else
+		hideHighlight()
+	end
 end
 
 local function refreshRayFilter()
@@ -140,7 +149,7 @@ function GridController.start()
 end
 
 -- The tile currently under the cursor on the player's own plot (or nil).
--- Returns the tile's grid coordinates for later placement logic (Milestone 4).
+-- Returns the tile's grid coordinates for placement logic (Milestone 4).
 function GridController.getHoveredTile(): { row: number, column: number }?
 	local tile = hoveredTile
 	if not tile then
@@ -150,6 +159,13 @@ function GridController.getHoveredTile(): { row: number, column: number }?
 		row = tile:GetAttribute("Row") :: number,
 		column = tile:GetAttribute("Column") :: number,
 	}
+end
+
+-- The own-plot tile under a screen point, or nil. Used by PlacementController to
+-- position its ghost and resolve the target tile on click/tap (Milestone 4),
+-- sharing the same raycast rules as the hover highlight.
+function GridController.resolveTileAt(x: number, y: number): BasePart?
+	return resolveTileAt(x, y)
 end
 
 return GridController

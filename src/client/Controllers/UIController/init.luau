@@ -2,9 +2,12 @@
 --[[
 	UIController
 	Owns the main UI. It only displays server-provided state and forwards intent
-	via Remotes — never any gameplay logic. Milestone 3 adds the coin counter:
-	it reflects the authoritative balance from CoinsUpdated and pulls the initial
-	value with RequestState (avoiding the join-time race).
+	via Remotes / controllers — never any gameplay logic.
+
+	Milestone 3 added the coin counter (authoritative balance from CoinsUpdated,
+	seeded by the RequestState pull). Milestone 4 adds the Shop panel: it lists
+	the Brainrot roster from the shared registry and routes card clicks to
+	PlacementController, mirroring the selection back into the card highlight.
 
 	Milestones 3-4, 15.
 ]]
@@ -16,6 +19,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
+local Shop = require(script.Shop)
+local PlacementController = require(script.Parent.PlacementController)
+
 local UIController = {}
 UIController.Name = "UIController"
 
@@ -23,6 +29,8 @@ local log = Logger.new(UIController.Name)
 
 local localPlayer = Players.LocalPlayer
 local amountLabel: TextLabel? = nil
+local shop: Shop.Shop? = nil
+local selectedId: string? = nil
 
 local function buildCoinCounter(): TextLabel
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
@@ -71,15 +79,43 @@ local function setBalance(amount: number)
 	if amountLabel then
 		amountLabel.Text = string.format("%d", amount)
 	end
+	if shop then
+		shop:setBalance(amount)
+	end
+end
+
+local function buildShop(): Shop.Shop
+	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local mainUI = playerGui:WaitForChild("MainUI")
+	local frame = mainUI:WaitForChild("Shop") :: Frame
+
+	-- Clicking a card toggles selection: clicking the active one cancels.
+	return Shop.new(frame, function(id: string)
+		if selectedId == id then
+			PlacementController.cancel()
+		else
+			PlacementController.select(id)
+		end
+	end)
 end
 
 function UIController.init()
 	amountLabel = buildCoinCounter()
+	shop = buildShop()
 end
 
 function UIController.start()
 	Remotes.getEvent("CoinsUpdated").OnClientEvent:Connect(function(amount: number)
 		setBalance(amount)
+	end)
+
+	-- Keep the Shop highlight in sync with placement mode (which can also be
+	-- cancelled by right-click / Esc handled in PlacementController).
+	PlacementController.selectionChanged:Connect(function(id: string?)
+		selectedId = id
+		if shop then
+			shop:setSelected(id)
+		end
 	end)
 
 	-- Pull the current balance now that the handler is connected.

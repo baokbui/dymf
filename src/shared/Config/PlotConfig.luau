@@ -9,7 +9,7 @@
 	Within a lane, left -> right is:
 
 		[ MARGIN | HOUSE_ZONE | PLAY_AREA (grid) | ENEMY_ZONE | MARGIN ]
-		   house is behind the player (-X)        zombies enter here (+X)
+		   house is behind the player (-X)        monsters enter here (+X)
 
 	The play area is exactly the size of the battlefield grid (see GridConfig for
 	ROWS/COLUMNS): tiles fill the lane's depth, and HOUSE_ZONE / ENEMY_ZONE are
@@ -49,7 +49,7 @@ local GRID_WIDTH = TILE_SIZE * GridConfig.COLUMNS
 local ZONE_TOTAL = BASE_WIDTH - MARGIN_X * 2 - GRID_WIDTH
 assert(ZONE_TOTAL >= 0, "PlotConfig: grid is wider than the lane; widen plots or shrink the grid")
 local HOUSE_ZONE = ZONE_TOTAL / 2 -- left strip reserved for the house (behind player)
-local ENEMY_ZONE = ZONE_TOTAL / 2 -- right strip where zombies enter
+local ENEMY_ZONE = ZONE_TOTAL / 2 -- right strip where monsters enter
 
 local PlotConfig = {
 	MAX_PLOTS = MAX_PLOTS,

@@ -1,12 +1,14 @@
-# Brainrots vs. Zombies (BVZ) Roadmap
+# Brainrots vs. Monsters (BVM) Roadmap
 
 ## Purpose
 
-This roadmap defines the development milestones for Brainrots vs. Zombies. Every milestone should result in a working, playable version of the game. Do not begin a new milestone until the current one is complete and tested.
+This roadmap defines the development milestones for Brainrots vs. Monsters. Every milestone should result in a working, playable version of the game. Do not begin a new milestone until the current one is complete and tested.
 
 ---
 
 # Milestone 0 — Project Setup
+
+**Status: ✅ Complete**
 
 ## Goal
 
@@ -33,6 +35,8 @@ Create a solid foundation for the project.
 
 # Milestone 1 — Player Plot System
 
+**Status: ✅ Complete**
+
 ## Goal
 
 Every player receives their own isolated battlefield.
@@ -56,6 +60,8 @@ Every player receives their own isolated battlefield.
 
 # Milestone 2 — Grid System
 
+**Status: ✅ Complete**
+
 ## Goal
 
 Create the battlefield grid.
@@ -76,6 +82,8 @@ Create the battlefield grid.
 ---
 
 # Milestone 3 — Coin System
+
+**Status: ✅ Complete**
 
 ## Goal
 
@@ -98,6 +106,8 @@ Implement the game's economy.
 ---
 
 # Milestone 4 — Placement System
+
+**Status: ✅ Complete**
 
 ## Goal
 
@@ -147,7 +157,7 @@ Create the base Brainrot system.
 
 ---
 
-# Milestone 6 — Zombie Framework
+# Milestone 6 — Monster Framework
 
 ## Goal
 
@@ -155,20 +165,20 @@ Create enemies.
 
 ## Tasks
 
-* Base Zombie
+* Base Monster
 * Pathfinding
 * Health
 * Damage
 * Death
 * Animations
 
-## Initial Zombie
+## Initial Monster
 
-* Basic Zombie
+* Basic Monster
 
 ## Complete When
 
-* Zombies walk across the battlefield.
+* Monsters walk across the battlefield.
 
 ---
 
@@ -189,8 +199,8 @@ Implement combat.
 
 ## Complete When
 
-* Brainrots attack zombies.
-* Zombies die correctly.
+* Brainrots attack monsters.
+* Monsters die correctly.
 
 ---
 
@@ -235,8 +245,8 @@ Persist player progress.
 
 ## Do Not Save
 
-* Zombies
-* Zombie positions
+* Monsters
+* Monster positions
 * Projectiles
 * Ground coins
 * Temporary combat state
@@ -253,16 +263,17 @@ Persist player progress.
 
 ---
 
-# Milestone 10 — Additional Zombies
+# Milestone 10 — Additional Monsters
 
 ## Add
 
-* Fast Zombie
-* Tank Zombie
-* Shield Zombie
-* Flying Zombie
-* Carrier Zombie
-* Boss Zombie
+* Fast Monster
+* Tank Monster
+* Shield Monster
+* Flying Monster
+* Carrier Monster
+* Boss Monster
+* Themed types (e.g. Vampire, Slime, Frankenstein)
 
 ## Complete When
 
@@ -317,7 +328,7 @@ Potential additions
 
 * Background music
 * UI sounds
-* Zombie sounds
+* Monster sounds
 * Brainrot sounds
 * Ambient sounds
 * Boss music
@@ -413,7 +424,7 @@ Potential additions
 
 ## Complete When
 
-* Brainrots vs. Zombies is publicly released.
+* Brainrots vs. Monsters is publicly released.
 
 ---
 
@@ -422,7 +433,7 @@ Potential additions
 ## Continue Development
 
 * New Brainrots
-* New Zombies
+* New Monsters
 * New Maps
 * Seasonal Events
 * Daily Rewards

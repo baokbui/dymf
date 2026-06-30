@@ -1,10 +1,10 @@
-# Brainrots vs. Zombies (BVZ)
+# Brainrots vs. Monsters (BVM)
 
 ## Overview
 
-Brainrots vs. Zombies (BVZ) is a 3D Roblox tower defense game inspired by Plants vs. Zombies.
+Brainrots vs. Monsters (BVM) is a 3D Roblox tower defense game inspired by Plants vs. Zombies.
 
-Each player owns a separate battlefield where they defend against progressively harder zombie waves by placing Brainrots on a grid. Players earn coins, purchase Brainrots, combine them into stronger variants, and progress through increasingly difficult stages.
+Each player owns a separate battlefield where they defend against progressively harder monster waves by placing Brainrots on a grid. Players earn coins, purchase Brainrots, combine them into stronger variants, and progress through increasingly difficult stages.
 
 Unlike traditional PvZ, player progress is persistent across sessions.
 
@@ -44,7 +44,7 @@ Wave Begins
 
 ↓
 
-Fight Zombies
+Fight Monsters
 
 ↓
 
@@ -71,7 +71,7 @@ Every player receives their own isolated plot.
 Each plot contains:
 
 - Grid
-- Zombie Path
+- Monster Path
 - Spawn Point
 - Coin Spawner
 - Decorations
@@ -133,9 +133,9 @@ Behavior should never be hardcoded into giant if-statements.
 
 ---
 
-# Zombies
+# Monsters
 
-Zombie stats include:
+Monster stats include:
 
 - Health
 - Speed
@@ -143,7 +143,7 @@ Zombie stats include:
 - Attack Speed
 - Abilities
 
-Zombie types may include:
+Monster types may include:
 
 - Basic
 - Fast
@@ -152,8 +152,14 @@ Zombie types may include:
 - Flying
 - Shield
 - Carrier
+- Vampire
+- Slime
+- Frankenstein
 
-Carrier zombies may spawn with Brainrots attached.
+All monsters derive from one base implementation; types are data entries plus
+optional abilities (see `MONSTERS.md`).
+
+Carrier monsters may spawn with Brainrots attached.
 
 ---
 
@@ -239,8 +245,8 @@ Saved:
 
 Not Saved:
 
-- Active Zombies
-- Zombie Positions
+- Active Monsters
+- Monster Positions
 - Active Projectiles
 - Ground Coins
 - Temporary Combat Effects
@@ -294,7 +300,7 @@ ReplicatedStorage
         Types
         Utilities
         Brainrots
-        Zombies
+        Monsters
         Remotes
 
 ServerScriptService
@@ -347,7 +353,7 @@ Phase 1
 Phase 2
 
 - Basic Brainrot
-- Basic Zombie
+- Basic Monster
 - Combat
 - Waves
 

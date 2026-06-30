@@ -1,4 +1,4 @@
-# BVZ Wave System
+# BVM Wave System
 
 The wave system is the core gameplay loop. **`WaveService` is the only system
 that advances waves** (`.cursorrules`); no other service starts waves, spawns
@@ -68,7 +68,7 @@ These are the knobs Milestone 15 (Balancing) will tune.
 ## Interaction with save (see `SAVE_SYSTEM.md`)
 
 - The **current wave number** is persisted.
-- Active zombies, projectiles, and wave timers are **not** persisted.
+- Active monsters, projectiles, and wave timers are **not** persisted.
 - If a player leaves mid-wave: save the battlefield + wave number, end the wave.
 - On rejoin: restore the battlefield, then the saved wave **restarts from the
   beginning** and the player must press Start Wave again.

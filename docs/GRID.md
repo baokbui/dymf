@@ -1,11 +1,12 @@
 # Grid System
 
 The grid is the placement surface inside every plot's play area: a fixed
-`ROWS` × `COLUMNS` lawn of square tiles. Brainrots occupy tiles; zombies walk
+`ROWS` × `COLUMNS` lawn of square tiles. Brainrots occupy tiles; monsters walk
 across them. The server owns tile state; the client only renders/highlights.
 
-Status: ✅ implemented (Milestone 2). Placement that consumes the grid arrives
-in Milestone 4.
+Status: ✅ implemented (Milestone 2). Placement now consumes the grid
+(Milestone 4): `BrainrotService` reserves tiles via `tryOccupy`, and
+`PlacementController` previews/targets tiles via `GridController.resolveTileAt`.
 
 ---
 
@@ -99,8 +100,10 @@ A `GridPosition` is `{ row: number, column: number }` (see `Shared/Types`).
 | `release(plotModel, position)`                        | free one tile                        |
 | `resetPlot(plotModel)`                                | free all tiles on a plot             |
 
-`tryOccupy` is the server-authoritative placement gate (Milestone 4): it rejects
-out-of-bounds, unknown-plot, and already-occupied tiles.
+`tryOccupy` is the server-authoritative placement gate (used by
+`BrainrotService` in Milestone 4): it rejects out-of-bounds, unknown-plot, and
+already-occupied tiles, and stores the placing Brainrot's `brainrotInstanceId`
+on the tile so removal can resolve which instance occupies a cell.
 
 ---
 
@@ -115,8 +118,11 @@ attribute set by `PlotService`).
 - Raycasts the cursor, accepts the hit only if it is tagged `GridTile` and on the
   player's own plot, then repositions a single reused highlight part over it.
 - Colors the highlight by the tile's `Occupied` attribute (valid vs. blocked).
-- Exposes `getHoveredTile() -> { row, column }?` for the future
-  `PlacementController` to drive placement previews (Milestone 4).
+- Exposes `getHoveredTile() -> { row, column }?` and the side-effect-free
+  `resolveTileAt(x, y) -> BasePart?` (same raycast + own-plot/tag rules as the
+  highlight). `PlacementController` (Milestone 4) reuses `resolveTileAt` to
+  position its ghost and resolve the target tile on click/tap, so there is a
+  single source of cursor→tile logic.
 
 No RemoteEvents are involved: tiles and their attributes replicate from the
 server, and highlighting is a local visual.
