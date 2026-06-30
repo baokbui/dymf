@@ -17,11 +17,11 @@ StarterGui/
     MainUI (ScreenGui)
         Shop      (Frame)   ✅ M4
         Coins     (Frame)   ✅ M3
-        WaveUI    (Frame)   🔜 M8
+        LevelUI   (Frame)   🔜 M8
         Settings  (Frame)   🔜 M14
 ```
 
-`Coins` and `Shop` are populated at runtime by `UIController`; `WaveUI` and
+`Coins` and `Shop` are populated at runtime by `UIController`; `LevelUI` and
 `Settings` remain empty scaffolds until their milestones.
 
 ---
@@ -33,7 +33,7 @@ UI and input are driven by client Controllers
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Wave display, Settings panels   | ✅ M3 (Coins), M4 (Shop) |
+| `UIController`        | Shop, Coins, Level display, Settings panels  | ✅ M3 (Coins), M4 (Shop) |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `GridController`      | Hover highlight + tile resolver for previews | ✅ M2  |
 | `PlacementController` | Selection, ghost preview, placement intent   | ✅ M4  |
@@ -57,10 +57,12 @@ UI and input are driven by client Controllers
   placement (clicking the selected card again cancels); the highlight follows
   `PlacementController.selectionChanged`, so it stays correct even when placement
   is cancelled with right-click / Esc.
-- **WaveUI** 🔜 M8 — current wave, phase, countdown, and the **Start Wave**
-  button (`StartWave` remote); reflects `WaveStateChanged`.
+- **LevelUI** 🔜 M8 — current level number/name, phase, countdown, the
+  spawn-group **progress bar** (with the big-wave flag), and the **Start Level**
+  button (`StartLevel` remote); reflects `LevelStateChanged`.
 - **Settings** 🔜 M14 — options plus **Reset Progress** (confirmation required,
-  `ResetProgress` remote) and statistics display.
+  `ResetProgress` remote), a **Level Select** for replaying cleared levels
+  (`SelectLevel` remote), and statistics display.
 
 ---
 
@@ -86,7 +88,7 @@ The server (`BrainrotService`) re-validates everything (see `NETWORKING.md`).
 
 ## Rules for UI work
 
-- Read state from server pushes (`CoinsUpdated`, `WaveStateChanged`, …); never
+- Read state from server pushes (`CoinsUpdated`, `LevelStateChanged`, …); never
   compute authoritative values on the client.
 - Send only intent via remotes; the server validates (see `NETWORKING.md`).
 - Display Brainrot/monster info by reading the shared registries

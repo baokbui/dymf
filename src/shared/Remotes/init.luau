@@ -28,9 +28,10 @@ local EVENT_NAMES = {
 	-- Coins (Milestone 3)
 	"CollectCoin",
 	"CoinsUpdated",
-	-- Waves (Milestone 8)
-	"StartWave",
-	"WaveStateChanged",
+	-- Levels (Milestone 8)
+	"StartLevel",
+	"LevelStateChanged",
+	"SelectLevel",
 	-- Settings
 	"ResetProgress",
 }

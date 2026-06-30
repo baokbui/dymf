@@ -13,7 +13,7 @@ From `GAME_DESIGN.md`:
 
 - Passive drops (every ~30 seconds)
 - Money-producing Brainrots (e.g. Money Generator, see `BRAINROTS.md`)
-- Completing waves
+- Completing levels
 - Future achievements / events
 
 ---
@@ -27,7 +27,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `STARTING_COINS`       | 50    | Balance for a new player                 |
 | `PASSIVE_DROP_INTERVAL`| 30    | Seconds between passive drops            |
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
-| `WAVE_COMPLETION_REWARD`| 50   | Base reward for finishing a wave         |
+| `LEVEL_COMPLETION_REWARD`| 50  | Base reward for finishing a level        |
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
@@ -58,7 +58,7 @@ Related Brainrot income: `MoneyGenerator.coinGeneration = 25` per cycle.
 | Function                          | Use                                          |
 | --------------------------------- | -------------------------------------------- |
 | `getBalance(player) -> number`    | read a balance (placement pre-check, M4)     |
-| `addCoins(player, amount)`        | credit rewards/income (e.g. wave rewards M8) |
+| `addCoins(player, amount)`        | credit rewards/income (e.g. level rewards M8) |
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable. Brainrot placement (M4) ✅ |
 
 Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges

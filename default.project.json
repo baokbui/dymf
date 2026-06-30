@@ -44,7 +44,7 @@
             "BackgroundTransparency": 1
           }
         },
-        "WaveUI": {
+        "LevelUI": {
           "$className": "Frame",
           "$properties": {
             "Visible": false,

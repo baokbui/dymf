@@ -4,7 +4,7 @@
 
 Brainrots vs. Monsters (BVM) is a 3D Roblox tower defense game inspired by Plants vs. Zombies.
 
-Each player owns a separate battlefield where they defend against progressively harder monster waves by placing Brainrots on a grid. Players earn coins, purchase Brainrots, combine them into stronger variants, and progress through increasingly difficult stages.
+Each player owns a separate battlefield where they defend against progressively harder monster levels by placing Brainrots on a grid. Players earn coins, purchase Brainrots, combine them into stronger variants, and progress through an increasingly difficult campaign of levels.
 
 Unlike traditional PvZ, player progress is persistent across sessions.
 
@@ -36,11 +36,11 @@ Plant Brainrots
 
 ↓
 
-Press Start Wave
+Press Start Level
 
 ↓
 
-Wave Begins
+Level Begins
 
 ↓
 
@@ -48,7 +48,7 @@ Fight Monsters
 
 ↓
 
-Wave Complete
+Level Complete
 
 ↓
 
@@ -106,7 +106,7 @@ Coins are earned by:
 
 - Passive drops (every ~30 seconds)
 - Money-producing Brainrots
-- Completing waves
+- Completing levels
 - Future achievements/events
 
 Only the server controls currency.
@@ -163,9 +163,12 @@ Carrier monsters may spawn with Brainrots attached.
 
 ---
 
-# Wave System
+# Level System
 
-Every wave consists of:
+BVM is a PvZ-style **campaign**: players progress through discrete, hand-authored
+levels rather than endless scaling waves. (See `LEVELS.md` for the full design.)
+
+Every level consists of:
 
 Preparation
 
@@ -175,32 +178,41 @@ Player Plants
 
 ↓
 
-Start Wave Button
+Start Level Button
 
 ↓
 
-Wave Begins
+Level Begins (spawn groups / internal waves)
 
 ↓
 
-Wave Complete
+Big Final Wave
 
 ↓
 
-Rewards
+Level Complete (Victory) — or Defeat if the house is breached
 
 ↓
 
-Next Preparation
+Rewards + Unlock Next Level
 
-Difficulty scales by:
+↓
 
-- Enemy count
-- Enemy health
-- Enemy speed
-- Enemy damage
-- Boss frequency
-- Special enemies
+Next Level Preparation
+
+Within a level, monsters arrive in an ordered list of **spawn groups** (the
+internal "waves") shown on a progress bar, building to a **big final wave**. A
+level is won by clearing every group and lost if a monster reaches the house.
+
+Each authored level controls its own difficulty through its data:
+
+- Which monster types appear
+- How many, and in how many groups
+- Spawn timing (group delays + per-monster interval)
+- Whether/where bosses and special enemies appear
+
+Progression is **linear**: clearing a level unlocks the next; cleared levels can
+be replayed via Level Select. There is no endless mode (yet).
 
 ---
 
@@ -232,7 +244,8 @@ Everything player-owned should be saved.
 
 Saved:
 
-- Current Wave
+- Current Level
+- Highest Unlocked Level
 - Coins
 - Player Health
 - Planted Brainrots
@@ -250,13 +263,13 @@ Not Saved:
 - Active Projectiles
 - Ground Coins
 - Temporary Combat Effects
-- Wave Timers
+- Level Timers
 
-If a player leaves during a wave:
+If a player leaves during a level:
 
 - Save the battlefield.
-- Save the current wave number.
-- End the active wave.
+- Save the current level progression.
+- End the active level.
 
 When the player rejoins:
 
@@ -264,8 +277,8 @@ When the player rejoins:
 - Restore coins.
 - Restore all Brainrots.
 - Restore progression.
-- The current wave starts over from the beginning.
-- The player must press Start Wave again.
+- The current level starts over from the beginning.
+- The player must press Start Level again.
 
 ---
 
@@ -275,7 +288,8 @@ A Reset Progress button exists inside Settings.
 
 Reset deletes:
 
-- Current Wave
+- Current Level
+- Highest Unlocked Level
 - Coins
 - Battlefield
 - Brainrots
@@ -284,7 +298,7 @@ Reset deletes:
 - Statistics
 - Saved Progress
 
-Player returns to Wave 1.
+Player returns to Level 1.
 
 Reset should require confirmation.
 
@@ -301,13 +315,14 @@ ReplicatedStorage
         Utilities
         Brainrots
         Monsters
+        Levels
         Remotes
 
 ServerScriptService
 
     Services
         PlotService
-        WaveService
+        LevelService
         CombatService
         CoinService
         EnemyService
@@ -329,7 +344,7 @@ StarterGui
     MainUI
         Shop
         Coins
-        WaveUI
+        LevelUI
         Settings
 
 Workspace
@@ -355,7 +370,7 @@ Phase 2
 - Basic Brainrot
 - Basic Monster
 - Combat
-- Waves
+- Levels
 
 Phase 3
 

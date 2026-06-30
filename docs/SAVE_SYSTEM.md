@@ -11,7 +11,8 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 Saved (player-owned progression):
 
-- Current wave
+- Current level
+- Highest unlocked level
 - Coins
 - Player health
 - Planted Brainrots (+ positions, + health)
@@ -26,7 +27,7 @@ Not saved (transient / runtime):
 - Active projectiles
 - Ground coins
 - Temporary combat effects
-- Wave timers
+- Level timers
 
 ---
 
@@ -37,7 +38,8 @@ Not saved (transient / runtime):
 | Field          | Type                       |
 | -------------- | -------------------------- |
 | `version`      | number                     |
-| `currentWave`  | number                     |
+| `currentLevel` | number                     |
+| `highestLevel` | number                     |
 | `coins`        | number                     |
 | `playerHealth` | number                     |
 | `brainrots`    | `{ PlantedBrainrot }`      |
@@ -61,31 +63,31 @@ Relevant constants (`Shared.Constants`):
 `SaveService` (server) will:
 
 - Load a player's `SaveData` on join (defaulting new players from config:
-  `EconomyConfig.STARTING_COINS`, `WaveConfig.STARTING_PLAYER_HEALTH`, wave 1).
+  `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
 - Migrate older `version` payloads forward.
 - Persist on leave and on a periodic autosave.
 - Coordinate restore with other services (battlefield via `PlotService` /
-  `BrainrotService`, balance via `CoinService`, wave via `WaveService`).
+  `BrainrotService`, balance via `CoinService`, level via `LevelService`).
 
 ---
 
 ## Leave / rejoin behavior
 
-If a player leaves during a wave:
+If a player leaves during a level:
 
-- Save the battlefield and the current wave number.
-- End the active wave.
+- Save the battlefield and the current level progression.
+- End the active level.
 
 On rejoin:
 
 - Restore the battlefield, coins, all Brainrots, and progression.
-- The saved wave **restarts from the beginning**; the player must press Start
-  Wave again (see `WAVES.md`).
+- The saved level **restarts from the beginning**; the player must press Start
+  Level again (see `LEVELS.md`).
 
 ---
 
 ## Reset Progress
 
 A confirmed Reset (via Settings UI → `ResetProgress` remote, see `UI.md` /
-`NETWORKING.md`) deletes all saved progress and returns the player to wave 1.
+`NETWORKING.md`) deletes all saved progress and returns the player to level 1.
 Never erase save data unless Reset is explicitly confirmed.

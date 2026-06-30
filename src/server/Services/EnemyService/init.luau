@@ -3,7 +3,7 @@
 	EnemyService
 	Owns monster spawning, pathfinding, and per-instance state. All monsters
 	derive from one base; types (zombie, vampire, slime, ...) are data entries in
-	Shared.Monsters. Spawning is driven by WaveService, never advanced here.
+	Shared.Monsters. Spawning is driven by LevelService, never advanced here.
 
 	Milestones 6 & 10. Stub: lifecycle only, no behavior yet.
 ]]

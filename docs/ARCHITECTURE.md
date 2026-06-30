@@ -55,7 +55,7 @@ Defined in `default.project.json`:
 | `src/shared`      | `ReplicatedStorage.Shared`                       |
 | `src/server`      | `ServerScriptService.Server` (Script)            |
 | `src/client`      | `StarterPlayerScripts.Client` (LocalScript)      |
-| (declared inline) | `StarterGui.MainUI` (Shop/Coins/WaveUI/Settings) |
+| (declared inline) | `StarterGui.MainUI` (Shop/Coins/LevelUI/Settings) |
 | (declared inline) | `Workspace.{Plots, EnemyPaths, Maps}`            |
 
 A folder containing `init.luau` becomes a single requireable ModuleScript with
@@ -68,12 +68,13 @@ entry-point Script / LocalScript.
 
 ```
 ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Wave, Plot + aggregator init
+    Config/        Grid, Economy, Level, Plot + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
     Utilities/     Logger, GridUtil + aggregator init
     Brainrots/     data-driven Brainrot registry
     Monsters/      data-driven Monster registry
+    Levels/        data-driven campaign level registry
     Remotes/       single network-boundary definition
 
 ServerScriptService/Server/            (init.server.luau = bootstrap)
@@ -84,7 +85,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         BrainrotService/  (init + BrainrotModel — placement & lifecycle)
         EnemyService/
         CombatService/
-        WaveService/
+        LevelService/
         SaveService/
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
@@ -148,8 +149,10 @@ to call, e.g. `PlotService.getPlot(player)`.
 - **Utilities** — reusable helpers: `Logger` (scoped print/warn) and `GridUtil`
   (pure, side-effect-free grid math usable on client and server — see
   `GRID.md`).
-- **Brainrots / Monsters** — data-driven registries with `get`, `exists`,
-  `getAll`. Behavior is resolved from data; never branch on names.
+- **Brainrots / Monsters / Levels** — data-driven registries with `get`,
+  `exists`, `getAll` (Levels also exposes `getByNumber` / `getOrdered`).
+  Behavior and campaign content are resolved from data; never branch on names
+  or level numbers.
 - **Remotes** — the single client/server boundary. See `NETWORKING.md`.
 
 ---
@@ -158,7 +161,7 @@ to call, e.g. `PlotService.getPlot(player)`.
 
 | Server owns                                   | Client owns                       |
 | --------------------------------------------- | --------------------------------- |
-| Coins, damage, health, waves, spawning        | UI                                |
+| Coins, damage, health, levels, spawning       | UI                                |
 | Brainrot placement, saving, rewards           | Camera, input, animations         |
 | Plot assignment & ownership                   | Visual effects, sound playback    |
 
@@ -231,7 +234,7 @@ Full details in `ECONOMY.md` / `NETWORKING.md`. Summary:
   drops as collectible ground coins on each player's plot, validates
   `CollectCoin` intents (ownership / existence / distance) before crediting, and
   pushes `CoinsUpdated`. It answers `RequestState` with the balance and exposes
-  `getBalance` / `addCoins` / `trySpend` for other services (wave rewards,
+  `getBalance` / `addCoins` / `trySpend` for other services (level rewards,
   placement costs). Coin parts are built by `CoinService/GroundCoin.luau`.
 - **CoinController** (client) detects the local player touching their own coins
   and fires the `CollectCoin` intent — no balance logic.

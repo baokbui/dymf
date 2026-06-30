@@ -22,7 +22,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/GRID.md — battlefield grid, tiles, occupancy, highlighting
 - docs/BRAINROTS.md — Brainrot registry and definitions
 - docs/MONSTERS.md — Monster registry and definitions
-- docs/WAVES.md — wave loop, phases, scaling
+- docs/LEVELS.md — PvZ-style campaign: levels, spawn groups, progression
 - docs/ECONOMY.md — coins and currency rules
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
@@ -69,7 +69,7 @@ Examples:
 
 - PlotService
 - SaveService
-- WaveService
+- LevelService
 - CombatService
 - EnemyService
 - BrainrotService
@@ -90,7 +90,7 @@ The server owns:
 - Coins
 - Damage
 - Health
-- Waves
+- Levels
 - Brainrot placement
 - Monster spawning
 - Saving
@@ -174,19 +174,24 @@ Objects should never directly modify another object's health.
 
 ---
 
-# Wave System
+# Level System
 
-WaveService exclusively controls:
+The game is a PvZ-style campaign of discrete, authored levels (not endless
+scaling waves). Levels are data-driven entries in Shared.Levels; each is a fixed
+sequence of monster spawn groups (internal "waves") ending in a big final wave.
+
+LevelService exclusively controls:
 
 - Preparation Phase
 - Countdown
-- Wave Start
-- Enemy Spawning
-- Wave Completion
+- Level Start
+- Spawn Groups (internal waves) + progress
+- Big Final Wave
+- Victory / Defeat detection
 - Rewards
-- Difficulty Scaling
+- Linear Progression (unlock next level)
 
-No other service advances waves.
+No other service advances levels.
 
 ---
 
@@ -198,7 +203,8 @@ No other service accesses DataStore.
 
 Persist:
 
-- Current Wave
+- Current Level
+- Highest Unlocked Level
 - Coins
 - Player Health
 - Planted Brainrots
@@ -216,13 +222,13 @@ Do NOT persist:
 - Projectiles
 - Ground Coins
 - Temporary Combat Effects
-- Wave Timers
+- Level Timers
 
-If the player leaves during a wave:
+If the player leaves during a level:
 
 - Save the battlefield.
-- Save the current wave number.
-- End the active wave.
+- Save the current level progression.
+- End the active level.
 
 When they return:
 
@@ -230,7 +236,7 @@ When they return:
 - Restore Brainrots.
 - Restore coins.
 - Restore progression.
-- Restart the saved wave from its beginning.
+- Restart the saved level from its beginning.
 
 Never erase save data unless Reset Progress is confirmed.
 

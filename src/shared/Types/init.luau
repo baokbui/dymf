@@ -48,6 +48,28 @@ export type MonsterDefinition = {
 	abilities: { string }?,
 }
 
+-- One ordered burst of monsters within a level (an internal "wave"). A level is
+-- authored as a sequence of these; the last group is usually the "big wave"
+-- (the PvZ flag). Timing fields fall back to LevelConfig defaults when omitted.
+export type SpawnGroup = {
+	monsterId: string,
+	count: number,
+	startDelay: number?, -- seconds before this group begins (after the previous one)
+	spawnInterval: number?, -- seconds between each monster within this group
+	isBigWave: boolean?, -- marks the big final wave on the level progress bar
+}
+
+-- A single authored campaign level. Levels are data-driven entries in the
+-- Shared.Levels registry; LevelService plays them in `number` order and beating
+-- one unlocks the next. Never branch on level numbers — read the definition.
+export type LevelDefinition = {
+	id: string,
+	number: number, -- 1-based campaign position (ordering + display)
+	name: string,
+	groups: { SpawnGroup },
+	reward: number?, -- coins on completion (defaults to EconomyConfig base)
+}
+
 -- Runtime tile state tracked by the grid (server-authoritative).
 export type Tile = {
 	position: GridPosition,
@@ -66,7 +88,8 @@ export type PlantedBrainrot = {
 -- Versioned player save data. Only player-owned progression is persisted.
 export type SaveData = {
 	version: number,
-	currentWave: number,
+	currentLevel: number, -- campaign level the player is on / resumes
+	highestLevel: number, -- furthest level unlocked (drives Level Select)
 	coins: number,
 	playerHealth: number,
 	brainrots: { PlantedBrainrot },

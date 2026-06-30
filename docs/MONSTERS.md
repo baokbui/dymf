@@ -57,12 +57,13 @@ Milestones 6–7; only the definition exists today.
 ## Service ownership
 
 - `EnemyService` (server) 🔜 M6 — spawning, pathfinding, per-instance state. One
-  base implementation for all monster types. Driven by `WaveService`; never
-  advances waves itself. Spawned monsters are tagged `Monster`
+  base implementation for all monster types. Driven by `LevelService`; never
+  advances levels itself. Spawned monsters are tagged `Monster`
   (`Shared.Constants.TAGS.Monster`).
 - `CombatService` (server) 🔜 M7 — applies all damage/health and status effects
   (Slow, Freeze, Poison, Burn, Knockback).
-- `WaveService` (server) 🔜 M8 — decides what spawns and when (see `WAVES.md`).
+- `LevelService` (server) 🔜 M8 — decides what spawns and when by reading a
+  level's authored spawn groups (see `LEVELS.md`).
 
 Monsters and their positions are **never saved** (see `SAVE_SYSTEM.md`).
 
@@ -80,7 +81,7 @@ registry data plus ability handlers shared via the base monster.
 | Shield      | Front damage reduction until shield breaks       |
 | Flying      | Bypasses some ground defenses                    |
 | Carrier     | May spawn with Brainrots attached (GAME_DESIGN)  |
-| Boss        | Appears on boss waves (`WaveConfig.BOSS_WAVE_INTERVAL`) |
+| Boss        | Authored into specific campaign levels (see `LEVELS.md`) |
 | Vampire     | Themed type — e.g. lifesteal on attack           |
 | Slime       | Themed type — e.g. splits into smaller slimes    |
 | Frankenstein| Themed type — e.g. high health bruiser           |

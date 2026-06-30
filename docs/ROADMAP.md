@@ -204,24 +204,28 @@ Implement combat.
 
 ---
 
-# Milestone 8 — Wave System
+# Milestone 8 — Level System
 
 ## Goal
 
-Create the gameplay loop.
+Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 
 ## Tasks
 
+* Levels registry (authored, data-driven)
 * Preparation phase
 * Countdown
-* Start Wave button
-* Wave spawning
+* Start Level button
+* Spawn groups (internal waves) + progress bar
+* Big final wave + warning
+* Victory / Defeat detection
 * Rewards
-* Difficulty scaling
+* Linear progression (unlock next level)
 
 ## Complete When
 
-* Players can repeatedly complete waves.
+* Players can play a level, win it, and advance to the next one.
+* Losing (house breached) lets the player retry the same level.
 
 ---
 
@@ -233,7 +237,8 @@ Persist player progress.
 
 ## Save
 
-* Current wave
+* Current level
+* Highest unlocked level
 * Coins
 * Player health
 * Brainrots
@@ -255,7 +260,7 @@ Persist player progress.
 
 * Restore battlefield
 * Restore player progress
-* Restart the saved wave from the beginning
+* Restart the saved level from the beginning
 
 ## Complete When
 
@@ -345,7 +350,8 @@ Potential additions
 
 * Shop
 * Coins
-* Wave display
+* Level display (progress bar)
+* Level Select
 * Health
 * Settings
 * Reset Progress
@@ -366,7 +372,7 @@ Potential additions
 * Health
 * Coin generation
 * Cooldowns
-* Wave difficulty
+* Level difficulty
 * Enemy scaling
 
 ## Complete When

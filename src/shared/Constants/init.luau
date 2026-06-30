@@ -32,12 +32,13 @@ Constants.TAGS = {
 	Coin = "Coin",
 }
 
--- Game phase identifiers used by WaveService.
+-- Per-level phase identifiers used by LevelService (PvZ-style campaign).
 Constants.PHASE = {
-	Preparation = "Preparation",
-	Countdown = "Countdown",
-	Active = "Active",
-	Complete = "Complete",
+	Preparation = "Preparation", -- plant before starting the level
+	Countdown = "Countdown", -- brief countdown after Start Level
+	Active = "Active", -- spawn groups running / level in progress
+	Victory = "Victory", -- all groups cleared — level won
+	Defeat = "Defeat", -- monsters breached the house — level lost
 }
 
 table.freeze(Constants.WORKSPACE_FOLDERS)

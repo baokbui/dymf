@@ -11,8 +11,9 @@ local EconomyConfig = {
 	PASSIVE_DROP_INTERVAL = 30, -- seconds
 	PASSIVE_DROP_AMOUNT = 25,
 
-	-- Base reward granted for completing a wave (scaled by WaveConfig).
-	WAVE_COMPLETION_REWARD = 50,
+	-- Base reward granted for completing a campaign level (a level may override
+	-- it via LevelDefinition.reward).
+	LEVEL_COMPLETION_REWARD = 50,
 
 	-- How long an uncollected ground coin persists before despawning.
 	GROUND_COIN_LIFETIME = 60, -- seconds

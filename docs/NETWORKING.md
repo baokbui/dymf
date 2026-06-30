@@ -22,7 +22,7 @@ are declared once in that module; nothing creates ad-hoc remotes elsewhere.
 ```lua
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 Remotes.getEvent("CoinsUpdated").OnClientEvent:Connect(handler) -- client
-Remotes.getEvent("StartWave"):FireServer()                      -- client
+Remotes.getEvent("StartLevel"):FireServer()                     -- client
 ```
 
 Adding a new remote = add its name to `EVENT_NAMES` or `FUNCTION_NAMES` in the
@@ -40,8 +40,9 @@ Remotes module. That is the only required step.
 | `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
-| `StartWave`        | client → server | 🔜 M8  | Player presses Start Wave                |
-| `WaveStateChanged` | server → client | 🔜 M8  | Phase / wave number / countdown updates  |
+| `StartLevel`       | client → server | 🔜 M8  | Player presses Start Level               |
+| `LevelStateChanged`| server → client | 🔜 M8  | Phase / level number / progress updates  |
+| `SelectLevel`      | client → server | 🔜 M14 | Replay a cleared level via Level Select  |
 | `ResetProgress`    | client → server | 🔜 M14 | Confirmed reset of all save data         |
 
 ### RemoteFunctions

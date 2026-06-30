@@ -14,7 +14,7 @@
 local Config = {
 	Grid = require(script.GridConfig),
 	Economy = require(script.EconomyConfig),
-	Wave = require(script.WaveConfig),
+	Level = require(script.LevelConfig),
 	Plot = require(script.PlotConfig),
 }
 

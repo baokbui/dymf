@@ -1,8 +1,9 @@
 # Brainrots vs. Monsters (BVM)
 
-A 3D Roblox tower defense game where players defend their battlefield from waves
-of monsters (zombies, vampires, slimes, frankensteins, and more) by placing
-Brainrots on a grid. Built with [Rojo](https://github.com/rojo-rbx/rojo).
+A 3D Roblox tower defense game where players defend their battlefield against a
+PvZ-style campaign of monster levels (zombies, vampires, slimes, frankensteins,
+and more) by placing Brainrots on a grid. Built with
+[Rojo](https://github.com/rojo-rbx/rojo).
 
 See the [`docs/`](docs) folder for design and architecture (start with
 `docs/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md`).
