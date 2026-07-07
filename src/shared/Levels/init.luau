@@ -8,9 +8,9 @@
 	in `number` order; clearing one unlocks the next. Add a level by adding one
 	data entry here — never branch on level numbers in code.
 
-	Seeded with the opening campaign levels using the Milestone 6 starter monster
-	(BasicMonster). More monsters/levels are added here as plain data; richer
-	rosters arrive with Milestone 10.
+	Seeded with a gradual opening campaign: TutorialZombie (Level 1) → mixed
+	TutorialZombie / EarlyZombie (Level 2) → EarlyZombie with a small full-Zombie
+	finale (Level 3). Tune each level as data here — never branch on level numbers.
 ]]
 
 local Types = require(script.Parent.Types)
@@ -23,9 +23,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 1,
 		name = "First Contact",
 		groups = {
-			{ monsterId = "BasicMonster", count = 3, startDelay = 0, spawnInterval = 2 },
-			{ monsterId = "BasicMonster", count = 5, startDelay = 8, spawnInterval = 1.5 },
-			{ monsterId = "BasicMonster", count = 8, startDelay = 10, spawnInterval = 1, isBigWave = true },
+			-- Long grace + one slow enemy at a time so the player can plant and learn.
+			{ monsterId = "TutorialZombie", count = 1, startDelay = 25, spawnInterval = 6 },
+			{ monsterId = "TutorialZombie", count = 2, startDelay = 30, spawnInterval = 5 },
+			{ monsterId = "TutorialZombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
 		},
 	},
 
@@ -34,10 +35,22 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 2,
 		name = "Rising Tide",
 		groups = {
-			{ monsterId = "BasicMonster", count = 5, startDelay = 0, spawnInterval = 1.5 },
-			{ monsterId = "BasicMonster", count = 7, startDelay = 8, spawnInterval = 1.2 },
-			{ monsterId = "BasicMonster", count = 6, startDelay = 8, spawnInterval = 1 },
-			{ monsterId = "BasicMonster", count = 12, startDelay = 12, spawnInterval = 0.8, isBigWave = true },
+			-- Same enemy type as Level 1, slightly more pressure — no full Zombie yet.
+			{ monsterId = "TutorialZombie", count = 2, startDelay = 20, spawnInterval = 5.5 },
+			{ monsterId = "TutorialZombie", count = 2, startDelay = 28, spawnInterval = 4.5 },
+			{ monsterId = "EarlyZombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
+		},
+	},
+
+	Level3 = {
+		id = "Level3",
+		number = 3,
+		name = "Greenhorns",
+		groups = {
+			-- EarlyZombie carries most of the level; a short full-Zombie big wave at the end.
+			{ monsterId = "EarlyZombie", count = 2, startDelay = 18, spawnInterval = 4.5 },
+			{ monsterId = "EarlyZombie", count = 3, startDelay = 22, spawnInterval = 4 },
+			{ monsterId = "Zombie", count = 3, startDelay = 25, spawnInterval = 2.5, isBigWave = true },
 		},
 	},
 }

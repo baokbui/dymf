@@ -1,21 +1,26 @@
 --!strict
 --[[
 	PlotConfig
-	Layout for player plots. Each plot is a horizontal LANE; lanes are tiled in a
-	grid of LANE_COLUMNS columns sized to fill the baseplate (leaving a grass
-	border). More players = more lanes (configurable via MAX_PLOTS). Splitting
-	into more columns shortens each lane's length while fitting more plots.
+	Layout for player plots and the shared enemy-spawn column.
 
-	Within a lane, left -> right is:
+	The baseplate is split into MAP_COLUMNS side-by-side strips along X:
 
-		[ MARGIN | HOUSE_ZONE | PLAY_AREA (grid) | ENEMY_ZONE | MARGIN ]
-		   house is behind the player (-X)        monsters enter here (+X)
+		[ west: player plots ] [ east: enemy spawn lanes ]
+
+	Player plots tile the west column in LANE_ROWS rows (one lane per row).
+	The east column holds enemy-spawn lanes aligned with each player row — no
+	player grids there. Monsters stage in the east column and enter the matching
+	player plot from the +X side.
+
+	Within a player lane, left -> right is:
+
+		[ MARGIN | HOUSE_ZONE | PLAY_AREA (grid) | MARGIN ]
+		   house is behind the player (-X)
 
 	The play area is exactly the size of the battlefield grid (see GridConfig for
-	ROWS/COLUMNS): tiles fill the lane's depth, and HOUSE_ZONE / ENEMY_ZONE are
-	the reserved strips that take up the remaining lane length, so the grid never
-	covers the house or enemy areas. The player spawns at the left edge of the
-	play area facing +X. Tune here, never inline.
+	ROWS/COLUMNS): tiles fill the lane's depth, and HOUSE_ZONE is the reserved
+	strip behind the grid. The player spawns at the left edge of the play area
+	facing +X. Tune here, never inline.
 ]]
 
 local GridConfig = require(script.Parent.GridConfig)
@@ -26,15 +31,15 @@ local BASEPLATE_SIZE = 700
 local POOL_MARGIN = 20 -- grass border between the plot pool and baseplate edge
 local USABLE = BASEPLATE_SIZE - POOL_MARGIN * 2
 
-local MAX_PLOTS = 12 -- total lanes (= max concurrent players)
-local LANE_COLUMNS = 2 -- side-by-side columns of lanes
-local LANE_ROWS = math.ceil(MAX_PLOTS / LANE_COLUMNS) -- lanes per column
+local MAP_COLUMNS = 2 -- west = player plots, east = enemy spawn
+local LANE_ROWS = 6 -- stacked lanes per column (one row per concurrent player)
+local MAX_PLOTS = LANE_ROWS -- player lanes in the west column only
 
 local MARGIN_X = 10
 local MARGIN_Z = 10
 
--- Lanes tile the baseplate: usable area split across columns (X) and rows (Z).
-local BASE_WIDTH = USABLE / LANE_COLUMNS -- X (lane length)
+-- Each map column is half the baseplate; rows stack along Z.
+local BASE_WIDTH = USABLE / MAP_COLUMNS -- X (lane length)
 local BASE_DEPTH = USABLE / LANE_ROWS -- Z (one lane)
 
 -- Derive the grid to fill the play area. Tiles are square; their size is set by
@@ -44,25 +49,24 @@ local TILE_SIZE = PLAY_DEPTH / GridConfig.ROWS
 local GRID_DEPTH = TILE_SIZE * GridConfig.ROWS -- == PLAY_DEPTH
 local GRID_WIDTH = TILE_SIZE * GridConfig.COLUMNS
 
--- The grid occupies the lane's center; whatever length is left over (after
--- margins and the grid) is split evenly into the house and enemy strips.
+-- The grid occupies the lane's center; leftover length is the house strip behind
+-- the player. Enemy staging lives in the east map column, not inside each plot.
 local ZONE_TOTAL = BASE_WIDTH - MARGIN_X * 2 - GRID_WIDTH
 assert(ZONE_TOTAL >= 0, "PlotConfig: grid is wider than the lane; widen plots or shrink the grid")
-local HOUSE_ZONE = ZONE_TOTAL / 2 -- left strip reserved for the house (behind player)
-local ENEMY_ZONE = ZONE_TOTAL / 2 -- right strip where monsters enter
+local HOUSE_ZONE = ZONE_TOTAL
 
 local PlotConfig = {
 	MAX_PLOTS = MAX_PLOTS,
-	LANE_COLUMNS = LANE_COLUMNS,
+	MAP_COLUMNS = MAP_COLUMNS,
 	LANE_ROWS = LANE_ROWS,
+	PLAYER_MAP_COLUMN = 0, -- west column index
+	ENEMY_MAP_COLUMN = 1, -- east column index
 
 	BASEPLATE_SIZE = BASEPLATE_SIZE,
 	POOL_MARGIN = POOL_MARGIN,
 
-	-- Zone widths along X (see header diagram). Derived so the grid fills the
-	-- play area and the house/enemy strips fall outside it.
+	-- Zone width along X behind the grid (see header diagram).
 	HOUSE_ZONE = HOUSE_ZONE,
-	ENEMY_ZONE = ENEMY_ZONE,
 	MARGIN_X = MARGIN_X,
 	MARGIN_Z = MARGIN_Z,
 
@@ -85,6 +89,11 @@ local PlotConfig = {
 	-- Spawn sits at the left edge of the play area, facing the enemy (+X).
 	SPAWN_HEIGHT = 3,
 	SPAWN_EDGE_INSET = 4,
+
+	-- Fraction of a tile's side length used as the Brainrot body footprint.
+	-- Both BrainrotModel (server) and PlacementController ghost (client) read this
+	-- so they always agree on size. Tune here, never inline.
+	BRAINROT_FOOTPRINT_RATIO = 0.72,
 }
 
 table.freeze(PlotConfig)

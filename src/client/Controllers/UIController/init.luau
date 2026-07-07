@@ -9,7 +9,11 @@
 	the Brainrot roster from the shared registry and routes card clicks to
 	PlacementController, mirroring the selection back into the card highlight.
 
-	Milestones 3-4, 15.
+	Milestone 3 added the coin counter (authoritative balance from CoinsUpdated,
+	seeded by the RequestState pull). Milestone 4 adds the Shop panel. Milestone 8
+	adds the Level panel (current level, Start button, progress bar, bottom-right).
+
+	Milestones 3-4, 8, 15.
 ]]
 
 local Players = game:GetService("Players")
@@ -17,9 +21,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
+local Constants = require(Shared.Constants)
 local Logger = require(Shared.Utilities.Logger)
 
 local Shop = require(script.Shop)
+local Level = require(script.Level)
 local PlacementController = require(script.Parent.PlacementController)
 
 local UIController = {}
@@ -30,6 +36,7 @@ local log = Logger.new(UIController.Name)
 local localPlayer = Players.LocalPlayer
 local amountLabel: TextLabel? = nil
 local shop: Shop.Shop? = nil
+local levelPanel: Level.LevelPanel? = nil
 local selectedId: string? = nil
 
 local function buildCoinCounter(): TextLabel
@@ -99,9 +106,26 @@ local function buildShop(): Shop.Shop
 	end)
 end
 
+local function buildLevelPanel(): Level.LevelPanel
+	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local mainUI = playerGui:WaitForChild("MainUI")
+	local frame = mainUI:WaitForChild("LevelUI") :: Frame
+	return Level.new(frame)
+end
+
+local function applyLevelState(state: { [string]: any }?)
+	if levelPanel and type(state) == "table" then
+		levelPanel:applyState(state)
+	end
+	if type(state) == "table" and type(state.phase) == "string" then
+		PlacementController.setPlacementAllowed(state.phase == Constants.PHASE.Active)
+	end
+end
+
 function UIController.init()
 	amountLabel = buildCoinCounter()
 	shop = buildShop()
+	levelPanel = buildLevelPanel()
 end
 
 function UIController.start()
@@ -109,8 +133,12 @@ function UIController.start()
 		setBalance(amount)
 	end)
 
-	-- Keep the Shop highlight in sync with placement mode (which can also be
-	-- cancelled by right-click / Esc handled in PlacementController).
+	Remotes.getEvent("LevelStateChanged").OnClientEvent:Connect(function(state: unknown)
+		if type(state) == "table" then
+			applyLevelState(state)
+		end
+	end)
+
 	PlacementController.selectionChanged:Connect(function(id: string?)
 		selectedId = id
 		if shop then
@@ -124,6 +152,9 @@ function UIController.start()
 	end)
 	if ok and type(state) == "table" and type(state.coins) == "number" then
 		setBalance(state.coins)
+	end
+	if ok and type(state) == "table" and type(state.level) == "table" then
+		applyLevelState(state.level)
 	end
 
 	log:info("started")

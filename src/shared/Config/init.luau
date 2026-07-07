@@ -16,6 +16,9 @@ local Config = {
 	Economy = require(script.EconomyConfig),
 	Level = require(script.LevelConfig),
 	Plot = require(script.PlotConfig),
+	Brainrot = require(script.BrainrotConfig),
+	Monster = require(script.MonsterConfig),
+	Combat = require(script.CombatConfig),
 }
 
 table.freeze(Config)

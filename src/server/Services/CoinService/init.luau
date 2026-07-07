@@ -22,11 +22,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local EconomyConfig = require(Shared.Config.EconomyConfig)
-local PlotConfig = require(Shared.Config.PlotConfig)
 local Remotes = require(Shared.Remotes)
+local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
+local GridUtil = require(Shared.Utilities.GridUtil)
 
 local GroundCoin = require(script.GroundCoin)
+local GridService = require(script.Parent.GridService)
 local PlotService = require(script.Parent.PlotService)
 
 local CoinService = {}
@@ -44,8 +46,51 @@ local balances: { [number]: number } = {}
 local groundCoins: { [string]: GroundCoinEntry } = {}
 local nextCoinId = 0
 
+local COIN_Y_OFFSET = 1.5
+
 local function fireBalance(player: Player)
 	Remotes.getEvent("CoinsUpdated"):FireClient(player, balances[player.UserId] or 0)
+end
+
+local function coinsFolder(plotModel: Model): Folder
+	local folder = plotModel:FindFirstChild("Coins")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Coins"
+		folder.Parent = plotModel
+	end
+	return folder :: Folder
+end
+
+local function removeCoin(coinId: string)
+	local entry = groundCoins[coinId]
+	if not entry then
+		return
+	end
+	groundCoins[coinId] = nil
+	entry.part:Destroy()
+end
+
+local function spawnGroundCoin(plotModel: Model, ownerUserId: number, topCenter: Vector3, value: number)
+	nextCoinId += 1
+	local coinId = string.format("Coin_%d", nextCoinId)
+	local part = GroundCoin.create(
+		coinId,
+		ownerUserId,
+		value,
+		topCenter + Vector3.new(0, COIN_Y_OFFSET, 0),
+		coinsFolder(plotModel)
+	)
+
+	groundCoins[coinId] = {
+		part = part,
+		ownerUserId = ownerUserId,
+		value = value,
+	}
+
+	task.delay(EconomyConfig.GROUND_COIN_LIFETIME, function()
+		removeCoin(coinId)
+	end)
 end
 
 -- ===== Public API (used by other services) =====
@@ -75,67 +120,107 @@ function CoinService.trySpend(player: Player, amount: number): boolean
 	return true
 end
 
--- ===== Ground coins =====
-
-local function coinsFolder(plotModel: Model): Folder
-	local folder = plotModel:FindFirstChild("Coins")
-	if not folder then
-		folder = Instance.new("Folder")
-		folder.Name = "Coins"
-		folder.Parent = plotModel
-	end
-	return folder :: Folder
+-- Resets a player's balance to the campaign starting amount (e.g. after clearing
+-- a level). Pushes CoinsUpdated.
+function CoinService.resetBalance(player: Player)
+	balances[player.UserId] = EconomyConfig.STARTING_COINS
+	fireBalance(player)
 end
 
-local function removeCoin(coinId: string)
-	local entry = groundCoins[coinId]
-	if not entry then
+-- Removes all uncollected ground coins on a plot.
+function CoinService.clearPlot(plotModel: Model)
+	local toRemove: { string } = {}
+	for coinId, entry in groundCoins do
+		if entry.part:IsDescendantOf(plotModel) then
+			table.insert(toRemove, coinId)
+		end
+	end
+	for _, coinId in toRemove do
+		removeCoin(coinId)
+	end
+end
+
+-- Spawns a collectible ground coin on a grid tile for a player (e.g. Brainrot
+-- coin generation). Server-authoritative value; always resolves via GridService.
+function CoinService.dropCoinForOwner(
+	ownerUserId: number,
+	gridPosition: Types.GridPosition,
+	value: number
+)
+	if value <= 0 or not GridUtil.isInBounds(gridPosition) then
 		return
 	end
-	groundCoins[coinId] = nil
-	entry.part:Destroy()
-end
 
--- Spawns one collectible coin somewhere on the player's play area.
-local function dropCoin(player: Player)
+	local player = Players:GetPlayerByUserId(ownerUserId)
+	if not player then
+		return
+	end
+
+	local LevelService = require(script.Parent.LevelService)
+	if not LevelService.isLevelActive(player) then
+		return
+	end
+
 	local plot = PlotService.getPlot(player)
 	if not plot then
 		return
 	end
 
-	local spawner = plot.base:FindFirstChild("CoinSpawner")
-	if not spawner or not spawner:IsA("Attachment") then
+	local topCenter = GridService.getWorldPosition(plot.model, gridPosition)
+	if not topCenter then
 		return
 	end
 
-	-- Random point within the grid footprint (kept slightly inside the edges).
-	local origin = spawner.WorldPosition
-	local spreadX = (PlotConfig.GRID_WIDTH / 2) * 0.85
-	local spreadZ = (PlotConfig.GRID_DEPTH / 2) * 0.85
-	local offsetX = (math.random() * 2 - 1) * spreadX
-	local offsetZ = (math.random() * 2 - 1) * spreadZ
-	local position = origin + Vector3.new(offsetX, 0, offsetZ)
+	spawnGroundCoin(plot.model, ownerUserId, topCenter, value)
+end
 
-	nextCoinId += 1
-	local coinId = string.format("Coin_%d", nextCoinId)
-	local part = GroundCoin.create(
-		coinId,
-		player.UserId,
-		EconomyConfig.PASSIVE_DROP_AMOUNT,
-		position,
-		coinsFolder(plot.model)
-	)
+-- Spawns a coin on a random grid tile within the owner's plot.
+function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number)
+	if value <= 0 then
+		return
+	end
 
-	groundCoins[coinId] = {
-		part = part,
-		ownerUserId = player.UserId,
-		value = EconomyConfig.PASSIVE_DROP_AMOUNT,
-	}
+	local player = Players:GetPlayerByUserId(ownerUserId)
+	if not player then
+		return
+	end
 
-	-- Despawn if left uncollected.
-	task.delay(EconomyConfig.GROUND_COIN_LIFETIME, function()
-		removeCoin(coinId)
-	end)
+	local LevelService = require(script.Parent.LevelService)
+	if not LevelService.isLevelActive(player) then
+		return
+	end
+
+	local plot = PlotService.getPlot(player)
+	if not plot then
+		return
+	end
+
+	local topCenter = GridService.getRandomWorldPosition(plot.model)
+	if not topCenter then
+		return
+	end
+
+	spawnGroundCoin(plot.model, ownerUserId, topCenter, value)
+end
+
+-- Spawns one collectible coin on a random grid tile within the player's plot.
+local function dropCoin(player: Player)
+	local LevelService = require(script.Parent.LevelService)
+	if not LevelService.isLevelActive(player) then
+		return
+	end
+
+	local plot = PlotService.getPlot(player)
+	if not plot then
+		return
+	end
+
+	local topCenter = GridService.getRandomWorldPosition(plot.model)
+	if not topCenter then
+		return
+	end
+
+	spawnGroundCoin(plot.model, player.UserId, topCenter, EconomyConfig.PASSIVE_DROP_AMOUNT)
 end
 
 -- Validates a client collection intent before crediting. Untrusted input.
@@ -182,11 +267,6 @@ local function onPlayerRemoving(player: Player)
 end
 
 function CoinService.init()
-	-- Answer the initial state pull so a freshly loaded client gets its balance
-	-- without racing the join-time CoinsUpdated push.
-	Remotes.getFunction("RequestState").OnServerInvoke = function(player: Player)
-		return { coins = CoinService.getBalance(player) }
-	end
 end
 
 function CoinService.start()

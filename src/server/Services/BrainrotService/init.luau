@@ -20,8 +20,7 @@
 	frees the tile, and destroys the model. Digging up a Brainrot is NOT
 	refunded — the coins spent placing it are lost.
 
-	Milestone 4 (placement + lifecycle). Attack / coin-generation behavior is
-	added in Milestones 5-7; placed instances currently just hold state.
+	Milestone 5 (placement, lifecycle, and behavior tick).
 ]]
 
 local Players = game:GetService("Players")
@@ -35,9 +34,11 @@ local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
 
 local BrainrotModel = require(script.BrainrotModel)
+local BrainrotBehavior = require(script.BrainrotBehavior)
 local PlotService = require(script.Parent.PlotService)
 local GridService = require(script.Parent.GridService)
 local CoinService = require(script.Parent.CoinService)
+local CombatService = require(script.Parent.CombatService)
 
 local BrainrotService = {}
 BrainrotService.Name = "BrainrotService"
@@ -46,15 +47,7 @@ local log = Logger.new(BrainrotService.Name)
 
 local BRAINROTS_FOLDER = "Brainrots"
 
-type Placement = {
-	instanceId: string,
-	brainrotId: string,
-	ownerUserId: number,
-	plotModel: Model,
-	position: Types.GridPosition,
-	model: Model,
-	health: number,
-}
+type Placement = BrainrotBehavior.RuntimePlacement
 
 -- instanceId -> placement (single source of runtime placement state).
 local placements: { [string]: Placement } = {}
@@ -92,14 +85,41 @@ end
 
 -- Tears down a placement: destroys the model, frees its tile, drops state.
 local function destroyPlacement(placement: Placement)
+	BrainrotBehavior.unregister(placement)
 	placements[placement.instanceId] = nil
 	GridService.release(placement.plotModel, placement.position)
 	placement.model:Destroy()
 end
 
+local function applyBrainrotDamage(instanceId: string, hits: number): boolean
+	local placement = placements[instanceId]
+	if not placement then
+		return false
+	end
+
+	placement.health = math.max(0, placement.health - hits)
+	local maxHits = placement.definition.health
+	placement.model:SetAttribute("HitsRemaining", placement.health)
+	placement.model:SetAttribute(
+		"Health",
+		math.floor(placement.definition.maxHealth * placement.health / maxHits)
+	)
+
+	if placement.health <= 0 then
+		destroyPlacement(placement)
+		return true
+	end
+	return false
+end
+
 -- ===== Remote handlers (untrusted input) =====
 
 local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition: unknown)
+	local LevelService = require(script.Parent.LevelService)
+	if not LevelService.isLevelActive(player) then
+		return
+	end
+
 	if type(brainrotId) ~= "string" then
 		return
 	end
@@ -161,7 +181,18 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		position = position,
 		model = model,
 		health = definition.health,
+		definition = definition,
+		cooldownRemaining = definition.attackInterval,
+		frozenUntil = 0,
+		poisonUntil = 0,
+		poisonHitsPerTick = 0,
+		poisonNextTick = 0,
+		burnUntil = 0,
+		burnHitsPerTick = 0,
+		burnNextTick = 0,
 	}
+
+	BrainrotBehavior.register(placements[instanceId])
 end
 
 local function onRemoveBrainrot(player: Player, rawPosition: unknown)
@@ -215,13 +246,71 @@ function BrainrotService.getPlacements(plotModel: Model): { Placement }
 	return result
 end
 
+function BrainrotService.getPlacement(instanceId: string): Placement?
+	return placements[instanceId]
+end
+
+-- Removes every Brainrot on a plot and frees its tiles (level end / reset).
+function BrainrotService.clearPlot(plotModel: Model)
+	local toRemove: { Placement } = {}
+	for _, placement in placements do
+		if placement.plotModel == plotModel then
+			table.insert(toRemove, placement)
+		end
+	end
+	for _, placement in toRemove do
+		destroyPlacement(placement)
+	end
+end
+
+local function applyBrainrotStatus(
+	instanceId: string,
+	kind: Types.StatusEffectKind,
+	duration: number,
+	magnitude: number?
+)
+	local placement = placements[instanceId]
+	if not placement then
+		return
+	end
+
+	local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
+	local now = os.clock()
+	if kind == "Stun" or kind == "Freeze" then
+		placement.frozenUntil = math.max(placement.frozenUntil, now + duration)
+		return
+	end
+
+	if kind == "Poison" or kind == "Burn" then
+		local percent = magnitude or 2
+		local tickDamage = math.max(1, math.ceil(placement.definition.maxHealth * percent / 100))
+		local hitsPerTick = math.max(
+			1,
+			math.ceil(tickDamage / (placement.definition.maxHealth / placement.definition.health))
+		)
+		if kind == "Poison" then
+			placement.poisonUntil = math.max(placement.poisonUntil, now + duration)
+			placement.poisonHitsPerTick = hitsPerTick
+			placement.poisonNextTick = now + CombatConfig.POISON_TICK_INTERVAL
+		else
+			placement.burnUntil = math.max(placement.burnUntil, now + duration)
+			placement.burnHitsPerTick = hitsPerTick
+			placement.burnNextTick = now + CombatConfig.BURN_TICK_INTERVAL
+		end
+	end
+end
+
 function BrainrotService.init()
+	BrainrotBehavior.setDestroyHandler(destroyPlacement)
+	CombatService.setBrainrotDamageHandler(applyBrainrotDamage)
+	CombatService.setBrainrotStatusHandler(applyBrainrotStatus)
 end
 
 function BrainrotService.start()
 	Remotes.getEvent("PlaceBrainrot").OnServerEvent:Connect(onPlaceBrainrot)
 	Remotes.getEvent("RemoveBrainrot").OnServerEvent:Connect(onRemoveBrainrot)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
+	BrainrotBehavior.start()
 
 	log:info("started")
 end

@@ -11,7 +11,7 @@
 	BrainrotId / OwnerUserId / Row / Column / Health) and the Brainrot tag, so
 	clients and later combat/save systems can resolve it without extra remotes.
 
-	Milestone 4 (visual + identity only; attack/coin behavior arrives M5-7).
+	Milestone 5 (visual + identity; behavior driven by BrainrotBehavior).
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -24,9 +24,8 @@ local Types = require(Shared.Types)
 
 local BrainrotModel = {}
 
--- Body footprint as a fraction of a tile, and how tall the unit stands.
-local FOOTPRINT_RATIO = 0.72
 local BODY_HEIGHT = 6
+local WALL_HEIGHT = 10
 local DEFAULT_COLOR = Color3.fromRGB(180, 140, 220)
 
 -- Builds a placed Brainrot at `topCenter` (the top-center of its tile). Returns
@@ -39,15 +38,18 @@ function BrainrotModel.create(
 	topCenter: Vector3,
 	parent: Instance
 ): Model
-	local footprint = PlotConfig.TILE_SIZE * FOOTPRINT_RATIO
+	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
+	local isWall = definition.ability == "Wall"
+	local bodyHeight = if isWall then WALL_HEIGHT else BODY_HEIGHT
+	local bodyFootprint = if isWall then footprint * 1.05 else footprint
 
 	local model = Instance.new("Model")
 	model.Name = string.format("%s_%s", definition.id, instanceId)
 
 	local body = Instance.new("Part")
 	body.Name = "Body"
-	body.Size = Vector3.new(footprint, BODY_HEIGHT, footprint)
-	body.Position = topCenter + Vector3.new(0, BODY_HEIGHT / 2, 0)
+	body.Size = Vector3.new(bodyFootprint, bodyHeight, bodyFootprint)
+	body.Position = topCenter + Vector3.new(0, bodyHeight / 2, 0)
 	body.Anchored = true
 	body.Locked = true
 	body.CanCollide = false
@@ -64,7 +66,9 @@ function BrainrotModel.create(
 	model:SetAttribute("OwnerUserId", ownerUserId)
 	model:SetAttribute("Row", position.row)
 	model:SetAttribute("Column", position.column)
-	model:SetAttribute("Health", definition.health)
+	model:SetAttribute("MaxHealth", definition.maxHealth)
+	model:SetAttribute("HitsRemaining", definition.health)
+	model:SetAttribute("Health", definition.maxHealth)
 	CollectionService:AddTag(model, Constants.TAGS.Brainrot)
 
 	model.Parent = parent

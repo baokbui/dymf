@@ -164,6 +164,37 @@ function GridService.getWorldPosition(plotModel: Model, position: Types.GridPosi
 	return record.part.Position + Vector3.new(0, record.part.Size.Y / 2, 0)
 end
 
+-- World position at a fractional column on a row (for monster movement).
+function GridService.getWorldPositionAtColumn(plotModel: Model, row: number, column: number): Vector3?
+	local tiles = grids[plotModel]
+	if not tiles then
+		return nil
+	end
+
+	local base = plotModel.PrimaryPart
+	local anchor = base and base:FindFirstChild("GridCenter")
+	if not anchor or not anchor:IsA("Attachment") then
+		return nil
+	end
+
+	local dims = GridUtil.dimensions()
+	local centerWorld = anchor.WorldPosition
+	local cornerX = centerWorld.X - dims.X / 2
+	local cornerZ = centerWorld.Z - dims.Z / 2
+	local tileY = centerWorld.Y + GridConfig.TILE_Y_OFFSET + GridConfig.TILE_HEIGHT / 2
+	local size = PlotConfig.TILE_SIZE
+
+	local x = cornerX + (column - 0.5) * size
+	local z = cornerZ + (row - 0.5) * size
+	return Vector3.new(x, tileY, z)
+end
+
+-- Top-center of a random grid tile on the plot (for passive coin drops).
+function GridService.getRandomWorldPosition(plotModel: Model): Vector3?
+	local position = GridUtil.randomPosition()
+	return GridService.getWorldPosition(plotModel, position)
+end
+
 -- Reserves a tile. Returns false if the tile is unknown, out of bounds, or
 -- already occupied. Server-authoritative gate used by placement (Milestone 4).
 function GridService.tryOccupy(plotModel: Model, position: Types.GridPosition, brainrotInstanceId: string): boolean

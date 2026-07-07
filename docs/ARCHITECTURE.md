@@ -82,8 +82,8 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         PlotService/      (init + Plot + PlotBuilder)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
-        BrainrotService/  (init + BrainrotModel — placement & lifecycle)
-        EnemyService/
+        BrainrotService/  (init + BrainrotModel, BrainrotBehavior, Abilities, BrainrotFeedback)
+        EnemyService/     (init + MonsterModel, MonsterBehavior, Abilities, MonsterFeedback)
         CombatService/
         LevelService/
         SaveService/
@@ -96,6 +96,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary/secondary intent signals)
+        BrainrotController/ (BrainrotAction sound feedback)
 
 Workspace/
     Plots/        plot models are generated here at runtime
@@ -180,19 +181,22 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 
 `PlotService` owns player battlefields:
 
-- The world floor is one shared grass baseplate; plots are **lanes** of it,
-  tiled in a `LANE_COLUMNS` × `LANE_ROWS` grid and divided by clear glass
-  barriers. The pool is sized to fill the baseplate (`BASEPLATE_SIZE` /
-  `POOL_MARGIN` in `PlotConfig`): usable area split across columns (X length)
-  and rows (Z). Default: 12 plots as 2 columns × 6 rows.
-- **PlotBuilder** procedurally builds each lane from `PlotConfig`: an invisible,
-  non-colliding `Base` (region origin + future placement raycast target), a
-  `Barriers` folder (clear glass `CanCollide` walls — North/South divide lanes,
-  West/East are the field edges), a `SpawnLocation` at the play area's left edge
-  facing the enemy (+X), `HouseAnchor` (−X, behind player) / `EnemySpawn` (+X) /
+- The world floor is one shared grass baseplate; **player plots** tile the west
+  column in `LANE_ROWS` stacked lanes, divided by clear glass barriers. The east
+  column holds **enemy-spawn lanes** (`EnemySpawnBuilder`) aligned with each
+  player row — no player grids on that side. The pool is sized to fill the
+  baseplate (`BASEPLATE_SIZE` / `POOL_MARGIN` in `PlotConfig`): usable area
+  split across `MAP_COLUMNS` (west = plots, east = enemy spawn) and `LANE_ROWS`.
+  Default: 6 player plots + 6 enemy lanes (6 rows × 2 columns).
+- **PlotBuilder** procedurally builds each player lane from `PlotConfig`: an
+  invisible, non-colliding `Base` (region origin + future placement raycast
+  target), a `Barriers` folder (clear glass `CanCollide` walls — North/South
+  divide lanes, West/East are the field edges), a `SpawnLocation` at the play
+  area's left edge facing the enemy (+X), `HouseAnchor` (−X, behind player) /
   `CoinSpawner` attachment markers, and empty `Grid` / `Path` / `Decorations`
-  folders. Lane layout left→right: house zone, play area (grid), enemy
-  zone.
+  folders. Lane layout left→right: house zone, play area (grid). Monsters stage
+  in the matching east-column `EnemyLane` (`EnemySpawn` attachment at its west
+  edge).
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
   clears dynamic folders; plots are reused, never destroyed).
 - **PlotService** builds a fixed pool of `MAX_PLOTS` lanes at startup, tiled in
@@ -204,7 +208,8 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 - **CameraController** intentionally leaves the default Roblox third-person
   camera in place (scroll to first person).
 
-Public API: `PlotService.getPlot(player)`, `PlotService.getPlotModel(player)`.
+Public API: `PlotService.getPlot(player)`, `PlotService.getPlotModel(player)`,
+`PlotService.getEnemyLane(rowIndex)`, `PlotService.getEnemyLaneForPlot(plot)`.
 
 ### Milestone 2 — Grid System ✅
 
@@ -233,8 +238,9 @@ Full details in `ECONOMY.md` / `NETWORKING.md`. Summary:
 - **CoinService** (server, authoritative) owns every balance. It grants passive
   drops as collectible ground coins on each player's plot, validates
   `CollectCoin` intents (ownership / existence / distance) before crediting, and
-  pushes `CoinsUpdated`. It answers `RequestState` with the balance and exposes
-  `getBalance` / `addCoins` / `trySpend` for other services (level rewards,
+  pushes `CoinsUpdated`. `LevelService` answers `RequestState` with coins and
+  level state; `CoinService` exposes
+  `getBalance` / `resetBalance` / `trySpend` for other services (level resets,
   placement costs). Coin parts are built by `CoinService/GroundCoin.luau`.
 - **CoinController** (client) detects the local player touching their own coins
   and fires the `CollectCoin` intent — no balance logic.
@@ -268,6 +274,90 @@ Full details in `NETWORKING.md` / `UI.md` / `BRAINROTS.md`. Summary:
 Dependency direction (no cycles): `UIController → PlacementController →
 {GridController, InputController}`; `BrainrotService → {PlotService, GridService,
 CoinService}`.
+
+The Shop is a **PvZ-style horizontal bar** docked to the top of the screen. Each
+Brainrot is a portrait card (swatch → name → cost). Layout constants live in
+`UIController/Shop.luau`; the ghost footprint is `PlotConfig.BRAINROT_FOOTPRINT_RATIO`
+(shared by `BrainrotModel` and `PlacementController`).
+
+### Milestone 5 — Brainrot Framework ✅
+
+Full details in `BRAINROTS.md`. Summary:
+
+- **`Shared.Brainrots`** — seven data-driven roster entries (replaces the M4
+  Shooter / Money Generator placeholders). Stats use hit-based health, tile
+  range, and `attackInterval` (seconds between actions).
+- **`Shared.Config.BrainrotConfig`** — global knobs (`FULL_LINE_RANGE`,
+  `BEHAVIOR_TICK`, attack pulse, sound keys).
+- **`BrainrotService/Abilities/`** — one handler module per ability id;
+  `BrainrotBehavior` resolves handlers from `definition.ability`.
+- **`BrainrotBehavior`** — server tick loop for cooldowns; calls `tryAct` /
+  `onPlaced`; routes combat through `CombatService`, coins through
+  `CoinService.dropCoinForOwner`.
+- **`BrainrotFeedback`** — replicated attack pulse tween on the model body.
+- **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
+  pushes (gameplay stays server-side).
+- **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
+  Full combat: projectiles, target acquisition, status effects, health bars (M7).
+
+### Milestone 6 — Monster Framework ✅
+
+Full details in `MONSTERS.md`. Summary:
+
+- **`Shared.Monsters`** — eleven data-driven entries (replaces BasicMonster).
+  Movement uses `secondsPerGrid`; attacks use `attackInterval`.
+- **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, dev test spawns.
+- **`EnemyService`** — `spawn`, `MonsterBehavior` grid movement, attack-on-tile,
+  `Abilities/` handlers (Orc one-shot, Spider jump, Necromancer summon, …).
+- **`MonsterModel`** / **`MonsterFeedback`** — replicated body + attack pulse.
+- **`CombatService`** — wired to `EnemyService` for `damageMonster`, row queries,
+  and status effects.
+- **`GridService.getWorldPositionAtColumn`** — fractional column positioning.
+- Opening levels now spawn **Zombie**. `MonsterConfig.DEV_SPAWN` sends test
+  zombies in Studio until **Milestone 8** (`LevelService`).
+
+### Milestone 7 — Combat System ✅
+
+Full details in `COMBAT.md`. Summary:
+
+- **`Shared.Config.CombatConfig`** — projectile speed, DoT ticks, health bar layout.
+- **`CombatService`** — `attackFirstInRow`, `attackInRow`, `dealEntireRowDamage`,
+  `launchProjectile`, status APIs; `Projectile` submodule.
+- **`EnemyService/MonsterStatus`** — Slow / Poison / Burn / Knockback on monsters.
+- **`CombatController`** + **`HealthBarController`** (client) — visuals only.
+- **`CombatVisual`** remote — plot-owner feedback for hits and deaths.
+
+### Milestone 8 — Level System ✅
+
+Full details in `LEVELS.md`. Summary:
+
+- **`LevelService`** — preparation → Start Level → countdown → active spawn
+  groups via `LevelRun` scheduler; victory/defeat; plot + coin reset on victory;
+  `LevelStateChanged` remote.
+- **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
+- **`UIController/Level.luau`** — bottom-right level title, Start button, progress bar, big-wave banner.
+- **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
+- **`MonsterConfig.DEV_SPAWN.ENABLED = false`** — campaign spawns replace dev waves.
+
+### Design pivot — Level System (replaces Wave System)
+
+The game uses a **PvZ-style campaign** of discrete authored levels rather than an
+endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
+
+- **`Shared.Levels`** — data-driven campaign level registry (mirrors
+  `Brainrots`/`Monsters`). Each `LevelDefinition` contains an ordered list of
+  `SpawnGroup` entries (the internal "waves"). `LevelService` reads these; code
+  never branches on level numbers.
+- **`Shared.Config.LevelConfig`** — global pacing knobs (preparation time,
+  countdown, big-wave warning, spawn interval defaults). Per-level content lives
+  in the registry, not here.
+- **`Shared.Types`** — added `SpawnGroup`, `LevelDefinition`. `SaveData` now
+  carries `currentLevel` + `highestLevel` (replaces `currentWave`).
+- **`Shared.Constants.PHASE`** — extended with `Victory` and `Defeat`.
+- **`Shared.Remotes`** — `StartWave`/`WaveStateChanged` → `StartLevel`/
+  `LevelStateChanged`; new `SelectLevel` (level-select replay, M14).
+- **`LevelService`** (server stub replaced) ✅ M8 — full campaign loop.
+- **`MainUI.LevelUI`** (frame scaffold) replaces `WaveUI`.
 
 ---
 

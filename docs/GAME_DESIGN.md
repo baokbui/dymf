@@ -4,9 +4,9 @@
 
 Brainrots vs. Monsters (BVM) is a 3D Roblox tower defense game inspired by Plants vs. Zombies.
 
-Each player owns a separate battlefield where they defend against progressively harder monster levels by placing Brainrots on a grid. Players earn coins, purchase Brainrots, combine them into stronger variants, and progress through an increasingly difficult campaign of levels.
+Each player owns a separate battlefield where they defend against progressively harder monster levels by placing Brainrots on a grid. Players earn coins, purchase Brainrots, and progress through an increasingly difficult campaign of levels.
 
-Unlike traditional PvZ, player progress is persistent across sessions.
+Unlike traditional PvZ, player progress is persistent across sessions (🔜 Milestone 9 — save/load).
 
 ---
 
@@ -66,16 +66,29 @@ Preparation Phase
 
 # Battlefield
 
-Every player receives their own isolated plot.
+The world is one shared grass baseplate. The playable area is split into two
+side-by-side columns along X:
 
-Each plot contains:
+```
+[ west: player plots (6 lanes) ] [ east: enemy spawn lanes (6 lanes) ]
+```
 
-- Grid
-- Monster Path
-- Spawn Point
-- Coin Spawner
-- Decorations
-- Invisible Barriers
+Every player receives their own **isolated plot** in the west column (one lane
+per row, up to six concurrent players). The matching row in the east column is
+that plot's **enemy spawn lane** — monsters stage there and enter the player's
+grid from +X. There are no player grids in the east column.
+
+Each player plot contains:
+
+- Grid (5 × 9 tiles — see Grid System)
+- Spawn point (player respawns here, facing the enemy)
+- House anchor (behind the grid, −X — for future house-breach defeat)
+- Coin spawner marker (passive drop origin)
+- Path / Decorations folders (populated in later milestones)
+- Clear glass barriers (north/south between lanes; west edge of map; east side
+  open toward the adjacent enemy lane)
+
+`Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane6`).
 
 Players cannot enter or interact with another player's plot.
 
@@ -83,11 +96,16 @@ Players cannot enter or interact with another player's plot.
 
 # Grid System
 
-Each tile contains:
+Each plot's play area is a **5 rows × 9 columns** lawn (configured in
+`Shared.Config.GridConfig`). Columns run toward the enemy (+X); rows run across
+the lane (Z). Tile size is derived in `PlotConfig` so the grid fills the lane
+depth.
+
+Each tile tracks:
 
 - Occupied
-- Brainrot Instance
-- Grid Position
+- Brainrot instance (if any)
+- Grid position (`row`, `column`)
 
 Rules
 
@@ -95,6 +113,8 @@ Rules
 - Cannot plant outside grid
 - Cannot plant without enough coins
 - Server validates every placement
+
+See `GRID.md` for implementation details.
 
 ---
 
@@ -104,9 +124,9 @@ Currency: Coins
 
 Coins are earned by:
 
-- Passive drops (every ~30 seconds)
-- Money-producing Brainrots
-- Completing levels
+- Passive drops (every ~30 seconds) ✅
+- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 12s) ✅
+- Completing levels 🔜 Milestone 8
 - Future achievements/events
 
 Only the server controls currency.
@@ -115,21 +135,28 @@ Only the server controls currency.
 
 # Brainrots
 
-Each Brainrot defines:
+Brainrots are data-driven defensive units. Definitions live in
+`Shared.Brainrots`; behavior is resolved from definition data and ability
+handlers — never from giant if/elseif chains on names.
 
-- Name
-- Cost
-- Health
-- Damage
-- Attack Speed
-- Range
-- Ability
-- Animations
-- Sounds
+Each Brainrot defines (see `BRAINROTS.md` for the full schema):
 
-Brainrots are data-driven.
+- Name, cost
+- Max health (HP pool for display) and health (hits the unit can take)
+- Damage (per attack — e.g. 100 one-shots a 100-HP Basic Monster)
+- Attack interval (seconds between actions)
+- Range (tiles ahead toward +X, or full row)
+- Ability (handler id — coin generation, melee, freeze, line bomb, wall, …)
+- Optional coin generation, ability params, on-place triggers
+- Visual tint (placement ghost + body)
 
-Behavior should never be hardcoded into giant if-statements.
+**Current roster (Milestone 5 ✅):** Ballerina Cappucina, Tung Tung Sahur,
+Tralalero Tralala, Bombardino Crocodilo, Lirili Larila, Cappuccino Assassino,
+Chimpanzini Bananini.
+
+Attack animations use a server-side pulse tween today; sound hooks exist via the
+`BrainrotAction` remote (asset ids wired in `BrainrotConfig.SOUNDS`). Full rig
+animations and final audio arrive in later polish milestones.
 
 ---
 
@@ -306,87 +333,62 @@ Reset should require confirmation.
 
 # Folder Structure
 
-ReplicatedStorage
+Source lives under `src/` and syncs via Rojo. See `ARCHITECTURE.md` for the
+full mapping and lifecycle.
 
-    Shared
-        Config
-        Constants
-        Types
-        Utilities
-        Brainrots
-        Monsters
-        Levels
-        Remotes
+```
+ReplicatedStorage/Shared/
+    Config/        Grid, Economy, Level, Plot, Brainrot + aggregator
+    Constants/     save version, tags, phases, folder names
+    Types/         shared Luau types
+    Utilities/     Logger, GridUtil
+    Brainrots/     data-driven Brainrot registry
+    Monsters/      data-driven Monster registry
+    Levels/        data-driven campaign level registry
+    Remotes/       single network boundary
 
-ServerScriptService
+ServerScriptService/Server/
+    Services/
+        PlotService/      plots + enemy-spawn lanes
+        GridService/      tile grid + occupancy
+        CoinService/      currency + ground coins
+        BrainrotService/  placement, lifecycle, behavior
+        CombatService/    damage + status (monsters stubbed until M6–7)
+        EnemyService/     🔜 Milestone 6
+        LevelService/     🔜 Milestone 8
+        SaveService/      🔜 Milestone 9
 
-    Services
-        PlotService
-        LevelService
-        CombatService
-        CoinService
-        EnemyService
-        BrainrotService
-        SaveService
+StarterPlayerScripts/Client/Controllers/
+    UIController/         Shop, coin counter
+    PlacementController/  selection, ghost, place/remove intent
+    GridController/       hover highlight
+    CoinController/       ground-coin pickup intent
+    BrainrotController/   action sound feedback
+    InputController/      primary/secondary intent
+    CameraController/     default third-person
 
-StarterPlayer
+StarterGui/MainUI/
+    Shop, Coins, LevelUI, Settings
 
-    StarterPlayerScripts
-
-        Controllers
-            UIController
-            PlacementController
-            CameraController
-            InputController
-
-StarterGui
-
-    MainUI
-        Shop
-        Coins
-        LevelUI
-        Settings
-
-Workspace
-
-    Plots
-    EnemyPaths
-    Maps
+Workspace/
+    Plots/        player plot models (runtime)
+    EnemyPaths/   enemy-spawn lanes (runtime)
+    Maps/
+```
 
 ---
 
 # Development Order
 
-Phase 1
+See `ROADMAP.md` for milestone status. Summary:
 
-- Rojo
-- Folder structure
-- Plot system
-- Placement
-- Coin system
+**Phase 1 ✅** — Rojo, folder structure, plots, grid, coins, placement, shop
 
-Phase 2
+**Phase 2 (in progress)** — Brainrot framework ✅ (M5); monsters ✅ (M6); combat ✅
+(M7); levels ✅ (M8); save 🔜 (M9)
 
-- Basic Brainrot
-- Basic Monster
-- Combat
-- Levels
+**Phase 3 🔜** — Save system, progression (M9)
 
-Phase 3
+**Phase 4 🔜** — Additional monsters & bosses (M10)
 
-- Shop UI
-- Save system
-- Progression
-
-Phase 4
-
-- Bosses
-- Special enemies
-
-Phase 5
-
-- Effects
-- Animations
-- Audio
-- Polish
-- Balancing
+**Phase 5 🔜** — Roster expansion, VFX, audio polish, balancing, release (M11–18)

@@ -6,15 +6,16 @@
 
 	The whole world floor is one grass baseplate; plots are lanes of it divided
 	by clear glass barriers. Within a lane, left (-X) -> right (+X) is:
-	house zone, play area (grid), enemy zone. A plot contains:
+	house zone, play area (grid). Enemy staging lives in the east map column
+	(see EnemySpawnBuilder). A plot contains:
 
 		Base           - INVISIBLE, non-colliding region marker (origin + future
 		                 placement raycast target)
 		Barriers       - clear glass containment walls (North/South divide lanes,
-		                 West/East are the field's left/right edges)
+		                 West is the field's left edge; East is open toward the
+		                 adjacent enemy-spawn lane)
 		SpawnLocation  - left edge of the play area, facing the enemy (+X)
 		HouseAnchor    - attachment marking the house spot behind the player (M-later)
-		EnemySpawn     - attachment at the right where monsters enter (M6)
 		CoinSpawner    - attachment at the lane center (M3)
 		GridCenter     - attachment at the play-area center; GridService lays the
 		                 tile grid out from here (M2)
@@ -108,17 +109,13 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addBarrier("North", longSize, groundXZ + Vector3.new(0, wallY, halfD + barrierThickness / 2), barriers)
 	addBarrier("South", longSize, groundXZ + Vector3.new(0, wallY, -(halfD + barrierThickness / 2)), barriers)
 	addBarrier("West", sideSize, groundXZ + Vector3.new(-(halfW + barrierThickness / 2), wallY, 0), barriers)
-	addBarrier("East", sideSize, groundXZ + Vector3.new(halfW + barrierThickness / 2, wallY, 0), barriers)
+	-- East is open toward the adjacent enemy-spawn lane (monsters enter from +X).
 
 	-- Zone X offsets relative to the lane center.
 	local leftEdge = -halfW
 	local playLeftX = leftEdge + PlotConfig.MARGIN_X + PlotConfig.HOUSE_ZONE
-	local playRightX = playLeftX + (PlotConfig.BASE_WIDTH
-		- PlotConfig.MARGIN_X * 2
-		- PlotConfig.HOUSE_ZONE
-		- PlotConfig.ENEMY_ZONE)
+	local playRightX = playLeftX + PlotConfig.GRID_WIDTH
 	local houseCenterX = leftEdge + PlotConfig.MARGIN_X + PlotConfig.HOUSE_ZONE / 2
-	local enemyCenterX = playRightX + PlotConfig.ENEMY_ZONE / 2
 	local playCenterX = (playLeftX + playRightX) / 2
 
 	-- Spawn at the left edge of the play area, facing the enemy (+X). A real
@@ -143,7 +140,6 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 
 	-- Markers for later milestones.
 	addMarker("HouseAnchor", originPosition + Vector3.new(houseCenterX, PlotConfig.SPAWN_HEIGHT, 0), base)
-	addMarker("EnemySpawn", originPosition + Vector3.new(enemyCenterX, PlotConfig.SPAWN_HEIGHT, 0), base)
 	addMarker("CoinSpawner", originPosition + Vector3.new(0, PlotConfig.SPAWN_HEIGHT, 0), base)
 	-- Grid anchor at the play-area center (grass level); GridService builds from here.
 	addMarker("GridCenter", originPosition + Vector3.new(playCenterX, 0, 0), base)

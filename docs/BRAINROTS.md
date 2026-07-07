@@ -25,75 +25,107 @@ Adding a Brainrot = add one data entry to the registry. No code branching.
 
 ---
 
+
+
 ## Definition schema
 
 From `Shared.Types.BrainrotDefinition`:
 
-| Field            | Type                  | Meaning                              |
-| ---------------- | --------------------- | ------------------------------------ |
-| `id`             | string                | Unique key (matches registry key)    |
-| `name`           | string                | Display name                         |
-| `cost`           | number                | Coin cost to place                   |
-| `health`         | number                | Starting health                      |
-| `damage`         | number                | Damage per attack                    |
-| `attackSpeed`    | number                | Attacks per second (0 = non-attacker)|
-| `range`          | number                | Attack range in studs                |
-| `ability`        | string?               | Optional special ability id          |
-| `coinGeneration` | number?               | Coins per cycle for money producers  |
-| `color`          | Color3?               | Placement visual tint (ghost + body) |
+
+| Field             | Type                   | Meaning                                                            |
+| ----------------- | ---------------------- | ------------------------------------------------------------------ |
+| `id`              | string                 | Unique key (matches registry key)                                  |
+| `name`            | string                 | Display name                                                       |
+| `cost`            | number                 | Coin cost to place                                                 |
+| `maxHealth`       | number                 | HP pool (display / health bar)                                     |
+| `health`          | number                 | Hits the Brainrot can take                                         |
+| `damage`          | number                 | Damage per attack (0 for non-attackers)                            |
+| `attackInterval`  | number                 | Seconds between attacks/actions (0 = wall)                         |
+| `rangeTiles`      | number                 | Tiles ahead toward +X; `BrainrotConfig.FULL_LINE_RANGE` = full row |
+| `ability`         | string?                | Ability handler id (`BrainrotService/Abilities`)                   |
+| `coinGeneration`  | number?                | Coins per cycle for producers                                      |
+| `abilityParams`   | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                       |
+| `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb)                        |
+| `color`           | Color3?                | Placement visual tint (ghost + body)                               |
+
+
+Range is measured in **grid tiles** along the lane toward the enemy (+X), not
+studs. `GridUtil.isColumnInRange` is the shared helper.
 
 ---
 
-## Implemented Brainrots ✅
 
-The two Milestone 5 starters are seeded as data and can be **purchased and
-placed** today (Milestone 4). Their **combat/income behavior** (attacking, coin
-generation) is implemented in Milestones 5–7; a placed Brainrot currently just
-holds its state (health, position, owner) as a tinted body on its tile.
 
-### Shooter
+## Roster ✅ (Milestone 5)
 
-| cost | health | damage | attackSpeed | range | ability |
-| ---- | ------ | ------ | ----------- | ----- | ------- |
-| 50   | 100    | 10     | 1/s         | 24    | —       |
 
-Basic single-target attacker. Will fire at the nearest in-range monster via
-`CombatService` (Milestone 7).
+| Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
+| -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
+| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 12s      | —        | Drops coins on random tiles | 25    |
+| Tung Tung Sahur      | 75   | 800 (8)       | 100    | 1s       | Short melee (`meleeReach`) | Melee bat           | —     |
+| Tralalero Tralala    | 175  | 500 (5)       | 100    | 1.5s     | Full row | Bubble trap (1s)    | —     |
+| Bombardino Crocodilo | 350  | — (1)         | 5000   | —        | Full row | Line bomb on place  | —     |
+| Lirili Larila        | 150  | 500 (5)       | 0      | 2.5s     | 2 tiles  | Freeze enemies 1.5s | —     |
+| Cappuccino Assassino | 100  | 500 (5)       | 100    | 1.5s     | Full row | Throw knife         | —     |
+| Chimpanzini Bananini | 50   | 6000 (60)     | 0      | —        | —        | Wall                | —     |
 
-### Money Generator
-
-| cost | health | damage | attackSpeed | range | ability        | coinGeneration |
-| ---- | ------ | ------ | ----------- | ----- | -------------- | -------------- |
-| 75   | 80     | 0      | 0           | 0     | `GenerateCoins`| 25             |
-
-Produces coins on a timer instead of attacking (handled by `CoinService` /
-`BrainrotService` in Milestone 5).
 
 ---
+
+
 
 ## Service ownership
 
-- `BrainrotService` (server) ✅ M4 (placement & lifecycle) / 🔜 M5 (behavior) —
-  owns placement, instance lifecycle, and per-instance state on a plot. Reads
-  definitions from the registry; never branches on names. It handles the
-  `PlaceBrainrot` / `RemoveBrainrot` remotes, reserves tiles through
-  `GridService`, charges through `CoinService` (removal is **not** refunded),
-  builds models via its `BrainrotModel` builder (mirroring the `CoinService`/
-  `GroundCoin` split), and clears a leaving player's instances. Public:
-  `getPlacements(plotModel)`.
-- `CombatService` (server) 🔜 M7 — the only system that applies damage/health.
+- `BrainrotService` (server) ✅ M4 (placement) / ✅ M5 (behavior) — owns
+placement, instance lifecycle, per-instance state, and the behavior tick.
+Ability handlers live in `BrainrotService/Abilities/` and are resolved from
+`definition.ability` (never from names). Placement uses `GridService` +
+`CoinService`; combat intents route through `CombatService`. Models are built
+by `BrainrotModel`. Public: `getPlacements`, `getPlacement`.
+- `CombatService` (server) ✅ M7 — row targeting, projectiles, status effects,
+  target acquisition (first-in-row vs splash vs entire-row). Boss skill polish
+  for Duke Vampire / Goblin King continues in M10.
+- `CoinService` — credits producer output via `dropRandomCoinForOwner` (random grid tile).
 
-Placement validation, cost deduction, and one-Brainrot-per-tile are all
-server-authoritative (see `NETWORKING.md`); removal frees the tile without a
-refund. The placed model is tagged
-`Brainrot` and carries `InstanceId` / `BrainrotId` / `OwnerUserId` / `Row` /
-`Column` / `Health` attributes so later combat/save systems can resolve it.
+Placed models are tagged `Brainrot` with `InstanceId` / `BrainrotId` /
+`OwnerUserId` / `Row` / `Column` / `Health` attributes.
 
 ---
 
+
+
+## Behavior architecture ✅ (Milestone 5)
+
+```
+BrainrotService (placement)
+       │
+       ▼
+BrainrotBehavior (cooldown tick)
+       │
+       ▼
+Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
+       │                 └──►  CoinService (coin drops)
+       └──►  BrainrotFeedback (attack pulse tween)
+       └──►  BrainrotAction remote → client sound (BrainrotController)
+```
+
+- `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
+counts down `attackInterval`, and calls the ability's `tryAct` when ready.
+- `triggersOnPlace` abilities (Bombardino) call `onPlaced` once, then
+destroy the instance.
+- Attackers only reset their cooldown when `tryAct` returns true (e.g. no
+monsters in range). **Coin producers** and **Lirili** always consume their
+cycle when they fire.
+
+Monster targeting uses **first-in-row** acquisition for single-target attacks
+and projectiles (M7). Coin producers and line-bomb placement work independently
+of monster presence rules.
+
+---
+
+
+
 ## Planned roster (Milestone 11)
 
-Target of at least 15 Brainrots. Candidates: Freeze, Fire, Cannon, Wall,
-Electric, Poison, Sniper, Healer, Bomb, Support, Laser, Summoner.
-
-Each is added purely as registry data plus, where needed, an ability handler.
+Expand beyond the initial seven. Each addition is registry data plus an ability
+handler module when needed.

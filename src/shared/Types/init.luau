@@ -14,7 +14,7 @@ export type GridPosition = {
 }
 
 -- Status effects applied through CombatService.
-export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Knockback"
+export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Knockback" | "Stun"
 
 export type StatusEffect = {
 	kind: StatusEffectKind,
@@ -22,30 +22,35 @@ export type StatusEffect = {
 	magnitude: number,
 }
 
--- Data-driven definition for a Brainrot type. Behavior is resolved from data,
--- never from hardcoded if/elseif chains.
+-- Combat: `maxHealth` is the HP pool for UI; `health` is hits the unit can take.
 export type BrainrotDefinition = {
 	id: string,
 	name: string,
 	cost: number,
-	health: number,
-	damage: number,
-	attackSpeed: number, -- attacks per second
-	range: number, -- in studs
-	ability: string?,
-	coinGeneration: number?, -- coins per cycle for money producers
+	maxHealth: number, -- HP pool (display / future health bar)
+	health: number, -- hits the Brainrot can take before destruction
+	damage: number, -- damage per attack (0 for non-attackers)
+	attackInterval: number, -- seconds between attacks/actions (0 = passive wall)
+	rangeTiles: number, -- tiles ahead toward +X; BrainrotConfig.FULL_LINE_RANGE = full row
+	ability: string?, -- ability handler id (resolved by BrainrotService/Abilities)
+	coinGeneration: number?, -- coins per cycle for producers
+	abilityParams: { [string]: number }?, -- per-ability tuning (trap/freeze duration, …)
+	triggersOnPlace: boolean?, -- true = ability fires once on placement (e.g. line bomb)
 	color: Color3?, -- placement visual tint (preview ghost + placed body)
 }
 
--- Data-driven definition for a Monster type (zombie, vampire, slime, ...).
+-- Data-driven definition for a Monster type (zombie, vampire, boss, ...).
 export type MonsterDefinition = {
 	id: string,
 	name: string,
 	health: number,
-	speed: number, -- studs per second
-	damage: number,
-	attackSpeed: number, -- attacks per second
-	abilities: { string }?,
+	secondsPerGrid: number, -- seconds to move one tile toward the house (higher = slower)
+	damage: number, -- damage per attack (0 when abilities handle all damage)
+	attackInterval: number, -- seconds between attacks while chewing a tile
+	isBoss: boolean?,
+	abilities: { string }?, -- ability handler ids (EnemyService/Abilities)
+	abilityParams: { [string]: number }?,
+	color: Color3?,
 }
 
 -- One ordered burst of monsters within a level (an internal "wave"). A level is

@@ -9,7 +9,7 @@
 ]]
 
 local LevelConfig = {
-	PREPARATION_TIME = 30, -- seconds to plant before starting a level
+	PREPARATION_TIME = 30, -- reserved prep window before Start (planned)
 	COUNTDOWN_TIME = 3, -- seconds after pressing Start Level
 
 	STARTING_PLAYER_HEALTH = 100,

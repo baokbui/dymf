@@ -12,7 +12,7 @@
 
 local GridConfig = {
 	ROWS = 5, -- tiles across the lane (Z)
-	COLUMNS = 11, -- tiles along the lane toward the enemy (X)
+	COLUMNS = 9, -- tiles along the lane toward the enemy (X)
 
 	-- Tile rendering (server-built, replicated lawn).
 	TILE_HEIGHT = 0.4, -- visual thickness of a tile

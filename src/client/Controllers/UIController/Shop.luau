@@ -6,6 +6,11 @@
 	and which card is selected) and reports card clicks back via a callback —
 	all placement logic lives in PlacementController / the server.
 
+	Layout: a PvZ-style horizontal bar pinned to the top-center of the screen.
+	Each Brainrot is a portrait card (swatch icon on top, name below, cost at
+	the bottom) laid out left-to-right in cost order. Cards dim and show a red
+	cost when unaffordable; the selected card gets a highlighted border.
+
 	UIController owns the lifecycle: it creates the shop, feeds it the balance
 	and the selected id, and routes clicks to PlacementController.
 
@@ -21,20 +26,35 @@ local Types = require(Shared.Types)
 local Shop = {}
 Shop.__index = Shop
 
-local PANEL_WIDTH = 220
-local CARD_HEIGHT = 64
-local CARD_PADDING = 8
-local ACCENT = Color3.fromRGB(120, 200, 255)
-local PANEL_BG = Color3.fromRGB(22, 24, 34)
+-- ===== Layout constants =====
+-- Card dimensions (portrait tile, PvZ-style).
+local CARD_WIDTH = 72
+local CARD_HEIGHT = 90
+local CARD_PADDING = 6 -- gap between cards
+local PANEL_PADDING_X = 12 -- left/right inset inside the bar
+local PANEL_PADDING_Y = 8 -- top/bottom inset inside the bar
+local SWATCH_SIZE = 44 -- square icon at the top of each card
+local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
+local PANEL_CORNER_RADIUS = 12 -- rounded bottom corners; top is squared by clip
+local PANEL_TRANSPARENCY = 0.15
+local CARD_CORNER_RADIUS = 10
+local SWATCH_CORNER_RADIUS = 8
+local BORDER_CORNER_RADIUS = 12
+
+-- ===== Colour constants =====
+local PANEL_BG = Color3.fromRGB(18, 20, 30)
 local CARD_BG = Color3.fromRGB(36, 40, 54)
 local CARD_SELECTED_BG = Color3.fromRGB(48, 78, 110)
+local CARD_SELECTED_BORDER = Color3.fromRGB(120, 200, 255)
 local TEXT_COLOR = Color3.fromRGB(235, 238, 245)
 local COST_AFFORD = Color3.fromRGB(255, 215, 0)
 local COST_BLOCKED = Color3.fromRGB(220, 110, 110)
+local DEFAULT_SWATCH = Color3.fromRGB(180, 140, 220)
 
 type Card = {
 	button: TextButton,
 	costLabel: TextLabel,
+	selectionBorder: Frame,
 	definition: Types.BrainrotDefinition,
 }
 
@@ -55,7 +75,7 @@ local function styleCorner(instance: Instance, radius: number)
 	corner.Parent = instance
 end
 
--- Stable display order so the roster doesn't jump around between sessions.
+-- Stable display order (by cost, then name) so the roster never jumps.
 local function sortedDefinitions(): { Types.BrainrotDefinition }
 	local list: { Types.BrainrotDefinition } = {}
 	for _, definition in Brainrots.getAll() do
@@ -81,36 +101,42 @@ function Shop.new(frame: Frame, onCardClicked: (id: string) -> ()): Shop
 
 	local definitions = sortedDefinitions()
 
+	-- Panel: horizontal bar pinned to the top-center of the screen.
+	-- The outer frame is transparent and clips its children; an inner rounded
+	-- frame provides the visible background. Clipping the children at the outer
+	-- frame boundary squares off the top edge against the screen without needing
+	-- a separate fill part to hide the top rounded corners.
+	local panelWidth = #definitions * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING + PANEL_PADDING_X * 2
 	frame.Visible = true
-	frame.AnchorPoint = Vector2.new(1, 0.5)
-	frame.Position = UDim2.new(1, -16, 0.5, 0)
-	frame.Size = UDim2.fromOffset(PANEL_WIDTH, #definitions * (CARD_HEIGHT + CARD_PADDING) + CARD_PADDING + 36)
-	frame.BackgroundColor3 = PANEL_BG
-	frame.BackgroundTransparency = 0.1
-	styleCorner(frame, 14)
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.Position = UDim2.new(0.5, 0, 0, 0)
+	frame.Size = UDim2.fromOffset(panelWidth, PANEL_HEIGHT)
+	frame.BackgroundTransparency = 1 -- invisible container; inner bg provides the fill
+	frame.ClipsDescendants = true
 
-	local title = Instance.new("TextLabel")
-	title.Name = "Title"
-	title.BackgroundTransparency = 1
-	title.Position = UDim2.fromOffset(12, 6)
-	title.Size = UDim2.new(1, -24, 0, 26)
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = 18
-	title.TextColor3 = ACCENT
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Brainrots"
-	title.Parent = frame
+	local bg = Instance.new("Frame")
+	bg.Name = "Background"
+	bg.AnchorPoint = Vector2.new(0.5, 0)
+	bg.Position = UDim2.new(0.5, 0, 0, -PANEL_CORNER_RADIUS) -- push top corners above the clip boundary
+	bg.Size = UDim2.new(1, 0, 1, PANEL_CORNER_RADIUS)
+	bg.BackgroundColor3 = PANEL_BG
+	bg.BackgroundTransparency = PANEL_TRANSPARENCY
+	bg.BorderSizePixel = 0
+	bg.Parent = frame
+	styleCorner(bg, PANEL_CORNER_RADIUS)
 
+	-- Card list: horizontal, left-to-right.
 	local list = Instance.new("Frame")
 	list.Name = "List"
 	list.BackgroundTransparency = 1
-	list.Position = UDim2.fromOffset(0, 36)
-	list.Size = UDim2.new(1, 0, 1, -36)
+	list.Position = UDim2.fromOffset(PANEL_PADDING_X, PANEL_PADDING_Y)
+	list.Size = UDim2.new(1, -PANEL_PADDING_X * 2, 1, -PANEL_PADDING_Y * 2)
 	list.Parent = frame
 
 	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.Padding = UDim.new(0, CARD_PADDING)
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
 
@@ -122,48 +148,68 @@ function Shop.new(frame: Frame, onCardClicked: (id: string) -> ()): Shop
 	return self
 end
 
+-- Builds one portrait card: swatch icon → name → cost (stacked top-to-bottom).
 function Shop.buildCard(self: Shop, parent: Instance, order: number, definition: Types.BrainrotDefinition)
 	local button = Instance.new("TextButton")
 	button.Name = definition.id
 	button.LayoutOrder = order
-	button.AutoButtonColor = true
-	button.Size = UDim2.new(1, -16, 0, CARD_HEIGHT)
+	button.AutoButtonColor = false -- manual state via refresh()
+	button.Size = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT)
 	button.BackgroundColor3 = CARD_BG
 	button.Text = ""
 	button.Parent = parent
-	styleCorner(button, 10)
+	styleCorner(button, CARD_CORNER_RADIUS)
 
+	-- Selection border: slightly larger than the card, rendered behind it so it
+	-- shows as a coloured outline when the card is selected.
+	local border = Instance.new("Frame")
+	border.Name = "SelectionBorder"
+	border.AnchorPoint = Vector2.new(0.5, 0.5)
+	border.Position = UDim2.new(0.5, 0, 0.5, 0)
+	border.Size = UDim2.new(1, 4, 1, 4)
+	border.BackgroundColor3 = CARD_SELECTED_BORDER
+	border.BackgroundTransparency = 1 -- hidden until selected
+	border.ZIndex = button.ZIndex - 1
+	styleCorner(border, BORDER_CORNER_RADIUS)
+	border.Parent = button
+
+	-- Swatch: coloured square at the top of the card.
 	local swatch = Instance.new("Frame")
 	swatch.Name = "Swatch"
-	swatch.AnchorPoint = Vector2.new(0, 0.5)
-	swatch.Position = UDim2.new(0, 10, 0.5, 0)
-	swatch.Size = UDim2.fromOffset(36, 36)
-	swatch.BackgroundColor3 = definition.color or Color3.fromRGB(180, 140, 220)
+	swatch.AnchorPoint = Vector2.new(0.5, 0)
+	swatch.Position = UDim2.new(0.5, 0, 0, 8)
+	swatch.Size = UDim2.fromOffset(SWATCH_SIZE, SWATCH_SIZE)
+	swatch.BackgroundColor3 = definition.color or DEFAULT_SWATCH
 	swatch.Parent = button
-	styleCorner(swatch, 8)
+	styleCorner(swatch, SWATCH_CORNER_RADIUS)
 
+	-- Name label: below the swatch.
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
-	nameLabel.Position = UDim2.new(0, 56, 0, 8)
-	nameLabel.Size = UDim2.new(1, -66, 0, 24)
+	nameLabel.AnchorPoint = Vector2.new(0.5, 0)
+	nameLabel.Position = UDim2.new(0.5, 0, 0, 56)
+	nameLabel.Size = UDim2.new(1, -4, 0, 16)
 	nameLabel.Font = Enum.Font.GothamMedium
-	nameLabel.TextSize = 16
+	nameLabel.TextSize = 11
 	nameLabel.TextColor3 = TEXT_COLOR
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Text = definition.name
 	nameLabel.Parent = button
 
+	-- Cost label: pinned to the bottom of the card.
 	local costLabel = Instance.new("TextLabel")
 	costLabel.Name = "Cost"
 	costLabel.BackgroundTransparency = 1
-	costLabel.Position = UDim2.new(0, 56, 0, 32)
-	costLabel.Size = UDim2.new(1, -66, 0, 22)
+	costLabel.AnchorPoint = Vector2.new(0.5, 1)
+	costLabel.Position = UDim2.new(0.5, 0, 1, -5)
+	costLabel.Size = UDim2.new(1, -4, 0, 14)
 	costLabel.Font = Enum.Font.GothamBold
-	costLabel.TextSize = 15
+	costLabel.TextSize = 12
 	costLabel.TextColor3 = COST_AFFORD
-	costLabel.TextXAlignment = Enum.TextXAlignment.Left
-	costLabel.Text = string.format("%d coins", definition.cost)
+	costLabel.TextXAlignment = Enum.TextXAlignment.Center
+	costLabel.Text = tostring(definition.cost)
 	costLabel.Parent = button
 
 	button.Activated:Connect(function()
@@ -173,18 +219,21 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	table.insert(self.cards, {
 		button = button,
 		costLabel = costLabel,
+		selectionBorder = border,
 		definition = definition,
 	})
 end
 
--- Repaints every card from the current balance + selection.
+-- Repaints every card from the current balance + selection state.
 function Shop.refresh(self: Shop)
 	for _, card in self.cards do
 		local affordable = self.balance >= card.definition.cost
 		local selected = self.selectedId == card.definition.id
+
 		card.button.BackgroundColor3 = if selected then CARD_SELECTED_BG else CARD_BG
+		card.button.BackgroundTransparency = if affordable then 0 else 0.45
 		card.costLabel.TextColor3 = if affordable then COST_AFFORD else COST_BLOCKED
-		card.button.BackgroundTransparency = if affordable then 0 else 0.4
+		card.selectionBorder.BackgroundTransparency = if selected then 0 else 1
 	end
 end
 

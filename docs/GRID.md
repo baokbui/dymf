@@ -17,7 +17,7 @@ The **logical** grid size and tile visuals live in `Shared/Config/GridConfig.lua
 | Key                       | Default | Meaning                                  |
 | ------------------------- | ------- | ---------------------------------------- |
 | `ROWS`                    | 5       | tiles across the lane (Z)                |
-| `COLUMNS`                 | 11      | tiles along the lane toward the enemy (X)|
+| `COLUMNS`                 | 9       | tiles along the lane toward the enemy (X)|
 | `TILE_HEIGHT`             | 0.4     | visual thickness of a tile               |
 | `TILE_GAP`                | 0.6     | bare grass between tiles (the gridlines) |
 | `TILE_Y_OFFSET`           | 0.05    | lift above grass to avoid z-fighting     |
@@ -25,7 +25,7 @@ The **logical** grid size and tile visuals live in `Shared/Config/GridConfig.lua
 | `HIGHLIGHT_*`             | —       | client hover-highlight look              |
 
 Column → world X (toward the enemy spawn, +X), row → world Z (across the lane).
-A PvZ-style lawn that runs along the lane: 11 columns deep, 5 rows wide. Adding
+A PvZ-style lawn that runs along the lane: 9 columns deep, 5 rows wide. Adding
 columns lengthens the grid and (because the zones are derived — see below)
 shrinks the house/enemy strips; more rows would require a deeper lane.
 
@@ -35,13 +35,11 @@ plot's play area rather than floating as a small patch:
 - `TILE_SIZE = (BASE_DEPTH − 2·MARGIN_Z) / ROWS` — square tiles sized so the grid
   spans the full lane depth.
 - `GRID_WIDTH = COLUMNS · TILE_SIZE`, `GRID_DEPTH = ROWS · TILE_SIZE`.
-- `HOUSE_ZONE` and `ENEMY_ZONE` are then derived as the leftover lane length
-  split evenly, so they are reserved strips at the −X / +X ends and the grid
-  **never covers the house or enemy area**.
+- `HOUSE_ZONE` is the leftover lane length behind the grid (enemy staging lives
+  in the east map column, not inside each plot).
 
-With the current defaults (lane 330 × 110, `MARGIN` 10, `ROWS` 5, `COLUMNS` 11):
-`TILE_SIZE = 18`, `GRID_WIDTH = 198`, `GRID_DEPTH = 90`, and each of
-`HOUSE_ZONE` / `ENEMY_ZONE = 56`.
+With the current defaults (lane 330 × 110, `MARGIN` 10, `ROWS` 5, `COLUMNS` 9):
+`TILE_SIZE = 18`, `GRID_WIDTH = 162`, `GRID_DEPTH = 90`, and `HOUSE_ZONE = 148`.
 
 The grid is centered on the play area: `PlotBuilder` places a `GridCenter`
 attachment at the play-area center, and `GridService` lays tiles out from the

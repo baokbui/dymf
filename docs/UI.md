@@ -17,7 +17,7 @@ StarterGui/
     MainUI (ScreenGui)
         Shop      (Frame)   ✅ M4
         Coins     (Frame)   ✅ M3
-        LevelUI   (Frame)   🔜 M8
+        LevelUI   (Frame)   ✅ M8
         Settings  (Frame)   🔜 M14
 ```
 
@@ -33,8 +33,11 @@ UI and input are driven by client Controllers
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Level display, Settings panels  | ✅ M3 (Coins), M4 (Shop) |
+| `UIController`        | Shop, Coins, Level display, Settings panels  | ✅ M3 (Coins), M4 (Shop), M8 (Level) |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
+| `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5 |
+| `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
+| `HealthBarController`   | Billboard health bars on local plot               | ✅ M7 |
 | `GridController`      | Hover highlight + tile resolver for previews | ✅ M2  |
 | `PlacementController` | Selection, ghost preview, placement intent   | ✅ M4  |
 | `CameraController`    | Default 3rd-person camera (reserved for juice)| ✅ M1  |
@@ -50,16 +53,18 @@ UI and input are driven by client Controllers
 - **Coins** ✅ M3 — top-left counter showing the authoritative balance from
   `CoinsUpdated`, seeded by the initial `RequestState` pull. `UIController` builds
   it inside `MainUI.Coins` and only displays state.
-- **Shop** ✅ M4 — right-side panel listing the Brainrot roster (swatch, name,
-  cost) read from `Shared.Brainrots`, sorted by cost. Built by
-  `UIController/Shop.luau` inside `MainUI.Shop`. Cards grey out when unaffordable
-  (driven by the same `CoinsUpdated` balance). Clicking a card selects it for
-  placement (clicking the selected card again cancels); the highlight follows
-  `PlacementController.selectionChanged`, so it stays correct even when placement
-  is cancelled with right-click / Esc.
-- **LevelUI** 🔜 M8 — current level number/name, phase, countdown, the
-  spawn-group **progress bar** (with the big-wave flag), and the **Start Level**
-  button (`StartLevel` remote); reflects `LevelStateChanged`.
+- **Shop** ✅ M4 — PvZ-style **horizontal bar pinned to the top-center** of the
+  screen. Each Brainrot is a portrait card (colour swatch on top, name below,
+  coin cost at the bottom) laid out left-to-right in cost order, built by
+  `UIController/Shop.luau` inside `MainUI.Shop`. Cards dim and show a red cost
+  when unaffordable (driven by `CoinsUpdated`); the selected card gets a blue
+  highlight border. Clicking a card selects it for placement; clicking the same
+  card again cancels. The highlight follows `PlacementController.selectionChanged`
+  so it stays correct even when placement is cancelled with Esc / Backspace.
+- **LevelUI** ✅ M8 — bottom-right panel with the current level number/name, a
+  short phase hint, a green **Start Level** button (`StartLevel` remote), a
+  spawn-group **progress bar** during `Active`, and a **big-wave warning**
+  banner; reflects `LevelStateChanged`.
 - **Settings** 🔜 M14 — options plus **Reset Progress** (confirmation required,
   `ResetProgress` remote), a **Level Select** for replaying cleared levels
   (`SelectLevel` remote), and statistics display.
@@ -71,16 +76,16 @@ UI and input are driven by client Controllers
 The placement experience is split so each controller has one job:
 
 - **`InputController`** translates raw devices into two intent signals,
-  `primaryAction` (left-click / tap / Enter) and `secondaryAction` (right-click /
-  Esc / Backspace), each carrying the screen position. Inputs already consumed by
-  the GUI (`gameProcessed`) are ignored, so clicking a Shop button never doubles
-  as a battlefield action.
+  `primaryAction` (left-click / tap / Enter) and `secondaryAction` (right-click
+  on the battlefield) plus `placementCancel` (Esc / Backspace), each carrying the
+  screen position. Inputs already consumed by the GUI (`gameProcessed`) are ignored,
+  so clicking a Shop button never doubles as a battlefield action.
 - **`PlacementController`** holds the selected Brainrot, renders the translucent
   **ghost** over the hovered own-plot tile (green when free + affordable, red
   otherwise — purely cosmetic), and forwards intent: `primaryAction` fires
-  `PlaceBrainrot`; `secondaryAction` cancels placement, or — when nothing is
-  selected — fires `RemoveBrainrot` on the targeted own tile. Placement mode
-  stays active after a successful place so several can be set down in a row.
+  `PlaceBrainrot` then clears selection; `placementCancel` cancels placement;
+  `secondaryAction` removes a Brainrot on the targeted own tile when nothing is
+  selected (right click stays free for camera while placing).
 
 The server (`BrainrotService`) re-validates everything (see `NETWORKING.md`).
 

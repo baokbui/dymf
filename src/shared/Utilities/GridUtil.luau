@@ -60,4 +60,46 @@ function GridUtil.positions(): { Types.GridPosition }
 	return result
 end
 
+-- Picks a random in-bounds grid cell (for coin drops, etc.).
+function GridUtil.randomPosition(): Types.GridPosition
+	return {
+		row = math.random(1, GridConfig.ROWS),
+		column = math.random(1, GridConfig.COLUMNS),
+	}
+end
+
+-- True when `targetColumn` is within `rangeTiles` ahead of the Brainrot's column
+-- on the same row (+X toward the enemy). Uses tile indices so a monster standing
+-- anywhere in the adjacent east tile counts for melee range 1.
+function GridUtil.tileAtColumn(column: number): number
+	return math.floor(column + 0.5)
+end
+
+function GridUtil.isColumnInRange(
+	attackerColumn: number,
+	targetColumn: number,
+	rangeTiles: number,
+	fullLineRange: number
+): boolean
+	local targetTile = GridUtil.tileAtColumn(targetColumn)
+	if targetTile < attackerColumn then
+		return false
+	end
+	if rangeTiles == fullLineRange then
+		return true
+	end
+	if rangeTiles <= 0 then
+		return false
+	end
+	return targetTile <= attackerColumn + rangeTiles
+end
+
+-- Short melee reach in fractional columns ahead of the Brainrot's column (+X).
+function GridUtil.isWithinMeleeReach(attackerColumn: number, targetColumn: number, reachColumns: number): boolean
+	if targetColumn < attackerColumn or reachColumns <= 0 then
+		return false
+	end
+	return targetColumn <= attackerColumn + reachColumns
+end
+
 return GridUtil

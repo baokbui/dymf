@@ -40,8 +40,10 @@ Remotes module. That is the only required step.
 | `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
-| `StartLevel`       | client → server | 🔜 M8  | Player presses Start Level               |
-| `LevelStateChanged`| server → client | 🔜 M8  | Phase / level number / progress updates  |
+| `BrainrotAction`   | server → client | ✅ M5  | Attack/coin feedback for local sounds   |
+| `CombatVisual`     | server → client | ✅ M7  | Hit flash + death fade on local plot    |
+| `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
+| `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
 | `SelectLevel`      | client → server | 🔜 M14 | Replay a cleared level via Level Select  |
 | `ResetProgress`    | client → server | 🔜 M14 | Confirmed reset of all save data         |
 
@@ -51,8 +53,8 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` currently returns `{ coins }` (answered by `CoinService`). As more
-state is added it will grow into / be replaced by a central aggregator.
+`RequestState` returns `{ coins, level }` — handled by `LevelService.start()` using
+`CoinService.getBalance` and `LevelService.getClientState`.
 
 ---
 
@@ -69,7 +71,8 @@ cannot choose, move, or learn about other players' plots.
 ## Coin collection (Milestone 3) ✅
 
 Passive drops spawn collectible **ground coins** on each player's plot (server,
-`CoinService`). Collection is client-intent + server-authority:
+`CoinService`) **only while that player's level is `Active`**. Collection is
+client-intent + server-authority:
 
 1. The owning client's `CoinController` detects its character touching one of its
    own coins (coins are tagged `Coin` with `CoinId`/`OwnerUserId`/`Value`) and
@@ -91,6 +94,7 @@ Placement is client-intent + server-authority, owned by `BrainrotService`.
 never sends a cost or a world position; it only names a registry id and a tile.
 The server validates, in order:
 
+0. The level is `Active` (`LevelService.isLevelActive`).
 1. Argument shapes — `brainrotId` is a string, the position is a table of
    integers, and the tile is in-bounds (`GridUtil.isInBounds`).
 2. The id exists in the `Shared.Brainrots` registry (definition resolved here;
@@ -112,9 +116,32 @@ destroys the model. Digging up a Brainrot is **not refunded** — the coins spen
 placing it are lost. A client can never remove another player's Brainrot.
 
 The placement **ghost** is a purely cosmetic client preview
-(`PlacementController`); it carries no authority. The client tracks its balance
+(`PlacementController`); it carries no authority. `UIController` disables
+placement selection outside `Active` via `PlacementController.setPlacementAllowed`.
+The client tracks its balance
 only to tint the ghost and grey unaffordable Shop cards — the server is the
 sole judge of affordability.
+
+---
+
+## Level campaign (Milestone 8) ✅
+
+The campaign loop is server-authoritative, owned by `LevelService` (see
+`LEVELS.md`).
+
+**Start** — the client sends `StartLevel()` with no arguments when the player
+presses the button (only enabled during `Preparation` or `Defeat`). The server
+validates phase, clears stray monsters, and begins the `Countdown` phase.
+
+**State** — the server pushes `LevelStateChanged(payload)` to the plot owner
+whenever phase, progress, countdown, or big-wave warning changes. The client
+`UIController/Level.luau` panel only displays this payload. Initial join state
+includes `level` inside the `RequestState` pull (`{ coins, level }`).
+
+**Defeat** — when a monster breaches the house during `Active`, `LevelService`
+handles defeat (no client remote). **Victory** — when all spawn groups are
+finished and no monsters remain, the server grants coins and unlocks the next
+level.
 
 ---
 

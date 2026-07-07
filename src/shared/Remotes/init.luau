@@ -34,6 +34,10 @@ local EVENT_NAMES = {
 	"SelectLevel",
 	-- Settings
 	"ResetProgress",
+	-- Brainrots (Milestone 5)
+	"BrainrotAction",
+	-- Combat visuals (Milestone 7)
+	"CombatVisual",
 }
 
 -- Declare every RemoteFunction name the game uses.

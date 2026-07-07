@@ -30,15 +30,18 @@ scaling.
 ## Per-level loop
 
 ```
-Preparation ─► Player plants ─► Start Level ─► Countdown ─► Active
-   ▲                                                          │
-   │                                              spawn groups run
-   │                                              (progress bar → big wave)
-   │                                                          │
-   └──────── Reward + unlock next ◄── Victory ◄───────────────┤
-                                                              │
-                              Defeat (house breached) ─► retry level
+Start Level ─► Countdown ─► Active (plant + fight)
+   ▲                              │
+   │                  spawn groups run
+   │                  (progress bar → big wave)
+   │                              │
+   └──── Reward + unlock next ◄── Victory
+                                  │
+              Defeat (house breached) ─► retry level
 ```
+
+During `Preparation`, planting and ground-coin drops are blocked. Both unlock
+when the level enters `Active` (after countdown).
 
 Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown`, `Active`,
 `Victory`, `Defeat`.
@@ -88,15 +91,33 @@ Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 
 ### Seeded campaign ✅ (data only)
 
-Two opening levels are seeded using the Milestone 6 starter monster
-(`BasicMonster`), each ending in an `isBigWave` group:
+Two opening levels are seeded using **Zombie**, each ending in an `isBigWave` group:
 
-| Level | name          | groups (count × monster)                  |
-| ----- | ------------- | ----------------------------------------- |
-| 1     | First Contact | 3, 5, **8** BasicMonster                  |
-| 2     | Rising Tide   | 5, 7, 6, **12** BasicMonster              |
+| Level | name          | enemies (count per group)                  |
+| ----- | ------------- | ------------------------------------------ |
+| 1     | First Contact | 1, 2, **2** TutorialZombie                 |
+| 2     | Rising Tide   | 2, 2 TutorialZombie, **2** EarlyZombie     |
+| 3     | Greenhorns    | 2, 3 EarlyZombie, **3** Zombie             |
 
 Richer monster types per level arrive with Milestone 10.
+
+### Difficulty ramp (early campaign)
+
+Progression is tuned in **small steps** across level data — never a single giant
+spike between adjacent levels:
+
+1. **Enemy tier** — `TutorialZombie` (150 HP, slow) → `EarlyZombie` (250 HP) →
+   standard `Zombie` (1000 HP). A level should introduce at most one tier step.
+2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 6 →
+   Level 3: 8).
+3. **Pacing** — `startDelay` and `spawnInterval` shrink gradually; the first
+   group always leaves time to plant after countdown.
+4. **Big wave** — the final group is the hardest step *within* a level, not a
+   jump to endgame tuning.
+
+Level 1 is intentionally gentle: **25-second grace** before the first enemy,
+`TutorialZombie` spawns one at a time, and starting coins cover a coin producer
+plus an attacker (see `EconomyConfig.STARTING_COINS`).
 
 ---
 
@@ -107,7 +128,7 @@ is in the registry above, not here.
 
 | Key                     | Value | Meaning                                    |
 | ----------------------- | ----- | ------------------------------------------ |
-| `PREPARATION_TIME`      | 30    | Seconds to plant before starting a level   |
+| `PREPARATION_TIME`      | 30    | Reserved prep window before Start (planned) |
 | `COUNTDOWN_TIME`        | 3     | Seconds after pressing Start Level         |
 | `STARTING_PLAYER_HEALTH`| 100   | Player base health                         |
 | `BIG_WAVE_WARNING_TIME` | 4     | Lead time for the "huge wave!" banner      |
@@ -118,9 +139,9 @@ These (and the per-level data) are the knobs Milestone 15 (Balancing) tunes.
 
 ---
 
-## Responsibilities (Milestone 8) 🔜
+## Responsibilities (Milestone 8) ✅
 
-`LevelService` will own:
+`LevelService` owns:
 
 - Preparation phase + countdown timing.
 - Handling the `StartLevel` request (validated server-side).
@@ -129,9 +150,9 @@ These (and the per-level data) are the knobs Milestone 15 (Balancing) tunes.
   move/fight), and announcing the big wave.
 - Tracking progress and detecting **Victory** (all groups spawned and cleared)
   vs. **Defeat** (a monster reaches the house).
-- Granting the completion reward via `CoinService`
-  (`LevelDefinition.reward` or `EconomyConfig.LEVEL_COMPLETION_REWARD`, see
-  `ECONOMY.md`) and unlocking the next level on victory.
+- On **Victory**: clearing the plot (Brainrots, monsters, ground coins) and
+  resetting coins to `EconomyConfig.STARTING_COINS` (PvZ-style fresh start),
+  then unlocking/advancing to the next level.
 - Broadcasting phase / level number / progress via `LevelStateChanged` (see
   `NETWORKING.md`).
 

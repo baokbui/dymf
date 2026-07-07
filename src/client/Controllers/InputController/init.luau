@@ -7,8 +7,11 @@
 	into "primary action", "secondary action", and the cursor position.
 
 	Signals (each carries the screen position the action occurred at):
-		primaryAction   - left click / tap / Enter   (confirm, e.g. place)
-		secondaryAction - right click / Esc / Backspace (cancel / remove)
+		primaryAction     - left click / tap / Enter   (confirm, e.g. place)
+		secondaryAction   - right click on the battlefield (remove when not placing)
+		placementCancel   - Esc / Backspace (cancel placement selection)
+
+	Right click is not used for placement cancel so it remains free for camera control.
 
 	Inputs already consumed by the GUI (gameProcessed) are ignored, so clicking
 	Shop buttons never doubles as a battlefield action.
@@ -29,10 +32,12 @@ local log = Logger.new(InputController.Name)
 
 local primaryBindable = Instance.new("BindableEvent")
 local secondaryBindable = Instance.new("BindableEvent")
+local cancelBindable = Instance.new("BindableEvent")
 
 -- RBXScriptSignals other controllers connect to. Set in init().
 InputController.primaryAction = primaryBindable.Event
 InputController.secondaryAction = secondaryBindable.Event
+InputController.placementCancel = cancelBindable.Event
 
 local function currentScreenPosition(input: InputObject): Vector2
 	-- input.Position is in screen space for mouse/touch; Z is unused here.
@@ -52,11 +57,10 @@ local function onInputBegan(input: InputObject, processed: boolean)
 		or keyCode == Enum.KeyCode.Return
 	then
 		primaryBindable:Fire(currentScreenPosition(input))
-	elseif inputType == Enum.UserInputType.MouseButton2
-		or keyCode == Enum.KeyCode.Escape
-		or keyCode == Enum.KeyCode.Backspace
-	then
+	elseif inputType == Enum.UserInputType.MouseButton2 then
 		secondaryBindable:Fire(currentScreenPosition(input))
+	elseif keyCode == Enum.KeyCode.Escape or keyCode == Enum.KeyCode.Backspace then
+		cancelBindable:Fire(currentScreenPosition(input))
 	end
 end
 

@@ -10,10 +10,10 @@
 		UIController's Shop calls select(id) -> placement mode begins.
 		The ghost follows the hovered own-plot tile (via GridController), tinted
 		green when the tile looks placeable (free + affordable) and red when not.
-		InputController.primaryAction places at the tile under the cursor; the
-		mode stays active so several can be placed in a row.
-		InputController.secondaryAction cancels placement, or — when not placing —
-		removes the Brainrot on the targeted own tile.
+		InputController.primaryAction places at the tile under the cursor; each
+		successful intent clears selection so the player picks again for the next plant.
+		InputController.placementCancel (Esc / Backspace) cancels placement; right click
+		is reserved for camera and only removes a Brainrot when nothing is selected.
 
 	Affordability is tracked locally from CoinsUpdated only to color the ghost;
 	the authoritative cost check still happens on the server.
@@ -27,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
+local Constants = require(Shared.Constants)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -40,13 +41,13 @@ PlacementController.Name = "PlacementController"
 local log = Logger.new(PlacementController.Name)
 
 local GHOST_HEIGHT = 6
-local FOOTPRINT_RATIO = 0.72
 local GHOST_TRANSPARENCY = 0.45
 local VALID_COLOR = Color3.fromRGB(120, 220, 120)
 local BLOCKED_COLOR = Color3.fromRGB(220, 110, 110)
 
 local selectedId: string? = nil
 local balance = 0
+local placementAllowed = false
 local ghost: BasePart? = nil
 local placeRemote: RemoteEvent
 local removeRemote: RemoteEvent
@@ -103,13 +104,13 @@ local function updateGhost(tile: BasePart?)
 	end
 
 	local part = ensureGhost()
-	local footprint = PlotConfig.TILE_SIZE * FOOTPRINT_RATIO
+	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
 	part.Size = Vector3.new(footprint, GHOST_HEIGHT, footprint)
 	part.Position = tile.Position + Vector3.new(0, tile.Size.Y / 2 + GHOST_HEIGHT / 2, 0)
 	part.Transparency = GHOST_TRANSPARENCY
 
 	local occupied = tile:GetAttribute("Occupied") == true
-	local placeable = not occupied and canAfford()
+	local placeable = placementAllowed and not occupied and canAfford()
 	part.Color = if placeable then VALID_COLOR else BLOCKED_COLOR
 end
 
@@ -131,10 +132,20 @@ end
 -- ===== Public API (called by UIController) =====
 
 function PlacementController.select(brainrotId: string)
+	if not placementAllowed then
+		return
+	end
 	if not Brainrots.exists(brainrotId) then
 		return
 	end
 	setSelected(brainrotId)
+end
+
+function PlacementController.setPlacementAllowed(allowed: boolean)
+	placementAllowed = allowed
+	if not allowed then
+		PlacementController.cancel()
+	end
 end
 
 function PlacementController.cancel()
@@ -149,27 +160,26 @@ end
 
 local function onPrimaryAction(position: Vector2)
 	local id = selectedId
-	if not id then
+	if not id or not placementAllowed then
 		return
 	end
 	local tile = GridController.resolveTileAt(position.X, position.Y)
 	if not tile then
 		return
 	end
-	-- The server re-validates ownership, occupancy, and cost. Keep placement
-	-- mode active so the player can place several without re-selecting.
+	-- The server re-validates ownership, occupancy, and cost.
 	placeRemote:FireServer(id, {
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),
 	})
+	PlacementController.cancel()
 end
 
 local function onSecondaryAction(position: Vector2)
 	if selectedId then
-		PlacementController.cancel()
 		return
 	end
-	-- Not placing: a secondary action on an own occupied tile removes it.
+	-- Not placing: right click on an own occupied tile removes it.
 	local tile = GridController.resolveTileAt(position.X, position.Y)
 	if not tile or tile:GetAttribute("Occupied") ~= true then
 		return
@@ -187,9 +197,16 @@ function PlacementController.init()
 	hideGhost()
 end
 
+local function onPlacementCancel()
+	if selectedId then
+		PlacementController.cancel()
+	end
+end
+
 function PlacementController.start()
 	InputController.primaryAction:Connect(onPrimaryAction)
 	InputController.secondaryAction:Connect(onSecondaryAction)
+	InputController.placementCancel:Connect(onPlacementCancel)
 
 	-- Follow the cursor while placing (event-driven, no per-frame polling).
 	UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)

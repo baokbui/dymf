@@ -23,6 +23,7 @@ local Logger = require(Shared.Utilities.Logger)
 
 local Plot = require(script.Plot)
 local PlotBuilder = require(script.PlotBuilder)
+local EnemySpawnBuilder = require(script.EnemySpawnBuilder)
 local GridService = require(script.Parent.GridService)
 
 local PlotService = {}
@@ -32,6 +33,7 @@ local log = Logger.new(PlotService.Name)
 
 local plots: { Plot.Plot } = {}
 local plotsByUserId: { [number]: Plot.Plot } = {}
+local enemyLanesByRow: { [number]: Model } = {}
 
 local function findFreePlot(): Plot.Plot?
 	for _, plot in plots do
@@ -68,6 +70,7 @@ local function releasePlot(player: Player)
 	if plot then
 		plot:release()
 		GridService.resetPlot(plot.model)
+		require(script.Parent.EnemyService).clearPlot(plot.model)
 		plotsByUserId[player.UserId] = nil
 		log:info(string.format("released Plot%d from %s", plot.index, player.Name))
 	end
@@ -85,19 +88,22 @@ function PlotService.init()
 		plotsFolder.Parent = Workspace
 	end
 
-	-- Tile the lanes in a columns x rows grid, centered on the baseplate.
-	-- Origins sit at the grass surface (y = 0, base invisible).
-	local columns = PlotConfig.LANE_COLUMNS
-	local rows = PlotConfig.LANE_ROWS
-	local startX = -((columns - 1) / 2) * PlotConfig.BASE_WIDTH
-	local startZ = -((rows - 1) / 2) * PlotConfig.BASE_DEPTH
+	-- West column: player plots. East column: enemy-spawn lanes (one per row).
+	local mapColumns = PlotConfig.MAP_COLUMNS
+	local startX = -((mapColumns - 1) / 2) * PlotConfig.BASE_WIDTH
+	local startZ = -((PlotConfig.LANE_ROWS - 1) / 2) * PlotConfig.BASE_DEPTH
+
+	local enemyPathsFolder = Workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.EnemyPaths)
+	if not enemyPathsFolder then
+		enemyPathsFolder = Instance.new("Folder")
+		enemyPathsFolder.Name = Constants.WORKSPACE_FOLDERS.EnemyPaths
+		enemyPathsFolder.Parent = Workspace
+	end
 
 	for i = 1, PlotConfig.MAX_PLOTS do
-		local index0 = i - 1
-		local column = index0 % columns
-		local row = math.floor(index0 / columns)
+		local row = i - 1
 		local originPosition = Vector3.new(
-			startX + column * PlotConfig.BASE_WIDTH,
+			startX + PlotConfig.PLAYER_MAP_COLUMN * PlotConfig.BASE_WIDTH,
 			0,
 			startZ + row * PlotConfig.BASE_DEPTH
 		)
@@ -106,7 +112,18 @@ function PlotService.init()
 		plots[i] = Plot.new(i, model, base, spawnLocation)
 	end
 
-	log:info(string.format("built %d plots", PlotConfig.MAX_PLOTS))
+	for row = 1, PlotConfig.LANE_ROWS do
+		local originPosition = Vector3.new(
+			startX + PlotConfig.ENEMY_MAP_COLUMN * PlotConfig.BASE_WIDTH,
+			0,
+			startZ + (row - 1) * PlotConfig.BASE_DEPTH
+		)
+		local enemyLane = EnemySpawnBuilder.build(row, originPosition)
+		enemyLane.Parent = enemyPathsFolder
+		enemyLanesByRow[row] = enemyLane
+	end
+
+	log:info(string.format("built %d plots and %d enemy lanes", PlotConfig.MAX_PLOTS, PlotConfig.LANE_ROWS))
 end
 
 function PlotService.start()
@@ -129,6 +146,16 @@ end
 function PlotService.getPlotModel(player: Player): Model?
 	local plot = plotsByUserId[player.UserId]
 	return if plot then plot.model else nil
+end
+
+-- Enemy-spawn lane aligned with a player plot row (1-based row index).
+function PlotService.getEnemyLane(rowIndex: number): Model?
+	return enemyLanesByRow[rowIndex]
+end
+
+-- Enemy-spawn lane for a specific player plot (same row as the plot index).
+function PlotService.getEnemyLaneForPlot(plot: Plot.Plot): Model?
+	return enemyLanesByRow[plot.index]
 end
 
 return PlotService
