@@ -96,14 +96,21 @@ local function buildShop(): Shop.Shop
 	local mainUI = playerGui:WaitForChild("MainUI")
 	local frame = mainUI:WaitForChild("Shop") :: Frame
 
-	-- Clicking a card toggles selection: clicking the active one cancels.
-	return Shop.new(frame, function(id: string)
-		if selectedId == id then
+	return Shop.new(frame, {
+		onCardClicked = function(id: string)
+			if selectedId == id then
+				PlacementController.cancel()
+			else
+				PlacementController.select(id)
+			end
+		end,
+		onShovelClicked = function()
+			PlacementController.toggleShovelMode()
+		end,
+		onCancelClicked = function()
 			PlacementController.cancel()
-		else
-			PlacementController.select(id)
-		end
-	end)
+		end,
+	})
 end
 
 local function buildLevelPanel(): Level.LevelPanel
@@ -143,6 +150,13 @@ function UIController.start()
 		selectedId = id
 		if shop then
 			shop:setSelected(id)
+			shop:setCancelVisible(id ~= nil)
+		end
+	end)
+
+	PlacementController.shovelModeChanged:Connect(function(active: boolean)
+		if shop then
+			shop:setShovelActive(active)
 		end
 	end)
 

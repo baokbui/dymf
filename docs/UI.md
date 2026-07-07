@@ -54,13 +54,11 @@ UI and input are driven by client Controllers
   `CoinsUpdated`, seeded by the initial `RequestState` pull. `UIController` builds
   it inside `MainUI.Coins` and only displays state.
 - **Shop** ✅ M4 — PvZ-style **horizontal bar pinned to the top-center** of the
-  screen. Each Brainrot is a portrait card (colour swatch on top, name below,
-  coin cost at the bottom) laid out left-to-right in cost order, built by
-  `UIController/Shop.luau` inside `MainUI.Shop`. Cards dim and show a red cost
-  when unaffordable (driven by `CoinsUpdated`); the selected card gets a blue
-  highlight border. Clicking a card selects it for placement; clicking the same
-  card again cancels. The highlight follows `PlacementController.selectionChanged`
-  so it stays correct even when placement is cancelled with Esc / Backspace.
+  screen. A **shovel** tool and red **cancel** button sit to the left of the
+  Brainrot cards (portrait tiles with swatch, name, and cost), built by
+  `UIController/Shop.luau` inside `MainUI.Shop`. Cards dim when unaffordable;
+  the selected card gets a blue highlight. The cancel button appears while a card
+  is selected; shovel mode swaps the cursor for digging up plants.
 - **LevelUI** ✅ M8 — bottom-right panel with the current level number/name, a
   short phase hint, a green **Start Level** button (`StartLevel` remote), a
   spawn-group **progress bar** during `Active`, and a **big-wave warning**
@@ -75,17 +73,16 @@ UI and input are driven by client Controllers
 
 The placement experience is split so each controller has one job:
 
-- **`InputController`** translates raw devices into two intent signals,
-  `primaryAction` (left-click / tap / Enter) and `secondaryAction` (right-click
-  on the battlefield) plus `placementCancel` (Esc / Backspace), each carrying the
-  screen position. Inputs already consumed by the GUI (`gameProcessed`) are ignored,
-  so clicking a Shop button never doubles as a battlefield action.
+- **`InputController`** translates raw devices into intent signals:
+  `primaryAction` (left-click / tap / Enter) and `secondaryAction` (right-click).
+  Inputs already consumed by the GUI (`gameProcessed`) are ignored, so clicking
+  a Shop button never doubles as a battlefield action.
 - **`PlacementController`** holds the selected Brainrot, renders the translucent
   **ghost** over the hovered own-plot tile (green when free + affordable, red
   otherwise — purely cosmetic), and forwards intent: `primaryAction` fires
-  `PlaceBrainrot` then clears selection; `placementCancel` cancels placement;
-  `secondaryAction` removes a Brainrot on the targeted own tile when nothing is
-  selected (right click stays free for camera while placing).
+  `PlaceBrainrot` then clears selection; **shovel mode** (Shop shovel button)
+  swaps the cursor and removes Brainrots on click; the red **cancel** button
+  (below the shovel, visible while a card is selected) clears selection.
 
 The server (`BrainrotService`) re-validates everything (see `NETWORKING.md`).
 

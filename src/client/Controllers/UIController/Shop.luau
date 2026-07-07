@@ -41,6 +41,10 @@ local CARD_CORNER_RADIUS = 10
 local SWATCH_CORNER_RADIUS = 8
 local BORDER_CORNER_RADIUS = 12
 
+local TOOL_COLUMN_WIDTH = 48
+local TOOL_GAP = 4
+local TOOL_BUTTON_HEIGHT = math.floor((CARD_HEIGHT - TOOL_GAP) / 2)
+
 -- ===== Colour constants =====
 local PANEL_BG = Color3.fromRGB(18, 20, 30)
 local CARD_BG = Color3.fromRGB(36, 40, 54)
@@ -50,6 +54,9 @@ local TEXT_COLOR = Color3.fromRGB(235, 238, 245)
 local COST_AFFORD = Color3.fromRGB(255, 215, 0)
 local COST_BLOCKED = Color3.fromRGB(220, 110, 110)
 local DEFAULT_SWATCH = Color3.fromRGB(180, 140, 220)
+local SHOVEL_ACTIVE_BG = Color3.fromRGB(72, 92, 58)
+local SHOVEL_ACTIVE_BORDER = Color3.fromRGB(160, 210, 110)
+local CANCEL_BG = Color3.fromRGB(150, 45, 45)
 
 type Card = {
 	button: TextButton,
@@ -58,13 +65,22 @@ type Card = {
 	definition: Types.BrainrotDefinition,
 }
 
+export type ShopCallbacks = {
+	onCardClicked: (id: string) -> (),
+	onShovelClicked: () -> (),
+	onCancelClicked: () -> (),
+}
+
 export type Shop = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
 		cards: { Card },
 		balance: number,
 		selectedId: string?,
-		onCardClicked: (id: string) -> (),
+		shovelButton: TextButton,
+		shovelBorder: Frame,
+		cancelButton: TextButton,
+		callbacks: ShopCallbacks,
 	},
 	Shop
 ))
@@ -90,23 +106,19 @@ local function sortedDefinitions(): { Types.BrainrotDefinition }
 	return list
 end
 
-function Shop.new(frame: Frame, onCardClicked: (id: string) -> ()): Shop
+function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	local self = setmetatable({
 		frame = frame,
 		cards = {},
 		balance = 0,
 		selectedId = nil,
-		onCardClicked = onCardClicked,
-	}, Shop)
+		callbacks = callbacks,
+	}, Shop) :: Shop
 
 	local definitions = sortedDefinitions()
 
-	-- Panel: horizontal bar pinned to the top-center of the screen.
-	-- The outer frame is transparent and clips its children; an inner rounded
-	-- frame provides the visible background. Clipping the children at the outer
-	-- frame boundary squares off the top edge against the screen without needing
-	-- a separate fill part to hide the top rounded corners.
-	local panelWidth = #definitions * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING + PANEL_PADDING_X * 2
+	local cardsWidth = #definitions * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING
+	local panelWidth = PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0.5, 0)
 	frame.Position = UDim2.new(0.5, 0, 0, 0)
@@ -125,12 +137,26 @@ function Shop.new(frame: Frame, onCardClicked: (id: string) -> ()): Shop
 	bg.Parent = frame
 	styleCorner(bg, PANEL_CORNER_RADIUS)
 
+	local tools = Instance.new("Frame")
+	tools.Name = "Tools"
+	tools.BackgroundTransparency = 1
+	tools.Position = UDim2.fromOffset(PANEL_PADDING_X, PANEL_PADDING_Y)
+	tools.Size = UDim2.fromOffset(TOOL_COLUMN_WIDTH, CARD_HEIGHT)
+	tools.Parent = frame
+
+	local shovelButton, shovelBorder = self:buildShovelButton(tools)
+	self.shovelButton = shovelButton
+	self.shovelBorder = shovelBorder
+
+	local cancelButton = self:buildCancelButton(tools)
+	self.cancelButton = cancelButton
+
 	-- Card list: horizontal, left-to-right.
 	local list = Instance.new("Frame")
 	list.Name = "List"
 	list.BackgroundTransparency = 1
-	list.Position = UDim2.fromOffset(PANEL_PADDING_X, PANEL_PADDING_Y)
-	list.Size = UDim2.new(1, -PANEL_PADDING_X * 2, 1, -PANEL_PADDING_Y * 2)
+	list.Position = UDim2.fromOffset(PANEL_PADDING_X + TOOL_COLUMN_WIDTH + CARD_PADDING, PANEL_PADDING_Y)
+	list.Size = UDim2.new(1, -(PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING), 1, -PANEL_PADDING_Y * 2)
 	list.Parent = frame
 
 	local layout = Instance.new("UIListLayout")
@@ -146,6 +172,79 @@ function Shop.new(frame: Frame, onCardClicked: (id: string) -> ()): Shop
 
 	self:refresh()
 	return self
+end
+
+function Shop.buildShovelButton(self: Shop, parent: Instance): (TextButton, Frame)
+	local button = Instance.new("TextButton")
+	button.Name = "Shovel"
+	button.AutoButtonColor = false
+	button.Size = UDim2.new(1, 0, 0, TOOL_BUTTON_HEIGHT)
+	button.BackgroundColor3 = CARD_BG
+	button.Text = ""
+	button.Parent = parent
+	styleCorner(button, CARD_CORNER_RADIUS)
+
+	local border = Instance.new("Frame")
+	border.Name = "ActiveBorder"
+	border.AnchorPoint = Vector2.new(0.5, 0.5)
+	border.Position = UDim2.new(0.5, 0, 0.5, 0)
+	border.Size = UDim2.new(1, 4, 1, 4)
+	border.BackgroundColor3 = SHOVEL_ACTIVE_BORDER
+	border.BackgroundTransparency = 1
+	border.ZIndex = button.ZIndex - 1
+	styleCorner(border, BORDER_CORNER_RADIUS)
+	border.Parent = button
+
+	local handle = Instance.new("Frame")
+	handle.AnchorPoint = Vector2.new(0.5, 0)
+	handle.Position = UDim2.new(0.5, 0, 0, 10)
+	handle.Size = UDim2.fromOffset(5, 12)
+	handle.BackgroundColor3 = Color3.fromRGB(120, 80, 40)
+	handle.BorderSizePixel = 0
+	handle.Parent = button
+	local handleCorner = Instance.new("UICorner")
+	handleCorner.CornerRadius = UDim.new(0, 2)
+	handleCorner.Parent = handle
+
+	local blade = Instance.new("Frame")
+	blade.AnchorPoint = Vector2.new(0.5, 1)
+	blade.Position = UDim2.new(0.5, 0, 1, -10)
+	blade.Size = UDim2.fromOffset(16, 8)
+	blade.BackgroundColor3 = Color3.fromRGB(190, 195, 205)
+	blade.BorderSizePixel = 0
+	blade.Parent = button
+	local bladeCorner = Instance.new("UICorner")
+	bladeCorner.CornerRadius = UDim.new(0, 2)
+	bladeCorner.Parent = blade
+
+	button.Activated:Connect(function()
+		self.callbacks.onShovelClicked()
+	end)
+
+	return button, border
+end
+
+function Shop.buildCancelButton(self: Shop, parent: Instance): TextButton
+	local button = Instance.new("TextButton")
+	button.Name = "Cancel"
+	button.AutoButtonColor = false
+	button.AnchorPoint = Vector2.new(0, 1)
+	button.Position = UDim2.new(0, 0, 1, 0)
+	button.Size = UDim2.new(1, 0, 0, TOOL_BUTTON_HEIGHT)
+	button.BackgroundColor3 = CANCEL_BG
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 22
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Text = "✕"
+	button.Visible = false
+	button.Parent = parent
+	styleCorner(button, CARD_CORNER_RADIUS)
+
+	button.Activated:Connect(function()
+		self.callbacks.onCancelClicked()
+	end)
+
+	return button
 end
 
 -- Builds one portrait card: swatch icon → name → cost (stacked top-to-bottom).
@@ -213,7 +312,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	costLabel.Parent = button
 
 	button.Activated:Connect(function()
-		self.onCardClicked(definition.id)
+		self.callbacks.onCardClicked(definition.id)
 	end)
 
 	table.insert(self.cards, {
@@ -245,6 +344,15 @@ end
 function Shop.setSelected(self: Shop, id: string?)
 	self.selectedId = id
 	self:refresh()
+end
+
+function Shop.setShovelActive(self: Shop, active: boolean)
+	self.shovelButton.BackgroundColor3 = if active then SHOVEL_ACTIVE_BG else CARD_BG
+	self.shovelBorder.BackgroundTransparency = if active then 0 else 1
+end
+
+function Shop.setCancelVisible(self: Shop, visible: boolean)
+	self.cancelButton.Visible = visible
 end
 
 return Shop
