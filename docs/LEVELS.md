@@ -89,25 +89,42 @@ Levels.count()             -- number of authored levels
 Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 `DEFAULT_GROUP_DELAY`.
 
-### Seeded campaign ✅ (data only)
+### Seeded campaign ✅ (Milestones 8 + 10)
 
 Two opening levels are seeded using **Zombie**, each ending in an `isBigWave` group:
 
-| Level | name          | enemies (count per group)                  |
-| ----- | ------------- | ------------------------------------------ |
-| 1     | First Contact | 1, 2, **2** TutorialZombie                 |
-| 2     | Rising Tide   | 2, 2 TutorialZombie, **2** EarlyZombie     |
-| 3     | Greenhorns    | 2, 3 EarlyZombie, **3** Zombie             |
+| Level | name              | enemies (count per group)                          |
+| ----- | ----------------- | -------------------------------------------------- |
+| 1     | First Contact     | 1, 2, **2** Zombie                                 |
+| 2     | Rising Tide       | 2, 2 Zombie, **2** Zombie                          |
+| 3     | Greenhorns        | 2, 3 Zombie, **3** Zombie                          |
+| 4     | Pressing Forward  | 2 Zombie, 3 Zombie, **3** Zombie                   |
+| 5     | Goblin Scout      | 3 Zombie, **1** Goblin, 2 Zombie, **2** Goblin     |
+| 6     | Quick Feet        | 3 Zombie, 2 Goblin, 2 Zombie, **3** Goblin         |
+| 7     | Crooked Charge    | 3 Goblin, 3 Zombie, 2 Goblin, **2** Zombie         |
+| 8     | Hold the Line     | 3 Zombie, 3 Goblin, 2 Zombie, **3** Goblin       |
+| 9     | Before the Banner | 4 Goblin, 3 Zombie, 3 Goblin, **3** Zombie         |
+| 10    | Orc Warlord       | 4 Zombie, 4 Goblin, 3 Zombie, **1** Orc (boss)     |
 
-Richer monster types per level arrive with Milestone 10.
+Milestone 10 adds roster variety through **one new monster at a time**, not a
+bundle of types in a single level.
+
+Introduction cadence (repeat when authoring Levels 15, 20, …):
+
+- **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
+  `Goblin`; Level 15 would be the next roster entry when authored).
+- **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
+  `Orc`; Level 20 would be the next boss when authored).
+- Levels between introductions mix only monsters the player has already seen,
+  ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 
 ### Difficulty ramp (early campaign)
 
 Progression is tuned in **small steps** across level data — never a single giant
 spike between adjacent levels:
 
-1. **Enemy tier** — `TutorialZombie` (150 HP, slow) → `EarlyZombie` (250 HP) →
-   standard `Zombie` (1000 HP). A level should introduce at most one tier step.
+1. **Enemy profile consistency** — early campaign uses the same `Zombie` stat line
+   across levels; difficulty comes from group count and pacing, not hidden HP scaling.
 2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 6 →
    Level 3: 8).
 3. **Pacing** — `startDelay` and `spawnInterval` shrink gradually; the first
@@ -115,9 +132,9 @@ spike between adjacent levels:
 4. **Big wave** — the final group is the hardest step *within* a level, not a
    jump to endgame tuning.
 
-Level 1 is intentionally gentle: **25-second grace** before the first enemy,
-`TutorialZombie` spawns one at a time, and starting coins cover a coin producer
-plus an attacker (see `EconomyConfig.STARTING_COINS`).
+Level 1 is intentionally gentle: **25-second grace** before the first enemy, with
+small Zombie groups and enough starting coins for a coin producer plus an attacker
+(see `EconomyConfig.STARTING_COINS`).
 
 ---
 

@@ -74,7 +74,7 @@ UI and input are driven by client Controllers
 The placement experience is split so each controller has one job:
 
 - **`InputController`** translates raw devices into intent signals:
-  `primaryAction` (left-click / tap / Enter) and `secondaryAction` (right-click).
+  `primaryAction` (left-click / tap / Enter).
   Inputs already consumed by the GUI (`gameProcessed`) are ignored, so clicking
   a Shop button never doubles as a battlefield action.
 - **`PlacementController`** holds the selected Brainrot, renders the translucent

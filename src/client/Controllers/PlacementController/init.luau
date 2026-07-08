@@ -272,13 +272,6 @@ local function onPrimaryAction(position: Vector2)
 	PlacementController.cancel()
 end
 
-local function onSecondaryAction(position: Vector2)
-	if selectedId or shovelMode then
-		return
-	end
-	tryRemoveAt(position)
-end
-
 function PlacementController.init()
 	placeRemote = Remotes.getEvent("PlaceBrainrot")
 	removeRemote = Remotes.getEvent("RemoveBrainrot")
@@ -288,7 +281,6 @@ end
 
 function PlacementController.start()
 	InputController.primaryAction:Connect(onPrimaryAction)
-	InputController.secondaryAction:Connect(onSecondaryAction)
 
 	UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
 		if input.UserInputType == Enum.UserInputType.MouseMovement

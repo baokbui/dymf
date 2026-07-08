@@ -8,7 +8,6 @@
 
 	Signals (each carries the screen position the action occurred at):
 		primaryAction     - left click / tap / Enter   (confirm, e.g. place / shovel)
-		secondaryAction   - right click on the battlefield (legacy remove when idle)
 
 	Inputs already consumed by the GUI (gameProcessed) are ignored, so clicking
 	Shop buttons never doubles as a battlefield action.
@@ -28,11 +27,9 @@ InputController.Name = "InputController"
 local log = Logger.new(InputController.Name)
 
 local primaryBindable = Instance.new("BindableEvent")
-local secondaryBindable = Instance.new("BindableEvent")
 
 -- RBXScriptSignals other controllers connect to. Set in init().
 InputController.primaryAction = primaryBindable.Event
-InputController.secondaryAction = secondaryBindable.Event
 
 local function currentScreenPosition(input: InputObject): Vector2
 	-- input.Position is in screen space for mouse/touch; Z is unused here.
@@ -52,8 +49,6 @@ local function onInputBegan(input: InputObject, processed: boolean)
 		or keyCode == Enum.KeyCode.Return
 	then
 		primaryBindable:Fire(currentScreenPosition(input))
-	elseif inputType == Enum.UserInputType.MouseButton2 then
-		secondaryBindable:Fire(currentScreenPosition(input))
 	end
 end
 

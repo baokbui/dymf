@@ -51,11 +51,11 @@ toward the house (−X), one tile per `secondsPerGrid` seconds.
 | ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
 | TutorialZombie | 150 | 7 | 40 | 2.5s | | — (Level 1 tutorial only) |
 | EarlyZombie | 250 | 6 | 55 | 2.2s | | — (Level 2–3 bridge) |
-| Zombie | 1000 | 4.7 | 100 | 2s | | — |
+| Zombie | 200 | 4.7 | 100 | 2s | | — |
 | Vampire | 1000 | 2.5 | 75 | 1s | | — |
 | Werewolf | 1500 | 3.5 | 150 | 1s | | — |
 | Skeleton | 1000 | 4.7 | 100 | 1.5s | | — |
-| Goblin | 1000 | 3 | 100 | 1s | | — |
+| Goblin | 200 | 3 | 100 | 1s | | — |
 | Orc | 20000 | 8 | 10000 | 4s | Y | One-shot brainrot (club) |
 | Spider | 1000 | 3.5 | 100 | 1.5s | | Jump over first brainrot |
 | Necromancer | 10000 | 6 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
@@ -114,7 +114,17 @@ registered and will be completed in Milestones 7 and 10.
 
 ---
 
-## Future additions (Milestone 10+)
+## Campaign rollout ✅ (Milestone 10)
 
-Additional archetypes (Shield, Flying, Carrier, …) are added as registry data
-plus ability handlers — no AI duplication.
+The roster is introduced **one monster at a time** through campaign levels:
+
+- Levels 1–4: same `Zombie` profile, with gradual count/pacing changes only.
+- **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).
+- Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps slowly (Level 8 is a
+  plateau at roughly the same pressure as Level 7).
+- **Level 10:** first boss — `Orc` (heavy melee counterpart to the Goblin line).
+
+Future cadence when levels are authored: **one** new non-boss every 5 levels
+(e.g. Level 15), **one** boss every 10 levels (e.g. Level 20). Further
+archetypes (Shield, Flying, Carrier, …) follow the same pattern: registry data
+plus ability handlers, never duplicated base AI.

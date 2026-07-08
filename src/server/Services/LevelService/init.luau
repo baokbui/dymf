@@ -282,6 +282,40 @@ function LevelService.getClientState(player: Player): { [string]: any }
 	return buildPayloadForPlayer(player)
 end
 
+function LevelService.getSaveProgress(player: Player): (number, number, number)
+	local state = states[player.UserId]
+	if not state then
+		return 1, 1, LevelConfig.STARTING_PLAYER_HEALTH
+	end
+	return state.currentLevel, state.highestUnlockedLevel, state.playerHealth
+end
+
+function LevelService.applySaveProgress(player: Player, currentLevel: number, highestUnlockedLevel: number, playerHealth: number)
+	local state = states[player.UserId]
+	if not state then
+		return
+	end
+
+	local maxLevel = Levels.count()
+	local sanitizedCurrent = math.clamp(math.floor(currentLevel), 1, math.max(1, maxLevel))
+	local sanitizedHighest = math.clamp(math.floor(highestUnlockedLevel), sanitizedCurrent, math.max(1, maxLevel))
+
+	state.currentLevel = sanitizedCurrent
+	state.highestUnlockedLevel = sanitizedHighest
+	state.playerHealth = math.max(1, math.floor(playerHealth))
+	state.activeRun = nil
+	state.countdownEnd = 0
+	state.bigWaveWarning = false
+	state.phase = PHASE.Preparation
+
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		EnemyService.clearPlot(plotModel)
+	end
+
+	broadcast(player)
+end
+
 -- Placement and coin income are only allowed while a level is in progress.
 function LevelService.isLevelActive(player: Player): boolean
 	local state = states[player.UserId]

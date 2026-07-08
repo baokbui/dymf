@@ -19,6 +19,7 @@ local Config = {
 	Brainrot = require(script.BrainrotConfig),
 	Monster = require(script.MonsterConfig),
 	Combat = require(script.CombatConfig),
+	Player = require(script.PlayerConfig),
 }
 
 table.freeze(Config)

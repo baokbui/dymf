@@ -95,7 +95,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
-        InputController/  (primary/secondary intent signals)
+        InputController/  (primary intent signal)
         BrainrotController/ (BrainrotAction sound feedback)
 
 Workspace/
@@ -262,8 +262,8 @@ Full details in `NETWORKING.md` / `UI.md` / `BRAINROTS.md`. Summary:
   `GroundCoin` pattern) and tagged `Brainrot` with identity attributes. Removal
   is owner-checked and frees the tile **without a refund**. It clears a leaving
   player's instances. Public: `getPlacements(plotModel)`.
-- **InputController** (client) centralizes input into `primaryAction` /
-  `secondaryAction` intent signals (ignoring GUI-consumed input).
+- **InputController** (client) centralizes input into `primaryAction`
+  intent signals (ignoring GUI-consumed input).
 - **PlacementController** (client) owns selection, the cosmetic ghost preview
   (reusing `GridController.resolveTileAt`), and forwarding place/remove intent.
   It exposes `select`/`cancel`/`isPlacing` and a `selectionChanged` signal.
@@ -338,6 +338,31 @@ Full details in `LEVELS.md`. Summary:
 - **`UIController/Level.luau`** — bottom-right level title, Start button, progress bar, big-wave banner.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
 - **`MonsterConfig.DEV_SPAWN.ENABLED = false`** — campaign spawns replace dev waves.
+
+### Milestone 9 — Save System ✅
+
+Full details in `SAVE_SYSTEM.md`. Summary:
+
+- **`SaveService`** is now the sole DataStore boundary (`BVZ_PlayerData_v1`), with
+  versioned load/migrate/save logic.
+- Player progression (`currentLevel`, `highestLevel`, `coins`, `playerHealth`,
+  planted Brainrots, unlocks, upgrades, statistics) persists on leave plus periodic autosave.
+- Restore flow is service-coordinated: `LevelService.applySaveProgress`,
+  `CoinService.setBalance`, and `BrainrotService.restorePlacements` after plot assignment.
+- Transient state remains unsaved: monsters, projectiles, ground coins, temporary
+  combat status, and active level timers.
+
+### Milestone 10 — Additional Monsters ✅
+
+Full details in `MONSTERS.md` / `LEVELS.md`. Summary:
+
+- Campaign content in `Shared.Levels` now includes Levels 4–10.
+- **One** new non-boss monster (`Goblin`) is introduced at Level 5; Levels 6–9
+  mix only `Zombie` + `Goblin` with a slow difficulty ramp.
+- **One** boss (`Orc`) is introduced at Level 10 as the big final wave.
+- Cadence repeats every 5 / 10 levels when more campaign content is authored.
+- All additions are data-driven level entries; no changes to base enemy AI/service
+  architecture were required.
 
 ### Design pivot — Level System (replaces Wave System)
 

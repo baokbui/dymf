@@ -6,7 +6,7 @@ Brainrots vs. Monsters (BVM) is a 3D Roblox tower defense game inspired by Plant
 
 Each player owns a separate battlefield where they defend against progressively harder monster levels by placing Brainrots on a grid. Players earn coins, purchase Brainrots, and progress through an increasingly difficult campaign of levels.
 
-Unlike traditional PvZ, player progress is persistent across sessions (🔜 Milestone 9 — save/load).
+Unlike traditional PvZ, player progress is persistent across sessions (✅ Milestone 9 — save/load).
 
 ---
 

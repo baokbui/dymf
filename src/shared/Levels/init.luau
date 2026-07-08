@@ -8,9 +8,13 @@
 	in `number` order; clearing one unlocks the next. Add a level by adding one
 	data entry here — never branch on level numbers in code.
 
-	Seeded with a gradual opening campaign: TutorialZombie (Level 1) → mixed
-	TutorialZombie / EarlyZombie (Level 2) → EarlyZombie with a small full-Zombie
-	finale (Level 3). Tune each level as data here — never branch on level numbers.
+	Campaign introduction cadence (authored in data):
+		- Levels 1–4: standard Zombie only (same hp profile across levels).
+		- Every 5 levels: introduce exactly one new non-boss monster (Level 5 = Goblin).
+		- Every 10 levels: introduce one boss as the big final wave (Level 10 = Orc).
+		- Repeat for Level 15 / 20, etc. when those levels are authored.
+
+	Adjacent levels ramp slowly — sometimes the same pressure as the level before.
 ]]
 
 local Types = require(script.Parent.Types)
@@ -24,9 +28,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "First Contact",
 		groups = {
 			-- Long grace + one slow enemy at a time so the player can plant and learn.
-			{ monsterId = "TutorialZombie", count = 1, startDelay = 25, spawnInterval = 6 },
-			{ monsterId = "TutorialZombie", count = 2, startDelay = 30, spawnInterval = 5 },
-			{ monsterId = "TutorialZombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
+			{ monsterId = "Zombie", count = 1, startDelay = 25, spawnInterval = 6 },
+			{ monsterId = "Zombie", count = 2, startDelay = 30, spawnInterval = 5 },
+			{ monsterId = "Zombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
 		},
 	},
 
@@ -35,10 +39,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 2,
 		name = "Rising Tide",
 		groups = {
-			-- Same enemy type as Level 1, slightly more pressure — no full Zombie yet.
-			{ monsterId = "TutorialZombie", count = 2, startDelay = 20, spawnInterval = 5.5 },
-			{ monsterId = "TutorialZombie", count = 2, startDelay = 28, spawnInterval = 4.5 },
-			{ monsterId = "EarlyZombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
+			-- Same monster profile as Level 1, slightly tighter pacing.
+			{ monsterId = "Zombie", count = 2, startDelay = 20, spawnInterval = 5.5 },
+			{ monsterId = "Zombie", count = 2, startDelay = 28, spawnInterval = 4.5 },
+			{ monsterId = "Zombie", count = 2, startDelay = 25, spawnInterval = 4, isBigWave = true },
 		},
 	},
 
@@ -47,10 +51,99 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 3,
 		name = "Greenhorns",
 		groups = {
-			-- EarlyZombie carries most of the level; a short full-Zombie big wave at the end.
-			{ monsterId = "EarlyZombie", count = 2, startDelay = 18, spawnInterval = 4.5 },
-			{ monsterId = "EarlyZombie", count = 3, startDelay = 22, spawnInterval = 4 },
+			-- Same Zombie profile as previous levels; small count bump only.
+			{ monsterId = "Zombie", count = 2, startDelay = 18, spawnInterval = 4.5 },
+			{ monsterId = "Zombie", count = 3, startDelay = 22, spawnInterval = 4 },
 			{ monsterId = "Zombie", count = 3, startDelay = 25, spawnInterval = 2.5, isBigWave = true },
+		},
+	},
+
+	Level4 = {
+		id = "Level4",
+		number = 4,
+		name = "Pressing Forward",
+		groups = {
+			-- Same total pressure as Level 3; more standard Zombies in the mix.
+			{ monsterId = "Zombie", count = 2, startDelay = 18, spawnInterval = 4.5 },
+			{ monsterId = "Zombie", count = 3, startDelay = 22, spawnInterval = 4 },
+			{ monsterId = "Zombie", count = 3, startDelay = 24, spawnInterval = 2.5, isBigWave = true },
+		},
+	},
+
+	-- Level 5: first new roster monster (Goblin only — faster grunt, same HP as Zombie).
+	Level5 = {
+		id = "Level5",
+		number = 5,
+		name = "Goblin Scout",
+		groups = {
+			{ monsterId = "Zombie", count = 3, startDelay = 16, spawnInterval = 4 },
+			{ monsterId = "Goblin", count = 1, startDelay = 22, spawnInterval = 5 },
+			{ monsterId = "Zombie", count = 2, startDelay = 20, spawnInterval = 3.5 },
+			{ monsterId = "Goblin", count = 2, startDelay = 22, spawnInterval = 3.5, isBigWave = true },
+		},
+	},
+
+	Level6 = {
+		id = "Level6",
+		number = 6,
+		name = "Quick Feet",
+		groups = {
+			{ monsterId = "Zombie", count = 3, startDelay = 15, spawnInterval = 3.8 },
+			{ monsterId = "Goblin", count = 2, startDelay = 18, spawnInterval = 3.5 },
+			{ monsterId = "Zombie", count = 2, startDelay = 18, spawnInterval = 3.2 },
+			{ monsterId = "Goblin", count = 3, startDelay = 20, spawnInterval = 3, isBigWave = true },
+		},
+	},
+
+	Level7 = {
+		id = "Level7",
+		number = 7,
+		name = "Crooked Charge",
+		groups = {
+			-- Small step up from Level 6.
+			{ monsterId = "Goblin", count = 3, startDelay = 14, spawnInterval = 3.5 },
+			{ monsterId = "Zombie", count = 3, startDelay = 16, spawnInterval = 3.5 },
+			{ monsterId = "Goblin", count = 2, startDelay = 18, spawnInterval = 3.2 },
+			{ monsterId = "Zombie", count = 2, startDelay = 18, spawnInterval = 3, isBigWave = true },
+		},
+	},
+
+	Level8 = {
+		id = "Level8",
+		number = 8,
+		name = "Hold the Line",
+		groups = {
+			-- Plateau: same enemy counts as Level 7, slightly tighter pacing.
+			{ monsterId = "Zombie", count = 3, startDelay = 14, spawnInterval = 3.5 },
+			{ monsterId = "Goblin", count = 3, startDelay = 15, spawnInterval = 3.2 },
+			{ monsterId = "Zombie", count = 2, startDelay = 16, spawnInterval = 3.2 },
+			{ monsterId = "Goblin", count = 3, startDelay = 17, spawnInterval = 3, isBigWave = true },
+		},
+	},
+
+	Level9 = {
+		id = "Level9",
+		number = 9,
+		name = "Before the Banner",
+		groups = {
+			-- Gentle ramp into the boss level.
+			{ monsterId = "Goblin", count = 4, startDelay = 13, spawnInterval = 3.2 },
+			{ monsterId = "Zombie", count = 3, startDelay = 14, spawnInterval = 3.2 },
+			{ monsterId = "Goblin", count = 3, startDelay = 15, spawnInterval = 3 },
+			{ monsterId = "Zombie", count = 3, startDelay = 16, spawnInterval = 2.8, isBigWave = true },
+		},
+	},
+
+	-- Level 10: first boss (Orc — heavy melee counterpart to the Goblin line).
+	Level10 = {
+		id = "Level10",
+		number = 10,
+		name = "Orc Warlord",
+		groups = {
+			{ monsterId = "Zombie", count = 4, startDelay = 12, spawnInterval = 3.2 },
+			{ monsterId = "Goblin", count = 4, startDelay = 14, spawnInterval = 3 },
+			{ monsterId = "Zombie", count = 3, startDelay = 15, spawnInterval = 2.8 },
+			{ monsterId = "Orc", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},
 }

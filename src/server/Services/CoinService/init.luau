@@ -99,6 +99,12 @@ function CoinService.getBalance(player: Player): number
 	return balances[player.UserId] or 0
 end
 
+-- Sets an authoritative balance (used by SaveService restore).
+function CoinService.setBalance(player: Player, amount: number)
+	balances[player.UserId] = math.max(0, math.floor(amount))
+	fireBalance(player)
+end
+
 -- Credits coins and notifies the client. Use for rewards/income.
 function CoinService.addCoins(player: Player, amount: number)
 	if amount <= 0 then

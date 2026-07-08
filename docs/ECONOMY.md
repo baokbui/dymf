@@ -41,7 +41,7 @@ Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 12s on a
 `CoinService` (server) is the **sole authority** over currency:
 
 - Holds each player's authoritative coin balance (starts at `STARTING_COINS`;
-  in-memory until `SaveService` adds persistence).
+  persisted by `SaveService` in Milestone 9).
 - Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
   coins** (one per active player per interval, **only while the level is
   `Active`**), each worth

@@ -58,9 +58,9 @@ Relevant constants (`Shared.Constants`):
 
 ---
 
-## Responsibilities (Milestone 9) 🔜
+## Responsibilities (Milestone 9) ✅
 
-`SaveService` (server) will:
+`SaveService` (server):
 
 - Load a player's `SaveData` on join (defaulting new players from config:
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).

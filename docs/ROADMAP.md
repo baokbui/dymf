@@ -161,7 +161,7 @@ Create the base Brainrot system.
 ## Complete When
 
 - All seven Brainrots function correctly (coin generation + combat through
-  `CombatService`). ✅
+`CombatService`). ✅
 
 ---
 
@@ -248,6 +248,8 @@ Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 
 # Milestone 9 — Save System
 
+**Status: ✅ Complete**
+
 ## Goal
 
 Persist player progress.
@@ -287,15 +289,14 @@ Persist player progress.
 
 # Milestone 10 — Additional Monsters
 
+**Status: ✅ Complete**
+
 ## Add
 
-- Fast Monster
-- Tank Monster
-- Shield Monster
-- Flying Monster
-- Carrier Monster
-- Boss Monster
-- Themed types (e.g. Vampire, Slime, Frankenstein)
+- Introduce monsters from the roster into campaign data.
+- **One** new non-boss every 5 levels (Level 5 = Goblin).
+- **One** boss every 10 levels (Level 10 = Orc); repeat at 15 / 20, etc.
+- Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
 
 ## Complete When
 

@@ -19,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local PlotConfig = require(Shared.Config.PlotConfig)
+local PlayerConfig = require(Shared.Config.PlayerConfig)
 local Logger = require(Shared.Utilities.Logger)
 
 local Plot = require(script.Plot)
@@ -34,6 +35,14 @@ local log = Logger.new(PlotService.Name)
 local plots: { Plot.Plot } = {}
 local plotsByUserId: { [number]: Plot.Plot } = {}
 local enemyLanesByRow: { [number]: Model } = {}
+local characterAddedConnections: { [number]: RBXScriptConnection } = {}
+
+local function applyCharacterMovement(character: Model)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = PlayerConfig.WALK_SPEED
+	end
+end
 
 local function findFreePlot(): Plot.Plot?
 	for _, plot in plots do
@@ -62,6 +71,11 @@ local function assignPlot(player: Player)
 	-- Direct every spawn/respawn to this plot's SpawnLocation, then (re)spawn
 	-- the character there. This avoids teleport-on-spawn override races.
 	player.RespawnLocation = plot.spawnLocation
+	local existingConnection = characterAddedConnections[player.UserId]
+	if existingConnection then
+		existingConnection:Disconnect()
+	end
+	characterAddedConnections[player.UserId] = player.CharacterAdded:Connect(applyCharacterMovement)
 	player:LoadCharacter()
 end
 
@@ -73,6 +87,11 @@ local function releasePlot(player: Player)
 		require(script.Parent.EnemyService).clearPlot(plot.model)
 		plotsByUserId[player.UserId] = nil
 		log:info(string.format("released Plot%d from %s", plot.index, player.Name))
+	end
+	local connection = characterAddedConnections[player.UserId]
+	if connection then
+		connection:Disconnect()
+		characterAddedConnections[player.UserId] = nil
 	end
 end
 

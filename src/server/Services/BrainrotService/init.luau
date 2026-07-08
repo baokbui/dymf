@@ -83,6 +83,56 @@ local function brainrotsFolder(plotModel: Model): Folder
 	return folder :: Folder
 end
 
+local function createPlacement(
+	instanceId: string,
+	definition: Types.BrainrotDefinition,
+	ownerUserId: number,
+	plotModel: Model,
+	position: Types.GridPosition,
+	health: number
+): Placement?
+	local topCenter = GridService.getWorldPosition(plotModel, position)
+	if not topCenter then
+		return nil
+	end
+
+	local clampedHealth = math.clamp(math.floor(health), 1, definition.health)
+	local model = BrainrotModel.create(
+		instanceId,
+		definition,
+		ownerUserId,
+		position,
+		topCenter,
+		brainrotsFolder(plotModel)
+	)
+
+	model:SetAttribute("HitsRemaining", clampedHealth)
+	model:SetAttribute("Health", math.floor(definition.maxHealth * clampedHealth / definition.health))
+
+	local placement: Placement = {
+		instanceId = instanceId,
+		brainrotId = definition.id,
+		ownerUserId = ownerUserId,
+		plotModel = plotModel,
+		position = position,
+		model = model,
+		health = clampedHealth,
+		definition = definition,
+		cooldownRemaining = definition.attackInterval,
+		frozenUntil = 0,
+		poisonUntil = 0,
+		poisonHitsPerTick = 0,
+		poisonNextTick = 0,
+		burnUntil = 0,
+		burnHitsPerTick = 0,
+		burnNextTick = 0,
+	}
+
+	placements[instanceId] = placement
+	BrainrotBehavior.register(placement)
+	return placement
+end
+
 -- Tears down a placement: destroys the model, frees its tile, drops state.
 local function destroyPlacement(placement: Placement)
 	BrainrotBehavior.unregister(placement)
@@ -156,43 +206,12 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		return
 	end
 
-	local topCenter = GridService.getWorldPosition(plotModel, position)
-	if not topCenter then
+	if not createPlacement(instanceId, definition, player.UserId, plotModel, position, definition.health) then
 		-- Should not happen (tile just reserved); roll everything back.
 		GridService.release(plotModel, position)
 		CoinService.addCoins(player, definition.cost)
 		return
 	end
-
-	local model = BrainrotModel.create(
-		instanceId,
-		definition,
-		player.UserId,
-		position,
-		topCenter,
-		brainrotsFolder(plotModel)
-	)
-
-	placements[instanceId] = {
-		instanceId = instanceId,
-		brainrotId = definition.id,
-		ownerUserId = player.UserId,
-		plotModel = plotModel,
-		position = position,
-		model = model,
-		health = definition.health,
-		definition = definition,
-		cooldownRemaining = definition.attackInterval,
-		frozenUntil = 0,
-		poisonUntil = 0,
-		poisonHitsPerTick = 0,
-		poisonNextTick = 0,
-		burnUntil = 0,
-		burnHitsPerTick = 0,
-		burnNextTick = 0,
-	}
-
-	BrainrotBehavior.register(placements[instanceId])
 end
 
 local function onRemoveBrainrot(player: Player, rawPosition: unknown)
@@ -248,6 +267,67 @@ end
 
 function BrainrotService.getPlacement(instanceId: string): Placement?
 	return placements[instanceId]
+end
+
+function BrainrotService.getSavePlacements(plotModel: Model): { Types.PlantedBrainrot }
+	local snapshot: { Types.PlantedBrainrot } = {}
+	for _, placement in placements do
+		if placement.plotModel == plotModel then
+			table.insert(snapshot, {
+				instanceId = placement.instanceId,
+				brainrotId = placement.brainrotId,
+				position = {
+					row = placement.position.row,
+					column = placement.position.column,
+				},
+				health = placement.health,
+			})
+		end
+	end
+	return snapshot
+end
+
+function BrainrotService.restorePlacements(player: Player, brainrots: { Types.PlantedBrainrot })
+	local plot = PlotService.getPlot(player)
+	if not plot then
+		return
+	end
+
+	for _, saved in brainrots do
+		if type(saved) ~= "table" then
+			continue
+		end
+
+		local position = toGridPosition(saved.position)
+		if not position then
+			continue
+		end
+
+		local definition = Brainrots.get(saved.brainrotId)
+		if not definition then
+			continue
+		end
+
+		local instanceId = if type(saved.instanceId) == "string" and saved.instanceId ~= ""
+			then saved.instanceId
+			else string.format("Brainrot_%d", nextInstanceId + 1)
+		local health = if type(saved.health) == "number" then saved.health else definition.health
+
+		local numericSuffix = string.match(instanceId, "^Brainrot_(%d+)$")
+		if numericSuffix then
+			nextInstanceId = math.max(nextInstanceId, tonumber(numericSuffix) :: number)
+		else
+			nextInstanceId += 1
+		end
+
+		if not GridService.tryOccupy(plot.model, position, instanceId) then
+			continue
+		end
+
+		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health) then
+			GridService.release(plot.model, position)
+		end
+	end
 end
 
 -- Removes every Brainrot on a plot and frees its tiles (level end / reset).
