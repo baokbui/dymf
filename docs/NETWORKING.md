@@ -41,11 +41,11 @@ Remotes module. That is the only required step.
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5  | Attack/coin feedback for local sounds   |
-| `CombatVisual`     | server → client | ✅ M7  | Hit flash + death fade on local plot    |
+| `CombatVisual`     | server → client | ✅ M7/M11 | Hit, death, explosion VFX (plot owner) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
-| `SelectLevel`      | client → server | 🔜 M14 | Replay a cleared level via Level Select  |
-| `ResetProgress`    | client → server | 🔜 M14 | Confirmed reset of all save data         |
+| `SelectLevel`      | client → server | 🔜 M13 | Replay a cleared level via Level Select  |
+| `ResetProgress`    | client → server | 🔜 M13 | Confirmed reset of all save data         |
 
 ### RemoteFunctions
 
@@ -139,9 +139,11 @@ whenever phase, progress, countdown, or big-wave warning changes. The client
 includes `level` inside the `RequestState` pull (`{ coins, level }`).
 
 **Defeat** — when a monster breaches the house during `Active`, `LevelService`
-handles defeat (no client remote). **Victory** — when all spawn groups are
-finished and no monsters remain, the server grants coins and unlocks the next
-level.
+clears the plot (Brainrots, monsters, ground coins), resets coins to the
+starting balance, and sets phase to `Defeat`. The client shows a red **Restart
+Level** button; pressing it fires the same `StartLevel` remote. **Victory** —
+when all spawn groups are finished and no monsters remain, the server grants
+coins and unlocks the next level.
 
 ---
 

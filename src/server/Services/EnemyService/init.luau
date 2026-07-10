@@ -326,7 +326,10 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 	runtime.health = math.max(0, runtime.health - damage)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 
-	if runtime.health <= 0 then
+	local isFatal = runtime.health <= 0
+	MonsterFeedback.flashHit(runtime.model, isFatal)
+
+	if isFatal then
 		destroyMonster(runtime)
 		return true
 	end

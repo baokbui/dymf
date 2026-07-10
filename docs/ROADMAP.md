@@ -304,7 +304,79 @@ Persist player progress.
 
 ---
 
-# Milestone 11 — Additional Brainrots
+# Milestone 11 — Visual Effects
+
+**Status: ✅ Complete**
+
+## Add
+
+- Projectiles
+- Explosions
+- Particles
+- Death effects
+- Coin effects
+
+## Complete When
+
+- Combat feels visually satisfying.
+
+---
+
+# Milestone 12 — Audio
+
+## Add
+
+- Background music
+- UI sounds
+- Monster sounds
+- Brainrot sounds
+- Ambient sounds
+- Boss music
+
+## Complete When
+
+- All major gameplay events have audio feedback.
+
+---
+
+# Milestone 13 — UI Polish
+
+## Improve
+
+- Shop
+- Coins
+- Level display (progress bar)
+- Level Select
+- Health
+- Settings
+- Reset Progress
+- Statistics
+
+## Complete When
+
+- UI is polished and easy to use.
+
+---
+
+# Milestone 14 — Balancing
+
+## Tune
+
+- Costs
+- Damage
+- Health
+- Coin generation
+- Cooldowns
+- Level difficulty
+- Enemy scaling
+
+## Complete When
+
+- Gameplay feels fair and engaging.
+
+---
+
+# Milestone 15 — Additional Brainrots
 
 ## Expand the roster.
 
@@ -326,76 +398,6 @@ Potential additions
 ## Complete When
 
 - The roster contains at least 15 Brainrots.
-
----
-
-# Milestone 12 — Visual Effects
-
-## Add
-
-- Projectiles
-- Explosions
-- Particles
-- Death effects
-- Coin effects
-
-## Complete When
-
-- Combat feels visually satisfying.
-
----
-
-# Milestone 13 — Audio
-
-## Add
-
-- Background music
-- UI sounds
-- Monster sounds
-- Brainrot sounds
-- Ambient sounds
-- Boss music
-
-## Complete When
-
-- All major gameplay events have audio feedback.
-
----
-
-# Milestone 14 — UI Polish
-
-## Improve
-
-- Shop
-- Coins
-- Level display (progress bar)
-- Level Select
-- Health
-- Settings
-- Reset Progress
-- Statistics
-
-## Complete When
-
-- UI is polished and easy to use.
-
----
-
-# Milestone 15 — Balancing
-
-## Tune
-
-- Costs
-- Damage
-- Health
-- Coin generation
-- Cooldowns
-- Level difficulty
-- Enemy scaling
-
-## Complete When
-
-- Gameplay feels fair and engaging.
 
 ---
 

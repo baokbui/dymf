@@ -1,0 +1,50 @@
+--!strict
+--[[
+	VfxConfig
+	Client visual-effect tuning. Gameplay values stay in CombatConfig / registries.
+]]
+
+local VfxConfig = {
+	-- Hit spark burst on damaged units.
+	HIT_BURST_COUNT = 6,
+	HIT_BURST_SPEED = 10,
+	HIT_BURST_SIZE = 0.35,
+	HIT_BURST_LIFETIME = 0.35,
+
+	-- Death dissolve companion burst.
+	DEATH_BURST_COUNT = 14,
+	DEATH_BURST_SPEED = 12,
+	DEATH_BURST_SIZE = 0.45,
+	DEATH_BURST_LIFETIME = 0.5,
+
+	-- Line-bomb / row explosion.
+	EXPLOSION_BURST_COUNT = 24,
+	EXPLOSION_BURST_SPEED = 18,
+	EXPLOSION_BURST_SIZE = 0.6,
+	EXPLOSION_BURST_LIFETIME = 0.55,
+	EXPLOSION_RING_SIZE = Vector3.new(8, 1.2, 8),
+	EXPLOSION_RING_DURATION = 0.25,
+
+	-- Ground coin pickup sparkle.
+	COIN_PICKUP_COUNT = 10,
+	COIN_PICKUP_SPEED = 8,
+	COIN_PICKUP_SIZE = 0.3,
+	COIN_PICKUP_LIFETIME = 0.4,
+
+	-- Projectile trail (client embellishment on server projectile parts).
+	PROJECTILE_TRAIL_LIFETIME = 0.18,
+	PROJECTILE_TRAIL_WIDTH = 0.25,
+	PROJECTILE_GLOW_BRIGHTNESS = 1.5,
+	PROJECTILE_GLOW_RANGE = 6,
+
+	-- Palette
+	HIT_COLOR = Color3.fromRGB(255, 140, 120),
+	DEATH_COLOR = Color3.fromRGB(200, 200, 210),
+	EXPLOSION_COLOR = Color3.fromRGB(255, 170, 60),
+	COIN_COLOR = Color3.fromRGB(255, 215, 70),
+	PROJECTILE_TRAIL_COLOR = Color3.fromRGB(230, 230, 255),
+}
+
+table.freeze(VfxConfig)
+
+return VfxConfig

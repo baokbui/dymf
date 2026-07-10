@@ -32,6 +32,10 @@ local MonsterConfig = {
 	ATTACK_PULSE_SCALE = 1.15,
 	ATTACK_PULSE_DURATION = 0.1,
 
+	-- Damage flash on the body (replicated to clients).
+	HIT_FLASH_COLOR = Color3.fromRGB(255, 90, 90),
+	HIT_FLASH_DURATION = 0.14,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

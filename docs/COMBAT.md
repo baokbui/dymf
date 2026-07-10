@@ -15,7 +15,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 | `CombatService` | Damage, death routing, target acquisition, projectiles, status effects |
 | `EnemyService` | Monster runtime state, movement, status fields, death cleanup |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
-| `CombatController` (client) | Hit flash + death fade (`CombatVisual` remote) |
+| `CombatController` (client) | Hit/death/explosion VFX, projectile trails (`CombatVisual` + plot watcher) |
 | `HealthBarController` (client) | Billboard health bars on the local plot |
 
 ---
@@ -67,6 +67,24 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 
 ---
 
+## Client visuals ✅ (Milestone 11)
+
+`CombatController` + `VfxUtil` (client) render feedback on the **local plot only**:
+
+| Effect | Trigger |
+| ------ | ------- |
+| Hit spark | `CombatVisual` kind `Hit` (client particles) |
+| Hit flash (monsters) | `MonsterFeedback.flashHit` on server (replicated body color) |
+| Death burst + fade | `CombatVisual` kind `Death` |
+| Line-bomb explosion | `CombatVisual` kind `Explosion` (`row`, `column`) |
+| Projectile trail/glow | Watches `plot.Projectiles` child parts (server-spawned) |
+| Coin pickup sparkle | `CoinController` when a collected coin despawns |
+
+Tuning lives in `Shared.Config.VfxConfig` (particles, colors, durations). Gameplay
+values remain in `CombatConfig`.
+
+---
+
 ## Death ✅ (Milestone 7)
 
 1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
@@ -95,7 +113,7 @@ death fade duration. **Never hardcode** combat tuning in services.
 
 | Name | Direction | Purpose |
 | ---- | --------- | ------- |
-| `CombatVisual` | server → client | Hit flash, death fade (plot owner only) |
+| `CombatVisual` | server → client | `Hit`, `Death`, `Explosion` (plot owner only) |
 
 See `NETWORKING.md` for the full catalog.
 

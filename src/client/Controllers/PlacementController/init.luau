@@ -20,6 +20,7 @@ local PlotConfig = require(Shared.Config.PlotConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
+local UIEvents = require(script.Parent.Parent.UIEvents)
 local GridController = require(script.Parent.GridController)
 local InputController = require(script.Parent.InputController)
 
@@ -265,6 +266,12 @@ local function onPrimaryAction(position: Vector2)
 	if not tile then
 		return
 	end
+
+	local definition = Brainrots.get(id)
+	if definition then
+		UIEvents.markPendingSpend()
+	end
+
 	placeRemote:FireServer(id, {
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),

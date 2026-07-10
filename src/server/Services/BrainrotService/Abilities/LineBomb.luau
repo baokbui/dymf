@@ -7,6 +7,7 @@ function LineBomb.onPlaced(ctx, callbacks)
 	CombatService.dealEntireRowDamage(
 		ctx.plotModel,
 		ctx.position.row,
+		ctx.position.column,
 		ctx.definition.damage,
 		ctx.ownerUserId
 	)

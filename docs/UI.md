@@ -18,7 +18,7 @@ StarterGui/
         Shop      (Frame)   ✅ M4
         Coins     (Frame)   ✅ M3
         LevelUI   (Frame)   ✅ M8
-        Settings  (Frame)   🔜 M14
+        Settings  (Frame)   🔜 M13
 ```
 
 `Coins` and `Shop` are populated at runtime by `UIController`; `LevelUI` and
@@ -52,7 +52,10 @@ UI and input are driven by client Controllers
 
 - **Coins** ✅ M3 — top-left counter showing the authoritative balance from
   `CoinsUpdated`, seeded by the initial `RequestState` pull. `UIController` builds
-  it inside `MainUI.Coins` and only displays state.
+  it inside `MainUI.Coins` via `CoinCounter.luau` and only displays state.
+  Floating **+N** (green) appears when the player collects a ground coin;
+  **-N** (red) appears when a Brainrot placement is confirmed by the server
+  (balance drop on `CoinsUpdated`).
 - **Shop** ✅ M4 — PvZ-style **horizontal bar pinned to the top-center** of the
   screen. A **shovel** tool and red **cancel** button sit to the left of the
   Brainrot cards (portrait tiles with swatch, name, and cost), built by
@@ -60,10 +63,11 @@ UI and input are driven by client Controllers
   the selected card gets a blue highlight. The cancel button appears while a card
   is selected; shovel mode swaps the cursor for digging up plants.
 - **LevelUI** ✅ M8 — bottom-right panel with the current level number/name, a
-  short phase hint, a green **Start Level** button (`StartLevel` remote), a
-  spawn-group **progress bar** during `Active`, and a **big-wave warning**
+  short phase hint, a green **Start Level** button (`StartLevel` remote) that
+  becomes a red **Restart Level** button during `Defeat`, a spawn-group
+  **progress bar** during `Active`, and a **big-wave warning**
   banner; reflects `LevelStateChanged`.
-- **Settings** 🔜 M14 — options plus **Reset Progress** (confirmation required,
+- **Settings** 🔜 M13 — options plus **Reset Progress** (confirmation required,
   `ResetProgress` remote), a **Level Select** for replaying cleared levels
   (`SelectLevel` remote), and statistics display.
 

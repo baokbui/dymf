@@ -125,7 +125,7 @@ of monster presence rules.
 
 
 
-## Planned roster (Milestone 11)
+## Planned roster (Milestone 15)
 
 Expand beyond the initial seven. Each addition is registry data plus an ability
 handler module when needed.

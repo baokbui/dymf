@@ -9,9 +9,8 @@
 	the Brainrot roster from the shared registry and routes card clicks to
 	PlacementController, mirroring the selection back into the card highlight.
 
-	Milestone 3 added the coin counter (authoritative balance from CoinsUpdated,
-	seeded by the RequestState pull). Milestone 4 adds the Shop panel. Milestone 8
-	adds the Level panel (current level, Start button, progress bar, bottom-right).
+	Milestone 8 adds the Level panel (current level, Start button, progress bar,
+	bottom-right).
 
 	Milestones 3-4, 8, 15.
 ]]
@@ -24,8 +23,10 @@ local Remotes = require(Shared.Remotes)
 local Constants = require(Shared.Constants)
 local Logger = require(Shared.Utilities.Logger)
 
+local UIEvents = require(script.Parent.Parent.UIEvents)
 local Shop = require(script.Shop)
 local Level = require(script.Level)
+local CoinCounter = require(script.CoinCounter)
 local PlacementController = require(script.Parent.PlacementController)
 
 local UIController = {}
@@ -34,61 +35,27 @@ UIController.Name = "UIController"
 local log = Logger.new(UIController.Name)
 
 local localPlayer = Players.LocalPlayer
-local amountLabel: TextLabel? = nil
+local coinCounter: CoinCounter.CoinCounter? = nil
 local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local selectedId: string? = nil
-
-local function buildCoinCounter(): TextLabel
-	local playerGui = localPlayer:WaitForChild("PlayerGui")
-	local mainUI = playerGui:WaitForChild("MainUI")
-	local frame = mainUI:WaitForChild("Coins") :: Frame
-
-	frame.Visible = true
-	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.fromOffset(16, 16)
-	frame.Size = UDim2.fromOffset(168, 52)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
-	frame.BackgroundTransparency = 0.2
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = frame
-
-	local icon = Instance.new("Frame")
-	icon.Name = "Icon"
-	icon.AnchorPoint = Vector2.new(0, 0.5)
-	icon.Position = UDim2.new(0, 12, 0.5, 0)
-	icon.Size = UDim2.fromOffset(28, 28)
-	icon.BackgroundColor3 = Color3.fromRGB(255, 200, 40)
-	icon.Parent = frame
-	local iconCorner = Instance.new("UICorner")
-	iconCorner.CornerRadius = UDim.new(1, 0)
-	iconCorner.Parent = icon
-
-	local label = Instance.new("TextLabel")
-	label.Name = "Amount"
-	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, 52, 0.5, 0)
-	label.Size = UDim2.new(1, -64, 1, 0)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 22
-	label.TextColor3 = Color3.fromRGB(255, 215, 0)
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = "0"
-	label.Parent = frame
-
-	return label
-end
+local lastBalance: number? = nil
+local spendPending = false
 
 local function setBalance(amount: number)
-	if amountLabel then
-		amountLabel.Text = string.format("%d", amount)
+	if coinCounter then
+		coinCounter:setBalance(amount)
 	end
 	if shop then
 		shop:setBalance(amount)
 	end
+end
+
+local function buildCoinCounter(): CoinCounter.CoinCounter
+	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local mainUI = playerGui:WaitForChild("MainUI")
+	local frame = mainUI:WaitForChild("Coins") :: Frame
+	return CoinCounter.new(frame)
 end
 
 local function buildShop(): Shop.Shop
@@ -130,14 +97,31 @@ local function applyLevelState(state: { [string]: any }?)
 end
 
 function UIController.init()
-	amountLabel = buildCoinCounter()
+	coinCounter = buildCoinCounter()
 	shop = buildShop()
 	levelPanel = buildLevelPanel()
 end
 
 function UIController.start()
 	Remotes.getEvent("CoinsUpdated").OnClientEvent:Connect(function(amount: number)
+		if spendPending and lastBalance and amount < lastBalance then
+			if coinCounter then
+				coinCounter:showDelta(amount - lastBalance)
+			end
+		end
+		spendPending = false
+		lastBalance = amount
 		setBalance(amount)
+	end)
+
+	UIEvents.coinDelta:Connect(function(delta: number)
+		if coinCounter then
+			coinCounter:showDelta(delta)
+		end
+	end)
+
+	UIEvents.pendingSpend:Connect(function()
+		spendPending = true
 	end)
 
 	Remotes.getEvent("LevelStateChanged").OnClientEvent:Connect(function(state: unknown)
@@ -165,6 +149,7 @@ function UIController.start()
 		return Remotes.getFunction("RequestState"):InvokeServer()
 	end)
 	if ok and type(state) == "table" and type(state.coins) == "number" then
+		lastBalance = state.coins
 		setBalance(state.coins)
 	end
 	if ok and type(state) == "table" and type(state.level) == "table" then

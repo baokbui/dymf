@@ -91,12 +91,17 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
         UIController/     (init + Shop — coin counter + shop HUD)
-        CoinController/   (ground-coin pickup intent)
+        CoinController/   (ground-coin pickup intent + sparkle — M3/M11)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary intent signal)
         BrainrotController/ (BrainrotAction sound feedback)
+        CombatController/ (CombatVisual VFX — M11)
+        HealthBarController/ (billboard health bars — M7)
+    Utilities/
+        VfxUtil/          (ephemeral particles — M11)
+        PlotUtil/         (local plot helpers — M11)
 
 Workspace/
     Plots/        plot models are generated here at runtime
@@ -332,10 +337,10 @@ Full details in `COMBAT.md`. Summary:
 Full details in `LEVELS.md`. Summary:
 
 - **`LevelService`** — preparation → Start Level → countdown → active spawn
-  groups via `LevelRun` scheduler; victory/defeat; plot + coin reset on victory;
-  `LevelStateChanged` remote.
+  groups via `LevelRun` scheduler; victory/defeat; plot + coin reset on victory
+  or defeat; `LevelStateChanged` remote.
 - **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
-- **`UIController/Level.luau`** — bottom-right level title, Start button, progress bar, big-wave banner.
+- **`UIController/Level.luau`** — bottom-right level title, Start / Restart button, progress bar, big-wave banner.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
 - **`MonsterConfig.DEV_SPAWN.ENABLED = false`** — campaign spawns replace dev waves.
 
@@ -364,6 +369,18 @@ Full details in `MONSTERS.md` / `LEVELS.md`. Summary:
 - All additions are data-driven level entries; no changes to base enemy AI/service
   architecture were required.
 
+### Milestone 11 — Visual Effects ✅
+
+Full details in `COMBAT.md`. Summary:
+
+- **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime).
+- **`VfxUtil`** + **`PlotUtil`** (client utilities) — ephemeral particles and plot helpers.
+- **`CombatController`** — hit/death particles, line-bomb explosions (`Explosion`
+  payload), projectile trail/glow on `plot.Projectiles` parts.
+- **`CoinController`** — gold pickup sparkle when a collected coin despawns.
+- Server still owns combat; visuals are pushed via `CombatVisual` or derived from
+  replicated instances (projectiles, coin removal).
+
 ### Design pivot — Level System (replaces Wave System)
 
 The game uses a **PvZ-style campaign** of discrete authored levels rather than an
@@ -380,7 +397,7 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
   carries `currentLevel` + `highestLevel` (replaces `currentWave`).
 - **`Shared.Constants.PHASE`** — extended with `Victory` and `Defeat`.
 - **`Shared.Remotes`** — `StartWave`/`WaveStateChanged` → `StartLevel`/
-  `LevelStateChanged`; new `SelectLevel` (level-select replay, M14).
+  `LevelStateChanged`; new `SelectLevel` (level-select replay, M13).
 - **`LevelService`** (server stub replaced) ✅ M8 — full campaign loop.
 - **`MainUI.LevelUI`** (frame scaffold) replaces `WaveUI`.
 

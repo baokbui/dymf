@@ -102,8 +102,8 @@ local function beginPreparation(player: Player, state: PlayerState)
 	setPhase(player, state, PHASE.Preparation)
 end
 
--- PvZ-style reset after clearing a level: empty lawn and starting sun/coins.
-local function resetPlotAfterVictory(player: Player)
+-- PvZ-style reset: empty lawn and starting coins (victory advance or defeat retry).
+local function resetPlotForFreshAttempt(player: Player)
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
 		BrainrotService.clearPlot(plotModel)
@@ -119,7 +119,7 @@ local function onVictory(player: Player, state: PlayerState)
 		return
 	end
 
-	resetPlotAfterVictory(player)
+	resetPlotForFreshAttempt(player)
 
 	local clearedNumber = definition.number
 	if state.currentLevel >= state.highestUnlockedLevel then
@@ -143,21 +143,11 @@ local function onVictory(player: Player, state: PlayerState)
 end
 
 local function onDefeat(player: Player, state: PlayerState)
-	local plotModel = PlotService.getPlotModel(player)
-	if plotModel then
-		EnemyService.clearPlot(plotModel)
-	end
-
 	state.activeRun = nil
 	state.playerHealth = LevelConfig.STARTING_PLAYER_HEALTH
+	resetPlotForFreshAttempt(player)
 	setPhase(player, state, PHASE.Defeat)
 	log:info(string.format("%s defeated on level %d", player.Name, state.currentLevel))
-
-	task.delay(RESULT_DISPLAY_TIME, function()
-		if states[player.UserId] == state then
-			beginPreparation(player, state)
-		end
-	end)
 end
 
 local function tickActivePlayer(player: Player, state: PlayerState)

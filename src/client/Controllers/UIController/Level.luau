@@ -23,6 +23,7 @@ local PANEL_BG = Color3.fromRGB(18, 20, 30)
 local TEXT_COLOR = Color3.fromRGB(235, 238, 245)
 local SUBTEXT_COLOR = Color3.fromRGB(120, 200, 255)
 local START_BUTTON_COLOR = Color3.fromRGB(90, 200, 120)
+local RESTART_BUTTON_COLOR = Color3.fromRGB(220, 70, 70)
 local PROGRESS_BG = Color3.fromRGB(40, 44, 58)
 local PROGRESS_FILL = Color3.fromRGB(90, 200, 120)
 local WARNING_COLOR = Color3.fromRGB(255, 90, 90)
@@ -187,6 +188,13 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 	end
 
 	self.startButton.Visible = state.canStart == true
+	if phase == PHASE.Defeat then
+		self.startButton.Text = "Restart Level"
+		self.startButton.BackgroundColor3 = RESTART_BUTTON_COLOR
+	else
+		self.startButton.Text = "Start Level"
+		self.startButton.BackgroundColor3 = START_BUTTON_COLOR
+	end
 	self.warningBanner.Visible = state.bigWaveWarning == true
 
 	local showProgress = phase == PHASE.Active

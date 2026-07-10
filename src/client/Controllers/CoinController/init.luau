@@ -6,7 +6,7 @@
 	re-validates ownership, existence, and distance before crediting, so this
 	controller only signals "I touched my coin" — it never changes balances.
 
-	Milestone 3.
+	Milestone 3. Milestone 11 adds pickup sparkle VFX.
 ]]
 
 local Players = game:GetService("Players")
@@ -18,6 +18,9 @@ local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
+local UIEvents = require(script.Parent.Parent.UIEvents)
+local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
+
 local CoinController = {}
 CoinController.Name = "CoinController"
 
@@ -27,6 +30,7 @@ local REQUEST_DEBOUNCE = 0.5 -- seconds between collect attempts per coin
 local localPlayer = Players.LocalPlayer
 
 local lastRequest: { [Instance]: number } = {}
+local pendingPickup: { [Instance]: boolean } = {}
 local collectEvent: RemoteEvent
 
 local function tryCollect(coin: BasePart, otherPart: BasePart)
@@ -41,8 +45,29 @@ local function tryCollect(coin: BasePart, otherPart: BasePart)
 		return
 	end
 	lastRequest[coin] = now
+	pendingPickup[coin] = true
 
 	collectEvent:FireServer(coin:GetAttribute("CoinId"))
+end
+
+local function onCoinRemoved(instance: Instance)
+	if not instance:IsA("BasePart") then
+		return
+	end
+	if instance:GetAttribute("OwnerUserId") ~= localPlayer.UserId then
+		return
+	end
+
+	if pendingPickup[instance] then
+		VfxUtil.playCoinPickup(instance.Position)
+		local value = instance:GetAttribute("Value")
+		if type(value) == "number" and value > 0 then
+			UIEvents.fireCoinDelta(value)
+		end
+	end
+
+	lastRequest[instance] = nil
+	pendingPickup[instance] = nil
 end
 
 local function onCoinAdded(instance: Instance)
@@ -67,9 +92,7 @@ function CoinController.start()
 		onCoinAdded(coin)
 	end
 	CollectionService:GetInstanceAddedSignal(Constants.TAGS.Coin):Connect(onCoinAdded)
-	CollectionService:GetInstanceRemovedSignal(Constants.TAGS.Coin):Connect(function(instance)
-		lastRequest[instance] = nil
-	end)
+	CollectionService:GetInstanceRemovedSignal(Constants.TAGS.Coin):Connect(onCoinRemoved)
 
 	log:info("started")
 end

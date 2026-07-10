@@ -194,6 +194,7 @@ end
 function CombatService.dealEntireRowDamage(
 	plotModel: Model,
 	row: number,
+	originColumn: number,
 	damage: number,
 	ownerUserId: number
 )
@@ -203,6 +204,11 @@ function CombatService.dealEntireRowDamage(
 		fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 	end
 	if #targets > 0 then
+		fireCombatVisual(ownerUserId, {
+			kind = "Explosion",
+			row = row,
+			column = originColumn,
+		})
 		log:info(string.format("entire-row damage %d on row %d (%d targets)", damage, row, #targets))
 	end
 end

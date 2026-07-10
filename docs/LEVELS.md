@@ -152,7 +152,7 @@ is in the registry above, not here.
 | `DEFAULT_SPAWN_INTERVAL`| 1.5   | Fallback gap between monsters in a group   |
 | `DEFAULT_GROUP_DELAY`   | 6     | Fallback gap between groups                |
 
-These (and the per-level data) are the knobs Milestone 15 (Balancing) tunes.
+These (and the per-level data) are the knobs Milestone 14 (Balancing) tunes.
 
 ---
 
@@ -170,6 +170,10 @@ These (and the per-level data) are the knobs Milestone 15 (Balancing) tunes.
 - On **Victory**: clearing the plot (Brainrots, monsters, ground coins) and
   resetting coins to `EconomyConfig.STARTING_COINS` (PvZ-style fresh start),
   then unlocking/advancing to the next level.
+- On **Defeat**: same plot reset (Brainrots, monsters, ground coins removed;
+  balance reset to starting coins). Phase stays **`Defeat`** until the player
+  presses **Restart Level** (`StartLevel` remote). Passive and ability coin
+  drops are blocked outside `Active`.
 - Broadcasting phase / level number / progress via `LevelStateChanged` (see
   `NETWORKING.md`).
 

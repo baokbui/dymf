@@ -391,4 +391,4 @@ See `ROADMAP.md` for milestone status. Summary:
 
 **Phase 4 🔜** — Additional monsters & bosses (M10)
 
-**Phase 5 🔜** — Roster expansion, VFX, audio polish, balancing, release (M11–18)
+**Phase 5 🔜** — VFX, audio, UI polish, balancing, roster expansion, release (M11–18)

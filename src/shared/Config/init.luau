@@ -20,6 +20,7 @@ local Config = {
 	Monster = require(script.MonsterConfig),
 	Combat = require(script.CombatConfig),
 	Player = require(script.PlayerConfig),
+	Vfx = require(script.VfxConfig),
 }
 
 table.freeze(Config)
