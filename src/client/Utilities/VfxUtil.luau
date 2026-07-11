@@ -127,6 +127,44 @@ function VfxUtil.playExplosion(position: Vector3)
 	end)
 end
 
+-- Smaller blast for each tile along a line-bomb row.
+function VfxUtil.playTileExplosion(position: Vector3)
+	emitBurst(
+		position,
+		VfxConfig.EXPLOSION_COLOR,
+		VfxConfig.TILE_EXPLOSION_BURST_COUNT,
+		VfxConfig.TILE_EXPLOSION_BURST_SPEED,
+		VfxConfig.TILE_EXPLOSION_BURST_SIZE,
+		VfxConfig.TILE_EXPLOSION_BURST_LIFETIME
+	)
+
+	local ring = Instance.new("Part")
+	ring.Name = "TileExplosionRing"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.Material = Enum.Material.Neon
+	ring.Color = VfxConfig.EXPLOSION_COLOR
+	ring.Transparency = 0.4
+	ring.Size = VfxConfig.TILE_EXPLOSION_RING_SIZE * 0.4
+	ring.CFrame = CFrame.new(position)
+	ring.Parent = effectsFolder()
+
+	TweenService:Create(
+		ring,
+		TweenInfo.new(VfxConfig.TILE_EXPLOSION_RING_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{
+			Size = VfxConfig.TILE_EXPLOSION_RING_SIZE,
+			Transparency = 1,
+		}
+	):Play()
+
+	task.delay(VfxConfig.TILE_EXPLOSION_RING_DURATION + 0.1, function()
+		ring:Destroy()
+	end)
+end
+
 function VfxUtil.decorateProjectile(part: BasePart)
 	if part:GetAttribute("VfxDecorated") == true then
 		return

@@ -40,6 +40,8 @@ local AudioConfig = {
 		"Death_Zombie",
 		"Death_TutorialZombie",
 		"Death_EarlyZombie",
+		"FreezeTime",
+		"BubbleTrap",
 		"CoinCollect",
 		"PlaceBrainrot",
 	},
@@ -165,17 +167,16 @@ local AudioConfig = {
 			MaxDuration = 0.22,
 		},
 		BubbleTrap = {
-			SoundId = "rbxasset://sounds/impact_water.mp3",
-			Volume = 0.5,
+			SoundId = "rbxassetid://5852470908",
+			Volume = 0.75,
 		},
 		LineBomb = {
-			SoundId = "rbxasset://sounds/impact_explosion_03.mp3",
+			SoundId = "rbxassetid://139771888058836",
 			Volume = 0.75,
 		},
 		FreezeTime = {
-			SoundId = "rbxasset://sounds/swoosh.wav",
-			Volume = 0.5,
-			PlaybackSpeed = 0.75,
+			SoundId = "rbxassetid://127777354835900",
+			Volume = 0.75,
 		},
 		ThrowKnifeHit = {
 			SoundId = "rbxassetid://137287949709499",

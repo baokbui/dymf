@@ -32,6 +32,7 @@ export type MonsterRuntime = {
 	isAttacking: boolean,
 	abilityState: Abilities.AbilityState,
 	skippedBrainrots: { [string]: boolean },
+	freezeVisual: string?,
 } & MonsterStatus.StatusFields
 
 export type BehaviorCallbacks = {
@@ -66,14 +67,15 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 	}
 end
 
-local function syncTransform(runtime: MonsterRuntime)
+local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
 	if not worldPos then
 		return
 	end
 	local body = runtime.model.PrimaryPart
 	if body then
-		body.Position = worldPos + Vector3.new(0, body.Size.Y / 2, 0)
+		local lift = floatY or 0
+		body.Position = worldPos + Vector3.new(0, body.Size.Y / 2 + lift, 0)
 	end
 	MonsterModel.setColumn(runtime.model, runtime.column)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
@@ -176,7 +178,22 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		end
 
 		if now < runtime.frozenUntil then
+			if runtime.freezeVisual == "Bubble" then
+				local bob = MonsterConfig.BUBBLE_FLOAT_OFFSET
+					+ math.sin(now * MonsterConfig.BUBBLE_BOB_SPEED) * MonsterConfig.BUBBLE_BOB_AMPLITUDE
+				syncTransform(runtime, bob)
+				MonsterFeedback.setBubbled(runtime.model, true)
+			else
+				MonsterFeedback.setFrozen(runtime.model, true)
+				syncTransform(runtime)
+			end
 			continue
+		end
+
+		if runtime.freezeVisual ~= nil then
+			runtime.freezeVisual = nil
+			MonsterFeedback.setFrozen(runtime.model, false)
+			MonsterFeedback.setBubbled(runtime.model, false)
 		end
 
 		local brainrotId, brainrotColumn = nearestBrainrotWest(runtime)

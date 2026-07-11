@@ -38,7 +38,7 @@ type MonsterHandlers = {
 	getProjectileWorldY: (plotModel: Model, row: number, startColumn: number) -> number?,
 	setProjectilePosition: (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> (),
 	damage: (instanceId: string, damage: number) -> boolean,
-	applyStatus: (instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?) -> (),
+	applyStatus: (instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?, visual: string?) -> (),
 	tickStatuses: (dt: number) -> (),
 }
 
@@ -152,7 +152,8 @@ function CombatService.attackInRow(
 	position: Types.GridPosition,
 	rangeTiles: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	soundKey: string?
 ): boolean
 	local targets = CombatService.getMonstersInRow(plotModel, position.row, position.column, rangeTiles)
 	if #targets == 0 then
@@ -160,10 +161,14 @@ function CombatService.attackInRow(
 	end
 	for _, monsterId in targets do
 		CombatService.damageMonster(monsterId, damage)
-		fireCombatVisual(ownerUserId, {
+		local payload: { [string]: any } = {
 			kind = "Hit",
 			instanceId = monsterId,
-		})
+		}
+		if soundKey then
+			payload.soundKey = soundKey
+		end
+		fireCombatVisual(ownerUserId, payload)
 	end
 	return true
 end
@@ -211,24 +216,46 @@ function CombatService.launchProjectile(
 	return true
 end
 
+function CombatService.fireRowExplosion(
+	ownerUserId: number,
+	row: number,
+	originColumn: number,
+	stagger: number?,
+	muteSound: boolean?
+)
+	fireCombatVisual(ownerUserId, {
+		kind = "Explosion",
+		row = row,
+		entireRow = true,
+		column = originColumn,
+		stagger = stagger,
+		muteSound = muteSound == true,
+	})
+end
+
 function CombatService.dealEntireRowDamage(
 	plotModel: Model,
 	row: number,
 	originColumn: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	options: { skipExplosion: boolean?, explosionStagger: number?, muteExplosionSound: boolean? }?
 )
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	for _, monsterId in targets do
 		CombatService.damageMonster(monsterId, damage)
 		fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 	end
+	if not (options and options.skipExplosion) then
+		CombatService.fireRowExplosion(
+			ownerUserId,
+			row,
+			originColumn,
+			options and options.explosionStagger,
+			options and options.muteExplosionSound
+		)
+	end
 	if #targets > 0 then
-		fireCombatVisual(ownerUserId, {
-			kind = "Explosion",
-			row = row,
-			column = originColumn,
-		})
 		log:info(string.format("entire-row damage %d on row %d (%d targets)", damage, row, #targets))
 	end
 end
@@ -257,11 +284,12 @@ function CombatService.applyRowStatus(
 	kind: Types.StatusEffectKind,
 	duration: number,
 	ownerUserId: number,
-	magnitude: number?
+	magnitude: number?,
+	visual: string?
 ): boolean
 	local targets = CombatService.getMonstersInRow(plotModel, row, fromColumn, rangeTiles)
 	for _, monsterId in targets do
-		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude)
+		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
 	end
 	return #targets > 0
 end
@@ -320,10 +348,11 @@ function CombatService.applyStatusToMonster(
 	monsterInstanceId: string,
 	kind: Types.StatusEffectKind,
 	duration: number,
-	magnitude: number?
+	magnitude: number?,
+	visual: string?
 )
 	if monsterHandlers then
-		monsterHandlers.applyStatus(monsterInstanceId, kind, duration, magnitude)
+		monsterHandlers.applyStatus(monsterInstanceId, kind, duration, magnitude, visual)
 	end
 end
 

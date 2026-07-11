@@ -19,6 +19,10 @@ local BrainrotConfig = {
 	-- Visual attack pulse (server tween, replicated on the model body).
 	ATTACK_PULSE_SCALE = 1.18,
 	ATTACK_PULSE_DURATION = 0.12,
+
+	-- Bombardino line-bomb fly-over (house → enemy along the planted row).
+	LINE_BOMB_FLIGHT_DURATION = 1.0,
+	LINE_BOMB_FLY_HEIGHT = 20,
 }
 
 table.freeze(BrainrotConfig)

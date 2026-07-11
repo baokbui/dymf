@@ -36,6 +36,19 @@ local MonsterConfig = {
 	HIT_FLASH_COLOR = Color3.fromRGB(255, 90, 90),
 	HIT_FLASH_DURATION = 0.14,
 
+	-- Freeze / stun tint (Lirili Larila).
+	FREEZE_COLOR = Color3.fromRGB(160, 220, 255),
+	FREEZE_MATERIAL = Enum.Material.Ice,
+
+	-- Bubble trap (Tralalero) — float in a translucent sphere until it pops.
+	BUBBLE_COLOR = Color3.fromRGB(170, 230, 255),
+	BUBBLE_TRANSPARENCY = 0.45,
+	BUBBLE_SIZE_PADDING = 2.2,
+	BUBBLE_FLOAT_OFFSET = 2.8,
+	BUBBLE_BOB_AMPLITUDE = 0.35,
+	BUBBLE_BOB_SPEED = 5,
+	BUBBLE_POP_DURATION = 0.18,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

@@ -44,6 +44,7 @@ local BrainrotBehavior = {}
 
 local active: { [string]: RuntimePlacement } = {}
 local destroyHandler: ((placement: RuntimePlacement) -> ())?
+local detachHandler: ((placement: RuntimePlacement) -> Model?)?
 
 local function buildContext(placement: RuntimePlacement)
 	return {
@@ -67,6 +68,12 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 				destroyHandler(placement)
 			end
 		end,
+		detachSelf = function()
+			if detachHandler then
+				return detachHandler(placement)
+			end
+			return nil
+		end,
 		freezeSelf = function(duration: number)
 			placement.frozenUntil = os.clock() + duration
 		end,
@@ -89,6 +96,10 @@ end
 
 function BrainrotBehavior.setDestroyHandler(handler: (placement: RuntimePlacement) -> ())
 	destroyHandler = handler
+end
+
+function BrainrotBehavior.setDetachHandler(handler: (placement: RuntimePlacement) -> Model?)
+	detachHandler = handler
 end
 
 function BrainrotBehavior.register(placement: RuntimePlacement)

@@ -52,6 +52,9 @@ Audio is display-only feedback.
 | `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`) |
 | `MonsterAttack` | Local Brainrot `Health` decreases (chew feedback) |
 | `MeleeBat` | Tung Tung hit via `BrainrotAction` (every connecting hit) |
+| `FreezeTime` | Lirili Larila freeze when ≥1 enemy is hit |
+| `BubbleTrap` | Tralalero hit via `CombatVisual.soundKey` (per enemy hit) |
+| `LineBomb` | Bombardino place / bombing run (`BrainrotAction`) |
 | Other ability keys | `BrainrotAction.action` when the ability calls `playSound` |
 
 Optional per-SFX fields in `AudioConfig.SoundDef`:
@@ -75,6 +78,7 @@ ids stay silent.
 | ----- | ---- |
 | Melee bat hit (incl. kill) | `MeleeBat` ability → `BrainrotAction` → `AudioController.play("MeleeBat")` + client pulse |
 | Knife impact | `CombatVisual` Hit with `soundKey = "ThrowKnifeHit"` |
+| Bubble trap hit | `CombatVisual` Hit with `soundKey = "BubbleTrap"` |
 | Generic hit particles | `CombatVisual` Hit (`muteSound` skips SFX when bat already played) |
 | Monster death | `CombatVisual` Death with `monsterId` → `Death_<id>` or `Death` |
 | Hit flash (red) | **Server** `MonsterFeedback.flashHit` (client Color is overwritten by replication) |

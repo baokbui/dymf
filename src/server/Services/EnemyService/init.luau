@@ -180,6 +180,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		isAttacking = false,
 		abilityState = {},
 		skippedBrainrots = {},
+		freezeVisual = nil,
 	}
 	for key, value in MonsterStatus.createFields() do
 		(runtime :: any)[key] = value
@@ -347,13 +348,25 @@ function EnemyService.applyStatusToMonster(
 	instanceId: string,
 	kind: Types.StatusEffectKind,
 	duration: number,
-	magnitude: number?
+	magnitude: number?,
+	visual: string?
 )
 	local runtime = monsters[instanceId]
 	if not runtime then
 		return
 	end
 	MonsterStatus.apply(runtime, kind, duration, magnitude)
+	if kind == "Freeze" or kind == "Stun" then
+		local style = if visual == "Bubble" then "Bubble" else "Ice"
+		;(runtime :: any).freezeVisual = style
+		if style == "Bubble" then
+			MonsterFeedback.setFrozen(runtime.model, false)
+			MonsterFeedback.setBubbled(runtime.model, true)
+		else
+			MonsterFeedback.setBubbled(runtime.model, false)
+			MonsterFeedback.setFrozen(runtime.model, true)
+		end
+	end
 	if kind == "Knockback" then
 		local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
 		if worldPos then

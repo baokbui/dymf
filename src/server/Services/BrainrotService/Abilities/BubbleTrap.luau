@@ -14,7 +14,8 @@ function BubbleTrap.tryAct(ctx, callbacks)
 		ctx.position,
 		ctx.definition.rangeTiles,
 		ctx.definition.damage,
-		ctx.ownerUserId
+		ctx.ownerUserId,
+		"BubbleTrap"
 	)
 	if not acted then
 		return false
@@ -27,10 +28,11 @@ function BubbleTrap.tryAct(ctx, callbacks)
 		ctx.definition.rangeTiles,
 		"Freeze",
 		trapDuration,
-		ctx.ownerUserId
+		ctx.ownerUserId,
+		nil,
+		"Bubble"
 	)
 	callbacks.pulseAttack()
-	callbacks.playSound("BubbleTrap")
 	return true
 end
 

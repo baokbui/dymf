@@ -111,8 +111,9 @@ Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
 
 - `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
 counts down `attackInterval`, and calls the ability's `tryAct` when ready.
-- `triggersOnPlace` abilities (Bombardino) call `onPlaced` once, then
-destroy the instance.
+- `triggersOnPlace` abilities (Bombardino) call `onPlaced` once. Bombardino
+detaches from the tile, deals row damage, flies house → enemy along the row
+while tile blasts track under it, then despawns.
 - Attackers only reset their cooldown when `tryAct` returns true (e.g. no
 monsters in range). **Coin producers** and **Lirili** always consume their
 cycle when they fire.

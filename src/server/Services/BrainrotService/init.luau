@@ -23,11 +23,13 @@
 	Milestone 5 (placement, lifecycle, and behavior tick).
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
+local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local GridUtil = require(Shared.Utilities.GridUtil)
 local Logger = require(Shared.Utilities.Logger)
@@ -35,6 +37,7 @@ local Types = require(Shared.Types)
 
 local BrainrotModel = require(script.BrainrotModel)
 local BrainrotBehavior = require(script.BrainrotBehavior)
+local Abilities = require(script.Abilities)
 local PlotService = require(script.Parent.PlotService)
 local GridService = require(script.Parent.GridService)
 local CoinService = require(script.Parent.CoinService)
@@ -139,6 +142,18 @@ local function destroyPlacement(placement: Placement)
 	placements[placement.instanceId] = nil
 	GridService.release(placement.plotModel, placement.position)
 	placement.model:Destroy()
+end
+
+-- Unregisters + frees the tile but keeps the model for a fly-over visual.
+local function detachPlacement(placement: Placement): Model?
+	if placements[placement.instanceId] ~= placement then
+		return nil
+	end
+	BrainrotBehavior.unregister(placement)
+	placements[placement.instanceId] = nil
+	GridService.release(placement.plotModel, placement.position)
+	CollectionService:RemoveTag(placement.model, Constants.TAGS.Brainrot)
+	return placement.model
 end
 
 local function applyBrainrotDamage(instanceId: string, hits: number): boolean
@@ -341,6 +356,11 @@ function BrainrotService.clearPlot(plotModel: Model)
 	for _, placement in toRemove do
 		destroyPlacement(placement)
 	end
+
+	local lineBomb = Abilities.get("LineBomb")
+	if lineBomb and (lineBomb :: any).clearPlot then
+		(lineBomb :: any).clearPlot(plotModel)
+	end
 end
 
 local function applyBrainrotStatus(
@@ -382,6 +402,7 @@ end
 
 function BrainrotService.init()
 	BrainrotBehavior.setDestroyHandler(destroyPlacement)
+	BrainrotBehavior.setDetachHandler(detachPlacement)
 	CombatService.setBrainrotDamageHandler(applyBrainrotDamage)
 	CombatService.setBrainrotStatusHandler(applyBrainrotStatus)
 end

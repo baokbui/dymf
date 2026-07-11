@@ -17,13 +17,22 @@ local VfxConfig = {
 	DEATH_BURST_SIZE = 0.45,
 	DEATH_BURST_LIFETIME = 0.5,
 
-	-- Line-bomb / row explosion.
+	-- Line-bomb / row explosion (single large blast, legacy).
 	EXPLOSION_BURST_COUNT = 24,
 	EXPLOSION_BURST_SPEED = 18,
 	EXPLOSION_BURST_SIZE = 0.6,
 	EXPLOSION_BURST_LIFETIME = 0.55,
 	EXPLOSION_RING_SIZE = Vector3.new(8, 1.2, 8),
 	EXPLOSION_RING_DURATION = 0.25,
+
+	-- Per-tile blasts along a Bombardino row (`entireRow` Explosion).
+	TILE_EXPLOSION_BURST_COUNT = 10,
+	TILE_EXPLOSION_BURST_SPEED = 12,
+	TILE_EXPLOSION_BURST_SIZE = 0.35,
+	TILE_EXPLOSION_BURST_LIFETIME = 0.4,
+	TILE_EXPLOSION_RING_SIZE = Vector3.new(3.2, 0.7, 3.2),
+	TILE_EXPLOSION_RING_DURATION = 0.2,
+	ROW_EXPLOSION_STAGGER = 0.035,
 
 	-- Ground coin pickup sparkle.
 	COIN_PICKUP_COUNT = 10,

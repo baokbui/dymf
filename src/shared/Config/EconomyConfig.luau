@@ -5,7 +5,7 @@
 ]]
 
 local EconomyConfig = {
-	STARTING_COINS = 125, -- Ballerina (50) + Tung Tung Sahur (75) for the tutorial
+	STARTING_COINS = 1000, -- TEMP testing (was 125: Ballerina 50 + Tung Tung 75)
 
 	-- Passive coin drops (see GAME_DESIGN: every ~30 seconds).
 	PASSIVE_DROP_INTERVAL = 30, -- seconds

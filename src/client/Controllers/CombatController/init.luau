@@ -15,6 +15,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
 local AudioConfig = require(Shared.Config.AudioConfig)
+local GridConfig = require(Shared.Config.GridConfig)
+local VfxConfig = require(Shared.Config.VfxConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -96,12 +98,34 @@ local function playDeathFade(instanceId: string?)
 	end
 end
 
-local function playExplosion(row: number?, column: number?)
-	if type(row) ~= "number" or type(column) ~= "number" then
+local function playExplosion(row: number?, column: number?, entireRow: boolean?, staggerOverride: number?)
+	if type(row) ~= "number" then
 		return
 	end
 	local plotModel = PlotUtil.getLocalPlotModel()
 	if not plotModel then
+		return
+	end
+
+	if entireRow == true then
+		local stagger = if type(staggerOverride) == "number" then staggerOverride else VfxConfig.ROW_EXPLOSION_STAGGER
+		for col = 1, GridConfig.COLUMNS do
+			local position = PlotUtil.getTileTopCenter(plotModel, row, col)
+			if position then
+				local delaySec = (col - 1) * stagger
+				if delaySec <= 0 then
+					VfxUtil.playTileExplosion(position)
+				else
+					task.delay(delaySec, function()
+						VfxUtil.playTileExplosion(position)
+					end)
+				end
+			end
+		end
+		return
+	end
+
+	if type(column) ~= "number" then
 		return
 	end
 	local position = PlotUtil.getTileTopCenter(plotModel, row, column)
@@ -177,8 +201,10 @@ local function onCombatVisual(payload: unknown)
 		playDeathSound(data.monsterId)
 		playDeathFade(data.instanceId)
 	elseif kind == "Explosion" then
-		AudioController.play("Explosion")
-		playExplosion(data.row, data.column)
+		if data.muteSound ~= true then
+			AudioController.play("Explosion")
+		end
+		playExplosion(data.row, data.column, data.entireRow == true, data.stagger)
 	end
 
 	tryConnectProjectileWatcher()

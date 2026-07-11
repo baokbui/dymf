@@ -9,6 +9,8 @@ local Abilities = {}
 export type AbilityCallbacks = {
 	dropCoinsOnGrid: (amount: number) -> (),
 	destroySelf: () -> (),
+	-- Unregisters + frees the tile but keeps the model (LineBomb fly-over).
+	detachSelf: () -> Model?,
 	freezeSelf: (duration: number) -> (),
 	pulseAttack: () -> (),
 	playSound: (soundKey: string) -> (),

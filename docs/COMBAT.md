@@ -55,7 +55,7 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`) | Pauses attacks (`frozenUntil`) |
+| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`) |
 | Slow | Reduces movement speed | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick |
 | Knockback | Pushes column east (+X) | — |
@@ -78,7 +78,7 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
 | Death burst + fade | `CombatVisual` kind `Death` |
-| Line-bomb explosion | `CombatVisual` kind `Explosion` (`row`, `column`) |
+| Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino flies house→enemy along the row; `entireRow` blasts each tile under the pass (`stagger` matches flight) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
 
@@ -120,7 +120,7 @@ death fade duration. **Never hardcode** combat tuning in services.
 
 | Name | Direction | Purpose |
 | ---- | --------- | ------- |
-| `CombatVisual` | server → client | `Hit` (`instanceId`, optional `soundKey` / `muteSound`), `Death` (`monsterId`, …), `Explosion` (plot owner only) |
+| `CombatVisual` | server → client | `Hit` (`instanceId`, optional `soundKey` / `muteSound`), `Death` (`monsterId`, …), `Explosion` (`row`, optional `column` / `entireRow`) |
 
 See `NETWORKING.md` for the full catalog.
 

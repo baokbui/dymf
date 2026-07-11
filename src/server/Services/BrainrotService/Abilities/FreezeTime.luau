@@ -9,15 +9,20 @@ function FreezeTime.tryAct(ctx, callbacks)
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
 	end
 
-	CombatService.applyRowStatus(
+	local acted = CombatService.applyRowStatus(
 		ctx.plotModel,
 		ctx.position.row,
 		ctx.position.column,
 		ctx.definition.rangeTiles,
 		"Freeze",
 		freezeDuration,
-		ctx.ownerUserId
+		ctx.ownerUserId,
+		nil,
+		"Ice"
 	)
+	if not acted then
+		return false
+	end
 
 	callbacks.pulseAttack()
 	callbacks.playSound("FreezeTime")
