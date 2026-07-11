@@ -7,7 +7,6 @@ function GenerateCoins.tryAct(ctx, callbacks)
 		return false
 	end
 	callbacks.dropCoinsOnGrid(amount)
-	callbacks.playSound("GenerateCoins")
 	return true
 end
 

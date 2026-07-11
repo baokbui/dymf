@@ -13,12 +13,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local CombatConfig = require(Shared.Config.CombatConfig)
+local AudioConfig = require(Shared.Config.AudioConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
+local AudioController = require(script.Parent.AudioController)
 
 local CombatController = {}
 CombatController.Name = "CombatController"
@@ -137,6 +139,21 @@ local function ensureProjectileWatcher()
 	folder.ChildAdded:Connect(watchProjectile)
 end
 
+local function playDeathSound(instanceId: string?)
+	if type(instanceId) == "string" then
+		local model = findModelByInstanceId(instanceId)
+		local monsterId = if model then model:GetAttribute("MonsterId") else nil
+		if type(monsterId) == "string" then
+			local keyed = "Death_" .. monsterId
+			if AudioConfig.SFX[keyed] then
+				AudioController.play(keyed)
+				return
+			end
+		end
+	end
+	AudioController.play("Death")
+end
+
 local function onCombatVisual(payload: unknown)
 	ensureProjectileWatcher()
 
@@ -147,10 +164,18 @@ local function onCombatVisual(payload: unknown)
 	local kind = data.kind
 	if kind == "Hit" then
 		flashHit(data.instanceId)
+		local soundKey = data.soundKey
+		if type(soundKey) == "string" and AudioConfig.SFX[soundKey] then
+			AudioController.play(soundKey)
+		else
+			AudioController.play("Hit")
+		end
 	elseif kind == "Death" then
+		playDeathSound(data.instanceId)
 		playDeathFade(data.instanceId)
 	elseif kind == "Explosion" then
 		playExplosion(data.row, data.column)
+		AudioController.play("Explosion")
 	end
 end
 

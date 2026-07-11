@@ -324,6 +324,8 @@ Persist player progress.
 
 # Milestone 12 — Audio
 
+**Status: ✅ Complete**
+
 ## Add
 
 - Background music
@@ -454,7 +456,56 @@ Potential additions
 
 ---
 
-# Milestone 19 — Post-Launch
+# Milestone 19 — Retention Systems
+
+## Goal
+
+Add first-time and recurring meta rewards that bring players back without
+touching core combat or level authority. Server owns all claim/progress state;
+UI only displays and sends intents.
+
+## Systems
+
+### 7-Day First-Time Rewards
+
+- One-time login streak for new players (days 1–7)
+- Authored reward table (coins and/or unlocks)
+- Persist claimed days + streak day via `SaveService`
+- Missed-day rules (reset streak vs. pause — decide at implementation)
+- Claim UI; server validates eligibility before granting
+
+### Spinner
+
+- Weighted reward wheel (coins, unlocks, cosmetics placeholders as available)
+- Free spin cadence (e.g. daily) + optional paid/extra spins later
+- Server rolls outcome; client only animates the result
+- Persist last spin time / remaining free spins
+
+### Daily Quests
+
+- Small rotating quest pool (e.g. place N Brainrots, clear a level, collect coins)
+- Daily reset (timezone / UTC — decide at implementation)
+- Progress tracked server-side; claim rewards when complete
+- Persist quest ids, progress, and claim state via `SaveService`
+
+## Architecture Notes
+
+- New service(s) own eligibility, rolls, and quest progress (e.g. `RewardService`,
+  `QuestService`) — never trust client claim/spin results
+- Grants go through existing economy / unlock APIs (`CoinService`, etc.)
+- Remotes for claim / spin / quest claim with full server validation
+- UI panels under `UIController` (display-only)
+
+## Complete When
+
+- New players can claim a 7-day first-time reward track.
+- Players can use the spinner on its free cadence and receive the rolled reward.
+- Daily quests appear, track progress, reset on schedule, and grant rewards on claim.
+- All progress survives leave/rejoin; exploits (double-claim, fake progress) fail server checks.
+
+---
+
+# Milestone 20 — Post-Launch
 
 ## Continue Development
 
@@ -463,7 +514,6 @@ Potential additions
 - New Monsters
 - New Maps
 - Seasonal Events
-- Daily Rewards
 - Achievements
 - Cosmetics
 - Quality of Life updates

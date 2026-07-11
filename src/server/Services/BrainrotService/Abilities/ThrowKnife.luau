@@ -13,7 +13,6 @@ function ThrowKnife.tryAct(ctx, callbacks)
 	)
 	if acted then
 		callbacks.pulseAttack()
-		callbacks.playSound("ThrowKnife")
 	end
 	return acted
 end

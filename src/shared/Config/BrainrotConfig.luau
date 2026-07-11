@@ -19,20 +19,8 @@ local BrainrotConfig = {
 	-- Visual attack pulse (server tween, replicated on the model body).
 	ATTACK_PULSE_SCALE = 1.18,
 	ATTACK_PULSE_DURATION = 0.12,
-
-	-- Placeholder rbxassetid sound keys (0 = silent until real assets are wired).
-	SOUNDS = {
-		GenerateCoins = 0,
-		MeleeBat = 0,
-		BubbleTrap = 0,
-		LineBomb = 0,
-		FreezeTime = 0,
-		ThrowKnife = 0,
-		Place = 0,
-	},
 }
 
-table.freeze(BrainrotConfig.SOUNDS)
 table.freeze(BrainrotConfig)
 
 return BrainrotConfig

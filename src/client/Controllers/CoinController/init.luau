@@ -20,6 +20,7 @@ local Logger = require(Shared.Utilities.Logger)
 
 local UIEvents = require(script.Parent.Parent.UIEvents)
 local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
+local AudioController = require(script.Parent.AudioController)
 
 local CoinController = {}
 CoinController.Name = "CoinController"
@@ -60,6 +61,7 @@ local function onCoinRemoved(instance: Instance)
 
 	if pendingPickup[instance] then
 		VfxUtil.playCoinPickup(instance.Position)
+		AudioController.play("CoinCollect")
 		local value = instance:GetAttribute("Value")
 		if type(value) == "number" and value > 0 then
 			UIEvents.fireCoinDelta(value)

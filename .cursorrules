@@ -26,6 +26,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/ECONOMY.md — coins and currency rules
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
+- docs/AUDIO.md — client audio (BGM, SFX, ambient)
 
 If code conflicts with the documentation, ask before changing architecture.
 

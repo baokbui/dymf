@@ -28,6 +28,7 @@ local Shop = require(script.Shop)
 local Level = require(script.Level)
 local CoinCounter = require(script.CoinCounter)
 local PlacementController = require(script.Parent.PlacementController)
+local AudioController = require(script.Parent.AudioController)
 
 local UIController = {}
 UIController.Name = "UIController"
@@ -41,6 +42,9 @@ local levelPanel: Level.LevelPanel? = nil
 local selectedId: string? = nil
 local lastBalance: number? = nil
 local spendPending = false
+local lastLevelPhase: string? = nil
+local lastCountdownCeil: number? = nil
+local lastBigWaveWarning = false
 
 local function setBalance(amount: number)
 	if coinCounter then
@@ -76,6 +80,7 @@ local function buildShop(): Shop.Shop
 		end,
 		onCancelClicked = function()
 			PlacementController.cancel()
+			AudioController.play("UiClick")
 		end,
 	})
 end
@@ -91,8 +96,42 @@ local function applyLevelState(state: { [string]: any }?)
 	if levelPanel and type(state) == "table" then
 		levelPanel:applyState(state)
 	end
-	if type(state) == "table" and type(state.phase) == "string" then
-		PlacementController.setPlacementAllowed(state.phase == Constants.PHASE.Active)
+	if type(state) ~= "table" then
+		return
+	end
+
+	local phase = state.phase
+	if type(phase) == "string" then
+		PlacementController.setPlacementAllowed(phase == Constants.PHASE.Active)
+
+		if lastLevelPhase ~= phase then
+			if phase == Constants.PHASE.Victory then
+				AudioController.play("Victory")
+				AudioController.setBossMusic(false)
+			elseif phase == Constants.PHASE.Defeat then
+				AudioController.play("Defeat")
+				AudioController.setBossMusic(false)
+			elseif phase == Constants.PHASE.Preparation or phase == Constants.PHASE.Countdown then
+				AudioController.setBossMusic(false)
+			end
+			lastLevelPhase = phase
+		end
+	end
+
+	if state.bigWaveWarning == true and not lastBigWaveWarning then
+		AudioController.play("BigWave")
+		AudioController.setBossMusic(true)
+	end
+	lastBigWaveWarning = state.bigWaveWarning == true
+
+	if phase == Constants.PHASE.Countdown and type(state.countdownRemaining) == "number" then
+		local ceil = math.ceil(state.countdownRemaining)
+		if lastCountdownCeil ~= ceil and ceil > 0 then
+			AudioController.play("CountdownTick")
+		end
+		lastCountdownCeil = ceil
+	else
+		lastCountdownCeil = nil
 	end
 end
 

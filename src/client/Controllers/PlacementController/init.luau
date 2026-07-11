@@ -23,6 +23,7 @@ local Logger = require(Shared.Utilities.Logger)
 local UIEvents = require(script.Parent.Parent.UIEvents)
 local GridController = require(script.Parent.GridController)
 local InputController = require(script.Parent.InputController)
+local AudioController = require(script.Parent.AudioController)
 
 local PlacementController = {}
 PlacementController.Name = "PlacementController"
@@ -192,6 +193,7 @@ local function tryRemoveAt(position: Vector2)
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),
 	})
+	AudioController.play("RemoveBrainrot")
 end
 
 function PlacementController.select(brainrotId: string)
@@ -205,6 +207,7 @@ function PlacementController.select(brainrotId: string)
 		PlacementController.setShovelMode(false)
 	end
 	setSelected(brainrotId)
+	AudioController.play("UiSelect")
 end
 
 function PlacementController.setPlacementAllowed(allowed: boolean)
@@ -242,6 +245,7 @@ function PlacementController.setShovelMode(enabled: boolean)
 	if enabled then
 		local mouse = localPlayer:GetMouse()
 		updateShovelCursorPosition(Vector2.new(mouse.X, mouse.Y))
+		AudioController.play("UiClick")
 	end
 	fireShovelModeChanged()
 end
@@ -276,6 +280,7 @@ local function onPrimaryAction(position: Vector2)
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),
 	})
+	AudioController.play("PlaceBrainrot")
 	PlacementController.cancel()
 end
 

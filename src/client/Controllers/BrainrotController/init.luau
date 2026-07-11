@@ -2,37 +2,22 @@
 --[[
 	BrainrotController
 	Plays client-side feedback for Brainrot actions pushed by the server
-	(BrainrotAction remote). Gameplay logic stays on the server.
+	(BrainrotAction remote). Gameplay logic stays on the server; audio is
+	routed through AudioController (Milestone 12).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local SoundService = game:GetService("SoundService")
 
 local Shared = ReplicatedStorage.Shared
-local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
+
+local AudioController = require(script.Parent.AudioController)
 
 local BrainrotController = {}
 BrainrotController.Name = "BrainrotController"
 
 local log = Logger.new(BrainrotController.Name)
-
-local function playActionSound(action: string)
-	local soundId = BrainrotConfig.SOUNDS[action]
-	if type(soundId) ~= "number" or soundId <= 0 then
-		return
-	end
-
-	local sound = Instance.new("Sound")
-	sound.SoundId = string.format("rbxassetid://%d", soundId)
-	sound.Volume = 0.6
-	sound.Parent = SoundService
-	sound:Play()
-	sound.Ended:Connect(function()
-		sound:Destroy()
-	end)
-end
 
 local function onBrainrotAction(payload: unknown)
 	if type(payload) ~= "table" then
@@ -42,7 +27,7 @@ local function onBrainrotAction(payload: unknown)
 	if type(action) ~= "string" then
 		return
 	end
-	playActionSound(action)
+	AudioController.play(action)
 end
 
 function BrainrotController.init()

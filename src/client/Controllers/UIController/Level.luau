@@ -14,6 +14,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 
+local AudioController = require(script.Parent.Parent.AudioController)
+
 local Level = {}
 Level.__index = Level
 
@@ -134,6 +136,7 @@ function Level.new(parent: Frame): LevelPanel
 	styleCorner(startButton, 10)
 
 	startButton.MouseButton1Click:Connect(function()
+		AudioController.play("LevelStart")
 		Remotes.getEvent("StartLevel"):FireServer()
 	end)
 

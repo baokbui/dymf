@@ -21,6 +21,7 @@ local Config = {
 	Combat = require(script.CombatConfig),
 	Player = require(script.PlayerConfig),
 	Vfx = require(script.VfxConfig),
+	Audio = require(script.AudioConfig),
 }
 
 table.freeze(Config)

@@ -75,6 +75,7 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 | ------ | ------- |
 | Hit spark | `CombatVisual` kind `Hit` (client particles) |
 | Hit flash (monsters) | `MonsterFeedback.flashHit` on server (replicated body color) |
+| Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Death burst + fade | `CombatVisual` kind `Death` |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` (`row`, `column`) |
 | Projectile trail/glow | Watches `plot.Projectiles` child parts (server-spawned) |

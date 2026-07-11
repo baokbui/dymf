@@ -313,6 +313,7 @@ local function onProjectileImpact(instanceId: string, damage: number, ownerUserI
 	fireCombatVisual(ownerUserId, {
 		kind = "Hit",
 		instanceId = instanceId,
+		soundKey = "ThrowKnifeHit",
 	})
 	return hit
 end

@@ -154,9 +154,9 @@ Each Brainrot defines (see `BRAINROTS.md` for the full schema):
 Tralalero Tralala, Bombardino Crocodilo, Lirili Larila, Cappuccino Assassino,
 Chimpanzini Bananini.
 
-Attack animations use a server-side pulse tween today; sound hooks exist via the
-`BrainrotAction` remote (asset ids wired in `BrainrotConfig.SOUNDS`). Full rig
-animations and final audio arrive in later polish milestones.
+Attack animations use a server-side pulse tween today; ability SFX play via the
+`BrainrotAction` remote through `AudioController` / `AudioConfig` (Milestone 12 ✅).
+Full character rig animations arrive in later polish milestones.
 
 ---
 
