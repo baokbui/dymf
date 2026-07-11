@@ -10,18 +10,24 @@ function MeleeBat.tryAct(ctx, callbacks)
 	local params = ctx.definition.abilityParams
 	local reach = if params and params.meleeReach then params.meleeReach else BrainrotConfig.MELEE_BAT_REACH
 
-	local acted = CombatService.attackFirstInMeleeReach(
+	local targetId = CombatService.getFirstMonsterInMeleeReach(
 		ctx.plotModel,
-		ctx.position,
-		reach,
-		ctx.definition.damage,
-		ctx.ownerUserId
+		ctx.position.row,
+		ctx.position.column,
+		reach
 	)
-	if acted then
-		callbacks.pulseAttack()
-		callbacks.playSound("MeleeBat")
+	if not targetId then
+		return false
 	end
-	return acted
+
+	-- Bat SFX on every connecting hit (including kills). Death SFX still fires
+	-- from CombatVisual when damage is fatal.
+	callbacks.playSound("MeleeBat")
+	local killed = CombatService.damageMonster(targetId, ctx.definition.damage)
+	if not killed then
+		CombatService.notifyHitVisual(ctx.ownerUserId, targetId, { muteSound = true })
+	end
+	return true
 end
 
 return MeleeBat

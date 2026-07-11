@@ -104,13 +104,33 @@ function CombatService.attackFirstInRow(
 	return true
 end
 
+function CombatService.notifyHitVisual(
+	ownerUserId: number,
+	instanceId: string,
+	options: { soundKey: string?, muteSound: boolean? }?
+)
+	local payload: { [string]: any } = {
+		kind = "Hit",
+		instanceId = instanceId,
+	}
+	if options and options.muteSound then
+		payload.muteSound = true
+	elseif options and options.soundKey then
+		payload.soundKey = options.soundKey
+	end
+	fireCombatVisual(ownerUserId, payload)
+end
+
 -- Damages the closest monster within short fractional melee reach on a row.
+-- muteSound: when true, CombatVisual still flashes/particles but client skips SFX
+-- (caller plays ability audio via BrainrotAction so it isn't behind property replication).
 function CombatService.attackFirstInMeleeReach(
 	plotModel: Model,
 	position: Types.GridPosition,
 	reachColumns: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	muteSound: boolean?
 ): boolean
 	local targetId = if monsterHandlers
 		then monsterHandlers.queryFirstInMeleeReach(plotModel, position.row, position.column, reachColumns)
@@ -119,9 +139,9 @@ function CombatService.attackFirstInMeleeReach(
 		return false
 	end
 	CombatService.damageMonster(targetId, damage)
-	fireCombatVisual(ownerUserId, {
-		kind = "Hit",
-		instanceId = targetId,
+	CombatService.notifyHitVisual(ownerUserId, targetId, {
+		muteSound = muteSound == true,
+		soundKey = if muteSound then nil else "MeleeBat",
 	})
 	return true
 end
@@ -258,6 +278,18 @@ function CombatService.getFirstMonsterInRow(
 	return nil
 end
 
+function CombatService.getFirstMonsterInMeleeReach(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	reachColumns: number
+): string?
+	if monsterHandlers then
+		return monsterHandlers.queryFirstInMeleeReach(plotModel, row, fromColumn, reachColumns)
+	end
+	return nil
+end
+
 function CombatService.getAllMonstersInRow(plotModel: Model, row: number): { string }
 	if monsterHandlers then
 		return monsterHandlers.queryEntireRow(plotModel, row)
@@ -295,10 +327,17 @@ function CombatService.applyStatusToMonster(
 	end
 end
 
-function CombatService.notifyMonsterDeath(ownerUserId: number, instanceId: string, row: number, column: number)
+function CombatService.notifyMonsterDeath(
+	ownerUserId: number,
+	instanceId: string,
+	monsterId: string,
+	row: number,
+	column: number
+)
 	fireCombatVisual(ownerUserId, {
 		kind = "Death",
 		instanceId = instanceId,
+		monsterId = monsterId,
 		row = row,
 		column = column,
 	})

@@ -57,7 +57,13 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 	if not silent then
 		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
 		if type(ownerUserId) == "number" then
-			CombatService.notifyMonsterDeath(ownerUserId, runtime.instanceId, runtime.row, runtime.column)
+			CombatService.notifyMonsterDeath(
+				ownerUserId,
+				runtime.instanceId,
+				runtime.monsterId,
+				runtime.row,
+				runtime.column
+			)
 		end
 	end
 	monsters[runtime.instanceId] = nil
@@ -327,6 +333,7 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 
 	local isFatal = runtime.health <= 0
+	-- Server-owned Color replicates; client Color flashes are overwritten.
 	MonsterFeedback.flashHit(runtime.model, isFatal)
 
 	if isFatal then

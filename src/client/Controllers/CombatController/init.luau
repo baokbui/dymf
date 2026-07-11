@@ -5,6 +5,7 @@
 	Gameplay stays server-side; this only renders feedback on the local plot.
 
 	Milestone 11 — projectiles, explosions, hit/death particles.
+	Milestone 12 — hit/death SFX (never block the visual handler on folder waits).
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -63,6 +64,7 @@ local function flashHit(instanceId: string?)
 		return
 	end
 
+	-- Red flash is applied on the server (client Color is overwritten by replication).
 	local center = PlotUtil.getModelBodyCenter(model)
 	if center then
 		VfxUtil.playHitBurst(center)
@@ -115,21 +117,20 @@ local function watchProjectile(part: Instance)
 	VfxUtil.decorateProjectile(part)
 end
 
-local function ensureProjectileWatcher()
+-- Non-blocking: never WaitForChild here — that delayed Death SFX by seconds when
+-- only melee Brainrots were used (Projectiles folder is created lazily by knives).
+local function tryConnectProjectileWatcher(): boolean
 	if projectileWatchConnected then
-		return
+		return true
 	end
 	local plotModel = PlotUtil.getLocalPlotModel()
 	if not plotModel then
-		return
+		return false
 	end
 
 	local folder = plotModel:FindFirstChild("Projectiles")
 	if not folder then
-		folder = plotModel:WaitForChild("Projectiles", 5)
-	end
-	if not folder then
-		return
+		return false
 	end
 
 	projectileWatchConnected = true
@@ -137,46 +138,50 @@ local function ensureProjectileWatcher()
 		watchProjectile(child)
 	end
 	folder.ChildAdded:Connect(watchProjectile)
+	return true
 end
 
-local function playDeathSound(instanceId: string?)
-	if type(instanceId) == "string" then
-		local model = findModelByInstanceId(instanceId)
-		local monsterId = if model then model:GetAttribute("MonsterId") else nil
-		if type(monsterId) == "string" then
-			local keyed = "Death_" .. monsterId
-			if AudioConfig.SFX[keyed] then
-				AudioController.play(keyed)
-				return
-			end
+local function playDeathSound(monsterId: unknown)
+	if type(monsterId) == "string" then
+		local keyed = "Death_" .. monsterId
+		if AudioConfig.SFX[keyed] then
+			AudioController.play(keyed)
+			return
 		end
 	end
 	AudioController.play("Death")
 end
 
-local function onCombatVisual(payload: unknown)
-	ensureProjectileWatcher()
+local function playHitSound(soundKey: unknown)
+	if type(soundKey) == "string" and AudioConfig.SFX[soundKey] then
+		AudioController.play(soundKey)
+	else
+		AudioController.play("Hit")
+	end
+end
 
+local function onCombatVisual(payload: unknown)
 	if type(payload) ~= "table" then
 		return
 	end
 	local data = payload :: { [string]: any }
 	local kind = data.kind
+
+	-- Audio first — never gate SFX behind projectile-folder setup.
 	if kind == "Hit" then
-		flashHit(data.instanceId)
-		local soundKey = data.soundKey
-		if type(soundKey) == "string" and AudioConfig.SFX[soundKey] then
-			AudioController.play(soundKey)
-		else
-			AudioController.play("Hit")
+		if data.muteSound ~= true then
+			playHitSound(data.soundKey)
 		end
+		flashHit(data.instanceId)
 	elseif kind == "Death" then
-		playDeathSound(data.instanceId)
+		playDeathSound(data.monsterId)
 		playDeathFade(data.instanceId)
 	elseif kind == "Explosion" then
-		playExplosion(data.row, data.column)
 		AudioController.play("Explosion")
+		playExplosion(data.row, data.column)
 	end
+
+	tryConnectProjectileWatcher()
 end
 
 function CombatController.init()
@@ -186,12 +191,11 @@ function CombatController.start()
 	Remotes.getEvent("CombatVisual").OnClientEvent:Connect(onCombatVisual)
 
 	task.spawn(function()
-		for _ = 1, 20 do
-			ensureProjectileWatcher()
-			if projectileWatchConnected then
+		for _ = 1, 40 do
+			if tryConnectProjectileWatcher() then
 				break
 			end
-			task.wait(0.5)
+			task.wait(0.25)
 		end
 	end)
 

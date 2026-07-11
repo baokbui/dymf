@@ -20,7 +20,9 @@
 		GridCenter     - attachment at the play-area center; GridService lays the
 		                 tile grid out from here (M2)
 		Grid           - folder GridService fills with static tiles (M2)
-		Path/Decorations - empty folders populated by later milestones
+		Path/Decorations/Projectiles/Monsters/Brainrots/Coins - content folders
+		                 (Projectiles is always present so client combat SFX never
+		                 blocks waiting for a lazily created folder)
 
 	build() returns the model, its base part, and the spawn location.
 ]]
@@ -148,6 +150,10 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addFolder("Grid", model)
 	addFolder("Path", model)
 	addFolder("Decorations", model)
+	addFolder("Projectiles", model)
+	addFolder("Monsters", model)
+	addFolder("Brainrots", model)
+	addFolder("Coins", model)
 
 	return model, base, spawnLocation
 end

@@ -13,6 +13,10 @@ export type SoundDef = {
 	Volume: number?,
 	PlaybackSpeed: number?,
 	Looped: boolean?,
+	-- Hard-stop one-shots that have long tails (seconds from Play).
+	MaxDuration: number?,
+	-- Skip leading silence in the asset (seconds).
+	StartOffset: number?,
 }
 
 local AudioConfig = {
@@ -26,6 +30,19 @@ local AudioConfig = {
 
 	-- Max concurrent one-shot SFX instances (oldest destroyed when exceeded).
 	MAX_SFX_INSTANCES = 12,
+
+	-- Preload on join so combat SFX aren't delayed by first asset download.
+	PRELOAD_SFX = {
+		"MeleeBat",
+		"ThrowKnifeHit",
+		"Hit",
+		"Death",
+		"Death_Zombie",
+		"Death_TutorialZombie",
+		"Death_EarlyZombie",
+		"CoinCollect",
+		"PlaceBrainrot",
+	},
 
 	MUSIC = {
 		Default = {
@@ -94,15 +111,18 @@ local AudioConfig = {
 		-- Per-monster death overrides (key = MonsterId attribute).
 		Death_Zombie = {
 			SoundId = "rbxassetid://6845870387",
-			Volume = 0.75,
+			Volume = 0.85,
+			StartOffset = 0.05,
 		},
 		Death_TutorialZombie = {
 			SoundId = "rbxassetid://6845870387",
-			Volume = 0.75,
+			Volume = 0.85,
+			StartOffset = 0.05,
 		},
 		Death_EarlyZombie = {
 			SoundId = "rbxassetid://6845870387",
-			Volume = 0.75,
+			Volume = 0.85,
+			StartOffset = 0.05,
 		},
 		Explosion = {
 			SoundId = "rbxasset://sounds/impact_explosion_03.mp3",
@@ -131,11 +151,6 @@ local AudioConfig = {
 		},
 
 		-- Monsters
-		MonsterSpawn = {
-			SoundId = "rbxasset://sounds/swoosh.wav",
-			Volume = 0.35,
-			PlaybackSpeed = 0.8,
-		},
 		MonsterAttack = {
 			SoundId = "rbxasset://sounds/snap.wav",
 			Volume = 0.4,
@@ -144,9 +159,10 @@ local AudioConfig = {
 
 		-- Brainrot abilities (keys match BrainrotAction.action / ability ids)
 		MeleeBat = {
-			SoundId = "rbxasset://sounds/collide.wav",
-			Volume = 0.55,
-			PlaybackSpeed = 1.1,
+			SoundId = "rbxassetid://9113322410",
+			Volume = 0.75,
+			-- Asset has a long grassy tail; keep only the hit transient.
+			MaxDuration = 0.22,
 		},
 		BubbleTrap = {
 			SoundId = "rbxasset://sounds/impact_water.mp3",
@@ -168,6 +184,7 @@ local AudioConfig = {
 	} :: { [string]: SoundDef },
 }
 
+table.freeze(AudioConfig.PRELOAD_SFX)
 table.freeze(AudioConfig.MUSIC)
 table.freeze(AudioConfig.AMBIENT)
 table.freeze(AudioConfig.SFX)

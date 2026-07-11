@@ -76,9 +76,10 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 | Hit spark | `CombatVisual` kind `Hit` (client particles) |
 | Hit flash (monsters) | `MonsterFeedback.flashHit` on server (replicated body color) |
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
+| Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
 | Death burst + fade | `CombatVisual` kind `Death` |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` (`row`, `column`) |
-| Projectile trail/glow | Watches `plot.Projectiles` child parts (server-spawned) |
+| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
 
 Tuning lives in `Shared.Config.VfxConfig` (particles, colors, durations). Gameplay
@@ -86,12 +87,17 @@ values remain in `CombatConfig`.
 
 ---
 
-## Death ✅ (Milestone 7)
+## Death ✅ (Milestone 7 / M12 audio)
 
 1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
-   to the plot owner; model destroy is delayed briefly for client fade.
-3. Brainrot death destroys the placement and frees the tile (unchanged from M5).
+   `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner;
+   model destroy is delayed briefly for client fade.
+3. Client plays `Death_<monsterId>` when configured (else `Death`), then death VFX.
+4. Brainrot death destroys the placement and frees the tile (unchanged from M5).
+
+Hit flash on damage uses server-side `MonsterFeedback.flashHit` so the red tint
+replicates reliably.
 
 ---
 
@@ -114,7 +120,7 @@ death fade duration. **Never hardcode** combat tuning in services.
 
 | Name | Direction | Purpose |
 | ---- | --------- | ------- |
-| `CombatVisual` | server → client | `Hit`, `Death`, `Explosion` (plot owner only) |
+| `CombatVisual` | server → client | `Hit` (`instanceId`, optional `soundKey` / `muteSound`), `Death` (`monsterId`, …), `Explosion` (plot owner only) |
 
 See `NETWORKING.md` for the full catalog.
 

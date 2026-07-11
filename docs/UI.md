@@ -38,7 +38,7 @@ UI and input are driven by client Controllers
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
 | `HealthBarController`   | Billboard health bars on local plot               | ✅ M7 |
-| `AudioController`       | BGM, ambient, SFX (`AudioConfig`)                 | ✅ M12 |
+| `AudioController`       | BGM, ambient, SFX (`AudioConfig` / `SfxPlayer`)   | ✅ M12 |
 | `GridController`      | Hover highlight + tile resolver for previews | ✅ M2  |
 | `PlacementController` | Selection, ghost preview, placement intent   | ✅ M4  |
 | `CameraController`    | Default 3rd-person camera (reserved for juice)| ✅ M1  |

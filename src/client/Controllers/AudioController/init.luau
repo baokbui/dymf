@@ -3,13 +3,12 @@
 	AudioController
 	Owns all client audio: SoundGroups, one-shot SFX, looping ambient, and
 	background / boss music. Other controllers call play() / music helpers —
-	they never create Sound instances themselves.
+	they never create Sounds themselves.
 
 	Milestone 12.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,13 +19,12 @@ local Constants = require(Shared.Constants)
 local Logger = require(Shared.Utilities.Logger)
 
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
+local SfxPlayer = require(script.SfxPlayer)
 
 local AudioController = {}
 AudioController.Name = "AudioController"
 
 local log = Logger.new(AudioController.Name)
-
-local localPlayer = Players.LocalPlayer
 
 local musicGroup: SoundGroup
 local sfxGroup: SoundGroup
@@ -38,7 +36,6 @@ local currentMusicKey: string? = nil
 local bossMusicActive = false
 local muted = false
 
-local activeSfx: { Sound } = {}
 local lastBrainrotHealth: { [Model]: number } = {}
 
 local function applyGroupVolumes()
@@ -67,9 +64,17 @@ local function ensureGroups()
 		return group
 	end
 
+	local preloadFolder = folder:FindFirstChild("Preload")
+	if not (preloadFolder and preloadFolder:IsA("Folder")) then
+		preloadFolder = Instance.new("Folder")
+		preloadFolder.Name = "Preload"
+		preloadFolder.Parent = folder
+	end
+
 	musicGroup = getOrCreateGroup("Music")
 	sfxGroup = getOrCreateGroup("Sfx")
 	ambientGroup = getOrCreateGroup("Ambient")
+	SfxPlayer.bind(sfxGroup, preloadFolder :: Folder)
 	applyGroupVolumes()
 end
 
@@ -81,46 +86,12 @@ local function applyDef(sound: Sound, def: AudioConfig.SoundDef, group: SoundGro
 	sound.SoundGroup = group
 end
 
-local function pruneSfx()
-	local alive: { Sound } = {}
-	for _, sound in activeSfx do
-		if sound.Parent and sound.IsPlaying then
-			table.insert(alive, sound)
-		elseif sound.Parent then
-			sound:Destroy()
-		end
-	end
-	activeSfx = alive
-
-	while #activeSfx >= AudioConfig.MAX_SFX_INSTANCES do
-		local oldest = table.remove(activeSfx, 1)
-		if oldest then
-			oldest:Stop()
-			oldest:Destroy()
-		end
-	end
+function AudioController.play(key: string)
+	SfxPlayer.play(key)
 end
 
-function AudioController.play(key: string)
-	if muted then
-		return
-	end
-	local def = AudioConfig.SFX[key]
-	if not def or def.SoundId == "" then
-		return
-	end
-
-	pruneSfx()
-
-	local sound = Instance.new("Sound")
-	sound.Name = "Sfx_" .. key
-	applyDef(sound, def, sfxGroup)
-	sound.Parent = SoundService
-	table.insert(activeSfx, sound)
-	sound:Play()
-	sound.Ended:Connect(function()
-		sound:Destroy()
-	end)
+function AudioController.stopSfx(key: string)
+	SfxPlayer.stop(key)
 end
 
 local function fadeOutAndDestroy(sound: Sound, duration: number)
@@ -182,6 +153,7 @@ end
 
 function AudioController.setMuted(isMuted: boolean)
 	muted = isMuted
+	SfxPlayer.setMuted(isMuted)
 	applyGroupVolumes()
 	if muted then
 		if musicSound then
@@ -226,7 +198,6 @@ local function onMonsterAdded(instance: Instance)
 	if not instance:IsA("Model") or not isOnLocalPlot(instance) then
 		return
 	end
-	AudioController.play("MonsterSpawn")
 	if instance:GetAttribute("IsBoss") == true then
 		AudioController.setBossMusic(true)
 	end
@@ -261,6 +232,7 @@ function AudioController.init()
 end
 
 function AudioController.start()
+	SfxPlayer.preload()
 	AudioController.playMusic("Default")
 	startAmbient()
 

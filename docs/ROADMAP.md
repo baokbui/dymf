@@ -25,6 +25,8 @@ Create a solid foundation for the project.
 - Create empty services
 - Create shared configuration modules
 
+
+
 ## Complete When
 
 - Project syncs correctly between Cursor and Roblox Studio.
@@ -32,6 +34,8 @@ Create a solid foundation for the project.
 - Documentation exists.
 
 ---
+
+
 
 # Milestone 1 — Player Plot System
 
@@ -50,6 +54,8 @@ Every player receives their own isolated battlefield.
 - Spawn locations
 - Camera positioning
 
+
+
 ## Complete When
 
 - Multiple players can join.
@@ -57,6 +63,8 @@ Every player receives their own isolated battlefield.
 - No player can interfere with another player's plot.
 
 ---
+
+
 
 # Milestone 2 — Grid System
 
@@ -74,12 +82,16 @@ Create the battlefield grid.
 - Occupied tile tracking
 - Grid highlighting
 
+
+
 ## Complete When
 
 - Grid appears correctly.
 - Tiles know whether they are occupied.
 
 ---
+
+
 
 # Milestone 3 — Coin System
 
@@ -97,6 +109,8 @@ Implement the game's economy.
 - Coin collection
 - Server-side validation
 
+
+
 ## Complete When
 
 - Players receive coins.
@@ -104,6 +118,8 @@ Implement the game's economy.
 - Coins cannot be exploited.
 
 ---
+
+
 
 # Milestone 4 — Placement System
 
@@ -122,6 +138,8 @@ Allow players to place Brainrots.
 - Placement RemoteEvents
 - Cost validation
 
+
+
 ## Complete When
 
 - Players can purchase and place Brainrots.
@@ -129,6 +147,8 @@ Allow players to place Brainrots.
 - Invalid placements are rejected.
 
 ---
+
+
 
 # Milestone 5 — Brainrot Framework
 
@@ -148,6 +168,8 @@ Create the base Brainrot system.
 - Animations
 - Sounds
 
+
+
 ## Initial Brainrots
 
 - Ballerina Cappucina (coin producer)
@@ -158,12 +180,16 @@ Create the base Brainrot system.
 - Cappuccino Assassino (full-row knife)
 - Chimpanzini Bananini (wall)
 
+
+
 ## Complete When
 
 - All seven Brainrots function correctly (coin generation + combat through
 `CombatService`). ✅
 
 ---
+
+
 
 # Milestone 6 — Monster Framework
 
@@ -182,11 +208,15 @@ Create enemies.
 - Death
 - Animations
 
+
+
 ## Roster
 
 - Zombie, Vampire, Werewolf, Skeleton, Goblin
 - Bosses: Orc, Necromancer, Goblin King, Queen Spider, Duke Vampire
 - Spider (jump ability)
+
+
 
 ## Complete When
 
@@ -194,6 +224,8 @@ Create enemies.
 - Brainrots can damage monsters; monsters attack brainrots on tiles. ✅
 
 ---
+
+
 
 # Milestone 7 — Combat System
 
@@ -212,12 +244,16 @@ Implement combat.
 - Target acquisition
 - Health bars
 
+
+
 ## Complete When
 
 - Brainrots attack monsters.
 - Monsters die correctly.
 
 ---
+
+
 
 # Milestone 8 — Level System
 
@@ -239,12 +275,16 @@ Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 - Rewards
 - Linear progression (unlock next level)
 
+
+
 ## Complete When
 
 - Players can play a level, win it, and advance to the next one.
 - Losing (house breached) lets the player retry the same level.
 
 ---
+
+
 
 # Milestone 9 — Save System
 
@@ -267,6 +307,8 @@ Persist player progress.
 - Upgrades
 - Statistics
 
+
+
 ## Do Not Save
 
 - Monsters
@@ -275,17 +317,23 @@ Persist player progress.
 - Ground coins
 - Temporary combat state
 
+
+
 ## Rejoin Behavior
 
 - Restore battlefield
 - Restore player progress
 - Restart the saved level from the beginning
 
+
+
 ## Complete When
 
 - Players can leave and return without losing progress.
 
 ---
+
+
 
 # Milestone 10 — Additional Monsters
 
@@ -298,11 +346,15 @@ Persist player progress.
 - **One** boss every 10 levels (Level 10 = Orc); repeat at 15 / 20, etc.
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
 
+
+
 ## Complete When
 
 - Multiple enemy types appear during gameplay.
 
 ---
+
+
 
 # Milestone 11 — Visual Effects
 
@@ -316,11 +368,15 @@ Persist player progress.
 - Death effects
 - Coin effects
 
+
+
 ## Complete When
 
 - Combat feels visually satisfying.
 
 ---
+
+
 
 # Milestone 12 — Audio
 
@@ -335,24 +391,35 @@ Persist player progress.
 - Ambient sounds
 - Boss music
 
+
+
 ## Complete When
 
 - All major gameplay events have audio feedback.
 
 ---
 
+
+
 # Milestone 13 — UI Polish
 
-## Improve
 
-- Shop
-- Coins
-- Level display (progress bar)
-- Level Select
-- Health
-- Settings
-- Reset Progress
-- Statistics
+
+## Improve and Add
+
+- Shop (Already implemented in a previous milestone. Can improve if needed)
+- Brainrots Store (Buy new brainrots)
+- Brains (currency to buy/unlock new brainrots at the store)
+- Reward System (Completing a level grants a user a fair amount of brains depending on the level's difficulty, ex. level 1 gives only 1 brain upon completion. A UI will pop up at the end of the completed level showcasing the rewards earned)
+- Inventory (Already has the preset brainrots equipped. Brainrots in the inventory can be equipped and those already equipped can be unequipped)
+- Coins (Already implemented in a previous milestone. Can improve if needed)
+- Level display (Already implemented in a previous milestone. Can improve if needed)
+- Health (5 hearts. Loses one when a monster passes the plot. Game over when health reaches 0 hearts)
+- Settings (Ex. Lower sound, disable brainrot sfx, etc.)
+- Reset Progress (Red button can be found in settings ^. Double confirmation first.)
+- Statistics (total brainrots discovered, total time played, etc.)
+
+
 
 ## Complete When
 
@@ -360,7 +427,11 @@ Persist player progress.
 
 ---
 
+
+
 # Milestone 14 — Balancing
+
+
 
 ## Tune
 
@@ -372,13 +443,19 @@ Persist player progress.
 - Level difficulty
 - Enemy scaling
 
+
+
 ## Complete When
 
 - Gameplay feels fair and engaging.
 
 ---
 
+
+
 # Milestone 15 — Additional Brainrots
+
+
 
 ## Expand the roster.
 
@@ -397,13 +474,19 @@ Potential additions
 - Laser
 - Summoner
 
+
+
 ## Complete When
 
 - The roster contains at least 15 Brainrots.
 
 ---
 
+
+
 # Milestone 16 — Optimization
+
+
 
 ## Improve
 
@@ -413,13 +496,19 @@ Potential additions
 - Object cleanup
 - Event management
 
+
+
 ## Complete When
 
 - Stable performance with multiple players and many units.
 
 ---
 
+
+
 # Milestone 17 — Testing
+
+
 
 ## Test
 
@@ -432,13 +521,19 @@ Potential additions
 - Exploit prevention
 - Edge cases
 
+
+
 ## Complete When
 
 - No critical bugs remain.
 
 ---
 
+
+
 # Milestone 18 — Release
+
+
 
 ## Final Tasks
 
@@ -450,13 +545,19 @@ Potential additions
 - Enable analytics
 - Final playtesting
 
+
+
 ## Complete When
 
 - Brainrots vs. Monsters is publicly released.
 
 ---
 
+
+
 # Milestone 19 — Retention Systems
+
+
 
 ## Goal
 
@@ -466,6 +567,8 @@ UI only displays and sends intents.
 
 ## Systems
 
+
+
 ### 7-Day First-Time Rewards
 
 - One-time login streak for new players (days 1–7)
@@ -474,12 +577,16 @@ UI only displays and sends intents.
 - Missed-day rules (reset streak vs. pause — decide at implementation)
 - Claim UI; server validates eligibility before granting
 
+
+
 ### Spinner
 
 - Weighted reward wheel (coins, unlocks, cosmetics placeholders as available)
 - Free spin cadence (e.g. daily) + optional paid/extra spins later
 - Server rolls outcome; client only animates the result
 - Persist last spin time / remaining free spins
+
+
 
 ### Daily Quests
 
@@ -488,13 +595,17 @@ UI only displays and sends intents.
 - Progress tracked server-side; claim rewards when complete
 - Persist quest ids, progress, and claim state via `SaveService`
 
+
+
 ## Architecture Notes
 
 - New service(s) own eligibility, rolls, and quest progress (e.g. `RewardService`,
-  `QuestService`) — never trust client claim/spin results
+`QuestService`) — never trust client claim/spin results
 - Grants go through existing economy / unlock APIs (`CoinService`, etc.)
 - Remotes for claim / spin / quest claim with full server validation
 - UI panels under `UIController` (display-only)
+
+
 
 ## Complete When
 
@@ -505,7 +616,11 @@ UI only displays and sends intents.
 
 ---
 
+
+
 # Milestone 20 — Post-Launch
+
+
 
 ## Continue Development
 

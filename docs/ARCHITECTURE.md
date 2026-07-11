@@ -96,10 +96,10 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary intent signal)
-        BrainrotController/ (BrainrotAction sound feedback)
-        CombatController/ (CombatVisual VFX — M11)
+        BrainrotController/ (BrainrotAction SFX + client attack pulse — M5/M12)
+        CombatController/ (CombatVisual VFX + SFX — M11/M12)
         HealthBarController/ (billboard health bars — M7)
-        AudioController/  (BGM, SFX, ambient — M12)
+        AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)
@@ -386,11 +386,14 @@ Full details in `COMBAT.md`. Summary:
 
 Full details in `AUDIO.md`. Summary:
 
-- **`AudioConfig`** — music / ambient / SFX ids and volumes.
-- **`AudioController`** — SoundGroups, one-shot SFX, default + boss BGM crossfade,
-  plot ambient; mute hook for future Settings.
-- Wired from UI, placement, coins, combat visuals, level phases, monster spawn,
-  Brainrot ability actions (`BrainrotAction`).
+- **`AudioConfig`** — music / ambient / SFX ids, volumes, `PRELOAD_SFX`,
+  optional `MaxDuration` / `StartOffset`.
+- **`AudioController`** + **`SfxPlayer`** — SoundGroups, preloaded one-shots,
+  default + boss BGM crossfade, plot ambient; mute hook for future Settings.
+- Wired from UI, placement, coins, combat visuals, level phases, boss presence,
+  and Brainrot ability actions (`BrainrotAction`).
+- Hit flash stays server-side (`MonsterFeedback`); combat SFX never block on
+  projectile-folder waits (plots ship with `Projectiles` / `Monsters` / … folders).
 
 ### Design pivot — Level System (replaces Wave System)
 

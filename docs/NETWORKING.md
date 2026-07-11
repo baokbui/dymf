@@ -40,8 +40,8 @@ Remotes module. That is the only required step.
 | `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
-| `BrainrotAction`   | server → client | ✅ M5  | Attack/coin feedback for local sounds   |
-| `CombatVisual`     | server → client | ✅ M7/M11 | Hit, death, explosion VFX (plot owner) |
+| `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → client SFX/pulse |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion VFX + optional SFX keys (plot owner) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
 | `SelectLevel`      | client → server | 🔜 M13 | Replay a cleared level via Level Select  |

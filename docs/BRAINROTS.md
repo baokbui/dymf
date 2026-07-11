@@ -105,8 +105,8 @@ BrainrotBehavior (cooldown tick)
        ▼
 Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
        │                 └──►  CoinService (coin drops)
-       └──►  BrainrotFeedback (attack pulse tween)
-       └──►  BrainrotAction remote → client sound (BrainrotController)
+       └──►  BrainrotFeedback (server attack pulse for non-melee abilities)
+       └──►  BrainrotAction remote → client SFX (+ client pulse for MeleeBat)
 ```
 
 - `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
