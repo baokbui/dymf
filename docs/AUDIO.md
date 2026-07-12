@@ -94,4 +94,4 @@ the client watcher is non-blocking so death/hit SFX stay in sync.
 - Playback is client-only; never trust the client for rewards or combat.
 - Prefer `AudioController.play` over ad-hoc `Instance.new("Sound")`.
 - Tuning lives in `AudioConfig` — never hardcode asset ids in controllers.
-- Mute API: `AudioController.setMuted` (Settings UI can wire this in M13).
+- Mute API: `AudioController.setMuted` / volume scales / Brainrot SFX toggle (Settings UI, M13).

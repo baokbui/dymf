@@ -51,7 +51,28 @@
             "BackgroundTransparency": 1
           }
         },
-        "Settings": {
+		"Settings": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
+        "Hearts": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
+        "Inventory": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
+        "RewardPopup": {
           "$className": "Frame",
           "$properties": {
             "Visible": false,

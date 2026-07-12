@@ -198,6 +198,11 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		return
 	end
 
+	local ProgressService = require(script.Parent.ProgressService)
+	if not ProgressService.canPlace(player, brainrotId) then
+		return
+	end
+
 	local plot = PlotService.getPlot(player)
 	if not plot then
 		return
@@ -227,6 +232,10 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		CoinService.addCoins(player, definition.cost)
 		return
 	end
+
+	local ProgressService = require(script.Parent.ProgressService)
+	local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
+	ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
 end
 
 local function onRemoveBrainrot(player: Player, rawPosition: unknown)

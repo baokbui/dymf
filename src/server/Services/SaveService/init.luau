@@ -2,10 +2,10 @@
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
-	(level, coins, health, planted Brainrots, unlocks, upgrades, stats) using
-	versioned save data. Never persists transient combat/monster state.
+	(level, coins, brains, health, planted Brainrots, unlocks, loadout, stats).
+	Never persists transient combat/monster state.
 
-	Milestone 9.
+	Milestone 9 / schema v2 (Milestone 13).
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local EconomyConfig = require(Shared.Config.EconomyConfig)
 local LevelConfig = require(Shared.Config.LevelConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
 
@@ -23,6 +24,7 @@ local BrainrotService = require(script.Parent.BrainrotService)
 local CoinService = require(script.Parent.CoinService)
 local LevelService = require(script.Parent.LevelService)
 local PlotService = require(script.Parent.PlotService)
+local ProgressService = require(script.Parent.ProgressService)
 
 local SaveService = {}
 SaveService.Name = "SaveService"
@@ -75,9 +77,11 @@ local function defaultSaveData(): Types.SaveData
 		currentLevel = 1,
 		highestLevel = 1,
 		coins = EconomyConfig.STARTING_COINS,
+		brains = ProgressConfig.STARTING_BRAINS,
 		playerHealth = LevelConfig.STARTING_PLAYER_HEALTH,
 		brainrots = {},
-		unlocks = {},
+		unlocks = deepCopyStringList(ProgressConfig.DEFAULT_UNLOCKS),
+		equipped = deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED),
 		upgrades = {},
 		statistics = {},
 	}
@@ -106,17 +110,39 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		save.coins = math.max(0, math.floor(coins))
 	end
 
+	local brains = payload.brains
+	if type(brains) == "number" then
+		save.brains = math.max(0, math.floor(brains))
+	end
+
 	local playerHealth = payload.playerHealth
 	if type(playerHealth) == "number" then
-		save.playerHealth = math.max(1, math.floor(playerHealth))
+		save.playerHealth = math.clamp(math.floor(playerHealth), 1, ProgressConfig.MAX_PLAYER_HEALTH)
 	end
 
 	local unlocks = payload.unlocks
 	if type(unlocks) == "table" then
+		save.unlocks = {}
 		for _, value in unlocks do
 			if type(value) == "string" then
 				table.insert(save.unlocks, value)
 			end
+		end
+		if #save.unlocks == 0 then
+			save.unlocks = deepCopyStringList(ProgressConfig.DEFAULT_UNLOCKS)
+		end
+	end
+
+	local equipped = payload.equipped
+	if type(equipped) == "table" then
+		save.equipped = {}
+		for _, value in equipped do
+			if type(value) == "string" then
+				table.insert(save.equipped, value)
+			end
+		end
+		if #save.equipped == 0 then
+			save.equipped = deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED)
 		end
 	end
 
@@ -175,26 +201,24 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 	return save
 end
 
-local function profileForPlayer(player: Player): Types.SaveData
-	return loadedProfiles[player.UserId] or defaultSaveData()
-end
-
 local function collectSnapshot(player: Player): Types.SaveData
-	local profile = profileForPlayer(player)
 	local currentLevel, highestUnlockedLevel, playerHealth = LevelService.getSaveProgress(player)
 	local plotModel = PlotService.getPlotModel(player)
 	local brainrots = if plotModel then BrainrotService.getSavePlacements(plotModel) else {}
+	local progress = ProgressService.getSaveSlice(player)
 
 	return {
 		version = Constants.SAVE_VERSION,
 		currentLevel = currentLevel,
 		highestLevel = highestUnlockedLevel,
 		coins = CoinService.getBalance(player),
+		brains = progress.brains,
 		playerHealth = playerHealth,
 		brainrots = deepCopyBrainrots(brainrots),
-		unlocks = deepCopyStringList(profile.unlocks),
-		upgrades = deepCopyNumberMap(profile.upgrades),
-		statistics = deepCopyNumberMap(profile.statistics),
+		unlocks = progress.unlocks,
+		equipped = progress.equipped,
+		upgrades = {},
+		statistics = progress.statistics,
 	}
 end
 
@@ -247,13 +271,18 @@ local function waitForPlot(player: Player, timeoutSeconds: number): Model?
 end
 
 local function restorePlayer(player: Player, saveData: Types.SaveData)
-	-- Wait for PlotService assignment so saved Brainrots can be rebuilt on tiles.
 	local plotModel = waitForPlot(player, PLOT_WAIT_TIMEOUT)
 	if not plotModel then
 		log:warn("restore skipped (no plot yet)", player.Name)
 		return
 	end
 
+	ProgressService.applySaveSlice(player, {
+		brains = saveData.brains,
+		unlocks = saveData.unlocks,
+		equipped = saveData.equipped,
+		statistics = saveData.statistics,
+	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
 	CoinService.setBalance(player, saveData.coins)
 	BrainrotService.clearPlot(plotModel)
@@ -267,6 +296,26 @@ local function savePlayer(player: Player, reason: string)
 	if not saveToStore(player.UserId, snapshot) then
 		log:warn("failed save", player.Name, reason)
 	end
+end
+
+function SaveService.resetProgress(player: Player)
+	local defaults = defaultSaveData()
+	loadedProfiles[player.UserId] = defaults
+	saveToStore(player.UserId, defaults)
+
+	ProgressService.reset(player)
+	LevelService.applySaveProgress(player, 1, 1, LevelConfig.STARTING_PLAYER_HEALTH)
+	CoinService.resetBalance(player)
+
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		BrainrotService.clearPlot(plotModel)
+		local EnemyService = require(script.Parent.EnemyService)
+		EnemyService.clearPlot(plotModel)
+		CoinService.clearPlot(plotModel)
+	end
+
+	log:info("progress reset", player.Name)
 end
 
 local function onPlayerAdded(player: Player)
@@ -286,6 +335,10 @@ local function onPlayerRemoving(player: Player)
 end
 
 function SaveService.init()
+	local Remotes = require(Shared.Remotes)
+	Remotes.getEvent("ResetProgress").OnServerEvent:Connect(function(player: Player)
+		SaveService.resetProgress(player)
+	end)
 end
 
 function SaveService.start()

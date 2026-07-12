@@ -61,13 +61,15 @@ studs. `GridUtil.isColumnInRange` is the shared helper.
 
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
-| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 12s      | —        | Drops coins on random tiles | 25    |
-| Tung Tung Sahur      | 75   | 800 (8)       | 100    | 1s       | Short melee (`meleeReach`) | Melee bat           | —     |
-| Tralalero Tralala    | 175  | 500 (5)       | 100    | 1.5s     | Full row | Bubble trap (1s)    | —     |
-| Bombardino Crocodilo | 350  | — (1)         | 5000   | —        | Full row | Line bomb on place  | —     |
-| Lirili Larila        | 150  | 500 (5)       | 0      | 2.5s     | 2 tiles  | Freeze enemies 1.5s | —     |
-| Cappuccino Assassino | 100  | 500 (5)       | 100    | 1.5s     | Full row | Throw knife         | —     |
-| Chimpanzini Bananini | 50   | 6000 (60)     | 0      | —        | —        | Wall                | —     |
+| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 11s      | —        | Drops coins on random tiles | 25    |
+| Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 0.95s    | Short melee (`meleeReach`) | Melee bat           | —     |
+| Tralalero Tralala    | 175  | 500 (5)       | 90     | 1.45s    | Full row | Bubble trap (1.2s)  | —     |
+| Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
+| Lirili Larila        | 150  | 500 (5)       | 0      | 2.4s     | 2 tiles  | Freeze enemies 2s   | —     |
+| Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw knife         | —     |
+| Chimpanzini Bananini | 75   | 3500 (35)     | 0      | —        | —        | Wall                | —     |
+
+Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
 
 ---
@@ -126,7 +128,7 @@ of monster presence rules.
 
 
 
-## Planned roster (Milestone 15)
+## Planned roster (Milestone 21)
 
-Expand beyond the initial seven. Each addition is registry data plus an ability
-handler module when needed.
+Expand beyond the initial seven after launch. Each addition is registry data
+plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).

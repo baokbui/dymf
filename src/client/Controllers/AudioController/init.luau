@@ -35,14 +35,31 @@ local ambientSound: Sound? = nil
 local currentMusicKey: string? = nil
 local bossMusicActive = false
 local muted = false
+local musicVolumeScale = 1
+local sfxVolumeScale = 1
+local ambientVolumeScale = 1
+local brainrotSfxEnabled = true
+
+local BRAINROT_SFX: { [string]: boolean } = {
+	MeleeBat = true,
+	FreezeTime = true,
+	BubbleTrap = true,
+	LineBomb = true,
+	PlaceBrainrot = true,
+	RemoveBrainrot = true,
+	ThrowKnifeHit = true,
+}
 
 local lastBrainrotHealth: { [Model]: number } = {}
 
 local function applyGroupVolumes()
+	if not musicGroup then
+		return
+	end
 	local master = if muted then 0 else AudioConfig.MASTER_VOLUME
-	musicGroup.Volume = AudioConfig.MUSIC_VOLUME * master
-	sfxGroup.Volume = AudioConfig.SFX_VOLUME * master
-	ambientGroup.Volume = AudioConfig.AMBIENT_VOLUME * master
+	musicGroup.Volume = AudioConfig.MUSIC_VOLUME * master * musicVolumeScale
+	sfxGroup.Volume = AudioConfig.SFX_VOLUME * master * sfxVolumeScale
+	ambientGroup.Volume = AudioConfig.AMBIENT_VOLUME * master * ambientVolumeScale
 end
 
 local function ensureGroups()
@@ -87,6 +104,9 @@ local function applyDef(sound: Sound, def: AudioConfig.SoundDef, group: SoundGro
 end
 
 function AudioController.play(key: string)
+	if BRAINROT_SFX[key] and not brainrotSfxEnabled then
+		return
+	end
 	SfxPlayer.play(key)
 end
 
@@ -170,6 +190,20 @@ function AudioController.setMuted(isMuted: boolean)
 			ambientSound:Resume()
 		end
 	end
+end
+
+function AudioController.setMusicVolumeScale(scale: number)
+	musicVolumeScale = math.clamp(scale, 0, 1)
+	applyGroupVolumes()
+end
+
+function AudioController.setSfxVolumeScale(scale: number)
+	sfxVolumeScale = math.clamp(scale, 0, 1)
+	applyGroupVolumes()
+end
+
+function AudioController.setBrainrotSfxEnabled(enabled: boolean)
+	brainrotSfxEnabled = enabled
 end
 
 local function startAmbient()

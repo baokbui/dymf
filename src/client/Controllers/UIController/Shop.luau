@@ -74,9 +74,11 @@ export type ShopCallbacks = {
 export type Shop = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
+		list: Frame,
 		cards: { Card },
 		balance: number,
 		selectedId: string?,
+		equippedIds: { string },
 		shovelButton: TextButton,
 		shovelBorder: Frame,
 		cancelButton: TextButton,
@@ -92,9 +94,20 @@ local function styleCorner(instance: Instance, radius: number)
 end
 
 -- Stable display order (by cost, then name) so the roster never jumps.
-local function sortedDefinitions(): { Types.BrainrotDefinition }
+local function sortedDefinitions(filterIds: { string }?): { Types.BrainrotDefinition }
+	local allowed: { [string]: boolean }? = nil
+	if filterIds then
+		allowed = {}
+		for _, id in filterIds do
+			allowed[id] = true
+		end
+	end
+
 	local list: { Types.BrainrotDefinition } = {}
 	for _, definition in Brainrots.getAll() do
+		if allowed and not allowed[definition.id] then
+			continue
+		end
 		table.insert(list, definition)
 	end
 	table.sort(list, function(a, b)
@@ -106,30 +119,33 @@ local function sortedDefinitions(): { Types.BrainrotDefinition }
 	return list
 end
 
+local function resizePanel(frame: Frame, cardCount: number)
+	local cardsWidth = math.max(0, cardCount * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING)
+	local panelWidth = PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth
+	frame.Size = UDim2.fromOffset(math.max(panelWidth, 160), PANEL_HEIGHT)
+end
+
 function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	local self = setmetatable({
 		frame = frame,
 		cards = {},
 		balance = 0,
 		selectedId = nil,
+		equippedIds = {},
 		callbacks = callbacks,
 	}, Shop) :: Shop
 
-	local definitions = sortedDefinitions()
-
-	local cardsWidth = #definitions * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING
-	local panelWidth = PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0.5, 0)
 	frame.Position = UDim2.new(0.5, 0, 0, 0)
-	frame.Size = UDim2.fromOffset(panelWidth, PANEL_HEIGHT)
-	frame.BackgroundTransparency = 1 -- invisible container; inner bg provides the fill
+	frame.BackgroundTransparency = 1
 	frame.ClipsDescendants = true
+	resizePanel(frame, 0)
 
 	local bg = Instance.new("Frame")
 	bg.Name = "Background"
 	bg.AnchorPoint = Vector2.new(0.5, 0)
-	bg.Position = UDim2.new(0.5, 0, 0, -PANEL_CORNER_RADIUS) -- push top corners above the clip boundary
+	bg.Position = UDim2.new(0.5, 0, 0, -PANEL_CORNER_RADIUS)
 	bg.Size = UDim2.new(1, 0, 1, PANEL_CORNER_RADIUS)
 	bg.BackgroundColor3 = PANEL_BG
 	bg.BackgroundTransparency = PANEL_TRANSPARENCY
@@ -151,13 +167,13 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	local cancelButton = self:buildCancelButton(tools)
 	self.cancelButton = cancelButton
 
-	-- Card list: horizontal, left-to-right.
 	local list = Instance.new("Frame")
 	list.Name = "List"
 	list.BackgroundTransparency = 1
 	list.Position = UDim2.fromOffset(PANEL_PADDING_X + TOOL_COLUMN_WIDTH + CARD_PADDING, PANEL_PADDING_Y)
 	list.Size = UDim2.new(1, -(PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING), 1, -PANEL_PADDING_Y * 2)
 	list.Parent = frame
+	self.list = list
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
@@ -165,10 +181,6 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
-
-	for index, definition in definitions do
-		self:buildCard(list, index, definition)
-	end
 
 	self:refresh()
 	return self
@@ -235,7 +247,7 @@ function Shop.buildCancelButton(self: Shop, parent: Instance): TextButton
 	button.Font = Enum.Font.GothamBold
 	button.TextSize = 22
 	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Text = "✕"
+	button.Text = "X"
 	button.Visible = false
 	button.Parent = parent
 	styleCorner(button, CARD_CORNER_RADIUS)
@@ -334,6 +346,36 @@ function Shop.refresh(self: Shop)
 		card.costLabel.TextColor3 = if affordable then COST_AFFORD else COST_BLOCKED
 		card.selectionBorder.BackgroundTransparency = if selected then 0 else 1
 	end
+end
+
+function Shop.setEquipped(self: Shop, ids: { string })
+	self.equippedIds = ids
+	for _, child in self.list:GetChildren() do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	self.cards = {}
+
+	local definitions = sortedDefinitions(ids)
+	for index, definition in definitions do
+		self:buildCard(self.list, index, definition)
+	end
+	resizePanel(self.frame, #definitions)
+
+	if self.selectedId then
+		local stillThere = false
+		for _, definition in definitions do
+			if definition.id == self.selectedId then
+				stillThere = true
+				break
+			end
+		end
+		if not stillThere then
+			self.selectedId = nil
+		end
+	end
+	self:refresh()
 end
 
 function Shop.setBalance(self: Shop, amount: number)

@@ -1,7 +1,9 @@
 # BVM Economy
 
-The single currency is **Coins**. Only the server controls currency — clients
-send collection intent and display balances, never set them (`.cursorrules`).
+The single **match** currency is **Coins**. **Brains** are a separate soft
+currency for progression unlocks (Milestone 13 grants; Milestone 20 store).
+Only the server controls currency — clients send collection intent and display
+balances, never set them (`.cursorrules`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -11,7 +13,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 From `GAME_DESIGN.md`:
 
-- Passive drops (every ~30 seconds) ✅
+- Passive drops (every ~25 seconds) ✅
 - Coin-producing Brainrots (e.g. **Ballerina Cappucina** — see `BRAINROTS.md`) ✅
 - Completing a level ✅ Milestone 8 — **resets** balance to `STARTING_COINS` (PvZ-style; no carry-over)
 - Future achievements / events
@@ -25,14 +27,16 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | Key                    | Value | Meaning                                  |
 | ---------------------- | ----- | ---------------------------------------- |
 | `STARTING_COINS`       | 125   | Balance for a new player (Ballerina + Tung Tung) |
-| `PASSIVE_DROP_INTERVAL`| 30    | Seconds between passive drops            |
+| `PASSIVE_DROP_INTERVAL`| 25    | Seconds between passive drops            |
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
 | `LEVEL_COMPLETION_REWARD`| 50  | Reserved for future bonus rewards (victory resets to `STARTING_COINS`) |
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
-Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 12s on a
+Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 11s on a
 **random grid tile** (via `GenerateCoins` → `CoinService.dropRandomCoinForOwner`).
+
+See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 
 ---
 

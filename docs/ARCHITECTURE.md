@@ -382,6 +382,19 @@ Full details in `COMBAT.md`. Summary:
 - Server still owns combat; visuals are pushed via `CombatVisual` or derived from
   replicated instances (projectiles, coin removal).
 
+### Milestone 13 — UI Polish ✅
+
+Full details in `UI.md`. Summary:
+
+- **`ProgressService`** + **`ProgressConfig`** — brains, unlocks, equipped loadout,
+  statistics; `ProfileUpdated` / `SetEquipped` remotes.
+- **Hearts HUD** — 5 house hearts; LevelService −1 per breach, defeat at 0.
+- **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
+  statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
+- **Inventory** — separate left HUD bar + modal for equip/unequip loadout.
+- **Reward popup** — victory shows brains earned (store purchases → M20).
+- Save schema **v2** adds `brains` + `equipped`.
+
 ### Milestone 12 — Audio ✅
 
 Full details in `AUDIO.md`. Summary:

@@ -5,6 +5,8 @@
 
 	All monsters derive from one base implementation; types are data entries plus
 	optional ability handlers. Never branch on monster names in code.
+
+	Milestone 14 balance pass — see docs/BALANCE.md.
 ]]
 
 local Types = require(script.Parent.Types)
@@ -12,38 +14,13 @@ local Types = require(script.Parent.Types)
 local Monsters = {}
 
 local definitions: { [string]: Types.MonsterDefinition } = {
-	-- Slow, weak opener used only in early campaign levels (see Shared.Levels).
-	TutorialZombie = {
-		id = "TutorialZombie",
-		name = "Zombie",
-		health = 150,
-		secondsPerGrid = 7,
-		damage = 40,
-		attackInterval = 2.5,
-		isBoss = false,
-		color = Color3.fromRGB(110, 160, 110),
-	},
-
-	-- Mid-tier zombie for the early campaign bridge (Level 2–3). Tougher than
-	-- TutorialZombie but far weaker than the standard Zombie.
-	EarlyZombie = {
-		id = "EarlyZombie",
-		name = "Zombie",
-		health = 250,
-		secondsPerGrid = 6,
-		damage = 55,
-		attackInterval = 2.2,
-		isBoss = false,
-		color = Color3.fromRGB(95, 150, 95),
-	},
-
 	Zombie = {
 		id = "Zombie",
 		name = "Zombie",
-		health = 200,
-		secondsPerGrid = 4.7,
-		damage = 100,
-		attackInterval = 2,
+		health = 180,
+		secondsPerGrid = 5,
+		damage = 85,
+		attackInterval = 2.2,
 		isBoss = false,
 		color = Color3.fromRGB(90, 140, 90),
 	},
@@ -51,10 +28,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Vampire = {
 		id = "Vampire",
 		name = "Vampire",
-		health = 1000,
-		secondsPerGrid = 2.5,
-		damage = 75,
-		attackInterval = 1,
+		health = 900,
+		secondsPerGrid = 2.8,
+		damage = 70,
+		attackInterval = 1.1,
 		isBoss = false,
 		color = Color3.fromRGB(80, 40, 60),
 	},
@@ -62,10 +39,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Werewolf = {
 		id = "Werewolf",
 		name = "Werewolf",
-		health = 1500,
-		secondsPerGrid = 3.5,
-		damage = 150,
-		attackInterval = 1,
+		health = 1400,
+		secondsPerGrid = 3.2,
+		damage = 130,
+		attackInterval = 1.1,
 		isBoss = false,
 		color = Color3.fromRGB(110, 90, 70),
 	},
@@ -73,9 +50,9 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Skeleton = {
 		id = "Skeleton",
 		name = "Skeleton",
-		health = 1000,
-		secondsPerGrid = 4.7,
-		damage = 100,
+		health = 950,
+		secondsPerGrid = 4.5,
+		damage = 95,
 		attackInterval = 1.5,
 		isBoss = false,
 		color = Color3.fromRGB(200, 200, 190),
@@ -84,10 +61,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Goblin = {
 		id = "Goblin",
 		name = "Goblin",
-		health = 200,
-		secondsPerGrid = 3,
-		damage = 100,
-		attackInterval = 1,
+		health = 150,
+		secondsPerGrid = 3.4,
+		damage = 75,
+		attackInterval = 1.1,
 		isBoss = false,
 		color = Color3.fromRGB(70, 130, 60),
 	},
@@ -95,10 +72,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Orc = {
 		id = "Orc",
 		name = "Orc",
-		health = 20000,
-		secondsPerGrid = 8,
-		damage = 10000,
-		attackInterval = 4,
+		health = 12000,
+		secondsPerGrid = 7.5,
+		damage = 8000,
+		attackInterval = 3.5,
 		isBoss = true,
 		abilities = { "OrcClubOneShot" },
 		color = Color3.fromRGB(60, 100, 50),
@@ -107,10 +84,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Spider = {
 		id = "Spider",
 		name = "Spider",
-		health = 1000,
-		secondsPerGrid = 3.5,
-		damage = 100,
-		attackInterval = 1.5,
+		health = 900,
+		secondsPerGrid = 3.2,
+		damage = 90,
+		attackInterval = 1.4,
 		isBoss = false,
 		abilities = { "SpiderJump" },
 		color = Color3.fromRGB(40, 40, 40),
@@ -119,7 +96,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Necromancer = {
 		id = "Necromancer",
 		name = "Necromancer",
-		health = 10000,
+		health = 9000,
 		secondsPerGrid = 6,
 		damage = 0,
 		attackInterval = 5,
@@ -132,42 +109,42 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	GoblinKing = {
 		id = "GoblinKing",
 		name = "Goblin King",
-		health = 15000,
+		health = 13000,
 		secondsPerGrid = 6.5,
-		damage = 150,
+		damage = 140,
 		attackInterval = 1.5,
 		isBoss = true,
 		abilities = { "GoblinKingRegen", "GoblinKingSpeedBuff" },
-		abilityParams = { regenAmount = 100, regenInterval = 8, speedBuffPercent = 20 },
+		abilityParams = { regenAmount = 90, regenInterval = 8, speedBuffPercent = 18 },
 		color = Color3.fromRGB(50, 120, 40),
 	},
 
 	QueenSpider = {
 		id = "QueenSpider",
 		name = "Queen Spider",
-		health = 15000,
+		health = 13000,
 		secondsPerGrid = 7,
-		damage = 150,
+		damage = 140,
 		attackInterval = 1.5,
 		isBoss = true,
 		abilities = { "QueenSpiderStun", "QueenSpiderPoison" },
-		abilityParams = { stunDuration = 4, poisonPercent = 2, poisonDuration = 5 },
+		abilityParams = { stunDuration = 3.5, poisonPercent = 2, poisonDuration = 5 },
 		color = Color3.fromRGB(30, 30, 30),
 	},
 
 	DukeVampire = {
 		id = "DukeVampire",
 		name = "Duke Vampire",
-		health = 15000,
+		health = 13000,
 		secondsPerGrid = 5.5,
-		damage = 150,
+		damage = 140,
 		attackInterval = 1.5,
 		isBoss = true,
 		abilities = { "DukeVampireFreeze", "DukeVampireTerrify" },
 		abilityParams = {
 			freezeDuration = 2,
-			healPercent = 25,
-			terrifyDamage = 100,
+			healPercent = 22,
+			terrifyDamage = 90,
 			terrifyDamageReduction = 10,
 			terrifyDuration = 2,
 		},

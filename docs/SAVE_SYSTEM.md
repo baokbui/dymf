@@ -37,13 +37,15 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number                     |
+| `version`      | number (`SAVE_VERSION` = 2)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number                     |
-| `playerHealth` | number                     |
+| `brains`       | number                     |
+| `playerHealth` | number (hearts, max 5)     |
 | `brainrots`    | `{ PlantedBrainrot }`      |
 | `unlocks`      | `{ string }`               |
+| `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
 
@@ -51,7 +53,7 @@ Not saved (transient / runtime):
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 1` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 2` — bump when the schema changes; migrate older payloads.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).
@@ -89,5 +91,6 @@ On rejoin:
 ## Reset Progress
 
 A confirmed Reset (via Settings UI → `ResetProgress` remote, see `UI.md` /
-`NETWORKING.md`) deletes all saved progress and returns the player to level 1.
+`NETWORKING.md`) deletes all saved progress and returns the player to level 1
+with starter coins, full hearts, default unlocks/loadout, and empty statistics.
 Never erase save data unless Reset is explicitly confirmed.

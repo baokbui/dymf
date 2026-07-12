@@ -2,25 +2,21 @@
 --[[
 	EconomyConfig
 	Currency tuning. All coin-related balancing lives here.
+	Milestone 14 balance pass — see docs/BALANCE.md.
 ]]
 
 local EconomyConfig = {
-	STARTING_COINS = 1000, -- TEMP testing (was 125: Ballerina 50 + Tung Tung 75)
+	STARTING_COINS = 125, -- Ballerina 50 + Tung Tung 75 (level 1 opener)
 
-	-- Passive coin drops (see GAME_DESIGN: every ~30 seconds).
-	PASSIVE_DROP_INTERVAL = 30, -- seconds
+	-- Passive coin drops during Active phase only.
+	PASSIVE_DROP_INTERVAL = 25, -- seconds
 	PASSIVE_DROP_AMOUNT = 25,
 
-	-- Base reward granted for completing a campaign level (a level may override
-	-- it via LevelDefinition.reward).
+	-- Reserved for future bonus rewards (victory resets to STARTING_COINS).
 	LEVEL_COMPLETION_REWARD = 50,
 
-	-- How long an uncollected ground coin persists before despawning.
 	GROUND_COIN_LIFETIME = 60, -- seconds
-
-	-- Max distance (studs) a player may be from a ground coin to collect it.
-	-- The server re-checks this against the authoritative character position.
-	COIN_COLLECT_RADIUS = 16,
+	COIN_COLLECT_RADIUS = 16, -- studs (server re-validates pickup)
 }
 
 table.freeze(EconomyConfig)

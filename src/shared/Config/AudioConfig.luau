@@ -38,8 +38,6 @@ local AudioConfig = {
 		"Hit",
 		"Death",
 		"Death_Zombie",
-		"Death_TutorialZombie",
-		"Death_EarlyZombie",
 		"FreezeTime",
 		"BubbleTrap",
 		"CoinCollect",
@@ -101,7 +99,7 @@ local AudioConfig = {
 
 		-- Combat
 		Hit = {
-			SoundId = "rbxasset://sounds/collide.wav",
+			SoundId = "rbxassetid://12221967",
 			Volume = 0.4,
 			PlaybackSpeed = 1.2,
 		},
@@ -112,16 +110,6 @@ local AudioConfig = {
 		},
 		-- Per-monster death overrides (key = MonsterId attribute).
 		Death_Zombie = {
-			SoundId = "rbxassetid://6845870387",
-			Volume = 0.85,
-			StartOffset = 0.05,
-		},
-		Death_TutorialZombie = {
-			SoundId = "rbxassetid://6845870387",
-			Volume = 0.85,
-			StartOffset = 0.05,
-		},
-		Death_EarlyZombie = {
 			SoundId = "rbxassetid://6845870387",
 			Volume = 0.85,
 			StartOffset = 0.05,
@@ -147,7 +135,7 @@ local AudioConfig = {
 			PlaybackSpeed = 0.85,
 		},
 		Defeat = {
-			SoundId = "rbxasset://sounds/collide.wav",
+			SoundId = "rbxassetid://12221967",
 			Volume = 0.65,
 			PlaybackSpeed = 0.7,
 		},

@@ -370,6 +370,12 @@ function CombatService.notifyMonsterDeath(
 		row = row,
 		column = column,
 	})
+	local player = Players:GetPlayerByUserId(ownerUserId)
+	if player then
+		local ProgressService = require(script.Parent.ProgressService)
+		local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
+		ProgressService.incrementStat(player, ProgressConfig.STAT_MONSTERS_DEFEATED)
+	end
 end
 
 function CombatService.clearPlot(plotModel: Model)

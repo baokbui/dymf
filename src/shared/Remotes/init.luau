@@ -32,8 +32,10 @@ local EVENT_NAMES = {
 	"StartLevel",
 	"LevelStateChanged",
 	"SelectLevel",
-	-- Settings
+	-- Settings / progression (Milestone 13)
 	"ResetProgress",
+	"ProfileUpdated",
+	"SetEquipped",
 	-- Brainrots (Milestone 5)
 	"BrainrotAction",
 	-- Combat visuals (Milestone 7)

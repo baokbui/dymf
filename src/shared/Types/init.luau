@@ -96,9 +96,11 @@ export type SaveData = {
 	currentLevel: number, -- campaign level the player is on / resumes
 	highestLevel: number, -- furthest level unlocked (drives Level Select)
 	coins: number,
-	playerHealth: number,
+	brains: number, -- soft currency for future Brainrots Store (M17)
+	playerHealth: number, -- hearts remaining (max ProgressConfig.MAX_PLAYER_HEALTH)
 	brainrots: { PlantedBrainrot },
-	unlocks: { string },
+	unlocks: { string }, -- owned Brainrot ids
+	equipped: { string }, -- ordered loadout shown in the placement shop
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
 }

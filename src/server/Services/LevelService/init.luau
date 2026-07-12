@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local LevelConfig = require(Shared.Config.LevelConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Levels = require(Shared.Levels)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -23,6 +24,7 @@ local BrainrotService = require(script.Parent.BrainrotService)
 local CoinService = require(script.Parent.CoinService)
 local EnemyService = require(script.Parent.EnemyService)
 local PlotService = require(script.Parent.PlotService)
+local ProgressService = require(script.Parent.ProgressService)
 
 local LevelService = {}
 LevelService.Name = "LevelService"
@@ -62,6 +64,7 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		levelName = levelName,
 		highestUnlockedLevel = state.highestUnlockedLevel,
 		playerHealth = state.playerHealth,
+		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
 		bigWaveWarning = state.bigWaveWarning,
 		canStart = state.phase == PHASE.Preparation or state.phase == PHASE.Defeat,
 		progress = 0,
@@ -122,6 +125,10 @@ local function onVictory(player: Player, state: PlayerState)
 	resetPlotForFreshAttempt(player)
 
 	local clearedNumber = definition.number
+	local brainsEarned = ProgressService.brainsForLevel(clearedNumber)
+	ProgressService.addBrains(player, brainsEarned)
+	ProgressService.incrementStat(player, ProgressConfig.STAT_LEVELS_CLEARED)
+
 	if state.currentLevel >= state.highestUnlockedLevel then
 		state.highestUnlockedLevel = math.min(state.currentLevel + 1, Levels.count())
 	end
@@ -131,9 +138,26 @@ local function onVictory(player: Player, state: PlayerState)
 		state.currentLevel += 1
 	end
 
+	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
 	state.activeRun = nil
-	setPhase(player, state, PHASE.Victory)
-	log:info(string.format("%s cleared level %d", player.Name, clearedNumber))
+	state.phase = PHASE.Victory
+	state.bigWaveWarning = false
+	Remotes.getEvent("LevelStateChanged"):FireClient(player, {
+		phase = PHASE.Victory,
+		levelNumber = state.currentLevel,
+		levelName = if getDefinition(state.currentLevel) then getDefinition(state.currentLevel).name else "Unknown",
+		highestUnlockedLevel = state.highestUnlockedLevel,
+		playerHealth = state.playerHealth,
+		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
+		canStart = false,
+		progress = 0,
+		bigWaveWarning = false,
+		reward = {
+			clearedLevel = clearedNumber,
+			brains = brainsEarned,
+		},
+	})
+	log:info(string.format("%s cleared level %d (+%d brains)", player.Name, clearedNumber, brainsEarned))
 
 	task.delay(RESULT_DISPLAY_TIME, function()
 		if states[player.UserId] == state then
@@ -144,7 +168,7 @@ end
 
 local function onDefeat(player: Player, state: PlayerState)
 	state.activeRun = nil
-	state.playerHealth = LevelConfig.STARTING_PLAYER_HEALTH
+	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
 	resetPlotForFreshAttempt(player)
 	setPhase(player, state, PHASE.Defeat)
 	log:info(string.format("%s defeated on level %d", player.Name, state.currentLevel))
@@ -246,14 +270,54 @@ local function onHouseBreach(plotModel: Model, _row: number)
 		return
 	end
 
-	onDefeat(player, state)
+	state.playerHealth = math.max(0, state.playerHealth - 1)
+	broadcast(player)
+	if state.playerHealth <= 0 then
+		onDefeat(player, state)
+	end
+end
+
+local function onSelectLevel(player: Player, rawLevel: unknown)
+	local state = states[player.UserId]
+	if not state then
+		return
+	end
+	if state.phase ~= PHASE.Preparation and state.phase ~= PHASE.Defeat then
+		return
+	end
+	if type(rawLevel) ~= "number" then
+		return
+	end
+
+	local levelNumber = math.floor(rawLevel)
+	if levelNumber < 1 or levelNumber > state.highestUnlockedLevel then
+		return
+	end
+	if not getDefinition(levelNumber) then
+		return
+	end
+
+	state.currentLevel = levelNumber
+	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
+	state.activeRun = nil
+	state.countdownEnd = 0
+	state.bigWaveWarning = false
+
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		EnemyService.clearPlot(plotModel)
+		BrainrotService.clearPlot(plotModel)
+		CoinService.clearPlot(plotModel)
+	end
+	CoinService.resetBalance(player)
+	beginPreparation(player, state)
 end
 
 local function initPlayer(player: Player)
 	states[player.UserId] = {
 		currentLevel = 1,
 		highestUnlockedLevel = 1,
-		playerHealth = LevelConfig.STARTING_PLAYER_HEALTH,
+		playerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
 		phase = PHASE.Preparation,
 		activeRun = nil,
 		countdownEnd = 0,
@@ -275,7 +339,7 @@ end
 function LevelService.getSaveProgress(player: Player): (number, number, number)
 	local state = states[player.UserId]
 	if not state then
-		return 1, 1, LevelConfig.STARTING_PLAYER_HEALTH
+		return 1, 1, ProgressConfig.MAX_PLAYER_HEALTH
 	end
 	return state.currentLevel, state.highestUnlockedLevel, state.playerHealth
 end
@@ -292,7 +356,7 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 
 	state.currentLevel = sanitizedCurrent
 	state.highestUnlockedLevel = sanitizedHighest
-	state.playerHealth = math.max(1, math.floor(playerHealth))
+	state.playerHealth = math.clamp(math.floor(playerHealth), 1, ProgressConfig.MAX_PLAYER_HEALTH)
 	state.activeRun = nil
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
@@ -318,6 +382,7 @@ function LevelService.init()
 	Remotes.getEvent("StartLevel").OnServerEvent:Connect(function(player: Player)
 		onStartLevel(player)
 	end)
+	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(onSelectLevel)
 end
 
 function LevelService.start()
@@ -325,6 +390,7 @@ function LevelService.start()
 		return {
 			coins = CoinService.getBalance(player),
 			level = LevelService.getClientState(player),
+			profile = ProgressService.getClientState(player),
 		}
 	end
 

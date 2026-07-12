@@ -49,19 +49,19 @@ toward the house (−X), one tile per `secondsPerGrid` seconds.
 
 | Name | Health | Sec/grid | Damage | Atk interval | Boss | Ability |
 | ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
-| TutorialZombie | 150 | 7 | 40 | 2.5s | | — (Level 1 tutorial only) |
-| EarlyZombie | 250 | 6 | 55 | 2.2s | | — (Level 2–3 bridge) |
-| Zombie | 200 | 4.7 | 100 | 2s | | — |
-| Vampire | 1000 | 2.5 | 75 | 1s | | — |
-| Werewolf | 1500 | 3.5 | 150 | 1s | | — |
-| Skeleton | 1000 | 4.7 | 100 | 1.5s | | — |
-| Goblin | 200 | 3 | 100 | 1s | | — |
-| Orc | 20000 | 8 | 10000 | 4s | Y | One-shot brainrot (club) |
-| Spider | 1000 | 3.5 | 100 | 1.5s | | Jump over first brainrot |
-| Necromancer | 10000 | 6 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
-| Goblin King | 15000 | 6.5 | 150 | 1.5s | Y | +100 HP / 8s; speed buff (stub) |
-| Queen Spider | 15000 | 7 | 150 | 1.5s | Y | Stun + poison brainrot on attack ✅ |
-| Duke Vampire | 15000 | 5.5 | 150 | 1.5s | Y | Self-freeze heal / terrify (stubs — M10) |
+| Zombie | 180 | 5 | 85 | 2.2s | | — |
+| Vampire | 900 | 2.8 | 70 | 1.1s | | — |
+| Werewolf | 1400 | 3.2 | 130 | 1.1s | | — |
+| Skeleton | 950 | 4.5 | 95 | 1.5s | | — |
+| Goblin | 150 | 3.4 | 75 | 1.1s | | — |
+| Orc | 12000 | 7.5 | 8000 | 3.5s | Y | One-shot brainrot (club) |
+| Spider | 900 | 3.2 | 90 | 1.4s | | Jump over first brainrot |
+| Necromancer | 9000 | 6 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
+| Goblin King | 13000 | 6.5 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |
+| Queen Spider | 13000 | 7 | 140 | 1.5s | Y | Stun + poison brainrot on attack ✅ |
+| Duke Vampire | 13000 | 5.5 | 140 | 1.5s | Y | Self-freeze heal / terrify (stubs — M10) |
+
+Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
 ---
 

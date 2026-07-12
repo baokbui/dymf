@@ -403,82 +403,89 @@ Persist player progress.
 
 # Milestone 13 — UI Polish
 
-
+**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 20)
 
 ## Improve and Add
 
-- Shop (Already implemented in a previous milestone. Can improve if needed)
-- Brainrots Store (Buy new brainrots)
-- Brains (currency to buy/unlock new brainrots at the store)
-- Reward System (Completing a level grants a user a fair amount of brains depending on the level's difficulty, ex. level 1 gives only 1 brain upon completion. A UI will pop up at the end of the completed level showcasing the rewards earned)
-- Inventory (Already has the preset brainrots equipped. Brainrots in the inventory can be equipped and those already equipped can be unequipped)
-- Coins (Already implemented in a previous milestone. Can improve if needed)
-- Level display (Already implemented in a previous milestone. Can improve if needed)
-- Health (5 hearts. Loses one when a monster passes the plot. Game over when health reaches 0 hearts)
-- Settings (Ex. Lower sound, disable brainrot sfx, etc.)
-- Reset Progress (Red button can be found in settings ^. Double confirmation first.)
-- Statistics (total brainrots discovered, total time played, etc.)
-
-
+- Shop (Already implemented in a previous milestone. Can improve if needed) ✅
+- Brainrots Store (Buy new brainrots) → **deferred to Milestone 20** (physical world shop)
+- Brains (currency) ✅ granted on victory; spent at store in M17
+- Reward System ✅ victory popup shows brains earned (level number × config)
+- Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
+- Coins ✅ (prior milestone)
+- Level display ✅ + Level Select in Settings
+- Health ✅ 5 hearts; −1 per house breach; defeat at 0
+- Settings ✅ mute, music/SFX volume, Brainrot SFX toggle (left HUD entry)
+- Reset Progress ✅ double-confirm in Settings → `ResetProgress`
+- Statistics ✅ levels cleared, placements, kills, brains earned, time played
+- Level Select → deferred (dedicated UI later; `SelectLevel` remote remains)
 
 ## Complete When
 
-- UI is polished and easy to use.
+- UI is polished and easy to use. ✅
 
 ---
 
 
 
-# Milestone 14 — Balancing
+# Milestone 14 — Balancing ✅
 
 
 
 ## Tune
 
-- Costs
-- Damage
-- Health
-- Coin generation
-- Cooldowns
-- Level difficulty
-- Enemy scaling
+- Costs ✅
+- Damage ✅
+- Health ✅
+- Coin generation ✅
+- Cooldowns ✅
+- Level difficulty ✅
+- Enemy scaling ✅
 
+## Done
 
+- **`docs/BALANCE.md`** — design targets and knob locations
+- **`EconomyConfig`** — `STARTING_COINS` 125; passive 25 coins / 25s
+- **`LevelConfig`** — 5 hearts; big-wave warning 5s; spawn fallbacks tuned
+- **`Shared.Brainrots`** — roster costs, DPS, wall tankiness, Bombardino 2800 row nuke
+- **`Shared.Monsters`** — single `Zombie` profile; `Goblin` / `Orc` species mix
+- **`Shared.Levels`** — L1–4 Zombie-only (count/pacing); L5+ species mix; Orc spawn delay
 
 ## Complete When
 
-- Gameplay feels fair and engaging.
+- Gameplay feels fair and engaging. ✅
 
 ---
 
 
 
-# Milestone 15 — Additional Brainrots
+# Milestone 15 — Brainrot Models
 
 
 
-## Expand the roster.
+## Replace placeholder visuals
 
-Potential additions
+The current roster uses **test placeholders** — colored `Part` bodies built by
+`BrainrotModel` from each definition's `color` swatch. Replace them with authored
+3D models for every shipped Brainrot.
 
-- Freeze
-- Fire
-- Cannon
-- Wall
-- Electric
-- Poison
-- Sniper
-- Healer
-- Bomb
-- Support
-- Laser
-- Summoner
+## Add
 
-
+- Model source for each roster Brainrot (Studio assets under `ReplicatedStorage`
+  or catalog `Model` / `MeshPart` references — decide at implementation)
+- Data-driven mapping from `BrainrotDefinition` → model template (registry field
+  or `BrainrotModel` lookup table — no per-name branching)
+- `BrainrotModel.create` clones the authored template, applies footprint scaling
+  (`PlotConfig.BRAINROT_FOOTPRINT_RATIO`), and preserves identity attributes /
+  `Brainrot` tag
+- Shop cards and placement ghost use model preview or thumbnail where applicable
+  (still display-only on the client)
+- Wall / line-bomb / fly-over units keep correct bounds and pivot after swap
 
 ## Complete When
 
-- The roster contains at least 15 Brainrots.
+- All seven launch Brainrots use their real models in-game (placement, combat
+  pulse, save/restore) instead of colored placeholder parts.
 
 ---
 
@@ -618,13 +625,32 @@ UI only displays and sends intents.
 
 
 
-# Milestone 20 — Post-Launch
+# Milestone 20 — Progression Store
+
+**Status: 🔜 Planned** (deferred from Milestone 13)
+
+## Add
+
+- Physical **Brainrots Store** on the plot / lobby (not a ScreenGui shop bar)
+- Spend **Brains** to unlock new Brainrot roster entries
+- Wire purchases into `ProgressService` unlocks + `SaveService`
+
+## Complete When
+
+- Players can browse and buy locked Brainrots with brains earned from levels.
+
+---
+
+
+
+# Milestone 21 — Post-Launch
 
 
 
 ## Continue Development
 
-- New Brainrots
+- **New Brainrots** — expand the roster beyond the launch seven (registry +
+  ability handlers; additional model work as needed)
 - Brainrot skins
 - New Monsters
 - New Maps

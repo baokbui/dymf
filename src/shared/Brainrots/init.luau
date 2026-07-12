@@ -5,6 +5,8 @@
 
 	Brainrot behavior is resolved from this data at runtime. Never branch on
 	specific Brainrot names with if/elseif chains; read the definition instead.
+
+	Milestone 14 balance pass — see docs/BALANCE.md.
 ]]
 
 local BrainrotConfig = require(script.Parent.Config.BrainrotConfig)
@@ -22,7 +24,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		maxHealth = 500,
 		health = 5,
 		damage = 0,
-		attackInterval = 12,
+		attackInterval = 11,
 		rangeTiles = 0,
 		ability = "GenerateCoins",
 		coinGeneration = 25,
@@ -33,10 +35,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		id = "TungTungSahur",
 		name = "Tung Tung Sahur",
 		cost = 75,
-		maxHealth = 800,
-		health = 8,
-		damage = 100,
-		attackInterval = 1,
+		maxHealth = 1000,
+		health = 10,
+		damage = 45,
+		attackInterval = 0.95,
 		rangeTiles = 1,
 		ability = "MeleeBat",
 		abilityParams = { meleeReach = 0.85 },
@@ -49,21 +51,21 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		cost = 175,
 		maxHealth = 500,
 		health = 5,
-		damage = 100,
-		attackInterval = 1.5,
+		damage = 90,
+		attackInterval = 1.45,
 		rangeTiles = FULL_LINE,
 		ability = "BubbleTrap",
-		abilityParams = { trapDuration = 1 },
+		abilityParams = { trapDuration = 1.2 },
 		color = Color3.fromRGB(100, 200, 255),
 	},
 
 	BombardinoCrocodilo = {
 		id = "BombardinoCrocodilo",
 		name = "Bombardino Crocodilo",
-		cost = 350,
+		cost = 375,
 		maxHealth = 1,
 		health = 1,
-		damage = 9000,
+		damage = 2800,
 		attackInterval = 0,
 		rangeTiles = FULL_LINE,
 		ability = "LineBomb",
@@ -78,10 +80,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		maxHealth = 500,
 		health = 5,
 		damage = 0,
-		attackInterval = 2.5,
+		attackInterval = 2.4,
 		rangeTiles = 2,
 		ability = "FreezeTime",
-		abilityParams = { freezeDuration = 1.5 },
+		abilityParams = { freezeDuration = 2 },
 		color = Color3.fromRGB(180, 220, 255),
 	},
 
@@ -91,8 +93,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		cost = 100,
 		maxHealth = 500,
 		health = 5,
-		damage = 100,
-		attackInterval = 1.5,
+		damage = 60,
+		attackInterval = 1.75,
 		rangeTiles = FULL_LINE,
 		ability = "ThrowKnife",
 		color = Color3.fromRGB(80, 50, 35),
@@ -101,9 +103,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 	ChimpanziniBananini = {
 		id = "ChimpanziniBananini",
 		name = "Chimpanzini Bananini",
-		cost = 50,
-		maxHealth = 6000,
-		health = 60,
+		cost = 75,
+		maxHealth = 3500,
+		health = 35,
 		damage = 0,
 		attackInterval = 0,
 		rangeTiles = 0,

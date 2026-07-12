@@ -44,8 +44,10 @@ Remotes module. That is the only required step.
 | `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion VFX + optional SFX keys (plot owner) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
-| `SelectLevel`      | client → server | 🔜 M13 | Replay a cleared level via Level Select  |
-| `ResetProgress`    | client → server | 🔜 M13 | Confirmed reset of all save data         |
+| `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
+| `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
+| `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats |
+| `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated)     |
 
 ### RemoteFunctions
 
@@ -53,8 +55,8 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` returns `{ coins, level }` — handled by `LevelService.start()` using
-`CoinService.getBalance` and `LevelService.getClientState`.
+`RequestState` returns `{ coins, level, profile }` — handled by `LevelService.start()`
+using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClientState`.
 
 ---
 

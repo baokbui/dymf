@@ -17,9 +17,9 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 - Within a level, monsters arrive in an ordered list of **spawn groups** — the
   internal "waves". A progress bar fills as groups are spawned/cleared, and the
   final group is the **big wave** (the PvZ "flag"), preceded by a warning.
-- Clearing every group (no monsters left alive) → **Victory** → unlock and
-  advance to the next level. A monster reaching the house → **Defeat** → retry
-  the same level.
+- Clearing every group (no monsters left alive) → **Victory** → brains reward +
+unlock next level. A monster reaching the house → **−1 heart**; at **0 hearts** →
+**Defeat** → retry the same level.
 
 This keeps the moment-to-moment PvZ pacing (rising intensity into a final rush)
 while making overall progress a finite, designed campaign rather than infinite
@@ -91,14 +91,15 @@ Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 
 ### Seeded campaign ✅ (Milestones 8 + 10)
 
-Two opening levels are seeded using **Zombie**, each ending in an `isBigWave` group:
+All levels use the same **`Zombie`** grunt stats. Early levels are easier because
+of **lower counts** and **slower pacing**, not weaker zombie types:
 
-| Level | name              | enemies (count per group)                          |
+| Level | name              | mix (count per group)                              |
 | ----- | ----------------- | -------------------------------------------------- |
 | 1     | First Contact     | 1, 2, **2** Zombie                                 |
-| 2     | Rising Tide       | 2, 2 Zombie, **2** Zombie                          |
-| 3     | Greenhorns        | 2, 3 Zombie, **3** Zombie                          |
-| 4     | Pressing Forward  | 2 Zombie, 3 Zombie, **3** Zombie                   |
+| 2     | Rising Tide       | 2, 2, **2** Zombie                                 |
+| 3     | Greenhorns        | 2, 3, **3** Zombie                                 |
+| 4     | Pressing Forward  | 2, 3, **3** Zombie                                 |
 | 5     | Goblin Scout      | 3 Zombie, **1** Goblin, 2 Zombie, **2** Goblin     |
 | 6     | Quick Feet        | 3 Zombie, 2 Goblin, 2 Zombie, **3** Goblin         |
 | 7     | Crooked Charge    | 3 Goblin, 3 Zombie, 2 Goblin, **2** Zombie         |
@@ -123,18 +124,16 @@ Introduction cadence (repeat when authoring Levels 15, 20, …):
 Progression is tuned in **small steps** across level data — never a single giant
 spike between adjacent levels:
 
-1. **Enemy profile consistency** — early campaign uses the same `Zombie` stat line
-   across levels; difficulty comes from group count and pacing, not hidden HP scaling.
+1. **Species** — new monster types enter one at a time (Level 5 = `Goblin`; Level 10 = `Orc` boss).
 2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 6 →
    Level 3: 8).
 3. **Pacing** — `startDelay` and `spawnInterval` shrink gradually; the first
-   group always leaves time to plant after countdown.
+   group always leaves time to plant after countdown (Level 1: **26s** grace).
 4. **Big wave** — the final group is the hardest step *within* a level, not a
-   jump to endgame tuning.
+   jump to endgame tuning. Level 10 Orc spawns with extra lead time (`startDelay` 22s).
 
-Level 1 is intentionally gentle: **25-second grace** before the first enemy, with
-small Zombie groups and enough starting coins for a coin producer plus an attacker
-(see `EconomyConfig.STARTING_COINS`).
+Level 1 is intentionally gentle: one zombie at a time with long gaps, plus enough
+starting coins for Ballerina + Tung Tung (`EconomyConfig.STARTING_COINS` = 125).
 
 ---
 
@@ -147,12 +146,13 @@ is in the registry above, not here.
 | ----------------------- | ----- | ------------------------------------------ |
 | `PREPARATION_TIME`      | 30    | Reserved prep window before Start (planned) |
 | `COUNTDOWN_TIME`        | 3     | Seconds after pressing Start Level         |
-| `STARTING_PLAYER_HEALTH`| 100   | Player base health                         |
-| `BIG_WAVE_WARNING_TIME` | 4     | Lead time for the "huge wave!" banner      |
-| `DEFAULT_SPAWN_INTERVAL`| 1.5   | Fallback gap between monsters in a group   |
-| `DEFAULT_GROUP_DELAY`   | 6     | Fallback gap between groups                |
+| `STARTING_PLAYER_HEALTH`| 5     | Hearts at level start (one lost per breach) |
+| `BIG_WAVE_WARNING_TIME` | 5     | Lead time for the "huge wave!" banner      |
+| `DEFAULT_SPAWN_INTERVAL`| 1.8   | Fallback gap between monsters in a group   |
+| `DEFAULT_GROUP_DELAY`   | 7     | Fallback gap between groups                |
 
-These (and the per-level data) are the knobs Milestone 14 (Balancing) tunes.
+Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
+`Shared.Levels`.
 
 ---
 
