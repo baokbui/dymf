@@ -30,6 +30,10 @@ local BrainrotConfig = {
 	-- Bombardino line-bomb fly-over (house → enemy along the planted row).
 	LINE_BOMB_FLIGHT_DURATION = 1.0,
 	LINE_BOMB_FLY_HEIGHT = 20,
+
+	-- Multiplier on PlotConfig.BRAINROT_FOOTPRINT_RATIO when a definition sets
+	-- modelScale (Tralalero / Bombardino omit it and stay at full size).
+	COMPACT_MODEL_SCALE = 0.7,
 }
 
 table.freeze(BrainrotConfig)

@@ -15,7 +15,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
-local PlotConfig = require(Shared.Config.PlotConfig)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
@@ -30,11 +29,7 @@ local DEFAULT_COLOR = Color3.fromRGB(180, 140, 220)
 local missingTemplateLogged: { [string]: boolean } = {}
 
 local function footprintFor(definition: Types.BrainrotDefinition): number
-	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
-	if definition.ability == "Wall" then
-		return footprint * 1.05
-	end
-	return footprint
+	return ModelUtil.brainrotFootprintStuds(definition)
 end
 
 local function applyIdentity(

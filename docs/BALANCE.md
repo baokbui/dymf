@@ -10,7 +10,7 @@ Status: ✅ Milestone 14
 
 ## Design targets
 
-| Phase | Levels | Goal |
+| Phase | Days | Goal |
 | ----- | ------ | ---- |
 | Opening | 1–4 | Learn plant → earn → defend; **Zombie** only, gentle counts/pacing |
 | Campaign | 5–9 | **Zombie** + **Goblin** mix; economy opens mid-tier units |
@@ -44,11 +44,11 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit.
 | Unit | Cost | Hits | DPS role |
 | ---- | ---- | ---- | -------- |
 | Ballerina | 50 | 5 | Economy |
-| Chimpanzini | 75 | 35 | Wall (~70s vs one Zombie) |
-| Tung Tung | 75 | 10 | Melee (45 dmg / 0.95s; 4 hits vs 180 HP Zombie) |
+| Chimpanzini | 75 | 25 | Wall (~40s vs one Zombie) |
+| Tung Tung | 75 | 10 | Melee (45 dmg / 1.35s; ~4 hits vs 180 HP Zombie) |
 | Cappuccino | 100 | 5 | Row sniper (60 dmg / 1.75s; 3 hits vs 180 HP Zombie) |
 | Lirili | 150 | 5 | Freeze support (2s; 3.5s interval) |
-| Tralalero | 175 | 5 | Bubble projectile (60 dmg / 1.7s; 3 hits vs Zombie) + 1.2s trap |
+| Tralalero | 175 | 5 | Bubble projectile (40 dmg / 4.0s; weaker than Cappuccino) + 1.2s trap |
 | Bombardino | 375 | 1 | Row nuke (2800); ~4× on Orc |
 
 ---
@@ -66,7 +66,7 @@ data, not weaker zombie variants:
 
 ---
 
-## Level pacing (`Shared.Levels` + `LevelConfig`)
+## Day pacing (`Shared.Levels` + `LevelConfig`)
 
 - First spawn group always leaves **≥20s** plant time after countdown.
 - Adjacent levels change **counts/pacing/species** — never hidden HP scaling.

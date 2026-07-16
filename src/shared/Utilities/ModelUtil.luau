@@ -2,13 +2,15 @@
 --[[
 	ModelUtil
 	Shared helpers for cloning and placing authored Model templates
-	(ReplicatedStorage.Assets). Used by BrainrotModel (server) and the
-	placement ghost (client). No gameplay authority.
+	(ReplicatedStorage.Assets). Used by BrainrotModel, MonsterModel, and the
+	placement ghost. No gameplay authority.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(script.Parent.Parent.Config.BrainrotConfig)
+local PlotConfig = require(script.Parent.Parent.Config.PlotConfig)
+local Types = require(script.Parent.Parent.Types)
 
 local ModelUtil = {}
 
@@ -27,20 +29,44 @@ local STRIP_CLASSES: { [string]: boolean } = {
 
 local INVISIBLE_TRANSPARENCY = 0.95
 
-function ModelUtil.getBrainrotTemplatesFolder(): Folder?
+local function assetsFolder(): Folder?
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	if not assets then
-		return nil
-	end
-	local brainrots = assets:FindFirstChild("Brainrots")
-	if brainrots and brainrots:IsA("Folder") then
-		return brainrots
+	if assets and assets:IsA("Folder") then
+		return assets
 	end
 	return nil
 end
 
-function ModelUtil.findBrainrotTemplate(modelId: string): Model?
-	local folder = ModelUtil.getBrainrotTemplatesFolder()
+local function templatesFolder(name: string): Folder?
+	local assets = assetsFolder()
+	if not assets then
+		return nil
+	end
+	local folder = assets:FindFirstChild(name)
+	if folder and folder:IsA("Folder") then
+		return folder
+	end
+	return nil
+end
+
+function ModelUtil.getBrainrotTemplatesFolder(): Folder?
+	return templatesFolder("Brainrots")
+end
+
+function ModelUtil.getMonsterTemplatesFolder(): Folder?
+	return templatesFolder("Monsters")
+end
+
+-- Target horizontal size (studs) for a Brainrot clone / placement ghost.
+function ModelUtil.brainrotFootprintStuds(definition: Types.BrainrotDefinition): number
+	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
+	if definition.ability == "Wall" then
+		footprint *= 1.05
+	end
+	return footprint * (definition.modelScale or 1)
+end
+
+local function findTemplate(folder: Folder?, modelId: string): Model?
 	if not folder then
 		return nil
 	end
@@ -49,6 +75,14 @@ function ModelUtil.findBrainrotTemplate(modelId: string): Model?
 		return child
 	end
 	return nil
+end
+
+function ModelUtil.findBrainrotTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getBrainrotTemplatesFolder(), modelId)
+end
+
+function ModelUtil.findMonsterTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getMonsterTemplatesFolder(), modelId)
 end
 
 local function destroyByClass(root: Instance, classSet: { [string]: boolean })
@@ -62,12 +96,20 @@ end
 local function destroyInvisibleParts(root: Instance)
 	for _, descendant in root:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant.Transparency >= INVISIBLE_TRANSPARENCY then
+			-- Keep rig roots so Motor6D chains stay intact (R6/R15 Toolbox monsters).
+			if descendant.Name == "HumanoidRootPart" then
+				continue
+			end
 			descendant:Destroy()
 		end
 	end
 end
 
 local function isVisualPart(part: BasePart): boolean
+	-- VFX shells parented under the model must not affect feet-snap / scale AABB.
+	if part.Name == "BubbleShell" then
+		return false
+	end
 	return part.Transparency < INVISIBLE_TRANSPARENCY
 end
 
@@ -107,8 +149,19 @@ local function visualSize(model: Model): Vector3
 	return maxV - minV
 end
 
+-- Character bounds excluding VFX (BubbleShell) and invisible rig roots.
+function ModelUtil.getVisualSizeAndCenter(model: Model): (Vector3, Vector3)
+	local minV, maxV = getVisualWorldAABB(model)
+	return maxV - minV, (minV + maxV) * 0.5
+end
+
 local function pickPrimaryPart(model: Model): BasePart?
-	if model.PrimaryPart and isVisualPart(model.PrimaryPart) then
+	-- Prefer rig root even when invisible so PivotTo moves the whole Motor6D tree.
+	local hrp = model:FindFirstChild("HumanoidRootPart", true)
+	if hrp and hrp:IsA("BasePart") then
+		return hrp
+	end
+	if model.PrimaryPart then
 		return model.PrimaryPart
 	end
 	local best: BasePart? = nil
@@ -126,8 +179,11 @@ local function pickPrimaryPart(model: Model): BasePart?
 end
 
 local function ensureBodyAlias(model: Model, primary: BasePart)
-	local existing = model:FindFirstChild("Body")
+	local existing = model:FindFirstChild("Body", true)
 	if existing and existing:IsA("BasePart") then
+		if model.PrimaryPart == nil then
+			model.PrimaryPart = existing
+		end
 		return
 	end
 	primary.Name = "Body"
@@ -145,12 +201,6 @@ local function hardenParts(model: Model)
 	end
 end
 
-local function visualHorizontalExtent(model: Model): number
-	local size = visualSize(model)
-	return math.max(size.X, size.Z)
-end
-
--- Apply Euler degrees in the model's current local space (from definition).
 local function applyOrientationDegrees(model: Model, degrees: Vector3?)
 	if not degrees then
 		return
@@ -161,7 +211,6 @@ local function applyOrientationDegrees(model: Model, degrees: Vector3?)
 	)
 end
 
--- Face a horizontal direction with zero pitch/roll.
 local function faceDirectionUpright(model: Model, face: Vector3)
 	local flat = Vector3.new(face.X, 0, face.Z)
 	if flat.Magnitude < 1e-4 then
@@ -179,27 +228,44 @@ local function faceDirectionUpright(model: Model, face: Vector3)
 	model:PivotTo(CFrame.fromMatrix(pos, right, Vector3.yAxis))
 end
 
+local function resolveFace(faceDirection: Vector3?): Vector3
+	if faceDirection and faceDirection.Magnitude > 1e-4 then
+		return faceDirection
+	end
+	return BrainrotConfig.MODEL_FACE_DIRECTION
+end
+
 export type PrepareOptions = {
-	targetFootprint: number,
+	-- Fit horizontal AABB into this size (Brainrots). When both height + footprint
+	-- are set, scale = min of the two so the model fits inside either box.
+	targetFootprint: number?,
+	-- Fit vertical AABB into this size (Monsters / humanoids). Prefer this over
+	-- footprint-only scaling so R6 templates don't become tile-wide giants.
+	targetHeight: number?,
+	faceDirection: Vector3?,
 	ghost: boolean?,
 	ghostTransparency: number?,
 	tintColor: Color3?,
-	-- Local Euler degrees applied AFTER facing (pitch/yaw/roll on the upright pivot).
 	orientationDegrees: Vector3?,
 }
 
 --[[
 	Place on tile:
 	1. Clear Assets shelf rotation
-	2. Face enemy (+X) upright (sets World pivot axes)
-	3. Apply definition orientation in local space (must be AFTER face — otherwise face wipes it)
+	2. Face direction upright (Brainrots +X / Monsters −X by default)
+	3. Apply definition orientation in local space
 	4. Snap visible AABB bottom onto the tile
 ]]
-function ModelUtil.pivotToTileTop(model: Model, topCenter: Vector3, orientationDegrees: Vector3?)
+function ModelUtil.pivotToTileTop(
+	model: Model,
+	topCenter: Vector3,
+	orientationDegrees: Vector3?,
+	faceDirection: Vector3?
+)
 	local pos = model:GetPivot().Position
 	model:PivotTo(CFrame.new(pos))
 
-	faceDirectionUpright(model, BrainrotConfig.MODEL_FACE_DIRECTION)
+	faceDirectionUpright(model, resolveFace(faceDirection))
 	applyOrientationDegrees(model, orientationDegrees)
 
 	local minV, maxV = getVisualWorldAABB(model)
@@ -208,7 +274,16 @@ function ModelUtil.pivotToTileTop(model: Model, topCenter: Vector3, orientationD
 	model:PivotTo(model:GetPivot() + delta)
 end
 
-function ModelUtil.cloneBrainrotTemplate(template: Model, options: PrepareOptions): Model
+-- Translate only: keep current rotation, put visible feet on tile (+ optional float).
+function ModelUtil.snapFeetToTileTop(model: Model, topCenter: Vector3, floatY: number?)
+	local minV, maxV = getVisualWorldAABB(model)
+	local center = (minV + maxV) * 0.5
+	local lift = floatY or 0
+	local delta = Vector3.new(topCenter.X - center.X, topCenter.Y + lift - minV.Y, topCenter.Z - center.Z)
+	model:PivotTo(model:GetPivot() + delta)
+end
+
+function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Model
 	local model = template:Clone()
 	destroyByClass(model, SCRIPT_CLASSES)
 	destroyByClass(model, STRIP_CLASSES)
@@ -221,15 +296,25 @@ function ModelUtil.cloneBrainrotTemplate(template: Model, options: PrepareOption
 		ensureBodyAlias(model, primary)
 	end
 
-	-- Match placement orientation before measuring footprint.
 	local pos = model:GetPivot().Position
 	model:PivotTo(CFrame.new(pos))
-	faceDirectionUpright(model, BrainrotConfig.MODEL_FACE_DIRECTION)
+	faceDirectionUpright(model, resolveFace(options.faceDirection))
 	applyOrientationDegrees(model, options.orientationDegrees)
 
-	local extent = visualHorizontalExtent(model)
-	if extent > 0.01 and options.targetFootprint > 0 then
-		local scale = options.targetFootprint / extent
+	local size = visualSize(model)
+	local scaleCandidates: { number } = {}
+	if options.targetHeight and options.targetHeight > 0 and size.Y > 0.01 then
+		table.insert(scaleCandidates, options.targetHeight / size.Y)
+	end
+	local extent = math.max(size.X, size.Z)
+	if options.targetFootprint and options.targetFootprint > 0 and extent > 0.01 then
+		table.insert(scaleCandidates, options.targetFootprint / extent)
+	end
+	if #scaleCandidates > 0 then
+		local scale = scaleCandidates[1]
+		for i = 2, #scaleCandidates do
+			scale = math.min(scale, scaleCandidates[i])
+		end
 		scale = math.clamp(scale, 0.05, 20)
 		model:ScaleTo(model:GetScale() * scale)
 	end
@@ -250,6 +335,11 @@ function ModelUtil.cloneBrainrotTemplate(template: Model, options: PrepareOption
 	end
 
 	return model
+end
+
+-- Back-compat alias used by Brainrot placement / ghost.
+function ModelUtil.cloneBrainrotTemplate(template: Model, options: PrepareOptions): Model
+	return ModelUtil.cloneTemplate(template, options)
 end
 
 return ModelUtil

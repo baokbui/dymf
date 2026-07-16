@@ -17,6 +17,7 @@ local MonsterModel = require(script.Parent.MonsterModel)
 local MonsterStatus = require(script.Parent.MonsterStatus)
 
 local GridService = require(script.Parent.Parent.GridService)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 export type MonsterRuntime = {
 	instanceId: string,
@@ -72,11 +73,8 @@ local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 	if not worldPos then
 		return
 	end
-	local body = runtime.model.PrimaryPart
-	if body then
-		local lift = floatY or 0
-		body.Position = worldPos + Vector3.new(0, body.Size.Y / 2 + lift, 0)
-	end
+	-- Preserve facing; move whole model (multi-part Toolbox templates).
+	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY)
 	MonsterModel.setColumn(runtime.model, runtime.column)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 end

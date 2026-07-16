@@ -20,7 +20,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		health = 180,
 		secondsPerGrid = 5,
 		damage = 85,
-		attackInterval = 2.2,
+		attackInterval = 1.6,
 		isBoss = false,
 		color = Color3.fromRGB(90, 140, 90),
 	},

@@ -142,8 +142,8 @@ local AudioConfig = {
 
 		-- Monsters
 		MonsterAttack = {
-			SoundId = "rbxasset://sounds/snap.wav",
-			Volume = 0.4,
+			SoundId = "rbxassetid://116770139807499",
+			Volume = 0.75,
 			PlaybackSpeed = 0.9,
 		},
 

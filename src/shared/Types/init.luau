@@ -40,6 +40,8 @@ export type BrainrotDefinition = {
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
 	-- Local Euler degrees (X=pitch, Y=yaw, Z=roll) applied after clearing Assets rotation.
 	modelOrientationDegrees: Vector3?,
+	-- Multiplier on tile footprint when cloning Assets templates (default 1).
+	modelScale: number?,
 }
 
 -- Data-driven definition for a Monster type (zombie, vampire, boss, ...).
@@ -54,6 +56,8 @@ export type MonsterDefinition = {
 	abilities: { string }?, -- ability handler ids (EnemyService/Abilities)
 	abilityParams: { [string]: number }?,
 	color: Color3?,
+	modelId: string?, -- Assets.Monsters child name; defaults to `id`
+	modelOrientationDegrees: Vector3?, -- local Euler after facing house (−X)
 }
 
 -- One ordered burst of monsters within a level (an internal "wave"). A level is

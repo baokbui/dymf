@@ -409,7 +409,7 @@ local function onProjectileImpact(
 	ownerUserId: number,
 	impact: Projectile.ImpactSpec?
 ): boolean
-	local hit = CombatService.damageMonster(instanceId, damage)
+	local killed = CombatService.damageMonster(instanceId, damage)
 	local payload: { [string]: any } = {
 		kind = "Hit",
 		instanceId = instanceId,
@@ -417,7 +417,7 @@ local function onProjectileImpact(
 	}
 	fireCombatVisual(ownerUserId, payload)
 
-	if impact and impact.statusKind and impact.statusDuration then
+	if not killed and impact and impact.statusKind and impact.statusDuration then
 		CombatService.applyStatusToMonster(
 			instanceId,
 			impact.statusKind,
@@ -426,7 +426,7 @@ local function onProjectileImpact(
 			impact.statusVisual
 		)
 	end
-	return hit
+	return killed
 end
 
 function CombatService.init()

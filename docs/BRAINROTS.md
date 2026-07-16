@@ -48,6 +48,8 @@ From `Shared.Types.BrainrotDefinition`:
 | `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb)                        |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
 | `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
+| `modelOrientationDegrees` | Vector3?         | Local Euler after facing (+X)                                      |
+| `modelScale`      | number?                | Footprint multiplier (default 1; compact units use `COMPACT_MODEL_SCALE`) |
 
 
 Range is measured in **grid tiles** along the lane toward the enemy (+X), not
@@ -62,7 +64,7 @@ studs. `GridUtil.isColumnInRange` is the shared helper.
 Placed visuals come from **Toolbox / Studio Models** under
 `ReplicatedStorage.Assets.Brainrots`. `BrainrotModel.create` resolves
 `definition.modelId or definition.id`, clones + scales to
-`PlotConfig.BRAINROT_FOOTPRINT_RATIO`, and tags identity attributes.
+`PlotConfig.BRAINROT_FOOTPRINT_RATIO * (modelScale or 1)`, and tags identity attributes.
 Shared helpers live in `Shared.Utilities.ModelUtil`.
 
 If a template is missing, the server logs once and uses the colored Part
@@ -87,10 +89,12 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 
 For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts,
 face enemy (+X) if the Toolbox facing is wrong. Placement ghost clones the same
-template. Shop cards still use the `color` swatch this milestone.
+template. Compact units use `modelScale = BrainrotConfig.COMPACT_MODEL_SCALE`
+(0.7); Tralalero and Bombardino stay at full footprint. Shop cards still use the
+`color` swatch this milestone.
 
-M15 **Complete When** (all seven real models in-game) is met once these templates
-are present and mapped as above.
+M15 **Complete When** (all seven real models in-game) ✅ — templates under
+`Assets.Brainrots` with `modelId` mapping in `Shared.Brainrots`.
 
 ---
 
@@ -102,12 +106,12 @@ are present and mapped as above.
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
 | Ballerina Cappucina  | 50   | 500 (5)       | 0      | 11s      | —        | Drops coins on random tiles | 25    |
-| Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 0.95s    | Short melee (`meleeReach`) | Melee bat           | —     |
-| Tralalero Tralala    | 175  | 500 (5)       | 60     | 1.7s     | Full row | Bubble projectile → trap (1.2s) | —     |
+| Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 1.35s    | Short melee (`meleeReach`) | Melee bat           | —     |
+| Tralalero Tralala    | 175  | 500 (5)       | 40     | 4.0s     | Full row | Bubble projectile → trap (1.2s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
 | Lirili Larila        | 150  | 500 (5)       | 0      | 3.5s     | 2 tiles  | Freeze enemies 2s   | —     |
 | Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw knife         | —     |
-| Chimpanzini Bananini | 75   | 3500 (35)     | 0      | —        | —        | Wall                | —     |
+| Chimpanzini Bananini | 75   | 2500 (25)     | 0      | —        | —        | Wall                | —     |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 

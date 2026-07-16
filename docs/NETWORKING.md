@@ -38,6 +38,7 @@ Remotes module. That is the only required step.
 | ------------------ | --------------- | ------ | --------------------------------------- |
 | `PlaceBrainrot`    | client → server | ✅ M4  | Request to place a Brainrot on a tile   |
 | `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
+| `PlaceBrainrotFailed` | server → client | ✅ M4  | Plant rejected (coins / occupied / …) — toast under Shop |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → client SFX/pulse |

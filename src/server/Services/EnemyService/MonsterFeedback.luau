@@ -2,32 +2,72 @@
 --[[
 	MonsterFeedback
 	Server-side visual feedback on monster models (replicates to clients).
+
+	Attack pulse uses Model:ScaleTo so authored MeshParts are not Size-warped.
+	Hit flash tints visible BaseParts (same pattern as BrainrotFeedback).
 ]]
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local MonsterFeedback = {}
 
-local activePulseTweens: { [Model]: Tween } = {}
-local activeHitFlashTweens: { [Model]: Tween } = {}
-local hitFlashBaseColor: { [Model]: Color3 } = {}
+local baseScales: { [Model]: number } = {}
+local pulseTokens: { [Model]: number } = {}
+
+local activeHitFlashTweens: { [Model]: { Tween } } = {}
+local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
 
 type FrozenLook = {
-	color: Color3,
-	material: Enum.Material,
+	colors: { [BasePart]: Color3 },
+	materials: { [BasePart]: Enum.Material },
 }
 
 local frozenLooks: { [Model]: FrozenLook } = {}
 local bubbledModels: { [Model]: boolean } = {}
 local poppingBubbles: { [Model]: boolean } = {}
 
+local function visibleParts(model: Model): { BasePart }
+	local parts: { BasePart } = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant.Transparency < 0.95 and descendant.Name ~= "BubbleShell" then
+			table.insert(parts, descendant)
+		end
+	end
+	if #parts == 0 then
+		local body = model.PrimaryPart or model:FindFirstChild("Body")
+		if body and body:IsA("BasePart") then
+			table.insert(parts, body)
+		end
+	end
+	return parts
+end
+
+local function resolveBody(model: Model): BasePart?
+	local body = model:FindFirstChild("Body", true)
+	if body and body:IsA("BasePart") then
+		return body
+	end
+	local primary = model.PrimaryPart
+	if primary then
+		return primary
+	end
+	local hrp = model:FindFirstChild("HumanoidRootPart", true)
+	if hrp and hrp:IsA("BasePart") then
+		return hrp
+	end
+	return nil
+end
+
 local function cancelHitFlash(model: Model)
-	local existing = activeHitFlashTweens[model]
-	if existing then
-		existing:Cancel()
+	local tweens = activeHitFlashTweens[model]
+	if tweens then
+		for _, tween in tweens do
+			tween:Cancel()
+		end
 		activeHitFlashTweens[model] = nil
 	end
 end
@@ -69,109 +109,132 @@ local function clearFreezeVfx(body: BasePart)
 end
 
 function MonsterFeedback.pulseAttack(model: Model)
-	local body = model:FindFirstChild("Body")
-	if not body or not body:IsA("BasePart") then
-		return
+	local token = (pulseTokens[model] or 0) + 1
+	pulseTokens[model] = token
+
+	local base = baseScales[model]
+	if not base then
+		base = model:GetScale()
+		baseScales[model] = base
+	else
+		model:ScaleTo(base)
 	end
 
-	local existing = activePulseTweens[model]
-	if existing then
-		existing:Cancel()
-	end
-
-	local baseSize = body.Size
-	local scaled = baseSize * MonsterConfig.ATTACK_PULSE_SCALE
-	local up = TweenService:Create(
-		body,
-		TweenInfo.new(MonsterConfig.ATTACK_PULSE_DURATION / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Size = scaled }
-	)
-	local down = TweenService:Create(
-		body,
-		TweenInfo.new(MonsterConfig.ATTACK_PULSE_DURATION / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-		{ Size = baseSize }
-	)
-
-	activePulseTweens[model] = up
-	up:Play()
-	up.Completed:Connect(function()
-		if activePulseTweens[model] == up then
-			activePulseTweens[model] = down
-			down:Play()
+	model:ScaleTo(base * MonsterConfig.ATTACK_PULSE_SCALE)
+	local half = MonsterConfig.ATTACK_PULSE_DURATION / 2
+	task.delay(half, function()
+		if pulseTokens[model] ~= token or not model.Parent then
+			return
 		end
-	end)
-	down.Completed:Connect(function()
-		if activePulseTweens[model] == down then
-			activePulseTweens[model] = nil
-		end
+		model:ScaleTo(base)
+		task.delay(half, function()
+			if pulseTokens[model] == token then
+				pulseTokens[model] = nil
+			end
+		end)
 	end)
 end
 
 function MonsterFeedback.flashHit(model: Model, isFatal: boolean?)
-	local body = model:FindFirstChild("Body")
-	if not body or not body:IsA("BasePart") then
+	local parts = visibleParts(model)
+	if #parts == 0 then
 		return
 	end
 
 	cancelHitFlash(model)
 
-	local baseColor = hitFlashBaseColor[model] or body.Color
-	hitFlashBaseColor[model] = baseColor
-	body.Color = MonsterConfig.HIT_FLASH_COLOR
+	local bases = hitFlashBaseColors[model]
+	if not bases then
+		bases = {}
+		hitFlashBaseColors[model] = bases
+		for _, part in parts do
+			bases[part] = part.Color
+		end
+	end
+
+	for _, part in parts do
+		if not bases[part] then
+			bases[part] = part.Color
+		end
+		part.Color = MonsterConfig.HIT_FLASH_COLOR
+	end
 
 	if isFatal then
 		return
 	end
 
-	local tween = TweenService:Create(
-		body,
-		TweenInfo.new(MonsterConfig.HIT_FLASH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Color = baseColor }
-	)
-	activeHitFlashTweens[model] = tween
-	tween:Play()
-	tween.Completed:Connect(function()
-		if activeHitFlashTweens[model] == tween then
-			activeHitFlashTweens[model] = nil
+	local tweens: { Tween } = {}
+	local remaining = 0
+	for _, part in parts do
+		local baseColor = bases[part]
+		if baseColor then
+			remaining += 1
+			local tween = TweenService:Create(
+				part,
+				TweenInfo.new(MonsterConfig.HIT_FLASH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Color = baseColor }
+			)
+			table.insert(tweens, tween)
+			tween.Completed:Connect(function()
+				remaining -= 1
+				if remaining <= 0 and activeHitFlashTweens[model] == tweens then
+					activeHitFlashTweens[model] = nil
+				end
+			end)
+			tween:Play()
 		end
-	end)
+	end
+	activeHitFlashTweens[model] = tweens
 end
 
--- Icy tint + flakes while Freeze/Stun is active (replicates to clients).
 function MonsterFeedback.setFrozen(model: Model, frozen: boolean)
-	local body = model:FindFirstChild("Body")
-	if not body or not body:IsA("BasePart") then
+	local parts = visibleParts(model)
+	local body = resolveBody(model)
+	if #parts == 0 or not body then
 		return
 	end
 
 	if frozen then
 		cancelHitFlash(model)
 		if not frozenLooks[model] then
-			frozenLooks[model] = {
-				color = hitFlashBaseColor[model] or body.Color,
-				material = body.Material,
-			}
+			local colors: { [BasePart]: Color3 } = {}
+			local materials: { [BasePart]: Enum.Material } = {}
+			for _, part in parts do
+				colors[part] = part.Color
+				materials[part] = part.Material
+			end
+			frozenLooks[model] = { colors = colors, materials = materials }
 		end
 		local ice = MonsterConfig.FREEZE_COLOR
-		hitFlashBaseColor[model] = ice
-		body.Color = ice
-		body.Material = MonsterConfig.FREEZE_MATERIAL
+		for _, part in parts do
+			part.Color = ice
+			part.Material = MonsterConfig.FREEZE_MATERIAL
+		end
+		local bases = hitFlashBaseColors[model]
+		if not bases then
+			bases = {}
+			hitFlashBaseColors[model] = bases
+		end
+		for _, part in parts do
+			bases[part] = ice
+		end
 		model:SetAttribute("Frozen", true)
 		ensureFreezeVfx(body)
-		return
+	else
+		local look = frozenLooks[model]
+		if look then
+			for part, color in look.colors do
+				if part.Parent then
+					part.Color = color
+					part.Material = look.materials[part] or Enum.Material.SmoothPlastic
+				end
+			end
+			hitFlashBaseColors[model] = look.colors
+			frozenLooks[model] = nil
+		end
+		model:SetAttribute("Frozen", false)
+		clearFreezeVfx(body)
 	end
-
-	local look = frozenLooks[model]
-	if not look then
-		return
-	end
-	cancelHitFlash(model)
-	body.Color = look.color
-	body.Material = look.material
-	hitFlashBaseColor[model] = look.color
-	frozenLooks[model] = nil
-	model:SetAttribute("Frozen", false)
-	clearFreezeVfx(body)
 end
 
 local function getBubbleShell(model: Model): BasePart?
@@ -189,21 +252,24 @@ local function syncBubbleShell(model: Model, body: BasePart)
 		shell.Name = "BubbleShell"
 		shell.Shape = Enum.PartType.Ball
 		shell.Material = Enum.Material.ForceField
-		shell.Color = MonsterConfig.BUBBLE_COLOR
-		shell.Transparency = MonsterConfig.BUBBLE_TRANSPARENCY
+		shell.Anchored = true
 		shell.CanCollide = false
-		shell.CanQuery = false
 		shell.CanTouch = false
-		shell.Massless = true
+		shell.CanQuery = false
 		shell.CastShadow = false
-		shell.Anchored = body.Anchored
 		shell.Parent = model
 	end
 
+	-- Character bounds only (GetExtentsSize includes this shell and grows every tick).
+	local size, center = ModelUtil.getVisualSizeAndCenter(model)
+	if size.Magnitude < 1e-3 then
+		size = body.Size
+		center = body.Position
+	end
 	local pad = MonsterConfig.BUBBLE_SIZE_PADDING
-	local diameter = math.max(body.Size.X, body.Size.Y, body.Size.Z) + pad
+	local diameter = math.max(size.X, size.Y, size.Z) + pad
 	shell.Size = Vector3.new(diameter, diameter, diameter)
-	shell.CFrame = body.CFrame
+	shell.CFrame = CFrame.new(center)
 	shell.Transparency = MonsterConfig.BUBBLE_TRANSPARENCY
 	shell.Color = MonsterConfig.BUBBLE_COLOR
 end
@@ -240,10 +306,9 @@ local function popBubbleShell(model: Model)
 	end)
 end
 
--- Translucent bubble shell around the monster while BubbleTrap freeze is active.
 function MonsterFeedback.setBubbled(model: Model, bubbled: boolean)
-	local body = model:FindFirstChild("Body")
-	if not body or not body:IsA("BasePart") then
+	local body = resolveBody(model)
+	if not body then
 		return
 	end
 
@@ -267,20 +332,21 @@ function MonsterFeedback.setBubbled(model: Model, bubbled: boolean)
 end
 
 function MonsterFeedback.cleanup(model: Model)
-	local pulse = activePulseTweens[model]
-	if pulse then
-		pulse:Cancel()
-		activePulseTweens[model] = nil
+	local base = baseScales[model]
+	if base and model.Parent then
+		model:ScaleTo(base)
 	end
+	baseScales[model] = nil
+	pulseTokens[model] = nil
 
 	cancelHitFlash(model)
-	hitFlashBaseColor[model] = nil
+	hitFlashBaseColors[model] = nil
 	frozenLooks[model] = nil
 	bubbledModels[model] = nil
 	poppingBubbles[model] = nil
 
-	local body = model:FindFirstChild("Body")
-	if body and body:IsA("BasePart") then
+	local body = resolveBody(model)
+	if body then
 		clearFreezeVfx(body)
 	end
 

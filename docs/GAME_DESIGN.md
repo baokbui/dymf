@@ -4,7 +4,7 @@
 
 Brainrots vs. Monsters (BVM) is a 3D Roblox tower defense game inspired by Plants vs. Zombies.
 
-Each player owns a separate battlefield where they defend against progressively harder monster levels by placing Brainrots on a grid. Players earn coins, purchase Brainrots, and progress through an increasingly difficult campaign of levels.
+Each player owns a separate battlefield where they defend against progressively harder monster days by placing Brainrots on a grid. Players earn coins, purchase Brainrots, and progress through an increasingly difficult campaign of days.
 
 Unlike traditional PvZ, player progress is persistent across sessions (✅ Milestone 9 — save/load).
 
@@ -36,11 +36,11 @@ Plant Brainrots
 
 ↓
 
-Press Start Level
+Press Start Day
 
 ↓
 
-Level Begins
+Day Begins
 
 ↓
 
@@ -48,7 +48,7 @@ Fight Monsters
 
 ↓
 
-Level Complete
+Day Complete
 
 ↓
 
@@ -126,7 +126,7 @@ Coins are earned by:
 
 - Passive drops (every ~30 seconds) ✅
 - Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 12s) ✅
-- Completing levels 🔜 Milestone 8
+- Completing days 🔜 Milestone 8
 - Future achievements/events
 
 Only the server controls currency.
@@ -190,12 +190,13 @@ Carrier monsters may spawn with Brainrots attached.
 
 ---
 
-# Level System
+# Day System
 
 BVM is a PvZ-style **campaign**: players progress through discrete, hand-authored
-levels rather than endless scaling waves. (See `LEVELS.md` for the full design.)
+**days** rather than endless scaling waves. (See `LEVELS.md` for the full design.
+Code still uses `LevelService` / `Shared.Levels`.)
 
-Every level consists of:
+Every day consists of:
 
 Preparation
 
@@ -205,11 +206,11 @@ Player Plants
 
 ↓
 
-Start Level Button
+Start Day Button
 
 ↓
 
-Level Begins (spawn groups / internal waves)
+Day Begins (spawn groups / internal waves)
 
 ↓
 
@@ -217,29 +218,29 @@ Big Final Wave
 
 ↓
 
-Level Complete (Victory) — or Defeat if the house is breached
+Day Complete (Victory) — or Defeat if the house is breached
 
 ↓
 
-Rewards + Unlock Next Level
+Rewards + Unlock Next Day
 
 ↓
 
-Next Level Preparation
+Next Day Preparation
 
-Within a level, monsters arrive in an ordered list of **spawn groups** (the
+Within a day, monsters arrive in an ordered list of **spawn groups** (the
 internal "waves") shown on a progress bar, building to a **big final wave**. A
-level is won by clearing every group and lost if a monster reaches the house.
+day is won by clearing every group and lost if a monster reaches the house.
 
-Each authored level controls its own difficulty through its data:
+Each authored day controls its own difficulty through its data:
 
 - Which monster types appear
 - How many, and in how many groups
 - Spawn timing (group delays + per-monster interval)
 - Whether/where bosses and special enemies appear
 
-Progression is **linear**: clearing a level unlocks the next; cleared levels can
-be replayed via Level Select. There is no endless mode (yet).
+Progression is **linear**: clearing a day unlocks the next; cleared days can
+be replayed via Day Select. There is no endless mode (yet).
 
 ---
 
@@ -271,8 +272,8 @@ Everything player-owned should be saved.
 
 Saved:
 
-- Current Level
-- Highest Unlocked Level
+- Current Day
+- Highest Unlocked Day
 - Coins
 - Player Health
 - Planted Brainrots
@@ -292,11 +293,11 @@ Not Saved:
 - Temporary Combat Effects
 - Level Timers
 
-If a player leaves during a level:
+If a player leaves during a day:
 
 - Save the battlefield.
-- Save the current level progression.
-- End the active level.
+- Save the current day progression.
+- End the active day.
 
 When the player rejoins:
 
@@ -304,8 +305,8 @@ When the player rejoins:
 - Restore coins.
 - Restore all Brainrots.
 - Restore progression.
-- The current level starts over from the beginning.
-- The player must press Start Level again.
+- The current day starts over from the beginning.
+- The player must press Start Day again.
 
 ---
 
@@ -315,8 +316,8 @@ A Reset Progress button exists inside Settings.
 
 Reset deletes:
 
-- Current Level
-- Highest Unlocked Level
+- Current Day
+- Highest Unlocked Day
 - Coins
 - Battlefield
 - Brainrots
@@ -325,7 +326,7 @@ Reset deletes:
 - Statistics
 - Saved Progress
 
-Player returns to Level 1.
+Player returns to Day 1.
 
 Reset should require confirmation.
 

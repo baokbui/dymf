@@ -1,11 +1,11 @@
 --!strict
 --[[
 	Level
-	Level campaign UI for UIController. Bottom-right panel with the current level,
-	a green Start Level button, spawn-group progress bar, and big-wave warning.
+	Campaign day UI for UIController. Bottom-right panel with the current day,
+	a green Start Day button, spawn-group progress bar, and big-wave warning.
 	Sends Start Level intent via Remotes — no gameplay logic on the client.
 
-	Milestone 8.
+	Milestone 8. Player-facing copy uses "Day" (PvZ); remotes/services stay Level*.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -88,7 +88,7 @@ function Level.new(parent: Frame): LevelPanel
 	levelLabel.TextSize = 18
 	levelLabel.TextXAlignment = Enum.TextXAlignment.Left
 	levelLabel.TextColor3 = TEXT_COLOR
-	levelLabel.Text = "Level 1"
+	levelLabel.Text = "Day 1"
 	levelLabel.Parent = parent
 
 	local phaseLabel = Instance.new("TextLabel")
@@ -100,7 +100,7 @@ function Level.new(parent: Frame): LevelPanel
 	phaseLabel.TextSize = 14
 	phaseLabel.TextXAlignment = Enum.TextXAlignment.Left
 	phaseLabel.TextColor3 = SUBTEXT_COLOR
-	phaseLabel.Text = "Start the level to plant and defend"
+	phaseLabel.Text = "Start the day to plant and defend"
 	phaseLabel.Parent = parent
 
 	local progressBackground = Instance.new("Frame")
@@ -131,7 +131,7 @@ function Level.new(parent: Frame): LevelPanel
 	startButton.Font = Enum.Font.GothamBold
 	startButton.TextSize = 16
 	startButton.TextColor3 = Color3.fromRGB(18, 20, 30)
-	startButton.Text = "Start Level"
+	startButton.Text = "Start Day"
 	startButton.Parent = parent
 	styleCorner(startButton, 10)
 
@@ -153,7 +153,7 @@ end
 
 local function phaseMessage(phase: string, countdownRemaining: number?): string
 	if phase == PHASE.Preparation then
-		return "Start the level to plant and defend"
+		return "Start the day to plant and defend"
 	elseif phase == PHASE.Countdown then
 		local n = if countdownRemaining then math.ceil(countdownRemaining) else 0
 		return string.format("Starting in %d…", n)
@@ -171,7 +171,7 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 	local levelNumber = state.levelNumber
 	local levelName = state.levelName
 	if type(levelNumber) == "number" and type(levelName) == "string" then
-		self.levelLabel.Text = string.format("Level %d — %s", levelNumber, levelName)
+		self.levelLabel.Text = string.format("Day %d — %s", levelNumber, levelName)
 	end
 
 	local phase = state.phase
@@ -192,10 +192,10 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 
 	self.startButton.Visible = state.canStart == true
 	if phase == PHASE.Defeat then
-		self.startButton.Text = "Restart Level"
+		self.startButton.Text = "Restart Day"
 		self.startButton.BackgroundColor3 = RESTART_BUTTON_COLOR
 	else
-		self.startButton.Text = "Start Level"
+		self.startButton.Text = "Start Day"
 		self.startButton.BackgroundColor3 = START_BUTTON_COLOR
 	end
 	self.warningBanner.Visible = state.bigWaveWarning == true

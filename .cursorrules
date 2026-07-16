@@ -177,22 +177,23 @@ Objects should never directly modify another object's health.
 
 # Level System
 
-The game is a PvZ-style campaign of discrete, authored levels (not endless
-scaling waves). Levels are data-driven entries in Shared.Levels; each is a fixed
-sequence of monster spawn groups (internal "waves") ending in a big final wave.
+The game is a PvZ-style campaign of discrete, authored **days** (player-facing
+name; code/docs may still say "level"). Days are data-driven entries in
+Shared.Levels; each is a fixed sequence of monster spawn groups (internal
+"waves") ending in a big final wave.
 
 LevelService exclusively controls:
 
 - Preparation Phase
 - Countdown
-- Level Start
+- Day Start
 - Spawn Groups (internal waves) + progress
 - Big Final Wave
 - Victory / Defeat detection
 - Rewards
-- Linear Progression (unlock next level)
+- Linear Progression (unlock next day)
 
-No other service advances levels.
+No other service advances days.
 
 ---
 

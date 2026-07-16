@@ -184,9 +184,14 @@ end
 
 -- ===== Remote handlers (untrusted input) =====
 
+local function notifyPlaceFailed(player: Player, reason: string)
+	Remotes.getEvent("PlaceBrainrotFailed"):FireClient(player, reason)
+end
+
 local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition: unknown)
 	local LevelService = require(script.Parent.LevelService)
 	if not LevelService.isLevelActive(player) then
+		notifyPlaceFailed(player, "Unable to plant — start the day first")
 		return
 	end
 
@@ -205,6 +210,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	local ProgressService = require(script.Parent.ProgressService)
 	if not ProgressService.canPlace(player, brainrotId) then
+		notifyPlaceFailed(player, "Unable to plant — Brainrot not available")
 		return
 	end
 
@@ -216,6 +222,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	-- Affordability pre-check (cheap reject before reserving the tile).
 	if CoinService.getBalance(player) < definition.cost then
+		notifyPlaceFailed(player, "Unable to plant — not enough coins")
 		return
 	end
 
@@ -224,10 +231,12 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	-- Reserve first so two requests can't claim the same tile, then charge.
 	if not GridService.tryOccupy(plotModel, position, instanceId) then
-		return -- tile occupied / unknown / out of bounds
+		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
+		return
 	end
 	if not CoinService.trySpend(player, definition.cost) then
 		GridService.release(plotModel, position) -- balance changed mid-flight
+		notifyPlaceFailed(player, "Unable to plant — not enough coins")
 		return
 	end
 

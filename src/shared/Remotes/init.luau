@@ -25,6 +25,7 @@ local EVENT_NAMES = {
 	-- Placement (Milestone 4)
 	"PlaceBrainrot",
 	"RemoveBrainrot",
+	"PlaceBrainrotFailed",
 	-- Coins (Milestone 3)
 	"CollectCoin",
 	"CoinsUpdated",

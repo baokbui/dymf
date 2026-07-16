@@ -319,7 +319,9 @@ Full details in `MONSTERS.md`. Summary:
 - **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, dev test spawns.
 - **`EnemyService`** — `spawn`, `MonsterBehavior` grid movement, attack-on-tile,
   `Abilities/` handlers (Orc one-shot, Spider jump, Necromancer summon, …).
-- **`MonsterModel`** / **`MonsterFeedback`** — replicated body + attack pulse.
+- **`MonsterModel`** / **`MonsterFeedback`** — models clone from
+  `Assets.Monsters` via `ModelUtil` (M16; Part fallback); pulse / hit flash /
+  freeze / bubble feedback on the model.
 - **`CombatService`** — wired to `EnemyService` for `damageMonster`, row queries,
   and status effects.
 - **`GridService.getWorldPositionAtColumn`** — fractional column positioning.

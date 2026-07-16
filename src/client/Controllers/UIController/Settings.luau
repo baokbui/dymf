@@ -218,7 +218,7 @@ function Settings.applyStatistics(self: SettingsPanel, statistics: { [string]: n
 	end
 	local minutes = math.floor(get(ProgressConfig.STAT_TIME_PLAYED) / 60)
 	self.statsLabel.Text = table.concat({
-		string.format("Levels cleared: %d", get(ProgressConfig.STAT_LEVELS_CLEARED)),
+		string.format("Days cleared: %d", get(ProgressConfig.STAT_LEVELS_CLEARED)),
 		string.format("Brainrots placed: %d", get(ProgressConfig.STAT_BRAINROTS_PLACED)),
 		string.format("Monsters defeated: %d", get(ProgressConfig.STAT_MONSTERS_DEFEATED)),
 		string.format("Brains earned: %d", get(ProgressConfig.STAT_BRAINS_EARNED)),

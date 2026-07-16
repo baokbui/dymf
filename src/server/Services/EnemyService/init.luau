@@ -18,6 +18,7 @@ local Monsters = require(ReplicatedStorage.Shared.Monsters)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local Abilities = require(script.Abilities)
 local MonsterBehavior = require(script.MonsterBehavior)
@@ -370,10 +371,7 @@ function EnemyService.applyStatusToMonster(
 	if kind == "Knockback" then
 		local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
 		if worldPos then
-			local body = runtime.model.PrimaryPart
-			if body then
-				body.Position = worldPos + Vector3.new(0, body.Size.Y / 2, 0)
-			end
+			ModelUtil.snapFeetToTileTop(runtime.model, worldPos)
 			MonsterModel.setColumn(runtime.model, runtime.column)
 		end
 	end

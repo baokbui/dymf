@@ -39,18 +39,45 @@ From `Shared.Types.MonsterDefinition`:
 | `abilities`       | `{ string }?`          | Ability handler ids (`EnemyService/Abilities`)       |
 | `abilityParams`   | `{ [string]: number }?`| Per-ability tuning                                   |
 | `color`           | Color3?                | Placeholder / fallback tint                          |
-| `modelId`         | string?                | 🔜 M16 — `Assets.Monsters` child (defaults to `id`)  |
+| `modelId`         | string?                | Child name under `Assets.Monsters` (defaults to `id`) |
+| `modelOrientationDegrees` | Vector3?         | Local Euler after facing house (−X)                  |
 
 Movement is **grid-based**: monsters spawn just east of the lawn and walk
 toward the house (−X), one tile per `secondsPerGrid` seconds.
 
 ---
 
-## Models 🔜 (Milestone 16)
+## Models ✅ (Milestone 16 pipeline)
 
-Same pipeline as Brainrots (M15): Toolbox / Studio templates under
-`ReplicatedStorage.Assets.Monsters`, cloned by `MonsterModel` via data-driven
-`modelId`. Until then, colored Part placeholders from `color` remain.
+Placed visuals come from **Toolbox / Studio Models** under
+`ReplicatedStorage.Assets.Monsters`. `MonsterModel.create` resolves
+`definition.modelId or definition.id`, clones + scales to
+`MonsterConfig.FOOTPRINT_RATIO` (bosses ×1.15), faces
+`MonsterConfig.MODEL_FACE_DIRECTION` (−X toward the house), and tags identity.
+Shared helpers: `Shared.Utilities.ModelUtil`.
+
+If a template is missing, the server logs once and uses the colored Part
+placeholder so gameplay still works. Movement uses `snapFeetToTileTop` so
+multi-part models keep their facing while walking.
+
+### Studio: insert from Toolbox
+
+After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
+(`$ignoreUnknownInstances`). Name children to match registry `id` (or set
+`modelId`). Campaign-critical first:
+
+| Registry `id` | Suggested Assets child |
+| ------------- | ---------------------- |
+| `Zombie` | `Zombie` |
+| `Goblin` | `Goblin` |
+| `Orc` | `Orc` |
+
+Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`,
+strip Tools/Scripts, and use `modelOrientationDegrees` if the mesh needs a
+Tung-style upright fix.
+
+M16 **Complete When** is met once campaign monsters in authored levels use real
+models (at least Zombie, Goblin, Orc).
 
 ---
 
@@ -58,7 +85,7 @@ Same pipeline as Brainrots (M15): Toolbox / Studio templates under
 
 | Name | Health | Sec/grid | Damage | Atk interval | Boss | Ability |
 | ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
-| Zombie | 180 | 5 | 85 | 2.2s | | — |
+| Zombie | 180 | 5 | 85 | 1.6s | | — |
 | Vampire | 900 | 2.8 | 70 | 1.1s | | — |
 | Werewolf | 1400 | 3.2 | 130 | 1.1s | | — |
 | Skeleton | 950 | 4.5 | 95 | 1.5s | | — |

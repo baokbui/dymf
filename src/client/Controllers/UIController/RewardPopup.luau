@@ -1,7 +1,7 @@
 --!strict
 --[[
 	RewardPopup
-	Victory overlay showing brains earned for clearing a level.
+	Victory overlay showing brains earned for clearing a day.
 ]]
 
 local RewardPopup = {}
@@ -68,7 +68,7 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 end
 
 function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, brains: number)
-	self.title.Text = string.format("Level %d Cleared!", clearedLevel)
+	self.title.Text = string.format("Day %d Cleared!", clearedLevel)
 	self.detail.Text = string.format("Reward: +%d Brain%s", brains, if brains == 1 then "" else "s")
 	self.detail.TextColor3 = BRAIN
 	self.frame.Visible = true

@@ -25,6 +25,7 @@ local MonsterConfig = {
 	MELEE_CLOSE_REACH = 0.35,
 
 	-- Visual body size relative to a tile.
+	-- Authored models scale to BODY_HEIGHT (and not wider than FOOTPRINT_RATIO * tile).
 	BODY_HEIGHT = 7,
 	FOOTPRINT_RATIO = 0.72,
 
@@ -48,6 +49,9 @@ local MonsterConfig = {
 	BUBBLE_BOB_AMPLITUDE = 0.35,
 	BUBBLE_BOB_SPEED = 5,
 	BUBBLE_POP_DURATION = 0.18,
+
+	-- Authored models face this world direction when spawned (toward the house).
+	MODEL_FACE_DIRECTION = Vector3.new(-1, 0, 0),
 
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.

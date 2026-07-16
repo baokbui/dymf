@@ -24,6 +24,7 @@ local Hearts = require(script.Hearts)
 local Settings = require(script.Settings)
 local Inventory = require(script.Inventory)
 local RewardPopup = require(script.RewardPopup)
+local PlantToast = require(script.PlantToast)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
 
@@ -40,6 +41,7 @@ local heartsHud: Hearts.HeartsHud? = nil
 local settingsPanel: Settings.SettingsPanel? = nil
 local inventoryPanel: Inventory.InventoryPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
+local plantToast: PlantToast.PlantToastHud? = nil
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
 local selectedId: string? = nil
@@ -253,6 +255,7 @@ end
 function UIController.init()
 	coinCounter = buildCoinCounter()
 	shop = buildShop()
+	plantToast = PlantToast.new(buildMain())
 	levelPanel = buildLevelPanel()
 	heartsHud = buildHearts()
 	inventoryPanel = buildInventory()
@@ -281,6 +284,18 @@ function UIController.start()
 
 	UIEvents.pendingSpend:Connect(function()
 		spendPending = true
+	end)
+
+	UIEvents.plantFailed:Connect(function(reason: string)
+		if plantToast then
+			plantToast:push(reason)
+		end
+	end)
+
+	Remotes.getEvent("PlaceBrainrotFailed").OnClientEvent:Connect(function(reason: unknown)
+		if type(reason) == "string" and plantToast then
+			plantToast:push(reason)
+		end
 	end)
 
 	Remotes.getEvent("LevelStateChanged").OnClientEvent:Connect(function(state: unknown)

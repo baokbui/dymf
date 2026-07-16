@@ -51,15 +51,19 @@ StarterGui/
 - **Hearts** ✅ M13 — five house hearts in a rounded HUD box under Coins.
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
   only (loadout from `ProfileUpdated` / `SetEquipped`).
-- **LevelUI** ✅ M8 — bottom-right Start/Restart, progress, big-wave banner.
+- **Plant toasts** ✅ — stacked messages just under Shop when a plant fails
+  (not enough coins, occupied tile, day not started, …). Newest stays under the
+  shop; older ones slide up and fade.
+- **LevelUI** ✅ M8 — bottom-right Start/Restart **Day**, progress, big-wave banner
+  (player copy uses "Day"; remotes stay `StartLevel` / `LevelStateChanged`).
 - **Settings** ✅ M13 — left HUD bar under Inventory opens the modal. Mute,
   music/SFX volume, Brainrot SFX toggle, statistics, **Reset Progress**
-  (double-confirm). Level Select is deferred to a future dedicated UI.
+  (double-confirm). Day Select is deferred to a future dedicated UI.
 - **Inventory** ✅ M13 — left HUD bar under Hearts opens the loadout modal;
   equip/unequip unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Server
   validates via `SetEquipped`.
 - **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
-  level (`LevelStateChanged.reward`).
+  day (`LevelStateChanged.reward`).
 
 ### Deferred (Milestone 22 — Progression Store)
 
@@ -73,7 +77,9 @@ Brains currency + victory grants are live so the store can plug in later.
 ## Placement flow (Milestone 4) ✅
 
 - **`InputController`** → `primaryAction` (ignores GUI-processed input).
-- **`PlacementController`** → ghost + `PlaceBrainrot` / shovel remove.
+- **`PlacementController`** → ghost + `PlaceBrainrot` / shovel remove. Client
+  pre-checks coins/occupancy and shows a plant toast on failure; the server still
+  validates and may fire `PlaceBrainrotFailed`.
 - Server also checks **unlocked + equipped** (`ProgressService.canPlace`).
 
 ---

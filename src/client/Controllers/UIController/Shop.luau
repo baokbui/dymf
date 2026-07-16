@@ -28,20 +28,20 @@ Shop.__index = Shop
 
 -- ===== Layout constants =====
 -- Card dimensions (portrait tile, PvZ-style).
-local CARD_WIDTH = 72
-local CARD_HEIGHT = 90
-local CARD_PADDING = 6 -- gap between cards
-local PANEL_PADDING_X = 12 -- left/right inset inside the bar
-local PANEL_PADDING_Y = 8 -- top/bottom inset inside the bar
-local SWATCH_SIZE = 44 -- square icon at the top of each card
+local CARD_WIDTH = 60
+local CARD_HEIGHT = 74
+local CARD_PADDING = 5 -- gap between cards
+local PANEL_PADDING_X = 10 -- left/right inset inside the bar
+local PANEL_PADDING_Y = 6 -- top/bottom inset inside the bar
+local SWATCH_SIZE = 36 -- square icon at the top of each card
 local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
-local PANEL_CORNER_RADIUS = 12 -- rounded bottom corners; top is squared by clip
+local PANEL_CORNER_RADIUS = 10 -- rounded bottom corners; top is squared by clip
 local PANEL_TRANSPARENCY = 0.15
-local CARD_CORNER_RADIUS = 10
-local SWATCH_CORNER_RADIUS = 8
-local BORDER_CORNER_RADIUS = 12
+local CARD_CORNER_RADIUS = 8
+local SWATCH_CORNER_RADIUS = 6
+local BORDER_CORNER_RADIUS = 10
 
-local TOOL_COLUMN_WIDTH = 48
+local TOOL_COLUMN_WIDTH = 40
 local TOOL_GAP = 4
 local TOOL_BUTTON_HEIGHT = math.floor((CARD_HEIGHT - TOOL_GAP) / 2)
 
@@ -245,7 +245,7 @@ function Shop.buildCancelButton(self: Shop, parent: Instance): TextButton
 	button.Size = UDim2.new(1, 0, 0, TOOL_BUTTON_HEIGHT)
 	button.BackgroundColor3 = CANCEL_BG
 	button.Font = Enum.Font.GothamBold
-	button.TextSize = 22
+	button.TextSize = 18
 	button.TextColor3 = Color3.new(1, 1, 1)
 	button.Text = "X"
 	button.Visible = false
@@ -288,7 +288,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	local swatch = Instance.new("Frame")
 	swatch.Name = "Swatch"
 	swatch.AnchorPoint = Vector2.new(0.5, 0)
-	swatch.Position = UDim2.new(0.5, 0, 0, 8)
+	swatch.Position = UDim2.new(0.5, 0, 0, 6)
 	swatch.Size = UDim2.fromOffset(SWATCH_SIZE, SWATCH_SIZE)
 	swatch.BackgroundColor3 = definition.color or DEFAULT_SWATCH
 	swatch.Parent = button
@@ -299,10 +299,10 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.AnchorPoint = Vector2.new(0.5, 0)
-	nameLabel.Position = UDim2.new(0.5, 0, 0, 56)
-	nameLabel.Size = UDim2.new(1, -4, 0, 16)
+	nameLabel.Position = UDim2.new(0.5, 0, 0, 6 + SWATCH_SIZE + 2)
+	nameLabel.Size = UDim2.new(1, -4, 0, 14)
 	nameLabel.Font = Enum.Font.GothamMedium
-	nameLabel.TextSize = 11
+	nameLabel.TextSize = 10
 	nameLabel.TextColor3 = TEXT_COLOR
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -314,10 +314,10 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	costLabel.Name = "Cost"
 	costLabel.BackgroundTransparency = 1
 	costLabel.AnchorPoint = Vector2.new(0.5, 1)
-	costLabel.Position = UDim2.new(0.5, 0, 1, -5)
-	costLabel.Size = UDim2.new(1, -4, 0, 14)
+	costLabel.Position = UDim2.new(0.5, 0, 1, -4)
+	costLabel.Size = UDim2.new(1, -4, 0, 12)
 	costLabel.Font = Enum.Font.GothamBold
-	costLabel.TextSize = 12
+	costLabel.TextSize = 11
 	costLabel.TextColor3 = COST_AFFORD
 	costLabel.TextXAlignment = Enum.TextXAlignment.Center
 	costLabel.Text = tostring(definition.cost)

@@ -461,7 +461,7 @@ Persist player progress.
 
 # Milestone 15 — Brainrot Models
 
-
+**Status: ✅ Complete**
 
 ## Replace placeholder visuals
 
@@ -510,20 +510,27 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
 ## Add
 
 - Model source for shipped monsters (Studio under `ReplicatedStorage.Assets.Monsters`
-  with `$ignoreUnknownInstances`, or catalog templates — decide at implementation)
+  with `$ignoreUnknownInstances`, or catalog templates — decide at implementation) ✅
+  - Folder: `ReplicatedStorage.Assets.Monsters` (`$ignoreUnknownInstances`)
+  - Source: Toolbox Models you insert in Studio (named by monster `id` / `modelId`)
 - Data-driven mapping from `MonsterDefinition` → template (`modelId` defaults to
-  `id` — no per-name branching)
+  `id` — no per-name branching) ✅
 - `MonsterModel.create` clones the template, applies footprint scaling
-  (`MonsterConfig`), preserves identity attributes / `Monster` tag
-- Bosses keep correct bounds (larger footprint / PrimaryPart) after swap
+  (`MonsterConfig`), preserves identity attributes / `Monster` tag ✅
+  (`ModelUtil`; Part fallback if missing; faces house −X)
+- Bosses keep correct bounds (larger footprint / PrimaryPart) after swap ✅
 - Hit flash, freeze/bubble shells, and health bars still resolve against
-  `PrimaryPart` / `"Body"` (or shared `ModelUtil` helpers)
+  `PrimaryPart` / `"Body"` (or shared `ModelUtil` helpers) ✅
+  - Movement / knockback: `ModelUtil.snapFeetToTileTop`
+  - Pulse: `Model:ScaleTo`; flash/freeze tint visible BaseParts
 
 ## Complete When
 
 - Campaign monsters used in authored levels (at least Zombie, Goblin, Orc, plus
   any other types already in `Shared.Levels`) use real models in-game instead of
   colored placeholder parts.
+  - **Pipeline ✅** — insert Toolbox Models per `docs/MONSTERS.md` Models table to finish.
+  - Status: 🔜 pending until campaign templates exist under `Assets.Monsters`.
 
 ---
 

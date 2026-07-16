@@ -13,6 +13,10 @@
         "Brainrots": {
           "$className": "Folder",
           "$ignoreUnknownInstances": true
+        },
+        "Monsters": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
         }
       }
     },

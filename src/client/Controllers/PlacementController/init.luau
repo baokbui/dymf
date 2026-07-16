@@ -17,7 +17,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
-local PlotConfig = require(Shared.Config.PlotConfig)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
@@ -58,11 +57,7 @@ local shovelModeChangedBindable = Instance.new("BindableEvent")
 PlacementController.shovelModeChanged = shovelModeChangedBindable.Event
 
 local function footprintFor(definition: Types.BrainrotDefinition): number
-	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
-	if definition.ability == "Wall" then
-		return footprint * 1.05
-	end
-	return footprint
+	return ModelUtil.brainrotFootprintStuds(definition)
 end
 
 local function destroyGhostVisuals()
@@ -341,19 +336,34 @@ local function onPrimaryAction(position: Vector2)
 	end
 
 	local id = selectedId
-	if not id or not placementAllowed then
+	if not id then
 		return
 	end
+	if not placementAllowed then
+		UIEvents.firePlantFailed("Unable to plant — start the day first")
+		return
+	end
+
 	local tile = GridController.resolveTileAt(position.X, position.Y)
 	if not tile then
 		return
 	end
 
 	local definition = Brainrots.get(id)
-	if definition then
-		UIEvents.markPendingSpend()
+	if not definition then
+		return
 	end
 
+	if tile:GetAttribute("Occupied") == true then
+		UIEvents.firePlantFailed("Unable to plant — that spot is already taken")
+		return
+	end
+	if not canAfford() then
+		UIEvents.firePlantFailed("Unable to plant — not enough coins")
+		return
+	end
+
+	UIEvents.markPendingSpend()
 	placeRemote:FireServer(id, {
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),

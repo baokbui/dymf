@@ -31,6 +31,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		color = Color3.fromRGB(255, 182, 193),
 		modelId = "Ballerina Cappuccina",
 		modelOrientationDegrees = Vector3.new(90, 0, 0),
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
 	TungTungSahur = {
@@ -40,7 +41,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		maxHealth = 1000,
 		health = 10,
 		damage = 45,
-		attackInterval = 0.95,
+		attackInterval = 1.35,
 		rangeTiles = 1,
 		ability = "MeleeBat",
 		abilityParams = { meleeReach = 0.85 },
@@ -48,6 +49,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelId = "Tung Tung Tung Sahur",
 		-- Toolbox mesh orientation verified in-game (pitch / yaw / roll degrees).
 		modelOrientationDegrees = Vector3.new(90, 0, 180),
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
 	TralaleroTralala = {
@@ -56,8 +58,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		cost = 175,
 		maxHealth = 500,
 		health = 5,
-		damage = 60,
-		attackInterval = 1.7,
+		damage = 40,
+		attackInterval = 4.0,
 		rangeTiles = FULL_LINE,
 		ability = "BubbleTrap",
 		abilityParams = { trapDuration = 1.2 },
@@ -96,6 +98,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		color = Color3.fromRGB(180, 220, 255),
 		modelId = "Lirilì Larilà",
 		modelOrientationDegrees = Vector3.new(-90, 180, 0),
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
 	CappuccinoAssassino = {
@@ -111,14 +114,15 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		color = Color3.fromRGB(80, 50, 35),
 		modelId = "Cappuccino Assassino",
 		modelOrientationDegrees = Vector3.new(-90, 180, 0),
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
 	ChimpanziniBananini = {
 		id = "ChimpanziniBananini",
 		name = "Chimpanzini Bananini",
 		cost = 75,
-		maxHealth = 3500,
-		health = 35,
+		maxHealth = 2500,
+		health = 25,
 		damage = 0,
 		attackInterval = 0,
 		rangeTiles = 0,
@@ -127,6 +131,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelId = "Chimpanzini Bananini",
 		-- Toolbox mesh orientation verified in-game.
 		modelOrientationDegrees = Vector3.new(-90, 180, 90),
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 }
 

@@ -1,25 +1,28 @@
-# BVM Level System
+# BVM Day System (campaign levels)
 
-BVM is a **level-based campaign** (PvZ-style), not an endless wave grinder.
-Players progress through a sequence of discrete, hand-authored **levels**; each
-level is won by surviving its scripted monsters and lost if the house is
-breached. **`LevelService` is the only system that advances levels**
-(`.cursorrules`) — no other service starts a level, spawns its monsters, or
+BVM is a **day-based campaign** (PvZ-style), not an endless wave grinder.
+Players progress through a sequence of discrete, hand-authored **days**; each
+day is won by surviving its scripted monsters and lost if the house is
+breached. **`LevelService` is the only system that advances days**
+(`.cursorrules`) — no other service starts a day, spawns its monsters, or
 grants its completion reward.
+
+Player-facing UI says **Day** (e.g. "Day 1 — First Contact", "Start Day").
+Code, remotes, and save fields stay `Level*` / `levelNumber` for stability.
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 ---
 
-## Levels vs. internal waves
+## Days vs. internal waves
 
-- A **level** is one campaign encounter (e.g. "Level 1 — First Contact").
-- Within a level, monsters arrive in an ordered list of **spawn groups** — the
+- A **day** is one campaign encounter (e.g. "Day 1 — First Contact").
+- Within a day, monsters arrive in an ordered list of **spawn groups** — the
   internal "waves". A progress bar fills as groups are spawned/cleared, and the
   final group is the **big wave** (the PvZ "flag"), preceded by a warning.
 - Clearing every group (no monsters left alive) → **Victory** → brains reward +
-unlock next level. A monster reaching the house → **−1 heart**; at **0 hearts** →
-**Defeat** → retry the same level.
+unlock next day. A monster reaching the house → **−1 heart**; at **0 hearts** →
+**Defeat** → retry the same day.
 
 This keeps the moment-to-moment PvZ pacing (rising intensity into a final rush)
 while making overall progress a finite, designed campaign rather than infinite
@@ -27,21 +30,21 @@ scaling.
 
 ---
 
-## Per-level loop
+## Per-day loop
 
 ```
-Start Level ─► Countdown ─► Active (plant + fight)
+Start Day ─► Countdown ─► Active (plant + fight)
    ▲                              │
    │                  spawn groups run
    │                  (progress bar → big wave)
    │                              │
    └──── Reward + unlock next ◄── Victory
                                   │
-              Defeat (house breached) ─► retry level
+              Defeat (house breached) ─► retry day
 ```
 
 During `Preparation`, planting and ground-coin drops are blocked. Both unlock
-when the level enters `Active` (after countdown).
+when the day enters `Active` (after countdown).
 
 Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown`, `Active`,
 `Victory`, `Defeat`.
@@ -94,7 +97,7 @@ Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 All levels use the same **`Zombie`** grunt stats. Early levels are easier because
 of **lower counts** and **slower pacing**, not weaker zombie types:
 
-| Level | name              | mix (count per group)                              |
+| Day | name              | mix (count per group)                              |
 | ----- | ----------------- | -------------------------------------------------- |
 | 1     | First Contact     | 1, 2, **2** Zombie                                 |
 | 2     | Rising Tide       | 2, 2, **2** Zombie                                 |
@@ -145,8 +148,8 @@ is in the registry above, not here.
 | Key                     | Value | Meaning                                    |
 | ----------------------- | ----- | ------------------------------------------ |
 | `PREPARATION_TIME`      | 30    | Reserved prep window before Start (planned) |
-| `COUNTDOWN_TIME`        | 3     | Seconds after pressing Start Level         |
-| `STARTING_PLAYER_HEALTH`| 5     | Hearts at level start (one lost per breach) |
+| `COUNTDOWN_TIME`        | 3     | Seconds after pressing Start Day           |
+| `STARTING_PLAYER_HEALTH`| 5     | Hearts at day start (one lost per breach) |
 | `BIG_WAVE_WARNING_TIME` | 5     | Lead time for the "huge wave!" banner      |
 | `DEFAULT_SPAWN_INTERVAL`| 1.8   | Fallback gap between monsters in a group   |
 | `DEFAULT_GROUP_DELAY`   | 7     | Fallback gap between groups                |
@@ -172,13 +175,13 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
   then unlocking/advancing to the next level.
 - On **Defeat**: same plot reset (Brainrots, monsters, ground coins removed;
   balance reset to starting coins). Phase stays **`Defeat`** until the player
-  presses **Restart Level** (`StartLevel` remote). Passive and ability coin
+  presses **Restart Day** (`StartLevel` remote). Passive and ability coin
   drops are blocked outside `Active`.
 - Broadcasting phase / level number / progress via `LevelStateChanged` (see
   `NETWORKING.md`).
 
 Progression is **linear**: victory advances `currentLevel` and raises
-`highestLevel`; players may replay any unlocked level via Level Select
+`highestLevel`; players may replay any unlocked level via Day Select
 (`SelectLevel`, UI milestone). There is no endless mode yet (could be added
 later as its own mode).
 
@@ -191,4 +194,4 @@ later as its own mode).
 - If a player leaves mid-level: save the battlefield + level progression, end the
   active level.
 - On rejoin: restore the battlefield, then the saved level **starts over from the
-  beginning** and the player must press Start Level again.
+  beginning** and the player must press Start Day again.
