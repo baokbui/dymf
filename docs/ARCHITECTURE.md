@@ -265,13 +265,17 @@ Full details in `NETWORKING.md` / `UI.md` / `BRAINROTS.md`. Summary:
   (`GridService.tryOccupy`) — reserving the tile *before* charging so two
   requests can't claim one cell, and releasing it if the charge loses a race.
   Models are built by its `BrainrotModel` submodule (the `CoinService`/
-  `GroundCoin` pattern) and tagged `Brainrot` with identity attributes. Removal
+  `GroundCoin` pattern) and tagged `Brainrot` with identity attributes. Visuals
+  clone Templates from `ReplicatedStorage.Assets.Brainrots` via
+  `Shared.Utilities.ModelUtil` (Milestone 15; Part placeholder if missing).
+  Removal
   is owner-checked and frees the tile **without a refund**. It clears a leaving
   player's instances. Public: `getPlacements(plotModel)`.
 - **InputController** (client) centralizes input into `primaryAction`
   intent signals (ignoring GUI-consumed input).
 - **PlacementController** (client) owns selection, the cosmetic ghost preview
-  (reusing `GridController.resolveTileAt`), and forwarding place/remove intent.
+  (reusing `GridController.resolveTileAt`; clones Assets templates when present),
+  and forwarding place/remove intent.
   It exposes `select`/`cancel`/`isPlacing` and a `selectionChanged` signal.
 - **UIController** gains the **Shop** (`UIController/Shop.luau`): the registry
   roster with affordability, routing card clicks to `PlacementController` and
@@ -392,7 +396,7 @@ Full details in `UI.md`. Summary:
 - **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
 - **Inventory** — separate left HUD bar + modal for equip/unequip loadout.
-- **Reward popup** — victory shows brains earned (store purchases → M20).
+- **Reward popup** — victory shows brains earned (store purchases → M22).
 - Save schema **v2** adds `brains` + `equipped`.
 
 ### Milestone 12 — Audio ✅

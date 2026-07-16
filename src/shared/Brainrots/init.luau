@@ -29,6 +29,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "GenerateCoins",
 		coinGeneration = 25,
 		color = Color3.fromRGB(255, 182, 193),
+		modelId = "Ballerina Cappuccina",
+		modelOrientationDegrees = Vector3.new(90, 0, 0),
 	},
 
 	TungTungSahur = {
@@ -43,6 +45,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "MeleeBat",
 		abilityParams = { meleeReach = 0.85 },
 		color = Color3.fromRGB(139, 90, 43),
+		modelId = "Tung Tung Tung Sahur",
+		-- Toolbox mesh orientation verified in-game (pitch / yaw / roll degrees).
+		modelOrientationDegrees = Vector3.new(90, 0, 180),
 	},
 
 	TralaleroTralala = {
@@ -51,12 +56,14 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		cost = 175,
 		maxHealth = 500,
 		health = 5,
-		damage = 90,
-		attackInterval = 1.45,
+		damage = 60,
+		attackInterval = 1.7,
 		rangeTiles = FULL_LINE,
 		ability = "BubbleTrap",
 		abilityParams = { trapDuration = 1.2 },
 		color = Color3.fromRGB(100, 200, 255),
+		modelId = "Tralalero Tralala",
+		modelOrientationDegrees = Vector3.new(-90, 180, -90),
 	},
 
 	BombardinoCrocodilo = {
@@ -71,6 +78,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "LineBomb",
 		triggersOnPlace = true,
 		color = Color3.fromRGB(60, 140, 70),
+		modelId = "Bombardiro Crocodilo",
+		modelOrientationDegrees = Vector3.new(90, 0, 0),
 	},
 
 	LiriliLarila = {
@@ -80,11 +89,13 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		maxHealth = 500,
 		health = 5,
 		damage = 0,
-		attackInterval = 2.4,
+		attackInterval = 3.5,
 		rangeTiles = 2,
 		ability = "FreezeTime",
 		abilityParams = { freezeDuration = 2 },
 		color = Color3.fromRGB(180, 220, 255),
+		modelId = "Lirilì Larilà",
+		modelOrientationDegrees = Vector3.new(-90, 180, 0),
 	},
 
 	CappuccinoAssassino = {
@@ -98,6 +109,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		rangeTiles = FULL_LINE,
 		ability = "ThrowKnife",
 		color = Color3.fromRGB(80, 50, 35),
+		modelId = "Cappuccino Assassino",
+		modelOrientationDegrees = Vector3.new(-90, 180, 0),
 	},
 
 	ChimpanziniBananini = {
@@ -111,6 +124,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		rangeTiles = 0,
 		ability = "Wall",
 		color = Color3.fromRGB(255, 220, 80),
+		modelId = "Chimpanzini Bananini",
+		-- Toolbox mesh orientation verified in-game.
+		modelOrientationDegrees = Vector3.new(-90, 180, 90),
 	},
 }
 

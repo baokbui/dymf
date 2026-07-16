@@ -1,17 +1,13 @@
 --!strict
 --[[
 	BrainrotModel
-	Builds the physical model for a placed Brainrot. Kept separate from
-	BrainrotService so the service stays focused on placement logic and state
-	(mirrors the CoinService/GroundCoin split).
+	Builds the physical model for a placed Brainrot. Clones an authored template
+	from ReplicatedStorage.Assets.Brainrots when present; otherwise falls back to
+	a colored Part placeholder (dev-safe until Toolbox models are inserted).
 
-	The model is data-driven: its tint comes from the Brainrot definition's
-	optional `color`, and its footprint is sized relative to the battlefield tile
-	so it always fits one cell. Identity travels as attributes (InstanceId /
-	BrainrotId / OwnerUserId / Row / Column / Health) and the Brainrot tag, so
-	clients and later combat/save systems can resolve it without extra remotes.
-
-	Milestone 5 (visual + identity; behavior driven by BrainrotBehavior).
+	Identity travels as attributes + the Brainrot tag. Appearance is data-driven
+	via BrainrotDefinition.modelId (defaults to definition.id) — never branch on
+	Brainrot names.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -21,16 +17,45 @@ local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local Types = require(Shared.Types)
+local Logger = require(Shared.Utilities.Logger)
+local ModelUtil = require(Shared.Utilities.ModelUtil)
 
 local BrainrotModel = {}
+
+local log = Logger.new("BrainrotModel")
 
 local BODY_HEIGHT = 6
 local WALL_HEIGHT = 10
 local DEFAULT_COLOR = Color3.fromRGB(180, 140, 220)
+local missingTemplateLogged: { [string]: boolean } = {}
 
--- Builds a placed Brainrot at `topCenter` (the top-center of its tile). Returns
--- the parented Model; the caller owns its lifecycle.
-function BrainrotModel.create(
+local function footprintFor(definition: Types.BrainrotDefinition): number
+	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
+	if definition.ability == "Wall" then
+		return footprint * 1.05
+	end
+	return footprint
+end
+
+local function applyIdentity(
+	model: Model,
+	instanceId: string,
+	definition: Types.BrainrotDefinition,
+	ownerUserId: number,
+	position: Types.GridPosition
+)
+	model:SetAttribute("InstanceId", instanceId)
+	model:SetAttribute("BrainrotId", definition.id)
+	model:SetAttribute("OwnerUserId", ownerUserId)
+	model:SetAttribute("Row", position.row)
+	model:SetAttribute("Column", position.column)
+	model:SetAttribute("MaxHealth", definition.maxHealth)
+	model:SetAttribute("HitsRemaining", definition.health)
+	model:SetAttribute("Health", definition.maxHealth)
+	CollectionService:AddTag(model, Constants.TAGS.Brainrot)
+end
+
+local function createPlaceholder(
 	instanceId: string,
 	definition: Types.BrainrotDefinition,
 	ownerUserId: number,
@@ -38,10 +63,9 @@ function BrainrotModel.create(
 	topCenter: Vector3,
 	parent: Instance
 ): Model
-	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
 	local isWall = definition.ability == "Wall"
 	local bodyHeight = if isWall then WALL_HEIGHT else BODY_HEIGHT
-	local bodyFootprint = if isWall then footprint * 1.05 else footprint
+	local bodyFootprint = footprintFor(definition)
 
 	local model = Instance.new("Model")
 	model.Name = string.format("%s_%s", definition.id, instanceId)
@@ -61,16 +85,41 @@ function BrainrotModel.create(
 	body.Parent = model
 	model.PrimaryPart = body
 
-	model:SetAttribute("InstanceId", instanceId)
-	model:SetAttribute("BrainrotId", definition.id)
-	model:SetAttribute("OwnerUserId", ownerUserId)
-	model:SetAttribute("Row", position.row)
-	model:SetAttribute("Column", position.column)
-	model:SetAttribute("MaxHealth", definition.maxHealth)
-	model:SetAttribute("HitsRemaining", definition.health)
-	model:SetAttribute("Health", definition.maxHealth)
-	CollectionService:AddTag(model, Constants.TAGS.Brainrot)
+	applyIdentity(model, instanceId, definition, ownerUserId, position)
+	model.Parent = parent
+	return model
+end
 
+-- Builds a placed Brainrot at `topCenter` (the top-center of its tile). Returns
+-- the parented Model; the caller owns its lifecycle.
+function BrainrotModel.create(
+	instanceId: string,
+	definition: Types.BrainrotDefinition,
+	ownerUserId: number,
+	position: Types.GridPosition,
+	topCenter: Vector3,
+	parent: Instance
+): Model
+	local modelId = definition.modelId or definition.id
+	local template = ModelUtil.findBrainrotTemplate(modelId)
+	if not template then
+		if not missingTemplateLogged[modelId] then
+			missingTemplateLogged[modelId] = true
+			log:warn(string.format(
+				"missing Assets.Brainrots.%s — using placeholder Part (insert Toolbox model in Studio)",
+				modelId
+			))
+		end
+		return createPlaceholder(instanceId, definition, ownerUserId, position, topCenter, parent)
+	end
+
+	local model = ModelUtil.cloneBrainrotTemplate(template, {
+		targetFootprint = footprintFor(definition),
+		orientationDegrees = definition.modelOrientationDegrees,
+	})
+	model.Name = string.format("%s_%s", definition.id, instanceId)
+	ModelUtil.pivotToTileTop(model, topCenter, definition.modelOrientationDegrees)
+	applyIdentity(model, instanceId, definition, ownerUserId, position)
 	model.Parent = parent
 	return model
 end

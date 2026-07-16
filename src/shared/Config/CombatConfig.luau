@@ -15,6 +15,10 @@ local CombatConfig = {
 	PROJECTILE_SIZE = Vector3.new(0.35, 0.35, 1.4),
 	PROJECTILE_COLOR = Color3.fromRGB(220, 220, 230),
 
+	-- Tralalero bubble projectile (Ball + ForceField; color from MonsterConfig.BUBBLE_COLOR).
+	BUBBLE_PROJECTILE_SIZE = Vector3.new(1.6, 1.6, 1.6),
+	BUBBLE_PROJECTILE_TRANSPARENCY = 0.35,
+
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,
 	POISON_DAMAGE_PER_TICK = 25,

@@ -6,7 +6,8 @@
 	forwarding place / remove *intent* to the server. The server (BrainrotService)
 	validates and is the source of truth — the ghost is purely cosmetic.
 
-	Milestone 4.
+	Ghost prefers an Assets.Brainrots template clone when available; otherwise a
+	ForceField Part placeholder (same as pre-M15).
 ]]
 
 local Players = game:GetService("Players")
@@ -18,7 +19,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local Remotes = require(Shared.Remotes)
+local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
+local ModelUtil = require(Shared.Utilities.ModelUtil)
 
 local UIEvents = require(script.Parent.Parent.UIEvents)
 local GridController = require(script.Parent.GridController)
@@ -41,7 +44,9 @@ local selectedId: string? = nil
 local balance = 0
 local placementAllowed = false
 local shovelMode = false
-local ghost: BasePart? = nil
+local ghostModel: Model? = nil
+local ghostPart: BasePart? = nil
+local ghostBrainrotId: string? = nil
 local shovelCursor: Frame? = nil
 local placeRemote: RemoteEvent
 local removeRemote: RemoteEvent
@@ -52,11 +57,78 @@ PlacementController.selectionChanged = selectionChangedBindable.Event
 local shovelModeChangedBindable = Instance.new("BindableEvent")
 PlacementController.shovelModeChanged = shovelModeChangedBindable.Event
 
-local function ensureGhost(): BasePart
-	local existing = ghost
-	if existing then
-		return existing
+local function footprintFor(definition: Types.BrainrotDefinition): number
+	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
+	if definition.ability == "Wall" then
+		return footprint * 1.05
 	end
+	return footprint
+end
+
+local function destroyGhostVisuals()
+	if ghostModel then
+		ghostModel:Destroy()
+		ghostModel = nil
+	end
+	if ghostPart then
+		ghostPart:Destroy()
+		ghostPart = nil
+	end
+	ghostBrainrotId = nil
+end
+
+local function hideGhost()
+	if ghostModel then
+		for _, descendant in ghostModel:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				descendant.Transparency = 1
+			end
+		end
+	end
+	if ghostPart then
+		ghostPart.Transparency = 1
+	end
+end
+
+local function tintGhost(placeable: boolean)
+	local color = if placeable then VALID_COLOR else BLOCKED_COLOR
+	if ghostModel then
+		for _, descendant in ghostModel:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				descendant.Color = color
+				descendant.Transparency = GHOST_TRANSPARENCY
+				descendant.Material = Enum.Material.ForceField
+			end
+		end
+	elseif ghostPart then
+		ghostPart.Color = color
+		ghostPart.Transparency = GHOST_TRANSPARENCY
+	end
+end
+
+local function ensureGhostFor(definition: Types.BrainrotDefinition)
+	if ghostBrainrotId == definition.id and (ghostModel or ghostPart) then
+		return
+	end
+	destroyGhostVisuals()
+	ghostBrainrotId = definition.id
+
+	local modelId = definition.modelId or definition.id
+	local template = ModelUtil.findBrainrotTemplate(modelId)
+	if template then
+		local model = ModelUtil.cloneBrainrotTemplate(template, {
+			targetFootprint = footprintFor(definition),
+			ghost = true,
+			ghostTransparency = GHOST_TRANSPARENCY,
+			tintColor = VALID_COLOR,
+			orientationDegrees = definition.modelOrientationDegrees,
+		})
+		model.Name = "PlacementGhost"
+		model.Parent = Workspace
+		ghostModel = model
+		return
+	end
+
 	local part = Instance.new("Part")
 	part.Name = "PlacementGhost"
 	part.Anchored = true
@@ -68,14 +140,7 @@ local function ensureGhost(): BasePart
 	part.Transparency = GHOST_TRANSPARENCY
 	part.Size = Vector3.new(1, GHOST_HEIGHT, 1)
 	part.Parent = Workspace
-	ghost = part
-	return part
-end
-
-local function hideGhost()
-	if ghost then
-		ghost.Transparency = 1
-	end
+	ghostPart = part
 end
 
 local function canAfford(): boolean
@@ -97,15 +162,27 @@ local function updateGhost(tile: BasePart?)
 		return
 	end
 
-	local part = ensureGhost()
-	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
-	part.Size = Vector3.new(footprint, GHOST_HEIGHT, footprint)
-	part.Position = tile.Position + Vector3.new(0, tile.Size.Y / 2 + GHOST_HEIGHT / 2, 0)
-	part.Transparency = GHOST_TRANSPARENCY
+	local definition = Brainrots.get(selectedId)
+	if not definition then
+		hideGhost()
+		return
+	end
 
+	ensureGhostFor(definition)
+	local topCenter = tile.Position + Vector3.new(0, tile.Size.Y / 2, 0)
 	local occupied = tile:GetAttribute("Occupied") == true
 	local placeable = placementAllowed and not occupied and canAfford()
-	part.Color = if placeable then VALID_COLOR else BLOCKED_COLOR
+
+	if ghostModel then
+		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees)
+	elseif ghostPart then
+		local footprint = footprintFor(definition)
+		local height = if definition.ability == "Wall" then 10 else GHOST_HEIGHT
+		ghostPart.Size = Vector3.new(footprint, height, footprint)
+		ghostPart.Position = topCenter + Vector3.new(0, height / 2, 0)
+	end
+
+	tintGhost(placeable)
 end
 
 local function refreshGhostAt(position: Vector2)
@@ -180,6 +257,7 @@ local function setSelected(id: string?)
 	selectedId = id
 	if not id then
 		hideGhost()
+		destroyGhostVisuals()
 	end
 	selectionChangedBindable:Fire(id)
 end
@@ -287,8 +365,6 @@ end
 function PlacementController.init()
 	placeRemote = Remotes.getEvent("PlaceBrainrot")
 	removeRemote = Remotes.getEvent("RemoveBrainrot")
-	ensureGhost()
-	hideGhost()
 end
 
 function PlacementController.start()

@@ -46,11 +46,51 @@ From `Shared.Types.BrainrotDefinition`:
 | `coinGeneration`  | number?                | Coins per cycle for producers                                      |
 | `abilityParams`   | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                       |
 | `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb)                        |
-| `color`           | Color3?                | Placement visual tint (ghost + body)                               |
+| `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
+| `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
 
 
 Range is measured in **grid tiles** along the lane toward the enemy (+X), not
 studs. `GridUtil.isColumnInRange` is the shared helper.
+
+---
+
+
+
+## Models ✅ (Milestone 15 pipeline)
+
+Placed visuals come from **Toolbox / Studio Models** under
+`ReplicatedStorage.Assets.Brainrots`. `BrainrotModel.create` resolves
+`definition.modelId or definition.id`, clones + scales to
+`PlotConfig.BRAINROT_FOOTPRINT_RATIO`, and tags identity attributes.
+Shared helpers live in `Shared.Utilities.ModelUtil`.
+
+If a template is missing, the server logs once and uses the colored Part
+placeholder so gameplay still works.
+
+### Studio: insert from Toolbox
+
+After Rojo connects, place one Model per Brainrot as a child of
+`ReplicatedStorage.Assets.Brainrots` (folder uses `$ignoreUnknownInstances` so
+Rojo does not wipe Studio assets). Names may differ from registry ids — set
+`modelId` on the definition to the **exact** Explorer child name:
+
+| Registry `id` | Assets child (`modelId`) |
+| ------------- | ------------------------ |
+| `BallerinaCappucina` | `Ballerina Cappuccina` |
+| `TungTungSahur` | `Tung Tung Tung Sahur` |
+| `TralaleroTralala` | `Tralalero Tralala` |
+| `BombardinoCrocodilo` | `Bombardiro Crocodilo` |
+| `LiriliLarila` | `Lirilì Larilà` |
+| `CappuccinoAssassino` | `Cappuccino Assassino` |
+| `ChimpanziniBananini` | `Chimpanzini Bananini` |
+
+For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts,
+face enemy (+X) if the Toolbox facing is wrong. Placement ghost clones the same
+template. Shop cards still use the `color` swatch this milestone.
+
+M15 **Complete When** (all seven real models in-game) is met once these templates
+are present and mapped as above.
 
 ---
 
@@ -63,9 +103,9 @@ studs. `GridUtil.isColumnInRange` is the shared helper.
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
 | Ballerina Cappucina  | 50   | 500 (5)       | 0      | 11s      | —        | Drops coins on random tiles | 25    |
 | Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 0.95s    | Short melee (`meleeReach`) | Melee bat           | —     |
-| Tralalero Tralala    | 175  | 500 (5)       | 90     | 1.45s    | Full row | Bubble trap (1.2s)  | —     |
+| Tralalero Tralala    | 175  | 500 (5)       | 60     | 1.7s     | Full row | Bubble projectile → trap (1.2s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
-| Lirili Larila        | 150  | 500 (5)       | 0      | 2.4s     | 2 tiles  | Freeze enemies 2s   | —     |
+| Lirili Larila        | 150  | 500 (5)       | 0      | 3.5s     | 2 tiles  | Freeze enemies 2s   | —     |
 | Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw knife         | —     |
 | Chimpanzini Bananini | 75   | 3500 (35)     | 0      | —        | —        | Wall                | —     |
 
@@ -107,7 +147,7 @@ BrainrotBehavior (cooldown tick)
        ▼
 Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
        │                 └──►  CoinService (coin drops)
-       └──►  BrainrotFeedback (server attack pulse for non-melee abilities)
+       └──►  BrainrotFeedback (server attack pulse + hit flash when damaged)
        └──►  BrainrotAction remote → client SFX (+ client pulse for MeleeBat)
 ```
 
@@ -128,7 +168,7 @@ of monster presence rules.
 
 
 
-## Planned roster (Milestone 21)
+## Planned roster (Milestone 23)
 
 Expand beyond the initial seven after launch. Each addition is registry data
 plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).

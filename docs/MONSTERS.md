@@ -38,10 +38,19 @@ From `Shared.Types.MonsterDefinition`:
 | `isBoss`          | boolean?               | Boss flag (larger model, authored into levels)       |
 | `abilities`       | `{ string }?`          | Ability handler ids (`EnemyService/Abilities`)       |
 | `abilityParams`   | `{ [string]: number }?`| Per-ability tuning                                   |
-| `color`           | Color3?                | Placement visual tint                                |
+| `color`           | Color3?                | Placeholder / fallback tint                          |
+| `modelId`         | string?                | 🔜 M16 — `Assets.Monsters` child (defaults to `id`)  |
 
 Movement is **grid-based**: monsters spawn just east of the lawn and walk
 toward the house (−X), one tile per `secondsPerGrid` seconds.
+
+---
+
+## Models 🔜 (Milestone 16)
+
+Same pipeline as Brainrots (M15): Toolbox / Studio templates under
+`ReplicatedStorage.Assets.Monsters`, cloned by `MonsterModel` via data-driven
+`modelId`. Until then, colored Part placeholders from `color` remain.
 
 ---
 

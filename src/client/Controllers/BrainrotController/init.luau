@@ -6,7 +6,6 @@
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -22,7 +21,8 @@ BrainrotController.Name = "BrainrotController"
 
 local log = Logger.new(BrainrotController.Name)
 
-local activePulseTweens: { [Model]: Tween } = {}
+local baseScales: { [Model]: number } = {}
+local pulseTokens: { [Model]: number } = {}
 
 -- Actions that should pulse the Brainrot body on the client (keeps SFX in sync).
 local PULSE_ACTIONS: { [string]: boolean } = {
@@ -39,42 +39,29 @@ local function findBrainrotModel(instanceId: string): Model?
 end
 
 local function pulseAttack(model: Model)
-	local body = model:FindFirstChild("Body")
-	if not body or not body:IsA("BasePart") then
-		return
+	local token = (pulseTokens[model] or 0) + 1
+	pulseTokens[model] = token
+
+	local base = baseScales[model]
+	if not base then
+		base = model:GetScale()
+		baseScales[model] = base
+	else
+		model:ScaleTo(base)
 	end
 
-	local existing = activePulseTweens[model]
-	if existing then
-		existing:Cancel()
-		activePulseTweens[model] = nil
-	end
-
-	local baseSize = body.Size
-	local scaled = baseSize * BrainrotConfig.ATTACK_PULSE_SCALE
-	local up = TweenService:Create(
-		body,
-		TweenInfo.new(BrainrotConfig.ATTACK_PULSE_DURATION / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Size = scaled }
-	)
-	local down = TweenService:Create(
-		body,
-		TweenInfo.new(BrainrotConfig.ATTACK_PULSE_DURATION / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-		{ Size = baseSize }
-	)
-
-	activePulseTweens[model] = up
-	up:Play()
-	up.Completed:Connect(function()
-		if activePulseTweens[model] == up then
-			activePulseTweens[model] = down
-			down:Play()
+	model:ScaleTo(base * BrainrotConfig.ATTACK_PULSE_SCALE)
+	local half = BrainrotConfig.ATTACK_PULSE_DURATION / 2
+	task.delay(half, function()
+		if pulseTokens[model] ~= token or not model.Parent then
+			return
 		end
-	end)
-	down.Completed:Connect(function()
-		if activePulseTweens[model] == down then
-			activePulseTweens[model] = nil
-		end
+		model:ScaleTo(base)
+		task.delay(half, function()
+			if pulseTokens[model] == token then
+				pulseTokens[model] = nil
+			end
+		end)
 	end)
 end
 

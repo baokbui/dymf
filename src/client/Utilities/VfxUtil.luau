@@ -171,28 +171,33 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	end
 	part:SetAttribute("VfxDecorated", true)
 
+	local isBubble = part:GetAttribute("ProjectileKind") == "Bubble"
+	local trailColor = if isBubble then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR else VfxConfig.PROJECTILE_TRAIL_COLOR
+	local trailOffset = if isBubble then Vector3.new(-0.9, 0, 0) else Vector3.new(-0.6, 0, 0)
+
 	local attachment0 = Instance.new("Attachment")
 	attachment0.Name = "TrailStart"
 	attachment0.Parent = part
 
 	local attachment1 = Instance.new("Attachment")
 	attachment1.Name = "TrailEnd"
-	attachment1.Position = Vector3.new(-0.6, 0, 0)
+	attachment1.Position = trailOffset
 	attachment1.Parent = part
 
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = attachment0
 	trail.Attachment1 = attachment1
 	trail.Lifetime = VfxConfig.PROJECTILE_TRAIL_LIFETIME
-	trail.WidthScale = NumberSequence.new(VfxConfig.PROJECTILE_TRAIL_WIDTH)
-	trail.Color = ColorSequence.new(VfxConfig.PROJECTILE_TRAIL_COLOR)
+	trail.WidthScale = NumberSequence.new(if isBubble then 0.55 else VfxConfig.PROJECTILE_TRAIL_WIDTH)
+	trail.Color = ColorSequence.new(trailColor)
 	trail.LightEmission = 1
+	trail.Transparency = if isBubble then NumberSequence.new(0.35, 1) else NumberSequence.new(0, 1)
 	trail.Parent = part
 
 	local glow = Instance.new("PointLight")
-	glow.Brightness = VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
-	glow.Range = VfxConfig.PROJECTILE_GLOW_RANGE
-	glow.Color = VfxConfig.PROJECTILE_TRAIL_COLOR
+	glow.Brightness = if isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
+	glow.Range = if isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE else VfxConfig.PROJECTILE_GLOW_RANGE
+	glow.Color = trailColor
 	glow.Parent = part
 end
 

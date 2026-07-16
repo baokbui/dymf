@@ -403,13 +403,13 @@ Persist player progress.
 
 # Milestone 13 — UI Polish
 
-**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 20)
+**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 22)
 
 ## Improve and Add
 
 - Shop (Already implemented in a previous milestone. Can improve if needed) ✅
-- Brainrots Store (Buy new brainrots) → **deferred to Milestone 20** (physical world shop)
-- Brains (currency) ✅ granted on victory; spent at store in M17
+- Brainrots Store (Buy new brainrots) → **deferred to Milestone 22** (physical world shop)
+- Brains (currency) ✅ granted on victory; spent at store in M22
 - Reward System ✅ victory popup shows brains earned (level number × config)
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
 - Coins ✅ (prior milestone)
@@ -472,26 +472,96 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 ## Add
 
 - Model source for each roster Brainrot (Studio assets under `ReplicatedStorage`
-  or catalog `Model` / `MeshPart` references — decide at implementation)
+  or catalog `Model` / `MeshPart` references — decide at implementation) ✅
+  - Folder: `ReplicatedStorage.Assets.Brainrots` (`$ignoreUnknownInstances`)
+  - Source: Toolbox Models you insert in Studio (named by Brainrot `id`)
 - Data-driven mapping from `BrainrotDefinition` → model template (registry field
-  or `BrainrotModel` lookup table — no per-name branching)
+  or `BrainrotModel` lookup table — no per-name branching) ✅ `modelId` / default `id`
 - `BrainrotModel.create` clones the authored template, applies footprint scaling
   (`PlotConfig.BRAINROT_FOOTPRINT_RATIO`), and preserves identity attributes /
-  `Brainrot` tag
+  `Brainrot` tag ✅ (`ModelUtil`; Part fallback if missing)
 - Shop cards and placement ghost use model preview or thumbnail where applicable
-  (still display-only on the client)
-- Wall / line-bomb / fly-over units keep correct bounds and pivot after swap
+  (still display-only on the client) ✅ ghost clones template; shop keeps color swatch
+- Wall / line-bomb / fly-over units keep correct bounds and pivot after swap ✅
+  - Attack pulse uses `Model:ScaleTo` (not Size-tween)
+  - LineBomb fly-over uses `PivotTo` + extents height
 
 ## Complete When
 
 - All seven launch Brainrots use their real models in-game (placement, combat
-  pulse, save/restore) instead of colored placeholder parts.
+  pulse, save/restore) instead of colored placeholder parts. ✅
+  - Templates under `Assets.Brainrots`; `modelId` mapped to Studio names in
+    `Shared.Brainrots` (see `docs/BRAINROTS.md`).
 
 ---
 
 
 
-# Milestone 16 — Optimization
+# Milestone 16 — Monster Models
+
+
+
+## Replace placeholder visuals
+
+Monsters currently use **test placeholders** — colored `Part` bodies from
+`MonsterModel` / definition `color` swatches. Replace them with authored 3D
+models for campaign enemies (same pattern as Milestone 15 Brainrots).
+
+## Add
+
+- Model source for shipped monsters (Studio under `ReplicatedStorage.Assets.Monsters`
+  with `$ignoreUnknownInstances`, or catalog templates — decide at implementation)
+- Data-driven mapping from `MonsterDefinition` → template (`modelId` defaults to
+  `id` — no per-name branching)
+- `MonsterModel.create` clones the template, applies footprint scaling
+  (`MonsterConfig`), preserves identity attributes / `Monster` tag
+- Bosses keep correct bounds (larger footprint / PrimaryPart) after swap
+- Hit flash, freeze/bubble shells, and health bars still resolve against
+  `PrimaryPart` / `"Body"` (or shared `ModelUtil` helpers)
+
+## Complete When
+
+- Campaign monsters used in authored levels (at least Zombie, Goblin, Orc, plus
+  any other types already in `Shared.Levels`) use real models in-game instead of
+  colored placeholder parts.
+
+---
+
+
+
+# Milestone 17 — Animations
+
+
+
+## Goal
+
+Add authored animations for Brainrots (and monsters where ready) on top of the
+M15–M16 model pipelines. Playback is **client-owned**; the server never drives
+Animator for gameplay authority (`.cursorrules`).
+
+## Add
+
+- Animation assets / ids per unit (idle, attack, death — extend as needed)
+- Data-driven mapping on definitions (`animationIds` / registry field — no
+  per-name branching)
+- Client controller(s) play clips from gameplay intents already replicated
+  (`BrainrotAction`, combat visuals, placement) — display-only
+- Brainrot idle + attack loops for the launch seven; wall / one-shot units
+  use idle (and place/fly clips where applicable)
+- Monster walk / attack / death when models support it (optional same milestone
+  if assets exist; otherwise Brainrots first)
+
+## Complete When
+
+- Launch Brainrots animate idle and attack in-game instead of static poses /
+  ScaleTo-only feedback alone.
+- Animation playback stays client-side; combat outcomes remain server-authoritative.
+
+---
+
+
+
+# Milestone 18 — Optimization
 
 
 
@@ -513,7 +583,7 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 
 
 
-# Milestone 17 — Testing
+# Milestone 19 — Testing
 
 
 
@@ -538,7 +608,7 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 
 
 
-# Milestone 18 — Release
+# Milestone 20 — Release
 
 
 
@@ -562,7 +632,7 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 
 
 
-# Milestone 19 — Retention Systems
+# Milestone 21 — Retention Systems
 
 
 
@@ -625,7 +695,7 @@ UI only displays and sends intents.
 
 
 
-# Milestone 20 — Progression Store
+# Milestone 22 — Progression Store
 
 **Status: 🔜 Planned** (deferred from Milestone 13)
 
@@ -643,7 +713,7 @@ UI only displays and sends intents.
 
 
 
-# Milestone 21 — Post-Launch
+# Milestone 23 — Post-Launch
 
 
 

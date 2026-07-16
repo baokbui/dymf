@@ -173,13 +173,22 @@ function CombatService.attackInRow(
 	return true
 end
 
--- Fires a projectile at the first monster in range; damage applies on impact.
+export type ProjectileLaunchOptions = {
+	kind: string?,
+	soundKey: string?,
+	statusKind: Types.StatusEffectKind?,
+	statusDuration: number?,
+	statusVisual: string?,
+}
+
+-- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
 function CombatService.launchProjectile(
 	plotModel: Model,
 	position: Types.GridPosition,
 	rangeTiles: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	options: ProjectileLaunchOptions?
 ): boolean
 	if not monsterHandlers then
 		return false
@@ -200,6 +209,16 @@ function CombatService.launchProjectile(
 		return false
 	end
 
+	local impact: Projectile.ImpactSpec? = nil
+	if options then
+		impact = {
+			soundKey = options.soundKey,
+			statusKind = options.statusKind,
+			statusDuration = options.statusDuration,
+			statusVisual = options.statusVisual,
+		}
+	end
+
 	Projectile.launch(
 		{
 			plotModel = plotModel,
@@ -209,6 +228,8 @@ function CombatService.launchProjectile(
 			targetColumn = targetColumn,
 			damage = damage,
 			ownerUserId = ownerUserId,
+			kind = if options then options.kind else nil,
+			impact = impact,
 		},
 		worldY,
 		monsterHandlers.setProjectilePosition
@@ -382,13 +403,29 @@ function CombatService.clearPlot(plotModel: Model)
 	Projectile.destroyAllOnPlot(plotModel)
 end
 
-local function onProjectileImpact(instanceId: string, damage: number, ownerUserId: number): boolean
+local function onProjectileImpact(
+	instanceId: string,
+	damage: number,
+	ownerUserId: number,
+	impact: Projectile.ImpactSpec?
+): boolean
 	local hit = CombatService.damageMonster(instanceId, damage)
-	fireCombatVisual(ownerUserId, {
+	local payload: { [string]: any } = {
 		kind = "Hit",
 		instanceId = instanceId,
-		soundKey = "ThrowKnifeHit",
-	})
+		soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+	}
+	fireCombatVisual(ownerUserId, payload)
+
+	if impact and impact.statusKind and impact.statusDuration then
+		CombatService.applyStatusToMonster(
+			instanceId,
+			impact.statusKind,
+			impact.statusDuration,
+			nil,
+			impact.statusVisual
+		)
+	end
 	return hit
 end
 

@@ -27,8 +27,8 @@ column). When a Brainrot attacks a row:
 
 | Mode | API | Behavior |
 | ---- | --- | -------- |
-| First in row | `attackFirstInRow` / `launchProjectile` | Damages the monster with the **lowest column** in range (closest to the house — PvZ peashooter style) |
-| All in range | `attackInRow` | Damages every monster in range (e.g. Tralalero bubble splash) |
+| First in row | `attackFirstInRow` / `launchProjectile` | Damages the monster with the **lowest column** in range (closest to the house — PvZ peashooter style). Used by Cappuccino knives and Tralalero bubbles. |
+| All in range | `attackInRow` | Damages every monster in range (instant splash) |
 | Entire row | `dealEntireRowDamage` | Damages **every** monster on the row (Bombardino line bomb) |
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
@@ -41,10 +41,16 @@ so the attacker only hits monsters right beside the Brainrot.
 ## Projectiles ✅ (Milestone 7)
 
 `CombatService.launchProjectile` spawns a server-replicated part in
-`plot.Projectiles`, moves it along the row (+X), and applies damage on impact.
-Used by **Cappuccino Assassino** (`ThrowKnife` ability).
+`plot.Projectiles`, moves it along the row (+X), and applies damage on impact
+(optional status via `options`). Appearance is set by `kind`:
 
-Tuning: `Shared.Config.CombatConfig` (`PROJECTILE_COLUMNS_PER_SECOND`, size, color).
+| Ability | `kind` | On impact |
+| ------- | ------ | --------- |
+| Cappuccino (`ThrowKnife`) | `Knife` (default neon bolt) | Damage + `ThrowKnifeHit` |
+| Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
+
+Tuning: `CombatConfig` (speed, knife/bubble size) + `MonsterConfig.BUBBLE_COLOR`.
+Client trail/glow branches on the `ProjectileKind` attribute (`VfxUtil`).
 
 ---
 
@@ -75,6 +81,7 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 | ------ | ------- |
 | Hit spark | `CombatVisual` kind `Hit` (client particles) |
 | Hit flash (monsters) | `MonsterFeedback.flashHit` on server (replicated body color) |
+| Hit flash (Brainrots) | `BrainrotFeedback.flashHit` on server (replicated BasePart colors) |
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
 | Death burst + fade | `CombatVisual` kind `Death` |
@@ -96,8 +103,8 @@ values remain in `CombatConfig`.
 3. Client plays `Death_<monsterId>` when configured (else `Death`), then death VFX.
 4. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 
-Hit flash on damage uses server-side `MonsterFeedback.flashHit` so the red tint
-replicates reliably.
+Hit flash on damage uses server-side `MonsterFeedback.flashHit` /
+`BrainrotFeedback.flashHit` so the red tint replicates reliably.
 
 ---
 

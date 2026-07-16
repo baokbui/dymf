@@ -20,6 +20,13 @@ local BrainrotConfig = {
 	ATTACK_PULSE_SCALE = 1.18,
 	ATTACK_PULSE_DURATION = 0.12,
 
+	-- Authored models face this world direction when placed (toward the enemy).
+	MODEL_FACE_DIRECTION = Vector3.new(1, 0, 0),
+
+	-- Damage flash on hit (replicated body color; mirrors MonsterConfig).
+	HIT_FLASH_COLOR = Color3.fromRGB(255, 90, 90),
+	HIT_FLASH_DURATION = 0.14,
+
 	-- Bombardino line-bomb fly-over (house → enemy along the planted row).
 	LINE_BOMB_FLIGHT_DURATION = 1.0,
 	LINE_BOMB_FLY_HEIGHT = 20,

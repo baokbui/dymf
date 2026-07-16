@@ -6,6 +6,14 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
+      },
+      "Assets": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "Brainrots": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
+        }
       }
     },
 

@@ -6,7 +6,7 @@
 ]]
 
 local EconomyConfig = {
-	STARTING_COINS = 125, -- Ballerina 50 + Tung Tung 75 (level 1 opener)
+	STARTING_COINS = 1000, -- TEMP testing (was 125: Ballerina 50 + Tung Tung 75)
 
 	-- Passive coin drops during Active phase only.
 	PASSIVE_DROP_INTERVAL = 25, -- seconds

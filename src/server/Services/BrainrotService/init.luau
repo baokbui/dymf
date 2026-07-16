@@ -37,6 +37,7 @@ local Types = require(Shared.Types)
 
 local BrainrotModel = require(script.BrainrotModel)
 local BrainrotBehavior = require(script.BrainrotBehavior)
+local BrainrotFeedback = require(script.BrainrotFeedback)
 local Abilities = require(script.Abilities)
 local PlotService = require(script.Parent.PlotService)
 local GridService = require(script.Parent.GridService)
@@ -170,7 +171,11 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 		math.floor(placement.definition.maxHealth * placement.health / maxHits)
 	)
 
-	if placement.health <= 0 then
+	local isFatal = placement.health <= 0
+	-- Server-owned Color replicates (same pattern as MonsterFeedback.flashHit).
+	BrainrotFeedback.flashHit(placement.model, isFatal)
+
+	if isFatal then
 		destroyPlacement(placement)
 		return true
 	end

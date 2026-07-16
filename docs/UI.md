@@ -61,7 +61,7 @@ StarterGui/
 - **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
   level (`LevelStateChanged.reward`).
 
-### Deferred (Milestone 20 — Progression Store)
+### Deferred (Milestone 22 — Progression Store)
 
 - Physical **Brainrots Store** (world shop to spend brains on new unlocks).
 - Purchasing locked roster entries with brains.

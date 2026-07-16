@@ -2,14 +2,24 @@
 --[[
 	Projectile
 	Server-authoritative lane projectiles. Moves along a row (+X) until it
-	reaches its target, then applies damage through a callback.
+	reaches its target, then applies damage (and optional status) through a
+	callback. Appearance is data-driven via LaunchSpec.kind.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
+local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 local Projectile = {}
+
+export type ImpactSpec = {
+	soundKey: string?,
+	statusKind: Types.StatusEffectKind?,
+	statusDuration: number?,
+	statusVisual: string?,
+}
 
 export type LaunchSpec = {
 	plotModel: Model,
@@ -19,6 +29,9 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
+	-- "Knife" (default) or "Bubble"
+	kind: string?,
+	impact: ImpactSpec?,
 }
 
 export type ActiveProjectile = {
@@ -29,7 +42,12 @@ export type ActiveProjectile = {
 	worldY: number,
 }
 
-type DamageCallback = (instanceId: string, damage: number, ownerUserId: number) -> boolean
+type ImpactCallback = (
+	instanceId: string,
+	damage: number,
+	ownerUserId: number,
+	impact: ImpactSpec?
+) -> boolean
 type GetColumnCallback = (instanceId: string) -> number?
 type SetPositionCallback = (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> ()
 
@@ -46,6 +64,25 @@ local function projectilesFolder(plotModel: Model): Folder
 	return folder :: Folder
 end
 
+local function stylePart(part: BasePart, kind: string?)
+	local projectileKind = kind or "Knife"
+	part:SetAttribute("ProjectileKind", projectileKind)
+
+	if projectileKind == "Bubble" then
+		part.Shape = Enum.PartType.Ball
+		part.Size = CombatConfig.BUBBLE_PROJECTILE_SIZE
+		part.Material = Enum.Material.ForceField
+		part.Color = MonsterConfig.BUBBLE_COLOR
+		part.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
+	else
+		part.Shape = Enum.PartType.Block
+		part.Size = CombatConfig.PROJECTILE_SIZE
+		part.Material = Enum.Material.Neon
+		part.Color = CombatConfig.PROJECTILE_COLOR
+		part.Transparency = 0
+	end
+end
+
 function Projectile.launch(
 	spec: LaunchSpec,
 	worldY: number,
@@ -55,13 +92,11 @@ function Projectile.launch(
 	local id = string.format("Projectile_%d", nextId)
 	local part = Instance.new("Part")
 	part.Name = "Projectile"
-	part.Size = CombatConfig.PROJECTILE_SIZE
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanTouch = false
 	part.CastShadow = false
-	part.Material = Enum.Material.Neon
-	part.Color = CombatConfig.PROJECTILE_COLOR
+	stylePart(part, spec.kind)
 	part.Parent = projectilesFolder(spec.plotModel)
 
 	setWorldPosition(part, spec.plotModel, spec.row, spec.startColumn, worldY)
@@ -80,7 +115,7 @@ function Projectile.tick(
 	dt: number,
 	getColumn: GetColumnCallback,
 	setWorldPosition: SetPositionCallback,
-	damageTarget: DamageCallback
+	onImpact: ImpactCallback
 )
 	for id, projectile in active do
 		local liveColumn = getColumn(projectile.spec.targetInstanceId)
@@ -100,7 +135,12 @@ function Projectile.tick(
 		)
 
 		if projectile.column >= liveColumn then
-			damageTarget(projectile.spec.targetInstanceId, projectile.spec.damage, projectile.spec.ownerUserId)
+			onImpact(
+				projectile.spec.targetInstanceId,
+				projectile.spec.damage,
+				projectile.spec.ownerUserId,
+				projectile.spec.impact
+			)
 			projectile.part:Destroy()
 			active[id] = nil
 		end

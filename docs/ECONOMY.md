@@ -1,7 +1,7 @@
 # BVM Economy
 
 The single **match** currency is **Coins**. **Brains** are a separate soft
-currency for progression unlocks (Milestone 13 grants; Milestone 20 store).
+currency for progression unlocks (Milestone 13 grants; Milestone 22 store).
 Only the server controls currency — clients send collection intent and display
 balances, never set them (`.cursorrules`).
 

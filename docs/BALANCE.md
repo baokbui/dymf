@@ -47,8 +47,8 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit.
 | Chimpanzini | 75 | 35 | Wall (~70s vs one Zombie) |
 | Tung Tung | 75 | 10 | Melee (45 dmg / 0.95s; 4 hits vs 180 HP Zombie) |
 | Cappuccino | 100 | 5 | Row sniper (60 dmg / 1.75s; 3 hits vs 180 HP Zombie) |
-| Lirili | 150 | 5 | Freeze support (2s) |
-| Tralalero | 175 | 5 | Row splash + 1.2s bubble |
+| Lirili | 150 | 5 | Freeze support (2s; 3.5s interval) |
+| Tralalero | 175 | 5 | Bubble projectile (60 dmg / 1.7s; 3 hits vs Zombie) + 1.2s trap |
 | Bombardino | 375 | 1 | Row nuke (2800); ~4× on Orc |
 
 ---

@@ -3,6 +3,8 @@
 	LineBomb (Bombardino Crocodilo)
 	On place: detach from the tile, nuke the row, fly house → enemy while
 	tile blasts track under the pass, then despawn.
+
+	Flight uses Model:PivotTo so multi-part Toolbox templates move as one.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -30,12 +32,13 @@ local function projectilesFolder(plotModel: Model): Folder
 	return folder :: Folder
 end
 
-local function bodyWorldPosition(plotModel: Model, row: number, column: number, body: BasePart): Vector3?
+local function bodyWorldPosition(plotModel: Model, row: number, column: number, model: Model): Vector3?
 	local tileTop = GridService.getWorldPositionAtColumn(plotModel, row, column)
 	if not tileTop then
 		return nil
 	end
-	return tileTop + Vector3.new(0, BrainrotConfig.LINE_BOMB_FLY_HEIGHT + body.Size.Y / 2, 0)
+	local halfHeight = model:GetExtentsSize().Y / 2
+	return tileTop + Vector3.new(0, BrainrotConfig.LINE_BOMB_FLY_HEIGHT + halfHeight, 0)
 end
 
 local function runFlight(ctx, model: Model)
@@ -50,15 +53,20 @@ local function runFlight(ctx, model: Model)
 	model.Name = "BombardinoFlight"
 	model.Parent = projectilesFolder(ctx.plotModel)
 
-	local startPos = bodyWorldPosition(ctx.plotModel, ctx.position.row, 1, body)
-	local endPos = bodyWorldPosition(ctx.plotModel, ctx.position.row, GridConfig.COLUMNS, body)
+	local startPos = bodyWorldPosition(ctx.plotModel, ctx.position.row, 1, model)
+	local endPos = bodyWorldPosition(ctx.plotModel, ctx.position.row, GridConfig.COLUMNS, model)
 	if not startPos or not endPos then
 		activeFlights[model] = nil
 		model:Destroy()
 		return
 	end
 
-	body.CFrame = CFrame.lookAt(startPos, endPos)
+	-- Keep placement orientation (includes modelOrientationDegrees). lookAt wiped it
+	-- and pitched Toolbox meshes nose-down along the flight path.
+	local rotationOnly = model:GetPivot() - model:GetPivot().Position
+	local startPivot = CFrame.new(startPos) * rotationOnly
+	local endPivot = CFrame.new(endPos) * rotationOnly
+	model:PivotTo(startPivot)
 
 	local duration = BrainrotConfig.LINE_BOMB_FLIGHT_DURATION
 	local stagger = duration / math.max(1, GridConfig.COLUMNS)
@@ -71,14 +79,24 @@ local function runFlight(ctx, model: Model)
 		{ explosionStagger = stagger, muteExplosionSound = true }
 	)
 
-	local endCFrame = CFrame.new(endPos) * (body.CFrame - body.CFrame.Position)
+	local alpha = Instance.new("NumberValue")
+	alpha.Value = 0
+	local connection = alpha:GetPropertyChangedSignal("Value"):Connect(function()
+		if not model.Parent then
+			return
+		end
+		model:PivotTo(startPivot:Lerp(endPivot, alpha.Value))
+	end)
+
 	local tween = TweenService:Create(
-		body,
+		alpha,
 		TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
-		{ CFrame = endCFrame }
+		{ Value = 1 }
 	)
 	tween:Play()
 	tween.Completed:Wait()
+	connection:Disconnect()
+	alpha:Destroy()
 
 	activeFlights[model] = nil
 	if model.Parent then

@@ -8,6 +8,7 @@
 local Utilities = {
 	Logger = require(script.Logger),
 	GridUtil = require(script.GridUtil),
+	ModelUtil = require(script.ModelUtil),
 }
 
 table.freeze(Utilities)

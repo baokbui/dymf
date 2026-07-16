@@ -1,4 +1,10 @@
 --!strict
+--[[
+	BubbleTrap
+	Tralalero — launches a bubble projectile at the first enemy in range.
+	Damage + Freeze (Bubble visual) apply on impact, not instantly.
+]]
+
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local BubbleTrap = {}
@@ -9,31 +15,24 @@ function BubbleTrap.tryAct(ctx, callbacks)
 		trapDuration = ctx.definition.abilityParams.trapDuration or trapDuration
 	end
 
-	local acted = CombatService.attackInRow(
+	local acted = CombatService.launchProjectile(
 		ctx.plotModel,
 		ctx.position,
 		ctx.definition.rangeTiles,
 		ctx.definition.damage,
 		ctx.ownerUserId,
-		"BubbleTrap"
+		{
+			kind = "Bubble",
+			soundKey = "BubbleTrap",
+			statusKind = "Freeze",
+			statusDuration = trapDuration,
+			statusVisual = "Bubble",
+		}
 	)
-	if not acted then
-		return false
+	if acted then
+		callbacks.pulseAttack()
 	end
-
-	CombatService.applyRowStatus(
-		ctx.plotModel,
-		ctx.position.row,
-		ctx.position.column,
-		ctx.definition.rangeTiles,
-		"Freeze",
-		trapDuration,
-		ctx.ownerUserId,
-		nil,
-		"Bubble"
-	)
-	callbacks.pulseAttack()
-	return true
+	return acted
 end
 
 return BubbleTrap
