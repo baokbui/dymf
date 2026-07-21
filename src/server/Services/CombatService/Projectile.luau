@@ -29,7 +29,7 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
-	-- "Knife" (default) or "Bubble"
+	-- "Knife" (legacy bolt), "Sword" (Cappuccino), or "Bubble"
 	kind: string?,
 	impact: ImpactSpec?,
 }
@@ -39,6 +39,8 @@ export type ActiveProjectile = {
 	spec: LaunchSpec,
 	column: number,
 	part: BasePart,
+	model: Model?,
+	spinRadians: number,
 	worldY: number,
 }
 
@@ -64,22 +66,132 @@ local function projectilesFolder(plotModel: Model): Folder
 	return folder :: Folder
 end
 
-local function stylePart(part: BasePart, kind: string?)
-	local projectileKind = kind or "Knife"
-	part:SetAttribute("ProjectileKind", projectileKind)
+local function hardenRoot(part: BasePart)
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.CastShadow = false
+	part.Massless = true
+end
 
-	if projectileKind == "Bubble" then
-		part.Shape = Enum.PartType.Ball
-		part.Size = CombatConfig.BUBBLE_PROJECTILE_SIZE
-		part.Material = Enum.Material.ForceField
-		part.Color = MonsterConfig.BUBBLE_COLOR
-		part.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
-	else
-		part.Shape = Enum.PartType.Block
-		part.Size = CombatConfig.PROJECTILE_SIZE
-		part.Material = Enum.Material.Neon
-		part.Color = CombatConfig.PROJECTILE_COLOR
-		part.Transparency = 0
+local function weldAccessory(root: BasePart, part: BasePart)
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.CastShadow = false
+	part.Massless = true
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = part
+	weld.Parent = root
+end
+
+--[[
+	Procedural sword: long axis = +X (toward monsters). Accessories are welded to
+	the blade so CFrame updates on the root spin the whole weapon.
+]]
+local function createSwordModel(): (Model, BasePart)
+	local model = Instance.new("Model")
+	model.Name = "SwordProjectile"
+
+	local blade = Instance.new("Part")
+	blade.Name = "Blade"
+	blade.Size = CombatConfig.SWORD_BLADE_SIZE
+	blade.Material = Enum.Material.Metal
+	blade.Color = CombatConfig.SWORD_BLADE_COLOR
+	blade.CFrame = CFrame.new()
+	blade.Parent = model
+	hardenRoot(blade)
+
+	local tip = Instance.new("WedgePart")
+	tip.Name = "Tip"
+	tip.Size = Vector3.new(
+		CombatConfig.SWORD_BLADE_SIZE.Z,
+		CombatConfig.SWORD_BLADE_SIZE.Y,
+		CombatConfig.SWORD_BLADE_SIZE.Y * 0.9
+	)
+	tip.Material = Enum.Material.Metal
+	tip.Color = CombatConfig.SWORD_BLADE_COLOR
+	tip.CFrame = CFrame.new(CombatConfig.SWORD_BLADE_SIZE.X * 0.5 + tip.Size.Z * 0.5, 0, 0)
+		* CFrame.Angles(0, math.rad(90), 0)
+	tip.Parent = model
+	weldAccessory(blade, tip)
+
+	local guard = Instance.new("Part")
+	guard.Name = "Guard"
+	guard.Size = CombatConfig.SWORD_GUARD_SIZE
+	guard.Material = Enum.Material.Neon
+	guard.Color = CombatConfig.SWORD_GUARD_COLOR
+	guard.CFrame = CFrame.new(-CombatConfig.SWORD_BLADE_SIZE.X * 0.42, 0, 0)
+	guard.Parent = model
+	weldAccessory(blade, guard)
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = CombatConfig.SWORD_HANDLE_SIZE
+	handle.Material = Enum.Material.SmoothPlastic
+	handle.Color = CombatConfig.SWORD_HANDLE_COLOR
+	handle.CFrame = CFrame.new(
+		-CombatConfig.SWORD_BLADE_SIZE.X * 0.42 - CombatConfig.SWORD_HANDLE_SIZE.X * 0.55,
+		0,
+		0
+	)
+	handle.Parent = model
+	weldAccessory(blade, handle)
+
+	local pommel = Instance.new("Part")
+	pommel.Name = "Pommel"
+	pommel.Shape = Enum.PartType.Ball
+	pommel.Size = Vector3.new(0.5, 0.5, 0.5)
+	pommel.Material = Enum.Material.Neon
+	pommel.Color = CombatConfig.SWORD_GUARD_COLOR
+	pommel.CFrame = CFrame.new(
+		-CombatConfig.SWORD_BLADE_SIZE.X * 0.42 - CombatConfig.SWORD_HANDLE_SIZE.X * 1.05,
+		0,
+		0
+	)
+	pommel.Parent = model
+	weldAccessory(blade, pommel)
+
+	model.PrimaryPart = blade
+	model:SetAttribute("ProjectileKind", "Sword")
+	blade:SetAttribute("ProjectileKind", "Sword")
+	return model, blade
+end
+
+local function createBoltPart(): BasePart
+	local part = Instance.new("Part")
+	part.Name = "Projectile"
+	part.Shape = Enum.PartType.Block
+	part.Size = CombatConfig.PROJECTILE_SIZE
+	part.Material = Enum.Material.Neon
+	part.Color = CombatConfig.PROJECTILE_COLOR
+	part.Transparency = 0
+	hardenRoot(part)
+	part:SetAttribute("ProjectileKind", "Knife")
+	return part
+end
+
+local function createBubblePart(): BasePart
+	local part = Instance.new("Part")
+	part.Name = "Projectile"
+	part.Shape = Enum.PartType.Ball
+	part.Size = CombatConfig.BUBBLE_PROJECTILE_SIZE
+	part.Material = Enum.Material.ForceField
+	part.Color = MonsterConfig.BUBBLE_COLOR
+	part.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
+	hardenRoot(part)
+	part:SetAttribute("ProjectileKind", "Bubble")
+	return part
+end
+
+local function destroyProjectile(projectile: ActiveProjectile)
+	if projectile.model then
+		projectile.model:Destroy()
+	elseif projectile.part.Parent then
+		projectile.part:Destroy()
 	end
 end
 
@@ -90,14 +202,24 @@ function Projectile.launch(
 ): string
 	nextId += 1
 	local id = string.format("Projectile_%d", nextId)
-	local part = Instance.new("Part")
-	part.Name = "Projectile"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.CastShadow = false
-	stylePart(part, spec.kind)
-	part.Parent = projectilesFolder(spec.plotModel)
+	local kind = spec.kind or "Knife"
+	local folder = projectilesFolder(spec.plotModel)
+
+	local part: BasePart
+	local model: Model? = nil
+
+	if kind == "Sword" then
+		local swordModel, blade = createSwordModel()
+		model = swordModel
+		part = blade
+		swordModel.Parent = folder
+	elseif kind == "Bubble" then
+		part = createBubblePart()
+		part.Parent = folder
+	else
+		part = createBoltPart()
+		part.Parent = folder
+	end
 
 	setWorldPosition(part, spec.plotModel, spec.row, spec.startColumn, worldY)
 
@@ -106,6 +228,8 @@ function Projectile.launch(
 		spec = spec,
 		column = spec.startColumn,
 		part = part,
+		model = model,
+		spinRadians = 0,
 		worldY = worldY,
 	}
 	return id
@@ -120,7 +244,7 @@ function Projectile.tick(
 	for id, projectile in active do
 		local liveColumn = getColumn(projectile.spec.targetInstanceId)
 		if not liveColumn then
-			projectile.part:Destroy()
+			destroyProjectile(projectile)
 			active[id] = nil
 			continue
 		end
@@ -134,6 +258,13 @@ function Projectile.tick(
 			projectile.worldY
 		)
 
+		if projectile.model then
+			projectile.spinRadians += CombatConfig.SWORD_SPIN_RADIANS_PER_SECOND * dt
+			-- End-over-end tumble: tip and handle circle around the center (around Z).
+			local pos = projectile.part.Position
+			projectile.part.CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, projectile.spinRadians)
+		end
+
 		if projectile.column >= liveColumn then
 			onImpact(
 				projectile.spec.targetInstanceId,
@@ -141,7 +272,7 @@ function Projectile.tick(
 				projectile.spec.ownerUserId,
 				projectile.spec.impact
 			)
-			projectile.part:Destroy()
+			destroyProjectile(projectile)
 			active[id] = nil
 		end
 	end
@@ -150,7 +281,7 @@ end
 function Projectile.destroyAllOnPlot(plotModel: Model)
 	for id, projectile in active do
 		if projectile.spec.plotModel == plotModel then
-			projectile.part:Destroy()
+			destroyProjectile(projectile)
 			active[id] = nil
 		end
 	end

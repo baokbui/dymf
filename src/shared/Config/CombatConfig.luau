@@ -12,8 +12,20 @@ local CombatConfig = {
 	PROJECTILE_COLUMNS_PER_SECOND = 6,
 
 	-- Replicated projectile body (server-spawned, visible to all).
+	-- Legacy bolt size kept for non-sword kinds; Cappuccino uses sword dims below.
 	PROJECTILE_SIZE = Vector3.new(0.35, 0.35, 1.4),
 	PROJECTILE_COLOR = Color3.fromRGB(220, 220, 230),
+
+	-- Cappuccino spinning sword (procedural Model; long axis = +X toward enemy).
+	SWORD_BLADE_SIZE = Vector3.new(5.5, 0.65, 0.28),
+	SWORD_GUARD_SIZE = Vector3.new(0.32, 1.7, 0.85),
+	SWORD_HANDLE_SIZE = Vector3.new(1.25, 0.28, 0.28),
+	SWORD_BLADE_COLOR = Color3.fromRGB(230, 235, 245),
+	SWORD_GUARD_COLOR = Color3.fromRGB(255, 200, 70),
+	SWORD_HANDLE_COLOR = Color3.fromRGB(90, 55, 35),
+	SWORD_SPIN_RADIANS_PER_SECOND = math.pi * 5, -- 2.5 turns/sec
+	-- Tip-to-handle cartwheel needs clearance ≈ half sword length above the lawn.
+	SWORD_PROJECTILE_HEIGHT_OFFSET = 7.0,
 
 	-- Tralalero bubble projectile (Ball + ForceField; color from MonsterConfig.BUBBLE_COLOR).
 	BUBBLE_PROJECTILE_SIZE = Vector3.new(1.6, 1.6, 1.6),

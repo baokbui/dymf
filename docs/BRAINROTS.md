@@ -112,7 +112,7 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 | Tralalero Tralala    | 175  | 500 (5)       | 40     | 4.0s     | Full row | Bubble projectile → trap (1.2s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
 | Lirili Larila        | 150  | 500 (5)       | 0      | 3.5s     | 2 tiles  | Freeze enemies 2s   | —     |
-| Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw knife         | —     |
+| Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw spinning sword | —     |
 | Chimpanzini Bananini | 75   | 2500 (25)     | 0      | —        | —        | Wall                | —     |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.

@@ -9,7 +9,11 @@ function ThrowKnife.tryAct(ctx, callbacks)
 		ctx.position,
 		ctx.definition.rangeTiles,
 		ctx.definition.damage,
-		ctx.ownerUserId
+		ctx.ownerUserId,
+		{
+			kind = "Sword",
+			soundKey = "ThrowKnifeHit",
+		}
 	)
 	if acted then
 		callbacks.pulseAttack()

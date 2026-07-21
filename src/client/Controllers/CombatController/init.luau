@@ -139,11 +139,16 @@ local function playExplosion(row: number?, column: number?, entireRow: boolean?,
 	end
 end
 
-local function watchProjectile(part: Instance)
-	if not part:IsA("BasePart") then
-		return
+local function watchProjectile(instance: Instance)
+	local part: BasePart? = nil
+	if instance:IsA("BasePart") then
+		part = instance
+	elseif instance:IsA("Model") then
+		part = instance.PrimaryPart or instance:FindFirstChildWhichIsA("BasePart", true)
 	end
-	VfxUtil.decorateProjectile(part)
+	if part then
+		VfxUtil.decorateProjectile(part)
+	end
 end
 
 -- Non-blocking: never WaitForChild here — that delayed Death SFX by seconds when

@@ -46,11 +46,12 @@ so the attacker only hits monsters right beside the Brainrot.
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Knife` (default neon bolt) | Damage + `ThrowKnifeHit` |
+| Cappuccino (`ThrowKnife`) | `Sword` (blade + guard + handle; tip-to-handle cartwheel spin) | Damage + `ThrowKnifeHit` |
 | Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
-Tuning: `CombatConfig` (speed, knife/bubble size) + `MonsterConfig.BUBBLE_COLOR`.
-Client trail/glow branches on the `ProjectileKind` attribute (`VfxUtil`).
+Tuning: `CombatConfig` (speed, sword/bubble size, `SWORD_SPIN_RADIANS_PER_SECOND`)
++ `MonsterConfig.BUBBLE_COLOR`. Client trail/glow branches on the `ProjectileKind`
+attribute (`VfxUtil`).
 
 ---
 

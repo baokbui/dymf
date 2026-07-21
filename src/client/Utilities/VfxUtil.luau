@@ -256,9 +256,17 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	end
 	part:SetAttribute("VfxDecorated", true)
 
-	local isBubble = part:GetAttribute("ProjectileKind") == "Bubble"
-	local trailColor = if isBubble then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR else VfxConfig.PROJECTILE_TRAIL_COLOR
-	local trailOffset = if isBubble then Vector3.new(-0.9, 0, 0) else Vector3.new(-0.6, 0, 0)
+	local kind = part:GetAttribute("ProjectileKind")
+	local isBubble = kind == "Bubble"
+	local isSword = kind == "Sword"
+	local trailColor = if isBubble
+		then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR
+		elseif isSword then VfxConfig.SWORD_PROJECTILE_TRAIL_COLOR
+		else VfxConfig.PROJECTILE_TRAIL_COLOR
+	local trailOffset = if isBubble
+		then Vector3.new(-0.9, 0, 0)
+		elseif isSword then Vector3.new(-2.8, 0, 0)
+		else Vector3.new(-0.6, 0, 0)
 
 	local attachment0 = Instance.new("Attachment")
 	attachment0.Name = "TrailStart"
@@ -272,16 +280,24 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = attachment0
 	trail.Attachment1 = attachment1
-	trail.Lifetime = VfxConfig.PROJECTILE_TRAIL_LIFETIME
-	trail.WidthScale = NumberSequence.new(if isBubble then 0.55 else VfxConfig.PROJECTILE_TRAIL_WIDTH)
+	trail.Lifetime = if isSword then VfxConfig.SWORD_PROJECTILE_TRAIL_LIFETIME else VfxConfig.PROJECTILE_TRAIL_LIFETIME
+	trail.WidthScale = NumberSequence.new(
+		if isBubble then 0.55 elseif isSword then VfxConfig.SWORD_PROJECTILE_TRAIL_WIDTH else VfxConfig.PROJECTILE_TRAIL_WIDTH
+	)
 	trail.Color = ColorSequence.new(trailColor)
 	trail.LightEmission = 1
 	trail.Transparency = if isBubble then NumberSequence.new(0.35, 1) else NumberSequence.new(0, 1)
 	trail.Parent = part
 
 	local glow = Instance.new("PointLight")
-	glow.Brightness = if isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
-	glow.Range = if isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE else VfxConfig.PROJECTILE_GLOW_RANGE
+	glow.Brightness = if isBubble
+		then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
+		elseif isSword then VfxConfig.SWORD_PROJECTILE_GLOW_BRIGHTNESS
+		else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
+	glow.Range = if isBubble
+		then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
+		elseif isSword then VfxConfig.SWORD_PROJECTILE_GLOW_RANGE
+		else VfxConfig.PROJECTILE_GLOW_RANGE
 	glow.Color = trailColor
 	glow.Parent = part
 end

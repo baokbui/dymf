@@ -46,6 +46,7 @@ Audio is display-only feedback.
 | `Victory` / `Defeat` | Level phase change |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
+| `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
 | `Hit` | Generic `CombatVisual` Hit (when no `soundKey`) |
 | `ThrowKnifeHit` | Cappuccino knife impact (`CombatVisual.soundKey`) |
 | `Death` | Generic monster death |

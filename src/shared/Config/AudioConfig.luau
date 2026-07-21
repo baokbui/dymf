@@ -42,6 +42,13 @@ local AudioConfig = {
 		"BubbleTrap",
 		"CoinCollect",
 		"PlaceBrainrot",
+		"PlaceBrainrot_BallerinaCappucina",
+		"PlaceBrainrot_TungTungSahur",
+		"PlaceBrainrot_TralaleroTralala",
+		"PlaceBrainrot_BombardinoCrocodilo",
+		"PlaceBrainrot_LiriliLarila",
+		"PlaceBrainrot_CappuccinoAssassino",
+		"PlaceBrainrot_ChimpanziniBananini",
 	},
 
 	MUSIC = {
@@ -91,6 +98,34 @@ local AudioConfig = {
 			SoundId = "rbxassetid://72957154832455",
 			Volume = 0.7,
 			PlaybackSpeed = 1,
+		},
+		PlaceBrainrot_BallerinaCappucina = {
+			SoundId = "rbxassetid://136160874492071",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_TungTungSahur = {
+			SoundId = "rbxassetid://138857089980331",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_TralaleroTralala = {
+			SoundId = "rbxassetid://107015186635337",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_BombardinoCrocodilo = {
+			SoundId = "rbxassetid://127920374501264",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_LiriliLarila = {
+			SoundId = "rbxassetid://99934484535097",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_CappuccinoAssassino = {
+			SoundId = "rbxassetid://132507332049936",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_ChimpanziniBananini = {
+			SoundId = "rbxassetid://112519317017452",
+			Volume = 0.85,
 		},
 		RemoveBrainrot = {
 			SoundId = "rbxassetid://135342195223049",

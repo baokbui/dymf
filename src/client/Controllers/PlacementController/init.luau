@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AudioConfig = require(Shared.Config.AudioConfig)
 local Brainrots = require(Shared.Brainrots)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
@@ -378,7 +379,12 @@ local function onPrimaryAction(position: Vector2)
 		row = tile:GetAttribute("Row"),
 		column = tile:GetAttribute("Column"),
 	})
-	AudioController.play("PlaceBrainrot")
+	local placeKey = "PlaceBrainrot_" .. id
+	if AudioConfig.SFX[placeKey] then
+		AudioController.play(placeKey)
+	else
+		AudioController.play("PlaceBrainrot")
+	end
 	PlacementController.cancel()
 end
 

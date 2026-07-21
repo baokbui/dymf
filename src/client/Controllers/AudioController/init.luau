@@ -46,6 +46,13 @@ local BRAINROT_SFX: { [string]: boolean } = {
 	BubbleTrap = true,
 	LineBomb = true,
 	PlaceBrainrot = true,
+	PlaceBrainrot_BallerinaCappucina = true,
+	PlaceBrainrot_TungTungSahur = true,
+	PlaceBrainrot_TralaleroTralala = true,
+	PlaceBrainrot_BombardinoCrocodilo = true,
+	PlaceBrainrot_LiriliLarila = true,
+	PlaceBrainrot_CappuccinoAssassino = true,
+	PlaceBrainrot_ChimpanziniBananini = true,
 	RemoveBrainrot = true,
 	ThrowKnifeHit = true,
 }
