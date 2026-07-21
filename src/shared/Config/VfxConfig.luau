@@ -11,11 +11,23 @@ local VfxConfig = {
 	HIT_BURST_SIZE = 0.35,
 	HIT_BURST_LIFETIME = 0.35,
 
-	-- Death dissolve companion burst.
+	-- Death dissolve companion burst (on kill).
 	DEATH_BURST_COUNT = 14,
 	DEATH_BURST_SPEED = 12,
 	DEATH_BURST_SIZE = 0.45,
 	DEATH_BURST_LIFETIME = 0.5,
+
+	-- Thanos-style ash when the corpse fades / disappears.
+	DISINTEGRATE_EMIT_DURATION = 0.55,
+	DISINTEGRATE_PARTICLE_LIFETIME = 1.4,
+	DISINTEGRATE_BURST_PER_PART = 18,
+	DISINTEGRATE_RATE = 40,
+	DISINTEGRATE_SPEED = 1.8,
+	DISINTEGRATE_SIZE = 0.28,
+	DISINTEGRATE_ACCELERATION = Vector3.new(0, 3.5, 0),
+	DISINTEGRATE_COLOR_A = Color3.fromRGB(55, 48, 42),
+	DISINTEGRATE_COLOR_B = Color3.fromRGB(140, 120, 95),
+	DISINTEGRATE_COLOR_C = Color3.fromRGB(210, 175, 130),
 
 	-- Line-bomb / row explosion (single large blast, legacy).
 	EXPLOSION_BURST_COUNT = 24,

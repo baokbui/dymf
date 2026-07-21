@@ -90,8 +90,10 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts,
 face enemy (+X) if the Toolbox facing is wrong. Placement ghost clones the same
 template. Compact units use `modelScale = BrainrotConfig.COMPACT_MODEL_SCALE`
-(0.7); Tralalero and Bombardino stay at full footprint. Shop cards still use the
-`color` swatch this milestone.
+(0.7); Tralalero and Bombardino stay at full footprint. Shop cards show a
+**ViewportFrame model preview** from the same `Assets.Brainrots` template
+(`client/Utilities/BrainrotPreview`); color swatch is the fallback if a
+template is missing.
 
 M15 **Complete When** (all seven real models in-game) ✅ — templates under
 `Assets.Brainrots` with `modelId` mapping in `Shared.Brainrots`.

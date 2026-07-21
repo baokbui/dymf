@@ -23,6 +23,7 @@ local Config = {
 	Progress = require(script.ProgressConfig),
 	Vfx = require(script.VfxConfig),
 	Audio = require(script.AudioConfig),
+	UI = require(script.UITheme),
 }
 
 table.freeze(Config)

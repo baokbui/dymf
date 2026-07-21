@@ -79,6 +79,91 @@ function VfxUtil.playDeathBurst(position: Vector3)
 	)
 end
 
+--[[
+	Thanos-snap ash: particles peel off the corpse and drift upward as it fades.
+	Uses world anchors so the cloud outlives the server destroying the model.
+]]
+function VfxUtil.playDeathDisintegrate(model: Model)
+	local emitDuration = VfxConfig.DISINTEGRATE_EMIT_DURATION
+	local particleLife = VfxConfig.DISINTEGRATE_PARTICLE_LIFETIME
+	local color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, VfxConfig.DISINTEGRATE_COLOR_C),
+		ColorSequenceKeypoint.new(0.45, VfxConfig.DISINTEGRATE_COLOR_B),
+		ColorSequenceKeypoint.new(1, VfxConfig.DISINTEGRATE_COLOR_A),
+	})
+	local sizeSeq = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, VfxConfig.DISINTEGRATE_SIZE),
+		NumberSequenceKeypoint.new(0.55, VfxConfig.DISINTEGRATE_SIZE * 0.65),
+		NumberSequenceKeypoint.new(1, 0.02),
+	})
+	local transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.15),
+		NumberSequenceKeypoint.new(0.35, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+
+	local anchors: { BasePart } = {}
+	for _, descendant in model:GetDescendants() do
+		if not descendant:IsA("BasePart") then
+			continue
+		end
+		if descendant.Transparency >= 0.95 or descendant.Name == "BubbleShell" then
+			continue
+		end
+
+		local anchor = Instance.new("Part")
+		anchor.Name = "DisintegrateAsh"
+		anchor.Anchored = true
+		anchor.CanCollide = false
+		anchor.CanQuery = false
+		anchor.CanTouch = false
+		anchor.Transparency = 1
+		anchor.Size = descendant.Size
+		anchor.CFrame = descendant.CFrame
+		anchor.Parent = effectsFolder()
+		table.insert(anchors, anchor)
+
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		emitter.Color = color
+		emitter.Size = sizeSeq
+		emitter.Transparency = transparency
+		emitter.Lifetime = NumberRange.new(particleLife * 0.55, particleLife)
+		emitter.Speed = NumberRange.new(VfxConfig.DISINTEGRATE_SPEED * 0.35, VfxConfig.DISINTEGRATE_SPEED)
+		emitter.SpreadAngle = Vector2.new(70, 70)
+		emitter.Acceleration = VfxConfig.DISINTEGRATE_ACCELERATION
+		emitter.Drag = 3.5
+		emitter.Rotation = NumberRange.new(0, 360)
+		emitter.RotSpeed = NumberRange.new(-60, 60)
+		emitter.LightEmission = 0.15
+		emitter.LightInfluence = 0.35
+		emitter.EmissionDirection = Enum.NormalId.Top
+		emitter.Rate = VfxConfig.DISINTEGRATE_RATE
+		emitter.Parent = anchor
+
+		emitter:Emit(VfxConfig.DISINTEGRATE_BURST_PER_PART)
+	end
+
+	if #anchors == 0 then
+		return
+	end
+
+	task.delay(emitDuration, function()
+		for _, anchor in anchors do
+			local emitter = anchor:FindFirstChildOfClass("ParticleEmitter")
+			if emitter then
+				emitter.Rate = 0
+			end
+		end
+	end)
+
+	task.delay(emitDuration + particleLife + 0.3, function()
+		for _, anchor in anchors do
+			anchor:Destroy()
+		end
+	end)
+end
+
 function VfxUtil.playCoinPickup(position: Vector3)
 	emitBurst(
 		position,

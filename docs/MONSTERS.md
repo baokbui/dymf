@@ -105,7 +105,8 @@ Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
 - **`EnemyService`** (server) ✅ M6 — spawning, grid movement, per-instance state,
   death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
-  Driven by `LevelService` in M8. Public: `spawn`, `clearPlot`.
+  On death, `MonsterDeath` tips the model (3 random styles), lingers 2s, fades,
+  then destroys. Driven by `LevelService` in M8. Public: `spawn`, `clearPlot`.
   `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
   spawns (set `ENABLED = true` in config for isolated monster testing).
 - **`CombatService`** (server) ✅ M7 — routes Brainrot damage to monsters and

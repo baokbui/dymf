@@ -36,8 +36,10 @@ local CombatConfig = {
 	HEALTH_BAR_FILL_LOW = Color3.fromRGB(220, 80, 80),
 	HEALTH_BAR_BOSS_WIDTH = 72,
 
-	-- Client death feedback (scale/fade tween duration).
-	DEATH_FADE_DURATION = 0.2,
+	-- Monster death: slow tip-over (server-replicated), linger on ground, then fade.
+	DEATH_FALL_DURATION = 1.0,
+	DEATH_CORPSE_LINGER = 2.0,
+	DEATH_FADE_OUT_DURATION = 0.4,
 
 	-- Height above the lane surface for projectile travel.
 	PROJECTILE_HEIGHT_OFFSET = 3.5,

@@ -1,11 +1,8 @@
 --!strict
 --[[
 	Level
-	Campaign day UI for UIController. Bottom-right panel with the current day,
-	a green Start Day button, spawn-group progress bar, and big-wave warning.
-	Sends Start Level intent via Remotes — no gameplay logic on the client.
-
-	Milestone 8. Player-facing copy uses "Day" (PvZ); remotes/services stay Level*.
+	Campaign day UI. Bottom-right panel with current day, Start Day button,
+	spawn-group progress, and big-wave warning. Cartoon look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
+local UITheme = require(Shared.Config.UITheme)
 
 local AudioController = require(script.Parent.Parent.AudioController)
 
@@ -20,17 +18,6 @@ local Level = {}
 Level.__index = Level
 
 local PHASE = Constants.PHASE
-
-local PANEL_BG = Color3.fromRGB(18, 20, 30)
-local TEXT_COLOR = Color3.fromRGB(235, 238, 245)
-local SUBTEXT_COLOR = Color3.fromRGB(120, 200, 255)
-local START_BUTTON_COLOR = Color3.fromRGB(90, 200, 120)
-local RESTART_BUTTON_COLOR = Color3.fromRGB(220, 70, 70)
-local PROGRESS_BG = Color3.fromRGB(40, 44, 58)
-local PROGRESS_FILL = Color3.fromRGB(90, 200, 120)
-local WARNING_COLOR = Color3.fromRGB(255, 90, 90)
-local VICTORY_COLOR = Color3.fromRGB(120, 220, 140)
-local DEFEAT_COLOR = Color3.fromRGB(255, 110, 110)
 
 local PANEL_WIDTH = 360
 local PANEL_HEIGHT_PREP = 72
@@ -49,91 +36,77 @@ export type LevelPanel = typeof(setmetatable(
 	Level
 ))
 
-local function styleCorner(instance: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = instance
-end
-
 function Level.new(parent: Frame): LevelPanel
 	parent.Visible = true
 	parent.AnchorPoint = Vector2.new(1, 1)
 	parent.Position = UDim2.new(1, -16, 1, -16)
 	parent.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT_PREP)
-	parent.BackgroundColor3 = PANEL_BG
-	parent.BackgroundTransparency = 0.12
-	styleCorner(parent, 12)
+	UITheme.applyPanelLook(parent)
 
 	local warningBanner = Instance.new("TextLabel")
 	warningBanner.Name = "BigWaveWarning"
 	warningBanner.AnchorPoint = Vector2.new(1, 1)
 	warningBanner.Position = UDim2.new(1, 0, 0, -8)
 	warningBanner.Size = UDim2.fromOffset(PANEL_WIDTH, 28)
-	warningBanner.BackgroundColor3 = WARNING_COLOR
-	warningBanner.BackgroundTransparency = 0.15
-	warningBanner.Font = Enum.Font.GothamBold
 	warningBanner.TextSize = 16
-	warningBanner.TextColor3 = Color3.new(1, 1, 1)
 	warningBanner.Text = "A huge wave is approaching!"
 	warningBanner.Visible = false
 	warningBanner.Parent = parent
-	styleCorner(warningBanner, 8)
+	UITheme.applyButtonLook(warningBanner, UITheme.DANGER, UITheme.CORNER_BUTTON)
+	UITheme.applyOutlinedTitle(warningBanner)
 
 	local levelLabel = Instance.new("TextLabel")
 	levelLabel.Name = "LevelTitle"
 	levelLabel.Size = UDim2.new(1, -140, 0, 24)
 	levelLabel.Position = UDim2.fromOffset(16, 12)
 	levelLabel.BackgroundTransparency = 1
-	levelLabel.Font = Enum.Font.GothamBold
 	levelLabel.TextSize = 18
 	levelLabel.TextXAlignment = Enum.TextXAlignment.Left
-	levelLabel.TextColor3 = TEXT_COLOR
 	levelLabel.Text = "Day 1"
 	levelLabel.Parent = parent
+	UITheme.applyOutlinedTitle(levelLabel)
 
 	local phaseLabel = Instance.new("TextLabel")
 	phaseLabel.Name = "Phase"
 	phaseLabel.Size = UDim2.new(1, -140, 0, 18)
 	phaseLabel.Position = UDim2.fromOffset(16, 38)
 	phaseLabel.BackgroundTransparency = 1
-	phaseLabel.Font = Enum.Font.Gotham
 	phaseLabel.TextSize = 14
 	phaseLabel.TextXAlignment = Enum.TextXAlignment.Left
-	phaseLabel.TextColor3 = SUBTEXT_COLOR
 	phaseLabel.Text = "Start the day to plant and defend"
 	phaseLabel.Parent = parent
+	UITheme.applyBodyText(phaseLabel, UITheme.SUBTEXT)
 
 	local progressBackground = Instance.new("Frame")
 	progressBackground.Name = "ProgressBackground"
 	progressBackground.AnchorPoint = Vector2.new(0, 1)
 	progressBackground.Position = UDim2.new(0, 16, 1, -12)
 	progressBackground.Size = UDim2.new(1, -32, 0, 14)
-	progressBackground.BackgroundColor3 = PROGRESS_BG
+	progressBackground.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	progressBackground.BorderSizePixel = 0
 	progressBackground.Visible = false
 	progressBackground.Parent = parent
-	styleCorner(progressBackground, 6)
+	UITheme.styleCorner(progressBackground, 8)
+	UITheme.applyStroke(progressBackground, UITheme.STROKE_CARD)
 
 	local progressFill = Instance.new("Frame")
 	progressFill.Name = "ProgressFill"
 	progressFill.Size = UDim2.fromScale(0, 1)
-	progressFill.BackgroundColor3 = PROGRESS_FILL
+	progressFill.BackgroundColor3 = UITheme.SUCCESS
 	progressFill.BorderSizePixel = 0
 	progressFill.Parent = progressBackground
-	styleCorner(progressFill, 6)
+	UITheme.styleCorner(progressFill, 8)
 
 	local startButton = Instance.new("TextButton")
 	startButton.Name = "StartButton"
 	startButton.AnchorPoint = Vector2.new(1, 0.5)
 	startButton.Position = UDim2.new(1, -12, 0.5, 0)
 	startButton.Size = UDim2.fromOffset(120, 40)
-	startButton.BackgroundColor3 = START_BUTTON_COLOR
-	startButton.Font = Enum.Font.GothamBold
 	startButton.TextSize = 16
-	startButton.TextColor3 = Color3.fromRGB(18, 20, 30)
 	startButton.Text = "Start Day"
 	startButton.Parent = parent
-	styleCorner(startButton, 10)
+	UITheme.applyButtonLook(startButton, UITheme.SUCCESS)
+	UITheme.applyOutlinedTitle(startButton)
 
 	startButton.MouseButton1Click:Connect(function()
 		AudioController.play("LevelStart")
@@ -169,9 +142,8 @@ end
 
 function Level.applyState(self: LevelPanel, state: { [string]: any })
 	local levelNumber = state.levelNumber
-	local levelName = state.levelName
-	if type(levelNumber) == "number" and type(levelName) == "string" then
-		self.levelLabel.Text = string.format("Day %d — %s", levelNumber, levelName)
+	if type(levelNumber) == "number" then
+		self.levelLabel.Text = string.format("Day %d", levelNumber)
 	end
 
 	local phase = state.phase
@@ -183,21 +155,29 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 	self.phaseLabel.Text = phaseMessage(phase, countdown)
 
 	if phase == PHASE.Victory then
-		self.phaseLabel.TextColor3 = VICTORY_COLOR
+		UITheme.applyOutlinedTitle(self.phaseLabel, UITheme.SUCCESS)
+		self.phaseLabel.Font = Enum.Font.GothamBold
+		self.phaseLabel.TextSize = 14
 	elseif phase == PHASE.Defeat then
-		self.phaseLabel.TextColor3 = DEFEAT_COLOR
+		UITheme.applyOutlinedTitle(self.phaseLabel, UITheme.DANGER)
+		self.phaseLabel.Font = Enum.Font.GothamBold
+		self.phaseLabel.TextSize = 14
 	else
-		self.phaseLabel.TextColor3 = SUBTEXT_COLOR
+		UITheme.applyBodyText(self.phaseLabel, UITheme.SUBTEXT)
+		self.phaseLabel.TextSize = 14
 	end
 
 	self.startButton.Visible = state.canStart == true
 	if phase == PHASE.Defeat then
 		self.startButton.Text = "Restart Day"
-		self.startButton.BackgroundColor3 = RESTART_BUTTON_COLOR
+		UITheme.applyButtonLook(self.startButton, UITheme.DANGER)
+		UITheme.applyOutlinedTitle(self.startButton)
 	else
 		self.startButton.Text = "Start Day"
-		self.startButton.BackgroundColor3 = START_BUTTON_COLOR
+		UITheme.applyButtonLook(self.startButton, UITheme.SUCCESS)
+		UITheme.applyOutlinedTitle(self.startButton)
 	end
+	self.startButton.TextSize = 16
 	self.warningBanner.Visible = state.bigWaveWarning == true
 
 	local showProgress = phase == PHASE.Active

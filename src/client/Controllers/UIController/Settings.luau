@@ -2,26 +2,20 @@
 --[[
 	Settings
 	Mute / volume / Brainrot SFX toggles, statistics, reset progress.
-	Opened from the left HUD "Settings" bar. Inventory is a separate UI.
+	Cartoon thick-outline look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
 
 local AudioController = require(script.Parent.Parent.AudioController)
 
 local Settings = {}
 Settings.__index = Settings
-
-local PANEL_BG = Color3.fromRGB(18, 20, 30)
-local TEXT = Color3.fromRGB(235, 238, 245)
-local SUB = Color3.fromRGB(160, 168, 180)
-local ACCENT = Color3.fromRGB(120, 200, 255)
-local DANGER = Color3.fromRGB(200, 60, 60)
-local BUTTON = Color3.fromRGB(40, 44, 58)
 
 export type SettingsPanel = typeof(setmetatable(
 	{} :: {
@@ -33,23 +27,16 @@ export type SettingsPanel = typeof(setmetatable(
 	Settings
 ))
 
-local function styleCorner(instance: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = instance
-end
-
-local function makeButton(parent: Instance, text: string, color: Color3): TextButton
+local function makeButton(parent: Instance, text: string, fill: Color3): TextButton
 	local button = Instance.new("TextButton")
 	button.AutoButtonColor = true
 	button.Size = UDim2.new(1, 0, 0, 36)
-	button.BackgroundColor3 = color
-	button.Font = Enum.Font.GothamBold
 	button.TextSize = 15
-	button.TextColor3 = TEXT
 	button.Text = text
 	button.Parent = parent
-	styleCorner(button, 8)
+	UITheme.applyButtonLook(button, fill)
+	UITheme.applyOutlinedTitle(button)
+	button.TextSize = 15
 	return button
 end
 
@@ -58,34 +45,28 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
 	parent.Size = UDim2.fromOffset(440, 400)
-	parent.BackgroundColor3 = PANEL_BG
-	parent.BackgroundTransparency = 0.04
-	parent.BorderSizePixel = 0
 	parent.ZIndex = 25
-	styleCorner(parent, 14)
+	UITheme.applyPanelLook(parent)
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
 	title.Size = UDim2.new(1, -80, 0, 32)
 	title.Position = UDim2.fromOffset(16, 12)
-	title.Font = Enum.Font.GothamBold
 	title.TextSize = 22
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextColor3 = TEXT
 	title.Text = "Settings"
 	title.Parent = parent
+	UITheme.applyOutlinedTitle(title)
 
 	local close = Instance.new("TextButton")
 	close.AnchorPoint = Vector2.new(1, 0)
 	close.Position = UDim2.new(1, -12, 0, 10)
 	close.Size = UDim2.fromOffset(36, 36)
-	close.BackgroundColor3 = DANGER
-	close.Font = Enum.Font.GothamBold
 	close.TextSize = 20
-	close.TextColor3 = Color3.new(1, 1, 1)
 	close.Text = "X"
 	close.Parent = parent
-	styleCorner(close, 8)
+	UITheme.applyButtonLook(close, UITheme.DANGER)
+	UITheme.applyOutlinedTitle(close)
 
 	local body = Instance.new("ScrollingFrame")
 	body.BackgroundTransparency = 1
@@ -110,12 +91,12 @@ function Settings.new(parent: Frame): SettingsPanel
 		local header = Instance.new("TextLabel")
 		header.BackgroundTransparency = 1
 		header.Size = UDim2.new(1, 0, 0, 22)
-		header.Font = Enum.Font.GothamBold
 		header.TextSize = 15
 		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.TextColor3 = ACCENT
 		header.Text = label
 		header.Parent = frame
+		UITheme.applyOutlinedTitle(header, UITheme.ACCENT)
+		header.TextSize = 15
 		local stack = Instance.new("UIListLayout")
 		stack.Padding = UDim.new(0, 6)
 		stack.SortOrder = Enum.SortOrder.LayoutOrder
@@ -124,10 +105,10 @@ function Settings.new(parent: Frame): SettingsPanel
 	end
 
 	local audioSection = section("Audio", 1)
-	local muteButton = makeButton(audioSection, "Mute: Off", BUTTON)
-	local musicButton = makeButton(audioSection, "Music Volume: High", BUTTON)
-	local sfxButton = makeButton(audioSection, "SFX Volume: High", BUTTON)
-	local brainrotSfxButton = makeButton(audioSection, "Brainrot SFX: On", BUTTON)
+	local muteButton = makeButton(audioSection, "Mute: Off", UITheme.BUTTON_BG)
+	local musicButton = makeButton(audioSection, "Music Volume: High", UITheme.BUTTON_BG)
+	local sfxButton = makeButton(audioSection, "SFX Volume: High", UITheme.BUTTON_BG)
+	local brainrotSfxButton = makeButton(audioSection, "Brainrot SFX: On", UITheme.BUTTON_BG)
 
 	local muted = false
 	local musicLevel = 2
@@ -170,17 +151,16 @@ function Settings.new(parent: Frame): SettingsPanel
 	local statsLabel = Instance.new("TextLabel")
 	statsLabel.BackgroundTransparency = 1
 	statsLabel.Size = UDim2.new(1, 0, 0, 120)
-	statsLabel.Font = Enum.Font.Gotham
 	statsLabel.TextSize = 14
 	statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statsLabel.TextYAlignment = Enum.TextYAlignment.Top
-	statsLabel.TextColor3 = SUB
 	statsLabel.Text = "Loading…"
 	statsLabel.TextWrapped = true
 	statsLabel.Parent = statsSection
+	UITheme.applyBodyText(statsLabel, UITheme.SUBTEXT)
 
 	local dangerSection = section("Danger Zone", 3)
-	local resetButton = makeButton(dangerSection, "Reset Progress", DANGER)
+	local resetButton = makeButton(dangerSection, "Reset Progress", UITheme.DANGER)
 
 	local self = setmetatable({
 		frame = parent,

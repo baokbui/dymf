@@ -2,15 +2,17 @@
 --[[
 	CoinCounter
 	Top-left coin balance display plus floating +/- feedback labels.
+	Cartoon thick-outline look via UITheme.
 ]]
 
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local UITheme = require(ReplicatedStorage:WaitForChild("Shared").Config.UITheme)
 
 local CoinCounter = {}
 CoinCounter.__index = CoinCounter
 
-local GAIN_COLOR = Color3.fromRGB(120, 255, 140)
-local SPEND_COLOR = Color3.fromRGB(255, 110, 110)
 local FLOAT_DURATION = 0.85
 local FLOAT_OFFSET_Y = -40
 local DELTA_TEXT_SIZE = 32
@@ -33,24 +35,19 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	frame.AnchorPoint = Vector2.new(0, 0)
 	frame.Position = UDim2.fromOffset(16, 16)
 	frame.Size = UDim2.fromOffset(168, 52)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
-	frame.BackgroundTransparency = 0.2
 	frame.ClipsDescendants = false
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = frame
+	UITheme.applyChipLook(frame)
 
 	local icon = Instance.new("Frame")
 	icon.Name = "Icon"
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.Position = UDim2.new(0, 12, 0.5, 0)
 	icon.Size = UDim2.fromOffset(28, 28)
-	icon.BackgroundColor3 = Color3.fromRGB(255, 200, 40)
+	icon.BackgroundColor3 = UITheme.GOLD
+	icon.BorderSizePixel = 0
 	icon.Parent = frame
-	local iconCorner = Instance.new("UICorner")
-	iconCorner.CornerRadius = UDim.new(1, 0)
-	iconCorner.Parent = icon
+	UITheme.styleCorner(icon, 14)
+	UITheme.applyStroke(icon, UITheme.STROKE_CARD)
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
@@ -58,12 +55,12 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	label.Position = UDim2.new(0, 52, 0.5, 0)
 	label.Size = UDim2.new(1, -64, 1, 0)
 	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBold
 	label.TextSize = 22
-	label.TextColor3 = Color3.fromRGB(255, 215, 0)
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
+	UITheme.applyOutlinedTitle(label, UITheme.GOLD_TEXT)
+	label.TextSize = 22
 
 	self.amountLabel = label
 	return self
@@ -83,7 +80,6 @@ function CoinCounter.showDelta(self: CoinCounter, delta: number)
 	local popup = Instance.new("TextLabel")
 	popup.Name = "Delta"
 	popup.BackgroundTransparency = 1
-	popup.Font = Enum.Font.GothamBold
 	popup.TextSize = DELTA_TEXT_SIZE
 	popup.TextXAlignment = Enum.TextXAlignment.Center
 	popup.AnchorPoint = Vector2.new(0.5, 0)
@@ -93,12 +89,12 @@ function CoinCounter.showDelta(self: CoinCounter, delta: number)
 
 	if delta > 0 then
 		popup.Text = string.format("+%d", delta)
-		popup.TextColor3 = GAIN_COLOR
+		UITheme.applyOutlinedTitle(popup, UITheme.SUCCESS)
 	else
 		popup.Text = string.format("%d", delta)
-		popup.TextColor3 = SPEND_COLOR
+		UITheme.applyOutlinedTitle(popup, UITheme.DANGER)
 	end
-
+	popup.TextSize = DELTA_TEXT_SIZE
 	popup.Parent = self.frame
 
 	local tween = TweenService:Create(
@@ -107,6 +103,7 @@ function CoinCounter.showDelta(self: CoinCounter, delta: number)
 		{
 			Position = UDim2.new(0.5, 0, 1, 6 + FLOAT_OFFSET_Y),
 			TextTransparency = 1,
+			TextStrokeTransparency = 1,
 		}
 	)
 	tween:Play()

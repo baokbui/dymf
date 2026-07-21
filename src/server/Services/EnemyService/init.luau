@@ -11,7 +11,6 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Monsters = require(ReplicatedStorage.Shared.Monsters)
@@ -22,6 +21,7 @@ local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local Abilities = require(script.Abilities)
 local MonsterBehavior = require(script.MonsterBehavior)
+local MonsterDeath = require(script.MonsterDeath)
 local MonsterFeedback = require(script.MonsterFeedback)
 local MonsterModel = require(script.MonsterModel)
 local MonsterStatus = require(script.MonsterStatus)
@@ -72,7 +72,8 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 	if silent then
 		runtime.model:Destroy()
 	else
-		task.delay(CombatConfig.DEATH_FADE_DURATION, function()
+		MonsterDeath.play(runtime.model)
+		task.delay(MonsterDeath.totalLifetime(), function()
 			if runtime.model.Parent then
 				runtime.model:Destroy()
 			end

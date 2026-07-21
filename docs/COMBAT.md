@@ -84,7 +84,7 @@ Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
 | Hit flash (Brainrots) | `BrainrotFeedback.flashHit` on server (replicated BasePart colors) |
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
-| Death burst + fade | `CombatVisual` kind `Death` |
+| Death tip-over + linger + fade | Server `MonsterDeath` (3 random styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino flies house→enemy along the row; `entireRow` blasts each tile under the pass (`stagger` matches flight) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
@@ -98,10 +98,15 @@ values remain in `CombatConfig`.
 
 1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
-   `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner;
-   model destroy is delayed briefly for client fade.
-3. Client plays `Death_<monsterId>` when configured (else `Death`), then death VFX.
-4. Brainrot death destroys the placement and frees the tile (unchanged from M5).
+   `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner.
+3. Client plays `Death_<monsterId>` when configured (else `Death`), then a death
+   particle burst and hides the health bar. After tip-over + linger, a
+   Thanos-style ash disintegrate (`VfxUtil.playDeathDisintegrate`) plays as the
+   corpse fades.
+4. Server `MonsterDeath` tips the model slowly onto the ground (randomized
+   faceplant / side flop / backfall), leaves the corpse for
+   `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
+5. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 
 Hit flash on damage uses server-side `MonsterFeedback.flashHit` /
 `BrainrotFeedback.flashHit` so the red tint replicates reliably.
@@ -119,7 +124,8 @@ attributes (server-authoritative). Boss monsters use a wider bar.
 ## Config
 
 `Shared.Config.CombatConfig` — projectile speed, DoT intervals, health bar layout,
-death fade duration. **Never hardcode** combat tuning in services.
+monster death fall / linger / fade timings. **Never hardcode** combat tuning in
+services.
 
 ---
 

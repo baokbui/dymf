@@ -135,7 +135,7 @@ function MonsterFeedback.pulseAttack(model: Model)
 	end)
 end
 
-function MonsterFeedback.flashHit(model: Model, isFatal: boolean?)
+function MonsterFeedback.flashHit(model: Model, _isFatal: boolean?)
 	local parts = visibleParts(model)
 	if #parts == 0 then
 		return
@@ -157,10 +157,6 @@ function MonsterFeedback.flashHit(model: Model, isFatal: boolean?)
 			bases[part] = part.Color
 		end
 		part.Color = MonsterConfig.HIT_FLASH_COLOR
-	end
-
-	if isFatal then
-		return
 	end
 
 	local tweens: { Tween } = {}
@@ -340,6 +336,14 @@ function MonsterFeedback.cleanup(model: Model)
 	pulseTokens[model] = nil
 
 	cancelHitFlash(model)
+	local bases = hitFlashBaseColors[model]
+	if bases then
+		for part, color in bases do
+			if part.Parent then
+				part.Color = color
+			end
+		end
+	end
 	hitFlashBaseColors[model] = nil
 	frozenLooks[model] = nil
 	bubbledModels[model] = nil

@@ -28,6 +28,23 @@ StarterGui/
 
 ---
 
+## Visual theme ✅
+
+All HUD panels share a **cartoon thick-outline** look from
+`ReplicatedStorage.Shared.Config.UITheme` (also `Config.UI`):
+
+- Solid panel / chip fills (light cool blue or cream stickers)
+- Black `UIStroke` borders (thick on panels, slightly thinner on cards)
+- Bold white/accent titles with black `TextStroke`
+- Flat saturated accents (gold coins, red hearts/danger, green start)
+
+Layout and structure are unchanged — panels only consume theme tokens/helpers
+(`applyPanelLook`, `applyChipLook`, `applyCardLook`, `applyButtonLook`,
+`applyOutlinedTitle`, `applyBodyText`). Do not hardcode a second palette in new
+UI.
+
+---
+
 ## Controllers (client)
 
 | Controller            | Owns                                         | Status |
@@ -50,7 +67,10 @@ StarterGui/
 - **Coins** ✅ M3 — top-left counter; floating ±N feedback on collect/spend.
 - **Hearts** ✅ M13 — five house hearts in a rounded HUD box under Coins.
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
-  only (loadout from `ProfileUpdated` / `SetEquipped`).
+  only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
+  3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
+  Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
+  stroke on the viewport) so the row stays readable.
 - **Plant toasts** ✅ — stacked messages just under Shop when a plant fails
   (not enough coins, occupied tile, day not started, …). Newest stays under the
   shop; older ones slide up and fade.
@@ -80,6 +100,11 @@ Brains currency + victory grants are live so the store can plug in later.
 - **`PlacementController`** → ghost + `PlaceBrainrot` / shovel remove. Client
   pre-checks coins/occupancy and shows a plant toast on failure; the server still
   validates and may fire `PlaceBrainrotFailed`.
+- Shop selection is allowed in **Countdown** and **Active**; planting only in
+  **Active** (matches `LevelService.isLevelActive` / `.cursorrules` server gate).
+- Client coin balance for affordability checks is synced from `CoinsUpdated` and
+  `RequestState` via `UIController` → `PlacementController.setBalance` (UI display
+  and placement pre-check stay in sync).
 - Server also checks **unlocked + equipped** (`ProgressService.canPlace`).
 
 ---

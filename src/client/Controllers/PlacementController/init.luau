@@ -42,6 +42,7 @@ local BLOCKED_COLOR = Color3.fromRGB(220, 110, 110)
 local selectedId: string? = nil
 local balance = 0
 local placementAllowed = false
+local selectionAllowed = false
 local shovelMode = false
 local ghostModel: Model? = nil
 local ghostPart: BasePart? = nil
@@ -269,8 +270,12 @@ local function tryRemoveAt(position: Vector2)
 	AudioController.play("RemoveBrainrot")
 end
 
+function PlacementController.setBalance(amount: number)
+	balance = amount
+end
+
 function PlacementController.select(brainrotId: string)
-	if not placementAllowed then
+	if not selectionAllowed then
 		return
 	end
 	if not Brainrots.exists(brainrotId) then
@@ -285,6 +290,11 @@ end
 
 function PlacementController.setPlacementAllowed(allowed: boolean)
 	placementAllowed = allowed
+end
+
+-- Shop selection (ghost) may be enabled during Countdown; planting stays Active-only.
+function PlacementController.setSelectionAllowed(allowed: boolean)
+	selectionAllowed = allowed
 	if not allowed then
 		PlacementController.cancel()
 		PlacementController.setShovelMode(false)
@@ -393,10 +403,6 @@ function PlacementController.start()
 			end
 			refreshGhostAt(position)
 		end
-	end)
-
-	Remotes.getEvent("CoinsUpdated").OnClientEvent:Connect(function(amount: number)
-		balance = amount
 	end)
 
 	log:info("started")

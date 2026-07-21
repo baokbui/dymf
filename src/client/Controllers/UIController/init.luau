@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local Constants = require(Shared.Constants)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local UITheme = require(Shared.Config.UITheme)
 local Logger = require(Shared.Utilities.Logger)
 
 local UIEvents = require(script.Parent.Parent.UIEvents)
@@ -58,6 +59,7 @@ local function setBalance(amount: number)
 	if shop then
 		shop:setBalance(amount)
 	end
+	PlacementController.setBalance(amount)
 end
 
 local function applyProfile(profile: { [string]: any }?)
@@ -145,18 +147,14 @@ local function makeHudEntry(name: string, label: string, y: number, onClick: () 
 	button.AnchorPoint = Vector2.new(0, 0)
 	button.Position = UDim2.fromOffset(16, y)
 	button.Size = UDim2.fromOffset(168, 44)
-	button.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
-	button.BackgroundTransparency = 0.2
 	button.AutoButtonColor = true
-	button.Font = Enum.Font.GothamBold
 	button.TextSize = 18
-	button.TextColor3 = Color3.fromRGB(235, 238, 245)
 	button.Text = label
 	button.ZIndex = 15
 	button.Parent = main
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = button
+	UITheme.applyChipLook(button)
+	UITheme.applyOutlinedTitle(button, UITheme.TITLE)
+	button.TextSize = 18
 	button.Activated:Connect(function()
 		AudioController.play("UiClick")
 		onClick()
@@ -219,7 +217,10 @@ local function applyLevelState(state: { [string]: any }?)
 
 	local phase = state.phase
 	if type(phase) == "string" then
-		PlacementController.setPlacementAllowed(phase == Constants.PHASE.Active)
+		local isActive = phase == Constants.PHASE.Active
+		local canSelect = isActive or phase == Constants.PHASE.Countdown
+		PlacementController.setPlacementAllowed(isActive)
+		PlacementController.setSelectionAllowed(canSelect)
 
 		if lastLevelPhase ~= phase then
 			if phase == Constants.PHASE.Victory then

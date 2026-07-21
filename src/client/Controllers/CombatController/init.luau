@@ -9,12 +9,11 @@
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
-local CombatConfig = require(Shared.Config.CombatConfig)
 local AudioConfig = require(Shared.Config.AudioConfig)
+local CombatConfig = require(Shared.Config.CombatConfig)
 local GridConfig = require(Shared.Config.GridConfig)
 local VfxConfig = require(Shared.Config.VfxConfig)
 local Constants = require(Shared.Constants)
@@ -73,7 +72,7 @@ local function flashHit(instanceId: string?)
 	end
 end
 
-local function playDeathFade(instanceId: string?)
+local function playDeathVfx(instanceId: string?)
 	if not instanceId then
 		return
 	end
@@ -82,20 +81,26 @@ local function playDeathFade(instanceId: string?)
 		return
 	end
 
+	-- Fall / linger / fade run on the server (replicated). Client: burst + hide bars.
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BillboardGui") then
+			descendant.Enabled = false
+		end
+	end
+
 	local center = PlotUtil.getModelBodyCenter(model)
 	if center then
 		VfxUtil.playDeathBurst(center)
 	end
 
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			TweenService:Create(
-				descendant,
-				TweenInfo.new(CombatConfig.DEATH_FADE_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-				{ Transparency = 1, Size = descendant.Size * 0.2 }
-			):Play()
+	-- Thanos-style ash when the corpse fades (after tip-over + linger).
+	local disintegrateAt = CombatConfig.DEATH_FALL_DURATION + CombatConfig.DEATH_CORPSE_LINGER
+	task.delay(disintegrateAt, function()
+		local corpse = findModelByInstanceId(instanceId)
+		if corpse and corpse.Parent then
+			VfxUtil.playDeathDisintegrate(corpse)
 		end
-	end
+	end)
 end
 
 local function playExplosion(row: number?, column: number?, entireRow: boolean?, staggerOverride: number?)
@@ -199,7 +204,7 @@ local function onCombatVisual(payload: unknown)
 		flashHit(data.instanceId)
 	elseif kind == "Death" then
 		playDeathSound(data.monsterId)
-		playDeathFade(data.instanceId)
+		playDeathVfx(data.instanceId)
 	elseif kind == "Explosion" then
 		if data.muteSound ~= true then
 			AudioController.play("Explosion")

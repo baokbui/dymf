@@ -36,7 +36,7 @@ export type BrainrotDefinition = {
 	coinGeneration: number?, -- coins per cycle for producers
 	abilityParams: { [string]: number }?, -- per-ability tuning (trap/freeze duration, …)
 	triggersOnPlace: boolean?, -- true = ability fires once on placement (e.g. line bomb)
-	color: Color3?, -- shop swatch + placeholder/ghost tint
+	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
 	-- Local Euler degrees (X=pitch, Y=yaw, Z=roll) applied after clearing Assets rotation.
 	modelOrientationDegrees: Vector3?,

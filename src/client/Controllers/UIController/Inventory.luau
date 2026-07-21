@@ -2,7 +2,7 @@
 --[[
 	Inventory
 	Equip / unequip unlocked Brainrots for the placement shop loadout.
-	Sends SetEquipped intent; server validates unlocks and max slots.
+	Cartoon thick-outline look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 
@@ -17,12 +18,6 @@ local AudioController = require(script.Parent.Parent.AudioController)
 
 local Inventory = {}
 Inventory.__index = Inventory
-
-local PANEL_BG = Color3.fromRGB(18, 20, 30)
-local TEXT = Color3.fromRGB(235, 238, 245)
-local ROW_BG = Color3.fromRGB(36, 40, 54)
-local EQUIPPED = Color3.fromRGB(90, 200, 120)
-local UNEQUIPPED = Color3.fromRGB(70, 74, 90)
 
 export type InventoryPanel = typeof(setmetatable(
 	{} :: {
@@ -35,12 +30,6 @@ export type InventoryPanel = typeof(setmetatable(
 	},
 	Inventory
 ))
-
-local function styleCorner(instance: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = instance
-end
 
 local function sortedUnlocks(unlocks: { string }): { Types.BrainrotDefinition }
 	local list: { Types.BrainrotDefinition } = {}
@@ -64,57 +53,51 @@ function Inventory.new(parent: Frame): InventoryPanel
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
 	parent.Size = UDim2.fromOffset(420, 420)
-	parent.BackgroundColor3 = PANEL_BG
-	parent.BackgroundTransparency = 0.06
 	parent.ZIndex = 30
-	styleCorner(parent, 14)
+	UITheme.applyPanelLook(parent)
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
 	title.Size = UDim2.new(1, -80, 0, 32)
 	title.Position = UDim2.fromOffset(16, 12)
-	title.Font = Enum.Font.GothamBold
 	title.TextSize = 22
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextColor3 = TEXT
 	title.Text = "Inventory"
 	title.Parent = parent
+	UITheme.applyOutlinedTitle(title)
 
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
 	close.AnchorPoint = Vector2.new(1, 0)
 	close.Position = UDim2.new(1, -12, 0, 10)
 	close.Size = UDim2.fromOffset(36, 36)
-	close.BackgroundColor3 = Color3.fromRGB(150, 45, 45)
-	close.Font = Enum.Font.GothamBold
 	close.TextSize = 20
-	close.TextColor3 = Color3.new(1, 1, 1)
 	close.Text = "X"
 	close.Parent = parent
-	styleCorner(close, 8)
+	UITheme.applyButtonLook(close, UITheme.DANGER)
+	UITheme.applyOutlinedTitle(close)
 
 	local brainsLabel = Instance.new("TextLabel")
 	brainsLabel.Name = "Brains"
 	brainsLabel.BackgroundTransparency = 1
 	brainsLabel.Size = UDim2.new(1, -32, 0, 20)
 	brainsLabel.Position = UDim2.fromOffset(16, 48)
-	brainsLabel.Font = Enum.Font.Gotham
 	brainsLabel.TextSize = 14
 	brainsLabel.TextXAlignment = Enum.TextXAlignment.Left
-	brainsLabel.TextColor3 = Color3.fromRGB(180, 140, 255)
 	brainsLabel.Text = "Brains: 0"
 	brainsLabel.Parent = parent
+	UITheme.applyOutlinedTitle(brainsLabel, UITheme.BRAIN)
+	brainsLabel.TextSize = 14
 
 	local hint = Instance.new("TextLabel")
 	hint.BackgroundTransparency = 1
 	hint.Size = UDim2.new(1, -32, 0, 18)
 	hint.Position = UDim2.fromOffset(16, 70)
-	hint.Font = Enum.Font.Gotham
 	hint.TextSize = 13
 	hint.TextXAlignment = Enum.TextXAlignment.Left
-	hint.TextColor3 = Color3.fromRGB(160, 168, 180)
 	hint.Text = string.format("Equip up to %d for the shop bar", ProgressConfig.MAX_EQUIPPED)
 	hint.Parent = parent
+	UITheme.applyBodyText(hint, UITheme.SUBTEXT)
 
 	local list = Instance.new("ScrollingFrame")
 	list.Name = "List"
@@ -172,23 +155,27 @@ function Inventory.refresh(self: InventoryPanel)
 		button.Name = definition.id
 		button.LayoutOrder = order
 		button.Size = UDim2.new(1, -8, 0, 44)
-		button.BackgroundColor3 = ROW_BG
 		button.AutoButtonColor = false
-		button.Font = Enum.Font.GothamMedium
 		button.TextSize = 15
-		button.TextColor3 = TEXT
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.Text = string.format("  %s   [%s]", definition.name, if equipped then "Equipped" else "Unequipped")
 		button.Parent = self.list
-		styleCorner(button, 8)
+		UITheme.applyButtonLook(
+			button,
+			if equipped then Color3.fromRGB(170, 230, 160) else UITheme.ROW_BG
+		)
+		UITheme.applyOutlinedTitle(button, UITheme.BODY)
+		button.TextSize = 15
+		button.TextXAlignment = Enum.TextXAlignment.Left
 
 		local badge = Instance.new("Frame")
-		badge.Size = UDim2.fromOffset(10, 10)
-		badge.Position = UDim2.new(1, -24, 0.5, -5)
-		badge.BackgroundColor3 = if equipped then EQUIPPED else UNEQUIPPED
+		badge.Size = UDim2.fromOffset(12, 12)
+		badge.Position = UDim2.new(1, -26, 0.5, -6)
+		badge.BackgroundColor3 = if equipped then UITheme.SUCCESS else Color3.fromRGB(180, 180, 190)
 		badge.BorderSizePixel = 0
 		badge.Parent = button
-		styleCorner(badge, 5)
+		UITheme.styleCorner(badge, 6)
+		UITheme.applyStroke(badge, 2)
 
 		button.Activated:Connect(function()
 			AudioController.play("UiClick")
