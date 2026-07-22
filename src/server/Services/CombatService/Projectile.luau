@@ -89,8 +89,8 @@ local function weldAccessory(root: BasePart, part: BasePart)
 end
 
 --[[
-	Procedural sword: long axis = +X (toward monsters). Accessories are welded to
-	the blade so CFrame updates on the root spin the whole weapon.
+	Procedural sword: long axis = local +X. In flight we tip it upright (+Y) and
+	spin around world +X so it reads as a vertical wheel toward the enemy.
 ]]
 local function createSwordModel(): (Model, BasePart)
 	local model = Instance.new("Model")
@@ -260,9 +260,12 @@ function Projectile.tick(
 
 		if projectile.model then
 			projectile.spinRadians += CombatConfig.SWORD_SPIN_RADIANS_PER_SECOND * dt
-			-- End-over-end tumble: tip and handle circle around the center (around Z).
+			-- Vertical wheel: tip starts +Y, rolls around travel (+X) so the blade
+			-- spins in the YZ plane (reads as upright spin when facing the enemy).
 			local pos = projectile.part.Position
-			projectile.part.CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, projectile.spinRadians)
+			projectile.part.CFrame = CFrame.new(pos)
+				* CFrame.fromAxisAngle(Vector3.xAxis, projectile.spinRadians)
+				* CFrame.Angles(0, 0, math.pi / 2)
 		end
 
 		if projectile.column >= liveColumn then

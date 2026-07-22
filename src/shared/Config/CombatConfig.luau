@@ -23,7 +23,7 @@ local CombatConfig = {
 	SWORD_BLADE_COLOR = Color3.fromRGB(230, 235, 245),
 	SWORD_GUARD_COLOR = Color3.fromRGB(255, 200, 70),
 	SWORD_HANDLE_COLOR = Color3.fromRGB(90, 55, 35),
-	SWORD_SPIN_RADIANS_PER_SECOND = math.pi * 5, -- 2.5 turns/sec
+	SWORD_SPIN_RADIANS_PER_SECOND = math.pi * 10, -- 5 turns/sec
 	-- Tip-to-handle cartwheel needs clearance ≈ half sword length above the lawn.
 	SWORD_PROJECTILE_HEIGHT_OFFSET = 7.0,
 

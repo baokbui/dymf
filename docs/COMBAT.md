@@ -49,7 +49,7 @@ are **not** valid targets — Brainrots wait until the monster enters the plot.
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Sword` (blade + guard + handle; tip-to-handle cartwheel spin) | Damage + `ThrowKnifeHit` |
+| Cappuccino (`ThrowKnife`) | `Sword` (blade + guard + handle; vertical wheel spin around +X) | Damage + `ThrowKnifeHit` |
 | Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (speed, sword/bubble size, `SWORD_SPIN_RADIANS_PER_SECOND`)
