@@ -2,8 +2,9 @@
 --[[
 	LevelService
 	The ONLY system that advances campaign levels (PvZ-style). Owns preparation,
-	countdown, spawn groups, victory/defeat, rewards, and progression. Drives
-	EnemyService for spawns; broadcasts state via LevelStateChanged.
+	Active spawn groups, victory/defeat, rewards, and progression. Start Day goes
+	straight to Active — monsters spawn in the forest and walk in (setup time).
+	Drives EnemyService for spawns; broadcasts state via LevelStateChanged.
 
 	Milestone 8.
 ]]
@@ -13,7 +14,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
-local LevelConfig = require(Shared.Config.LevelConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Levels = require(Shared.Levels)
 local Remotes = require(Shared.Remotes)
@@ -211,6 +211,18 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	broadcast(player)
 end
 
+-- Optional Countdown → Active bridge (COUNTDOWN_TIME > 0). Live flow skips this.
+local function beginActiveRun(player: Player, state: PlayerState, definition)
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		EnemyService.clearPlot(plotModel)
+	end
+
+	state.countdownEnd = 0
+	state.activeRun = LevelRun.new(definition)
+	setPhase(player, state, PHASE.Active)
+end
+
 local function tickCountdown(player: Player, state: PlayerState)
 	if state.phase ~= PHASE.Countdown then
 		return
@@ -226,13 +238,7 @@ local function tickCountdown(player: Player, state: PlayerState)
 		return
 	end
 
-	local plotModel = PlotService.getPlotModel(player)
-	if plotModel then
-		EnemyService.clearPlot(plotModel)
-	end
-
-	state.activeRun = LevelRun.new(definition)
-	setPhase(player, state, PHASE.Active)
+	beginActiveRun(player, state, definition)
 end
 
 local function onStartLevel(player: Player)
@@ -249,13 +255,9 @@ local function onStartLevel(player: Player)
 		return
 	end
 
-	local plotModel = PlotService.getPlotModel(player)
-	if plotModel then
-		EnemyService.clearPlot(plotModel)
-	end
-
-	state.countdownEnd = os.clock() + LevelConfig.COUNTDOWN_TIME
-	setPhase(player, state, PHASE.Countdown)
+	-- Skip idle countdown: Active immediately so players can plant while the
+	-- first monsters spawn in the forest and walk toward the plot.
+	beginActiveRun(player, state, definition)
 end
 
 local function onHouseBreach(plotModel: Model, _row: number)

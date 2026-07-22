@@ -61,7 +61,12 @@ end
 local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCallbacks
 	return {
 		dropCoinsOnGrid = function(amount: number)
-			CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount)
+			local origin = placement.model:GetPivot().Position + Vector3.new(0, 2, 0)
+			local body = placement.model:FindFirstChild("Body", true)
+			if body and body:IsA("BasePart") then
+				origin = body.Position + Vector3.new(0, body.Size.Y * 0.35, 0)
+			end
+			CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount, origin)
 		end,
 		destroySelf = function()
 			if destroyHandler then

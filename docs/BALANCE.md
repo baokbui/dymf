@@ -33,7 +33,7 @@ current attempt only.
 | `STARTING_COINS` | 125 | Exactly Ballerina (50) + Tung Tung (75) on level 1 |
 | `PASSIVE_DROP_INTERVAL` | 25s | Passive income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
-| Ballerina `coinGeneration` | 25 / 11s | Primary mid-level income when planted |
+| Ballerina `coinGeneration` | 25 / 16s | Primary mid-level income when planted |
 
 ---
 
@@ -60,7 +60,7 @@ data, not weaker zombie variants:
 
 | Id | Role | HP | Sec/tile | Chew dmg |
 | -- | ---- | -- | -------- | -------- |
-| `Zombie` | Grunt (L1+) | 180 | 5.0 | 85 |
+| `Zombie` | Grunt (L1+) | 180 | 4.0 | 85 |
 | `Goblin` | Fast grunt (L5+) | 150 | 3.4 | 75 |
 | `Orc` | Boss (L10) | 12000 | 7.5 | 8000 + one-shot ability |
 
@@ -68,7 +68,8 @@ data, not weaker zombie variants:
 
 ## Day pacing (`Shared.Levels` + `LevelConfig`)
 
-- First spawn group always leaves **≥20s** plant time after countdown.
+- First spawn group uses a short delay; **≥20s** plant time comes from the
+  forest march (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 - Adjacent levels change **counts/pacing/species** — never hidden HP scaling.
 - Big-wave groups use `isBigWave`; warning lead = `BIG_WAVE_WARNING_TIME` (5s).
 - Level 10 Orc wave: extra `startDelay` before the boss spawns.

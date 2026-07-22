@@ -4,18 +4,19 @@
 	Procedurally constructs a single plot (a full-width lane) from PlotConfig.
 	Kept separate from PlotService so the service stays focused on lifecycle.
 
-	The whole world floor is one grass baseplate; plots are lanes of it divided
-	by clear glass barriers. Within a lane, left (-X) -> right (+X) is:
-	house zone, play area (grid). Enemy staging lives in the east map column
-	(see EnemySpawnBuilder). A plot contains:
+	The whole world floor is one grass baseplate; plots are open lanes (no
+	collision barriers) so players can walk between plots to spectate. Gameplay
+	isolation stays server-side (plant / coin / shovel only on your own plot).
+	Within a lane, left (-X) -> right (+X) is: house zone, play area (grid).
+	Enemy staging lives in the east map column (see EnemySpawnBuilder).
+
+	A plot contains:
 
 		Base           - INVISIBLE, non-colliding region marker (origin + future
 		                 placement raycast target)
-		Barriers       - clear glass containment walls (North/South divide lanes,
-		                 West is the field's left edge; East is open toward the
-		                 adjacent enemy-spawn lane)
 		SpawnLocation  - left edge of the play area, facing the enemy (+X)
-		HouseAnchor    - attachment marking the house spot behind the player (M-later)
+		HouseAnchor    - attachment marking the house spot behind the player
+		House          - walkable cottage (HouseBuilder) with boss pedestals (M25)
 		CoinSpawner    - attachment at the lane center (M3)
 		GridCenter     - attachment at the play-area center; GridService lays the
 		                 tile grid out from here (M2)
@@ -30,6 +31,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
+local HouseBuilder = require(script.Parent.HouseBuilder)
 
 local PlotBuilder = {}
 
@@ -44,15 +46,6 @@ local function newPart(name: string, size: Vector3, position: Vector3, parent: I
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
 	return part
-end
-
-local function addBarrier(name: string, size: Vector3, position: Vector3, parent: Instance)
-	local wall = newPart(name, size, position, parent)
-	wall.Transparency = PlotConfig.BARRIER_TRANSPARENCY
-	wall.Color = PlotConfig.BARRIER_COLOR
-	wall.Material = PlotConfig.BARRIER_MATERIAL
-	wall.CanCollide = true
-	wall.CastShadow = false
 end
 
 local function addMarker(name: string, worldPosition: Vector3, parent: BasePart)
@@ -75,8 +68,6 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	local width = PlotConfig.BASE_WIDTH
 	local depth = PlotConfig.BASE_DEPTH
 	local thickness = PlotConfig.BASE_THICKNESS
-	local barrierHeight = PlotConfig.BARRIER_HEIGHT
-	local barrierThickness = PlotConfig.BARRIER_THICKNESS
 
 	local model = Instance.new("Model")
 	model.Name = string.format("Plot%d", index)
@@ -94,24 +85,7 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	base.CastShadow = false
 	model.PrimaryPart = base
 
-	-- Clear glass containment walls.
-	local barriers = Instance.new("Folder")
-	barriers.Name = "Barriers"
-	barriers.Parent = model
-
 	local halfW = width / 2
-	local halfD = depth / 2
-	local wallY = originPosition.Y + barrierHeight / 2
-	local groundXZ = Vector3.new(originPosition.X, 0, originPosition.Z)
-	-- North/South run along X and divide neighbouring lanes.
-	local longSize = Vector3.new(width + barrierThickness * 2, barrierHeight, barrierThickness)
-	-- West/East run along Z and form the field's left/right edges.
-	local sideSize = Vector3.new(barrierThickness, barrierHeight, depth)
-
-	addBarrier("North", longSize, groundXZ + Vector3.new(0, wallY, halfD + barrierThickness / 2), barriers)
-	addBarrier("South", longSize, groundXZ + Vector3.new(0, wallY, -(halfD + barrierThickness / 2)), barriers)
-	addBarrier("West", sideSize, groundXZ + Vector3.new(-(halfW + barrierThickness / 2), wallY, 0), barriers)
-	-- East is open toward the adjacent enemy-spawn lane (monsters enter from +X).
 
 	-- Zone X offsets relative to the lane center.
 	local leftEdge = -halfW
@@ -145,6 +119,10 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addMarker("CoinSpawner", originPosition + Vector3.new(0, PlotConfig.SPAWN_HEIGHT, 0), base)
 	-- Grid anchor at the play-area center (grass level); GridService builds from here.
 	addMarker("GridCenter", originPosition + Vector3.new(playCenterX, 0, 0), base)
+
+	local houseZoneWestX = leftEdge + PlotConfig.MARGIN_X
+	local house = HouseBuilder.build(originPosition, houseZoneWestX, playLeftX)
+	house.Parent = model
 
 	-- Empty folders for content added by later milestones.
 	addFolder("Grid", model)

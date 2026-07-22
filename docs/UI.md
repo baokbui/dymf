@@ -100,8 +100,8 @@ Brains currency + victory grants are live so the store can plug in later.
 - **`PlacementController`** → ghost + `PlaceBrainrot` / shovel remove. Client
   pre-checks coins/occupancy and shows a plant toast on failure; the server still
   validates and may fire `PlaceBrainrotFailed`.
-- Shop selection is allowed in **Countdown** and **Active**; planting only in
-  **Active** (matches `LevelService.isLevelActive` / `.cursorrules` server gate).
+- Shop selection and planting are allowed in **Active** (Start Day skips the
+  old Countdown idle wait). Planting matches `LevelService.isLevelActive`.
 - Client coin balance for affordability checks is synced from `CoinsUpdated` and
   `RequestState` via `UIController` → `PlacementController.setBalance` (UI display
   and placement pre-check stay in sync).

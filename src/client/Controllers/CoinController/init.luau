@@ -39,6 +39,9 @@ local function tryCollect(coin: BasePart, otherPart: BasePart)
 	if not character or not otherPart:IsDescendantOf(character) then
 		return
 	end
+	if coin:GetAttribute("Landed") ~= true then
+		return
+	end
 
 	local now = os.clock()
 	local last = lastRequest[coin]

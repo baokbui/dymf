@@ -19,7 +19,7 @@ Saved (player-owned progression):
 - Unlocks
 - Upgrades
 - Statistics
-- Future progression systems
+- Future progression systems (evolutions, collected bosses, …)
 
 Not saved (transient / runtime):
 
@@ -48,8 +48,10 @@ Not saved (transient / runtime):
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
+| `collectedBosses` | `{ CollectedBoss }?` 🔜 M25 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position (GridPosition), health }`.
+`CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see `HOUSE.md`.
 
 Relevant constants (`Shared.Constants`):
 

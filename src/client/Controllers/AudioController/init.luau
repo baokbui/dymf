@@ -5,10 +5,15 @@
 	background / boss music. Other controllers call play() / music helpers —
 	they never create Sounds themselves.
 
+	Plot gameplay SFX (plant, attack, death, …) are owner-only: the server
+	pushes remotes to the plot owner, and this client plays via SoundService
+	(never spatial Sounds under the plot). Foreign-plot Sounds are silenced.
+
 	Milestone 12.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +30,7 @@ local AudioController = {}
 AudioController.Name = "AudioController"
 
 local log = Logger.new(AudioController.Name)
+local localPlayer = Players.LocalPlayer
 
 local musicGroup: SoundGroup
 local sfxGroup: SoundGroup
@@ -231,8 +237,37 @@ local function startAmbient()
 end
 
 local function isOnLocalPlot(model: Model): boolean
-	local plot = PlotUtil.getLocalPlotModel()
-	return plot ~= nil and model:IsDescendantOf(plot)
+	return PlotUtil.isOnLocalPlot(model)
+end
+
+-- Silence any Sound that appears under another player's plot (Toolbox leftovers,
+-- accidental server Sounds). Gameplay SFX are played via SoundService locally.
+local function silenceForeignPlotSound(instance: Instance)
+	if not instance:IsA("Sound") then
+		return
+	end
+	local plot = PlotUtil.getOwningPlotModel(instance)
+	if not plot then
+		return
+	end
+	if plot:GetAttribute("OwnerUserId") == localPlayer.UserId then
+		return
+	end
+	instance:Stop()
+	instance.Volume = 0
+	instance:Destroy()
+end
+
+local function watchPlotsForForeignAudio()
+	local plotsFolder = workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Plots)
+	if not plotsFolder then
+		return false
+	end
+	for _, descendant in plotsFolder:GetDescendants() do
+		silenceForeignPlotSound(descendant)
+	end
+	plotsFolder.DescendantAdded:Connect(silenceForeignPlotSound)
+	return true
 end
 
 local function onMonsterAdded(instance: Instance)
@@ -286,6 +321,15 @@ function AudioController.start()
 	for _, brainrot in CollectionService:GetTagged(Constants.TAGS.Brainrot) do
 		onBrainrotAdded(brainrot)
 	end
+
+	task.spawn(function()
+		for _ = 1, 40 do
+			if watchPlotsForForeignAudio() then
+				break
+			end
+			task.wait(0.25)
+		end
+	end)
 
 	log:info("started")
 end

@@ -16,8 +16,11 @@ local Constants = require(ReplicatedStorage.Shared.Constants)
 
 local GroundCoin = {}
 
-local DIAMETER = 3
-local THICKNESS = 0.5
+GroundCoin.DIAMETER = 3
+GroundCoin.THICKNESS = 0.5
+-- Half thickness so the rim sits on the tile; tiny lift avoids z-fighting.
+GroundCoin.LAND_Y_OFFSET = GroundCoin.THICKNESS / 2 + 0.05
+
 local COLOR = Color3.fromRGB(255, 200, 40)
 
 function GroundCoin.create(
@@ -30,8 +33,8 @@ function GroundCoin.create(
 	local coin = Instance.new("Part")
 	coin.Name = coinId
 	coin.Shape = Enum.PartType.Cylinder
-	coin.Size = Vector3.new(THICKNESS, DIAMETER, DIAMETER)
-	-- Lay the cylinder flat (circular face up) and stand it slightly proud.
+	coin.Size = Vector3.new(GroundCoin.THICKNESS, GroundCoin.DIAMETER, GroundCoin.DIAMETER)
+	-- Lay the cylinder flat (circular face up); `position` is the part center.
 	coin.CFrame = CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
 	coin.Anchored = true
 	coin.Locked = true

@@ -82,15 +82,20 @@ Each player plot contains:
 
 - Grid (5 × 9 tiles — see Grid System)
 - Spawn point (player respawns here, facing the enemy)
-- House anchor (behind the grid, −X — for future house-breach defeat)
+- **House** ✅ — cottage in the house strip (−X); Toolbox model from
+  `Assets.Houses` when present (see `HOUSE.md`); boss pedestals for Milestone 25
+- House anchor (legacy marker on the plot base)
 - Coin spawner marker (passive drop origin)
 - Path / Decorations folders (populated in later milestones)
-- Clear glass barriers (north/south between lanes; west edge of map; east side
-  open toward the adjacent enemy lane)
 
 `Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane6`).
+`Workspace.Maps.DarkForest` fills that east column with a dense, non-colliding
+dark forest (clear strip near the plots for entry). Monsters spawn deeper in
+the trees and walk west into player plots — that approach is setup time.
 
-Players cannot enter or interact with another player's plot.
+Players may **walk between plots to spectate**. They cannot plant, shovel, or
+collect coins on another player's plot — the server validates ownership on every
+intent.
 
 ---
 
@@ -125,7 +130,7 @@ Currency: Coins
 Coins are earned by:
 
 - Passive drops (every ~30 seconds) ✅
-- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 12s) ✅
+- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 16s) ✅
 - Completing days 🔜 Milestone 8
 - Future achievements/events
 

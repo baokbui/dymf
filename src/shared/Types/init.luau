@@ -97,19 +97,28 @@ export type PlantedBrainrot = {
 	health: number,
 }
 
+-- Future (Milestone 25): bosses displayed in the plot house that generate brains.
+export type CollectedBoss = {
+	monsterId: string, -- Shared.Monsters id (must be isBoss)
+	slotIndex: number, -- 1-based BossSlot_* pedestal
+	collectedAtLevel: number?, -- campaign level when first collected
+}
+
 -- Versioned player save data. Only player-owned progression is persisted.
 export type SaveData = {
 	version: number,
 	currentLevel: number, -- campaign level the player is on / resumes
 	highestLevel: number, -- furthest level unlocked (drives Level Select)
 	coins: number,
-	brains: number, -- soft currency for future Brainrots Store (M17)
+	brains: number, -- soft currency for Brainrots Store / evolve / house income
 	playerHealth: number, -- hearts remaining (max ProgressConfig.MAX_PLAYER_HEALTH)
 	brainrots: { PlantedBrainrot },
 	unlocks: { string }, -- owned Brainrot ids
 	equipped: { string }, -- ordered loadout shown in the placement shop
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
+	-- 🔜 Milestone 25 — collected boss trophies displayed in the house
+	collectedBosses: { CollectedBoss }?,
 }
 
 return {}

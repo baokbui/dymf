@@ -1,7 +1,8 @@
 # BVM Economy
 
 The single **match** currency is **Coins**. **Brains** are a separate soft
-currency for progression unlocks (Milestone 13 grants; Milestone 22 store).
+currency for progression unlocks (Milestone 13 grants; Milestone 22 store;
+Milestone 24 evolve/mutate; Milestone 25 house boss income).
 Only the server controls currency — clients send collection intent and display
 balances, never set them (`.cursorrules`).
 
@@ -29,12 +30,18 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `STARTING_COINS`       | 125   | Balance for a new player (Ballerina + Tung Tung) |
 | `PASSIVE_DROP_INTERVAL`| 25    | Seconds between passive drops            |
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
+| `PASSIVE_RAIN_HEIGHT`  | 42    | Studs above the tile for passive rain    |
+| `PASSIVE_RAIN_DURATION`| 2.2   | Seconds for passive rain fall            |
+| `PASSIVE_RAIN_DRIFT`   | 3     | Random horizontal spawn drift (studs)    |
+| `PRODUCER_SPIT_DURATION` | 0.85 | Seconds for Ballerina spit arc         |
+| `PRODUCER_SPIT_ARC_HEIGHT` | 6  | Peak loft of spit arc (studs)            |
 | `LEVEL_COMPLETION_REWARD`| 50  | Reserved for future bonus rewards (victory resets to `STARTING_COINS`) |
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
-Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 11s on a
-**random grid tile** (via `GenerateCoins` → `CoinService.dropRandomCoinForOwner`).
+Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 16s —
+coins are **spat from the unit** and land on a **random grid tile**
+(`GenerateCoins` → `CoinService.dropRandomCoinForOwner(..., origin)`).
 
 See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 
@@ -48,10 +55,10 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
   persisted by `SaveService` in Milestone 9).
 - Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
   coins** (one per active player per interval, **only while the level is
-  `Active`**), each worth
-  `PASSIVE_DROP_AMOUNT`, spawned on a **random grid tile** via
-  `GridService.getRandomWorldPosition`. Uncollected coins despawn after
-  `GROUND_COIN_LIFETIME`.
+  `Active`**), each worth `PASSIVE_DROP_AMOUNT`. Passive coins **rain slowly
+  from the sky** onto a **random grid tile**. Uncollected coins despawn after
+  `GROUND_COIN_LIFETIME`. Coins are not collectible until they finish landing
+  (`Landed` attribute).
 - Validates `CollectCoin` intents — ownership, existence, and distance (against
   the authoritative `HumanoidRootPart` position, within `COIN_COLLECT_RADIUS`) —
   before crediting. The coin's value is server-side; client-supplied amounts are
@@ -69,7 +76,7 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 | `addCoins(player, amount)`        | credit rewards/income                        |
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4) ✅  |
 | `dropCoinForOwner(userId, plotModel, gridPosition, amount)` | spawn a coin on a specific grid tile ✅ |
-| `dropRandomCoinForOwner(userId, plotModel, amount)` | spawn a coin on a random grid tile (producers) ✅ |
+| `dropRandomCoinForOwner(userId, amount, spitFrom?)` | Rain (no origin) or spit-from-origin onto a random tile ✅ |
 
 Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
 with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
@@ -77,12 +84,12 @@ with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
 
 ### Implementation
 
-`CoinService/` is split into the service (`init.luau`) and `GroundCoin.luau`
-(builds a single coin part, tagged `Coin` with `CoinId`/`OwnerUserId`/`Value`
-attributes). The client `CoinController` detects the local player touching their
-own coin and fires the `CollectCoin` intent; `UIController` renders the balance.
-Brainrot producers call `dropCoinForOwner` to spawn coins at the unit's tile
-(Milestone 5).
+`CoinService/` is split into the service (`init.luau`), `GroundCoin.luau`
+(builds a coin part), and `CoinMotion.luau` (rain / spit animations). The client
+`CoinController` detects the local player touching their own coin and fires the
+`CollectCoin` intent; `UIController` renders the balance. Brainrot producers
+call `dropRandomCoinForOwner` with the unit’s world position so coins spit out
+onto a random tile.
 
 ---
 

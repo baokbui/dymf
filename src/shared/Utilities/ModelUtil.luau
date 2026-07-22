@@ -2,8 +2,8 @@
 --[[
 	ModelUtil
 	Shared helpers for cloning and placing authored Model templates
-	(ReplicatedStorage.Assets). Used by BrainrotModel, MonsterModel, and the
-	placement ghost. No gameplay authority.
+	(ReplicatedStorage.Assets). Used by BrainrotModel, MonsterModel,
+	HouseBuilder, and the placement ghost. No gameplay authority.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +18,15 @@ local SCRIPT_CLASSES: { [string]: boolean } = {
 	Script = true,
 	LocalScript = true,
 	ModuleScript = true,
+}
+
+-- Embedded Toolbox audio must not replicate — plot SFX are client-owner-only.
+local AUDIO_CLASSES: { [string]: boolean } = {
+	Sound = true,
+	SoundGroup = true,
+	AudioPlayer = true,
+	AudioEmitter = true,
+	AudioListener = true,
 }
 
 local STRIP_CLASSES: { [string]: boolean } = {
@@ -57,6 +66,10 @@ function ModelUtil.getMonsterTemplatesFolder(): Folder?
 	return templatesFolder("Monsters")
 end
 
+function ModelUtil.getHouseTemplatesFolder(): Folder?
+	return templatesFolder("Houses")
+end
+
 -- Target horizontal size (studs) for a Brainrot clone / placement ghost.
 function ModelUtil.brainrotFootprintStuds(definition: Types.BrainrotDefinition): number
 	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
@@ -83,6 +96,10 @@ end
 
 function ModelUtil.findMonsterTemplate(modelId: string): Model?
 	return findTemplate(ModelUtil.getMonsterTemplatesFolder(), modelId)
+end
+
+function ModelUtil.findHouseTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getHouseTemplatesFolder(), modelId)
 end
 
 local function destroyByClass(root: Instance, classSet: { [string]: boolean })
@@ -189,14 +206,18 @@ local function ensureBodyAlias(model: Model, primary: BasePart)
 	primary.Name = "Body"
 end
 
-local function hardenParts(model: Model)
+local function hardenParts(model: Model, keepCollision: boolean?)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
-			descendant.CanCollide = false
-			descendant.CanTouch = false
-			descendant.CanQuery = false
 			descendant.Massless = true
+			if keepCollision then
+				descendant.CanTouch = false
+			else
+				descendant.CanCollide = false
+				descendant.CanTouch = false
+				descendant.CanQuery = false
+			end
 		end
 	end
 end
@@ -247,6 +268,10 @@ export type PrepareOptions = {
 	ghostTransparency: number?,
 	tintColor: Color3?,
 	orientationDegrees: Vector3?,
+	-- Houses / props: keep authored CanCollide (units stay non-colliding).
+	keepCollision: boolean?,
+	-- Houses / props: don't rename PrimaryPart to "Body".
+	skipBodyAlias: boolean?,
 }
 
 --[[
@@ -286,14 +311,17 @@ end
 function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Model
 	local model = template:Clone()
 	destroyByClass(model, SCRIPT_CLASSES)
+	destroyByClass(model, AUDIO_CLASSES)
 	destroyByClass(model, STRIP_CLASSES)
 	destroyInvisibleParts(model)
-	hardenParts(model)
+	hardenParts(model, options.keepCollision)
 
 	local primary = pickPrimaryPart(model)
 	if primary then
 		model.PrimaryPart = primary
-		ensureBodyAlias(model, primary)
+		if not options.skipBodyAlias then
+			ensureBodyAlias(model, primary)
+		end
 	end
 
 	local pos = model:GetPivot().Position

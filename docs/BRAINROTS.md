@@ -87,7 +87,8 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 | `CappuccinoAssassino` | `Cappuccino Assassino` |
 | `ChimpanziniBananini` | `Chimpanzini Bananini` |
 
-For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts,
+For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts/
+Sounds (clones also strip audio in `ModelUtil` so plant SFX stay plot-owner-only),
 face enemy (+X) if the Toolbox facing is wrong. Placement ghost clones the same
 template. Compact units use `modelScale = BrainrotConfig.COMPACT_MODEL_SCALE`
 (0.7); Tralalero and Bombardino stay at full footprint. Shop cards show a
@@ -107,7 +108,7 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
-| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 11s      | —        | Drops coins on random tiles | 25    |
+| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 16s      | —        | Spits coins onto random tiles | 25    |
 | Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 1.35s    | Short melee (`meleeReach`) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 40     | 4.0s     | Full row | Bubble projectile → trap (1.2s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
@@ -133,7 +134,7 @@ by `BrainrotModel`. Public: `getPlacements`, `getPlacement`.
 - `CombatService` (server) ✅ M7 — row targeting, projectiles, status effects,
   target acquisition (first-in-row vs splash vs entire-row). Boss skill polish
   for Duke Vampire / Goblin King continues in M10.
-- `CoinService` — credits producer output via `dropRandomCoinForOwner` (random grid tile).
+- `CoinService` — credits producer output via `dropRandomCoinForOwner` (spit from unit onto a random grid tile).
 
 Placed models are tagged `Brainrot` with `InstanceId` / `BrainrotId` /
 `OwnerUserId` / `Row` / `Column` / `Health` attributes.
@@ -167,8 +168,9 @@ monsters in range). **Coin producers** and **Lirili** always consume their
 cycle when they fire.
 
 Monster targeting uses **first-in-row** acquisition for single-target attacks
-and projectiles (M7). Coin producers and line-bomb placement work independently
-of monster presence rules.
+and projectiles (M7). Targets must be **on the plot** (`column ≤ COLUMNS`) —
+monsters still marching in the forest are ignored. Coin producers and line-bomb
+placement work independently of monster presence rules.
 
 ---
 
@@ -178,3 +180,12 @@ of monster presence rules.
 
 Expand beyond the initial seven after launch. Each addition is registry data
 plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).
+
+## Planned evolution & mutations (Milestone 24)
+
+Two progression layers on existing Brainrots (see `ROADMAP.md` Milestone 24):
+
+- **Evolution** — changes **color / look** and **base stats** (e.g. Diamond Tung
+  Tung Tung Sahur: diamond tint + stronger HP/damage; same core ability).
+- **Mutation** — **replaces** the unit's ability or **adds an extra** ability
+  (ability handlers stay data-driven; no name-based combat branches).

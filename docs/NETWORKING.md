@@ -41,8 +41,8 @@ Remotes module. That is the only required step.
 | `PlaceBrainrotFailed` | server → client | ✅ M4  | Plant rejected (coins / occupied / …) — toast under Shop |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
-| `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → client SFX/pulse |
-| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion VFX + optional SFX keys (plot owner) |
+| `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
@@ -134,10 +134,11 @@ The campaign loop is server-authoritative, owned by `LevelService` (see
 
 **Start** — the client sends `StartLevel()` with no arguments when the player
 presses the button (only enabled during `Preparation` or `Defeat`). The server
-validates phase, clears stray monsters, and begins the `Countdown` phase.
+validates phase, clears stray monsters, and enters `Active` immediately.
+Monsters spawn in the forest and walk toward the plot (setup time).
 
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
-whenever phase, progress, countdown, or big-wave warning changes. The client
+whenever phase, progress, or big-wave warning changes. The client
 `UIController/Level.luau` panel only displays this payload. Initial join state
 includes `level` inside the `RequestState` pull (`{ coins, level }`).
 

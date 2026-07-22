@@ -2,8 +2,9 @@
 --[[
 	PlotService
 	Owns player battlefields (plots): builds a fixed pool at startup, assigns a
-	unique plot per player, spawns the player onto it, isolates plots with
-	invisible barriers, and releases/cleans plots on leave for reuse.
+	unique plot per player, spawns the player onto it, and releases/cleans plots
+	on leave for reuse. Plots are open for walking/spectating; gameplay actions
+	(plant, shovel, coin collect) stay owner-only via server validation.
 
 	Server-authoritative: clients never choose or move their own plot. Spawning
 	is driven entirely server-side via per-player RespawnLocation + LoadCharacter;
@@ -25,6 +26,8 @@ local Logger = require(Shared.Utilities.Logger)
 local Plot = require(script.Plot)
 local PlotBuilder = require(script.PlotBuilder)
 local EnemySpawnBuilder = require(script.EnemySpawnBuilder)
+local ForestBuilder = require(script.ForestBuilder)
+local HouseBuilder = require(script.HouseBuilder)
 local GridService = require(script.Parent.GridService)
 
 local PlotService = {}
@@ -53,6 +56,13 @@ local function findFreePlot(): Plot.Plot?
 	return nil
 end
 
+local function applyHouseOwnerLabel(plotModel: Model, ownerName: string?)
+	local house = plotModel:FindFirstChild("House")
+	if house and house:IsA("Model") then
+		HouseBuilder.setOwnerLabel(house, ownerName)
+	end
+end
+
 local function assignPlot(player: Player)
 	if plotsByUserId[player.UserId] then
 		return -- already assigned (guards join/loop race)
@@ -66,6 +76,7 @@ local function assignPlot(player: Player)
 
 	plot:assign(player.UserId)
 	plotsByUserId[player.UserId] = plot
+	applyHouseOwnerLabel(plot.model, player.DisplayName)
 	log:info(string.format("assigned Plot%d to %s", plot.index, player.Name))
 
 	-- Direct every spawn/respawn to this plot's SpawnLocation, then (re)spawn
@@ -82,6 +93,7 @@ end
 local function releasePlot(player: Player)
 	local plot = plotsByUserId[player.UserId]
 	if plot then
+		applyHouseOwnerLabel(plot.model, nil)
 		plot:release()
 		GridService.resetPlot(plot.model)
 		require(script.Parent.EnemyService).clearPlot(plot.model)
@@ -142,7 +154,21 @@ function PlotService.init()
 		enemyLanesByRow[row] = enemyLane
 	end
 
-	log:info(string.format("built %d plots and %d enemy lanes", PlotConfig.MAX_PLOTS, PlotConfig.LANE_ROWS))
+	local mapsFolder = Workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Maps)
+	if not mapsFolder then
+		mapsFolder = Instance.new("Folder")
+		mapsFolder.Name = Constants.WORKSPACE_FOLDERS.Maps
+		mapsFolder.Parent = Workspace
+	end
+	local existingForest = mapsFolder:FindFirstChild("DarkForest")
+	if existingForest then
+		existingForest:Destroy()
+	end
+	local enemyCenterX = startX + PlotConfig.ENEMY_MAP_COLUMN * PlotConfig.BASE_WIDTH
+	local forest = ForestBuilder.build(enemyCenterX, startZ)
+	forest.Parent = mapsFolder
+
+	log:info(string.format("built %d plots, %d enemy lanes, and dark forest", PlotConfig.MAX_PLOTS, PlotConfig.LANE_ROWS))
 end
 
 function PlotService.start()

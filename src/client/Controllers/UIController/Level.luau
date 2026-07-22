@@ -131,7 +131,7 @@ local function phaseMessage(phase: string, countdownRemaining: number?): string
 		local n = if countdownRemaining then math.ceil(countdownRemaining) else 0
 		return string.format("Starting in %d…", n)
 	elseif phase == PHASE.Active then
-		return "Defend your house!"
+		return "Plant before they leave the forest!"
 	elseif phase == PHASE.Victory then
 		return "Victory!"
 	elseif phase == PHASE.Defeat then

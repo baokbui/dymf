@@ -26,6 +26,26 @@ function PlotUtil.getLocalPlotModel(): Model?
 	return nil
 end
 
+function PlotUtil.isOnLocalPlot(instance: Instance): boolean
+	local plot = PlotUtil.getLocalPlotModel()
+	return plot ~= nil and instance:IsDescendantOf(plot)
+end
+
+function PlotUtil.getOwningPlotModel(instance: Instance): Model?
+	local plotsFolder = workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Plots)
+	if not plotsFolder then
+		return nil
+	end
+	local current: Instance? = instance
+	while current and current ~= plotsFolder do
+		if current:IsA("Model") and current.Parent == plotsFolder then
+			return current
+		end
+		current = current.Parent
+	end
+	return nil
+end
+
 function PlotUtil.getTileTopCenter(plotModel: Model, row: number, column: number): Vector3?
 	local grid = plotModel:FindFirstChild("Grid")
 	if not grid then

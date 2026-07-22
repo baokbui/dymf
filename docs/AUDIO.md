@@ -23,6 +23,21 @@ for template Sounds).
 **Server authority:** combat outcomes, placement, and economy stay on the server.
 Audio is display-only feedback.
 
+### Plot-local SFX (spectate-safe) ✅
+
+Gameplay SFX on a plot are heard **only by that plot’s owner**:
+
+| Layer | Rule |
+| ----- | ---- |
+| Server remotes | `CombatVisual` / `BrainrotAction` / level audio use `FireClient(owner)` — never `FireAllClients` |
+| Client playback | `AudioController` / `SfxPlayer` parent Sounds under local `SoundService` (2D, non-replicating) |
+| Placement | Plant / shovel SFX run only on the acting client’s `PlacementController` |
+| Chew feedback | `MonsterAttack` only when a Brainrot on the **local** plot loses Health |
+| Asset hygiene | `ModelUtil` strips embedded `Sound` / audio instances from cloned Brainrot & Monster templates so Toolbox audio cannot leak to spectators |
+| Safety net | Client destroys any `Sound` that appears under another player’s plot model |
+
+UI clicks, music, and ambient are still local to each client (not plot-scoped).
+
 ---
 
 ## Catalog (`AudioConfig`)
@@ -94,5 +109,7 @@ the client watcher is non-blocking so death/hit SFX stay in sync.
 
 - Playback is client-only; never trust the client for rewards or combat.
 - Prefer `AudioController.play` over ad-hoc `Instance.new("Sound")`.
+- Plot gameplay SFX are **owner-only** (see Plot-local SFX above) so spectating
+  other plots does not flood the server with shared noise.
 - Tuning lives in `AudioConfig` — never hardcode asset ids in controllers.
 - Mute API: `AudioController.setMuted` / volume scales / Brainrot SFX toggle (Settings UI, M13).

@@ -42,8 +42,10 @@ From `Shared.Types.MonsterDefinition`:
 | `modelId`         | string?                | Child name under `Assets.Monsters` (defaults to `id`) |
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing house (−X)                  |
 
-Movement is **grid-based**: monsters spawn just east of the lawn and walk
-toward the house (−X), one tile per `secondsPerGrid` seconds.
+Movement is **grid-based**: monsters spawn deep in the east dark forest
+(`GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET`) and walk toward
+the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
+to lawn is the day's plant/setup window.
 
 ---
 
@@ -85,7 +87,7 @@ models (at least Zombie, Goblin, Orc).
 
 | Name | Health | Sec/grid | Damage | Atk interval | Boss | Ability |
 | ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
-| Zombie | 180 | 5 | 85 | 1.6s | | — |
+| Zombie | 180 | 4 | 85 | 1.6s | | — |
 | Vampire | 900 | 2.8 | 70 | 1.1s | | — |
 | Werewolf | 1400 | 3.2 | 130 | 1.1s | | — |
 | Skeleton | 950 | 4.5 | 95 | 1.5s | | — |
@@ -112,7 +114,7 @@ Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 - **`CombatService`** (server) ✅ M7 — routes Brainrot damage to monsters and
   monster damage to Brainrots; projectiles, status effects, target acquisition.
   See `COMBAT.md`.
-- **`LevelService`** (server) ✅ M8 — campaign loop: preparation, countdown,
+- **`LevelService`** (server) ✅ M8 — campaign loop: preparation → Active,
   spawn groups, big-wave warning, victory/defeat, rewards, progression.
   See `LEVELS.md`.
 

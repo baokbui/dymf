@@ -188,21 +188,28 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 `PlotService` owns player battlefields:
 
 - The world floor is one shared grass baseplate; **player plots** tile the west
-  column in `LANE_ROWS` stacked lanes, divided by clear glass barriers. The east
-  column holds **enemy-spawn lanes** (`EnemySpawnBuilder`) aligned with each
-  player row — no player grids on that side. The pool is sized to fill the
-  baseplate (`BASEPLATE_SIZE` / `POOL_MARGIN` in `PlotConfig`): usable area
-  split across `MAP_COLUMNS` (west = plots, east = enemy spawn) and `LANE_ROWS`.
-  Default: 6 player plots + 6 enemy lanes (6 rows × 2 columns).
+  column in `LANE_ROWS` stacked lanes (**no collision barriers** — players may
+  walk between plots to spectate). The east column holds **enemy-spawn lanes**
+  (`EnemySpawnBuilder`) aligned with each player row — no player grids on that
+  side. The pool is sized to fill the baseplate (`BASEPLATE_SIZE` / `POOL_MARGIN`
+  in `PlotConfig`): usable area split across `MAP_COLUMNS` (west = plots, east =
+  enemy spawn) and `LANE_ROWS`. Default: 6 player plots + 6 enemy lanes
+  (6 rows × 2 columns).
 - **PlotBuilder** procedurally builds each player lane from `PlotConfig`: an
-  invisible, non-colliding `Base` (region origin + future placement raycast
-  target), a `Barriers` folder (clear glass `CanCollide` walls — North/South
-  divide lanes, West/East are the field edges), a `SpawnLocation` at the play
-  area's left edge facing the enemy (+X), `HouseAnchor` (−X, behind player) /
-  `CoinSpawner` attachment markers, and empty `Grid` / `Path` / `Decorations`
-  folders. Lane layout left→right: house zone, play area (grid). Monsters stage
-  in the matching east-column `EnemyLane` (`EnemySpawn` attachment at its west
-  edge).
+  invisible, non-colliding `Base` (region origin + placement raycast target), a
+  `SpawnLocation` at the play area's left edge facing the enemy (+X),
+  `HouseAnchor` (−X) / `CoinSpawner` markers, a walkable **`House`** cottage
+  (`HouseBuilder` + `HouseConfig`; Toolbox model under `Assets.Houses` when
+  present, procedural fallback) with boss pedestals for Milestone 25, and
+  empty `Grid` / `Path` / `Decorations` folders. Lane layout left→right: house
+  zone (cottage + yard), play area (grid). Monsters stage in the matching
+  east-column `EnemyLane` (`EnemySpawn` attachment at its west edge).
+- **ForestBuilder** fills the east column with `Workspace.Maps.DarkForest` —
+  dark grass floor + procedural trees (non-colliding). A clear strip near the
+  plot boundary keeps monster entry / spawn readable.
+- See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
+- Gameplay isolation is **server-validated**, not physical: plant / shovel /
+  coin collect only succeed on the acting player's own plot (and own coins).
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
   clears dynamic folders; plots are reused, never destroyed).
 - **PlotService** builds a fixed pool of `MAX_PLOTS` lanes at startup, tiled in
@@ -343,9 +350,10 @@ Full details in `COMBAT.md`. Summary:
 
 Full details in `LEVELS.md`. Summary:
 
-- **`LevelService`** — preparation → Start Level → countdown → active spawn
-  groups via `LevelRun` scheduler; victory/defeat; plot + coin reset on victory
-  or defeat; `LevelStateChanged` remote.
+- **`LevelService`** — preparation → Start Day → Active (monsters stage in the
+  forest, then enter the plot); spawn groups via `LevelRun` scheduler;
+  victory/defeat; plot + coin reset on victory or defeat; `LevelStateChanged`
+  remote.
 - **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
 - **`UIController/Level.luau`** — bottom-right level title, Start / Restart button, progress bar, big-wave banner.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
@@ -424,8 +432,9 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
   `SpawnGroup` entries (the internal "waves"). `LevelService` reads these; code
   never branches on level numbers.
 - **`Shared.Config.LevelConfig`** — global pacing knobs (preparation time,
-  countdown, big-wave warning, spawn interval defaults). Per-level content lives
-  in the registry, not here.
+  optional countdown, big-wave warning, spawn interval defaults). Plant/setup
+  time is the forest march (`MonsterConfig.SPAWN_COLUMN_OFFSET`). Per-level
+  content lives in the registry, not here.
 - **`Shared.Types`** — added `SpawnGroup`, `LevelDefinition`. `SaveData` now
   carries `currentLevel` + `highestLevel` (replaces `currentWave`).
 - **`Shared.Constants.PHASE`** — extended with `Victory` and `Defeat`.

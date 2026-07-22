@@ -23,10 +23,13 @@ Then consult the system-specific docs relevant to the task:
 - docs/BRAINROTS.md — Brainrot registry and definitions
 - docs/MONSTERS.md — Monster registry and definitions
 - docs/LEVELS.md — PvZ-style campaign: levels, spawn groups, progression
-- docs/ECONOMY.md — coins and currency rules
+- docs/COMBAT.md — damage, projectiles, targeting, status effects
+- docs/ECONOMY.md — coins, brains, and currency rules
+- docs/HOUSE.md — plot houses + boss collection (M25)
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
 - docs/AUDIO.md — client audio (BGM, SFX, ambient)
+- docs/BALANCE.md — tuning rationale (costs, pacing, HP)
 
 If code conflicts with the documentation, ask before changing architecture.
 
@@ -75,12 +78,16 @@ Examples:
 - EnemyService
 - BrainrotService
 - CoinService
+- ProgressService
+- HouseService (🔜 Milestone 25 — boss trophies + brains income)
 
 Never create massive scripts.
 
-Aim for files under ~300 lines.
+Aim for files under ~300 lines when a clean split exists.
 
-Split functionality into focused modules when needed.
+If a module is cohesive and splitting would hurt clarity (shared private
+helpers, one algorithm, one public API surface), keep it together — even
+over 300 lines. Prefer one readable file over artificial fragmentation.
 
 ---
 
@@ -89,13 +96,15 @@ Split functionality into focused modules when needed.
 The server owns:
 
 - Coins
+- Brains
 - Damage
 - Health
-- Levels
+- Levels / days
 - Brainrot placement
 - Monster spawning
+- Plot houses (build, owner sign, future boss display)
 - Saving
-- Rewards
+- Rewards / unlocks
 
 The client owns:
 
@@ -127,8 +136,25 @@ Examples:
 - Cooldown
 - Attack Speed
 - Coin Generation
+- Monster spawn column / forest march (`MonsterConfig`)
+- House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
 
 Everything should be configurable.
+
+---
+
+# Authored Assets (Toolbox)
+
+Unit and prop visuals live under `ReplicatedStorage.Assets` (Rojo
+`$ignoreUnknownInstances` so Studio inserts survive sync):
+
+- `Assets.Brainrots` — Brainrot models (`modelId` / registry `id`)
+- `Assets.Monsters` — Monster models (`modelId` / registry `id`)
+- `Assets.Houses` — Plot house models (`HouseConfig.MODEL_ID`)
+
+Clone via `Shared.Utilities.ModelUtil`. Prefer templates when present; use
+procedural / Part fallbacks so gameplay works without assets. Strip Scripts,
+Tools, and embedded Sounds on clone. Never branch combat logic on model names.
 
 ---
 
@@ -160,6 +186,10 @@ Special monster types (zombie, vampire, slime, frankenstein, ...) extend shared 
 
 Avoid duplicated AI.
 
+Monsters spawn in the east dark forest (`SPAWN_COLUMN_OFFSET` east of the lawn)
+and walk west into player plots. That forest march is the day plant/setup
+window — do not rely on an idle countdown for setup time.
+
 ---
 
 # Combat
@@ -185,8 +215,7 @@ Shared.Levels; each is a fixed sequence of monster spawn groups (internal
 LevelService exclusively controls:
 
 - Preparation Phase
-- Countdown
-- Day Start
+- Day Start → Active (plant + fight; optional Countdown phase unused)
 - Spawn Groups (internal waves) + progress
 - Big Final Wave
 - Victory / Defeat detection
@@ -194,6 +223,27 @@ LevelService exclusively controls:
 - Linear Progression (unlock next day)
 
 No other service advances days.
+
+---
+
+# Houses
+
+Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
+`PlotService` helpers (`HouseBuilder` + focused modules) from `HouseConfig`.
+
+- Prefer Toolbox model under `Assets.Houses`; procedural fallback if missing.
+- Owner sign shows `{DisplayName}'s Base` while the plot is assigned.
+- Boss pedestals ship empty; collection + brains income is **HouseService** (M25).
+- See `docs/HOUSE.md`.
+
+---
+
+# Economy
+
+- **Coins** — match currency (placement, passive drops). `CoinService` only.
+- **Brains** — progression currency (level rewards, future store / evolve /
+  house boss income). `ProgressService` only for brains balances.
+- Clients never set balances.
 
 ---
 
@@ -208,14 +258,16 @@ Persist:
 - Current Level
 - Highest Unlocked Level
 - Coins
+- Brains
 - Player Health
 - Planted Brainrots
 - Brainrot Positions
 - Brainrot Health
 - Unlocks
+- Equipped loadout
 - Upgrades
 - Statistics
-- Future player-owned progression
+- Future player-owned progression (collected bosses, evolutions, …)
 
 Do NOT persist:
 

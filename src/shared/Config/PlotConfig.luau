@@ -79,13 +79,6 @@ local PlotConfig = {
 	BASE_DEPTH = BASE_DEPTH, -- Z (one lane)
 	BASE_THICKNESS = 1,
 
-	-- Containment walls rendered as clear glass so boundaries are visible.
-	BARRIER_HEIGHT = 24,
-	BARRIER_THICKNESS = 2,
-	BARRIER_TRANSPARENCY = 0.9,
-	BARRIER_COLOR = Color3.fromRGB(200, 230, 255),
-	BARRIER_MATERIAL = Enum.Material.Glass,
-
 	-- Spawn sits at the left edge of the play area, facing the enemy (+X).
 	SPAWN_HEIGHT = 3,
 	SPAWN_EDGE_INSET = 4,
@@ -94,6 +87,20 @@ local PlotConfig = {
 	-- Both BrainrotModel (server) and PlacementController ghost (client) read this
 	-- so they always agree on size. Tune here, never inline.
 	BRAINROT_FOOTPRINT_RATIO = 0.72,
+
+	-- Dark forest filling the east (enemy-spawn) column. Non-colliding décor so
+	-- players can walk through and monsters stay grid-based. Monsters spawn
+	-- deeper in the trees (MonsterConfig.SPAWN_COLUMN_OFFSET) and walk west
+	-- through this clear strip into player plots.
+	FOREST_CLEAR_WEST = 18, -- studs kept open near plot boundary for entry path (~1 tile)
+	FOREST_MARGIN_EAST = 6,
+	FOREST_MARGIN_Z = 8,
+	FOREST_SPACING = 18,
+	FOREST_JITTER = 6,
+	FOREST_GROUND_COLOR = Color3.fromRGB(16, 28, 16),
+	FOREST_TRUNK_COLOR = Color3.fromRGB(32, 22, 14),
+	FOREST_FOLIAGE_A = Color3.fromRGB(10, 26, 12),
+	FOREST_FOLIAGE_B = Color3.fromRGB(6, 18, 10),
 }
 
 table.freeze(PlotConfig)

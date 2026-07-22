@@ -8,8 +8,11 @@ local MonsterConfig = {
 	-- Server movement/AI tick (seconds).
 	BEHAVIOR_TICK = 0.1,
 
-	-- Column just east of the grid where monsters spawn (fractional grid coords).
-	SPAWN_COLUMN_OFFSET = 0.5,
+	-- Columns east of the lawn where monsters spawn (fractional grid coords).
+	-- Deep enough to sit in the dark forest past FOREST_CLEAR_WEST; the walk
+	-- from here to the plot is the day's plant/setup window (no idle countdown).
+	-- Zombie (~4s/tile) ≈ 24s; Goblin (~3.4s/tile) ≈ 20s to reach the lawn edge.
+	SPAWN_COLUMN_OFFSET = 6,
 
 	-- Column west of column 1 — reaching here breaches the house (M8 defeat).
 	HOUSE_BREACH_COLUMN = 0.5,

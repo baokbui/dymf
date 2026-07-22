@@ -36,6 +36,9 @@ for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead
 **Melee bat** uses fractional `abilityParams.meleeReach` (see `BrainrotConfig.MELEE_BAT_REACH`)
 so the attacker only hits monsters right beside the Brainrot.
 
+Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
+are **not** valid targets — Brainrots wait until the monster enters the plot.
+
 ---
 
 ## Projectiles ✅ (Milestone 7)

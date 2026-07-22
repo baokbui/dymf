@@ -17,6 +17,10 @@
         "Monsters": {
           "$className": "Folder",
           "$ignoreUnknownInstances": true
+        },
+        "Houses": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
         }
       }
     },

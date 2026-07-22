@@ -33,7 +33,7 @@ scaling.
 ## Per-day loop
 
 ```
-Start Day ─► Countdown ─► Active (plant + fight)
+Start Day ─► Active (plant + fight; monsters march from forest)
    ▲                              │
    │                  spawn groups run
    │                  (progress bar → big wave)
@@ -44,10 +44,14 @@ Start Day ─► Countdown ─► Active (plant + fight)
 ```
 
 During `Preparation`, planting and ground-coin drops are blocked. Both unlock
-when the day enters `Active` (after countdown).
+when the day enters `Active`. There is **no idle countdown**: monsters spawn
+deep in the dark forest (`MonsterConfig.SPAWN_COLUMN_OFFSET` columns east of
+the lawn) and walk west into the plot — that approach is the plant/setup
+window. First spawn groups use a short `startDelay` (~1.5s); travel time to
+the lawn edge is ~20–30s depending on species speed.
 
-Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown`, `Active`,
-`Victory`, `Defeat`.
+Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (unused /
+optional), `Active`, `Victory`, `Defeat`.
 
 ---
 
@@ -130,13 +134,16 @@ spike between adjacent levels:
 1. **Species** — new monster types enter one at a time (Level 5 = `Goblin`; Level 10 = `Orc` boss).
 2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 6 →
    Level 3: 8).
-3. **Pacing** — `startDelay` and `spawnInterval` shrink gradually; the first
-   group always leaves time to plant after countdown (Level 1: **26s** grace).
+3. **Pacing** — inter-group `startDelay` and `spawnInterval` shrink gradually;
+   first-group delay is short (~1.5s) because plant time is the forest march
+   (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 4. **Big wave** — the final group is the hardest step *within* a level, not a
    jump to endgame tuning. Level 10 Orc spawns with extra lead time (`startDelay` 22s).
 
 Level 1 is intentionally gentle: one zombie at a time with long gaps, plus enough
 starting coins for Ballerina + Tung Tung (`EconomyConfig.STARTING_COINS` = 125).
+The first zombie appears in the forest almost immediately and takes ~24s to
+reach the lawn.
 
 ---
 
@@ -148,7 +155,7 @@ is in the registry above, not here.
 | Key                     | Value | Meaning                                    |
 | ----------------------- | ----- | ------------------------------------------ |
 | `PREPARATION_TIME`      | 30    | Reserved prep window before Start (planned) |
-| `COUNTDOWN_TIME`        | 3     | Seconds after pressing Start Day           |
+| `COUNTDOWN_TIME`        | 0     | Unused (optional Countdown experiments)    |
 | `STARTING_PLAYER_HEALTH`| 5     | Hearts at day start (one lost per breach) |
 | `BIG_WAVE_WARNING_TIME` | 5     | Lead time for the "huge wave!" banner      |
 | `DEFAULT_SPAWN_INTERVAL`| 1.8   | Fallback gap between monsters in a group   |
@@ -163,7 +170,7 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
 
 `LevelService` owns:
 
-- Preparation phase + countdown timing.
+- Preparation phase; Start Day enters Active immediately (forest march = setup).
 - Handling the `StartLevel` request (validated server-side).
 - Playing the current level's `groups` in order: driving `EnemyService` to spawn
   (it decides *what* and *when*; `EnemyService` handles *how* monsters

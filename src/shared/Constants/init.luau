@@ -35,8 +35,8 @@ Constants.TAGS = {
 -- Per-level phase identifiers used by LevelService (PvZ-style campaign).
 Constants.PHASE = {
 	Preparation = "Preparation", -- waiting to start the level (no planting yet)
-	Countdown = "Countdown", -- brief countdown after Start Level
-	Active = "Active", -- spawn groups running / level in progress
+	Countdown = "Countdown", -- optional brief countdown (unused; forest march is setup)
+	Active = "Active", -- plant + fight; monsters stage in forest then enter the plot
 	Victory = "Victory", -- all groups cleared — level won
 	Defeat = "Defeat", -- monsters breached the house — level lost
 }

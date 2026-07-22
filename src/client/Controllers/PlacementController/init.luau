@@ -293,7 +293,7 @@ function PlacementController.setPlacementAllowed(allowed: boolean)
 	placementAllowed = allowed
 end
 
--- Shop selection (ghost) may be enabled during Countdown; planting stays Active-only.
+-- Shop selection (ghost) may still enable during legacy Countdown; planting is Active-only.
 function PlacementController.setSelectionAllowed(allowed: boolean)
 	selectionAllowed = allowed
 	if not allowed then

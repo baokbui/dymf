@@ -226,7 +226,7 @@ end
 function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { string }
 	local result: { string } = {}
 	for _, runtime in monsters do
-		if runtime.plotModel == plotModel and runtime.row == row then
+		if runtime.plotModel == plotModel and runtime.row == row and GridUtil.isOnPlotColumn(runtime.column) then
 			table.insert(result, runtime.instanceId)
 		end
 	end

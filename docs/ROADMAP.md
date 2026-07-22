@@ -50,7 +50,7 @@ Every player receives their own isolated battlefield.
 - Plot assignment
 - Plot ownership
 - Plot cleanup
-- Invisible barriers
+- Open plot traversal (spectate other plots; no collision barriers)
 - Spawn locations
 - Camera positioning
 
@@ -60,7 +60,8 @@ Every player receives their own isolated battlefield.
 
 - Multiple players can join.
 - Each player receives a unique plot.
-- No player can interfere with another player's plot.
+- Players can walk to other plots to spectate.
+- No player can plant on or collect coins from another player's plot (server validation).
 
 ---
 
@@ -728,7 +729,8 @@ UI only displays and sends intents.
 
 - **New Brainrots** — expand the roster beyond the launch seven (registry +
   ability handlers; additional model work as needed)
-- Brainrot skins
+- Brainrot evolution & mutations → **Milestone 24**
+- Boss collection house (display defeated bosses → brains income) → **Milestone 25**
 - New Monsters
 - New Maps
 - Seasonal Events
@@ -738,3 +740,136 @@ UI only displays and sends intents.
 - Balance patches
 
 Development continues indefinitely after release.
+
+---
+
+
+
+# Milestone 24 — Brainrot Evolution & Mutations
+
+**Status: 🔜 Planned**
+
+## Goal
+
+Add two data-driven progression layers on top of the base roster — **evolutions**
+and **mutations** — without name-based combat forks. Server owns unlocks and
+placement identity; client UI is display + intent only.
+
+## Definitions
+
+| Layer | What it changes | What it does **not** change |
+| ----- | --------------- | --------------------------- |
+| **Evolution** | **Color / look** (tint or prestige visual) and **base stats** (HP, damage, attack interval, cost, range, coin generation, etc.) | Core ability identity (still the same ability id) |
+| **Mutation** | **Ability** — replace the unit’s ability **or** add an **extra** ability | Base stat line (unless a later balance pass explicitly couples them) |
+
+Example flavor: **Diamond Tung Tung Tung Sahur** is an *evolution* of Tung Tung
+(diamond color + stronger melee stats, still `MeleeBat`). A mutation on Tung Tung
+might swap bat for a different ability, or add a secondary ability on top of bat.
+
+Evolutions and mutations can stack on the same unit if authored that way
+(e.g. Diamond Tung Tung + a mutation) — decide composition rules at impl.
+
+## Examples (authoring targets)
+
+### Evolutions (color + base stats)
+
+| Base | Evolved form (example) | Direction |
+| ---- | ---------------------- | --------- |
+| Tung Tung Tung Sahur | Diamond Tung Tung Tung Sahur | Diamond look + higher HP / damage |
+| Ballerina Cappucina | (TBD) | Prestige tint + faster / richer coin generation |
+| Cappuccino Assassino | (TBD) | Prestige tint + stronger / faster sword stats |
+| Other roster units | (TBD) | At least one evolution path each for this system’s launch |
+
+### Mutations (ability change / extra ability)
+
+| Base (example) | Mutation direction (example) |
+| -------------- | ---------------------------- |
+| Tung Tung | Replace `MeleeBat` **or** add a second ability (e.g. slow on hit) |
+| Ballerina | Extra ability alongside `GenerateCoins` (e.g. small heal pulse) |
+| Cappuccino | Replace / augment `ThrowKnife` (e.g. pierce, burn on hit) |
+| Other roster units | At least one mutation option each for this system’s launch |
+
+Exact names, costs, stat deltas, and ability ids are balancing / content work —
+tables above are flavor targets, not final numbers.
+
+## Tasks
+
+- Shared schema for evolution + mutation definitions (base id, costs,
+  requirements, stacking rules)
+- **Evolutions:** color / visual override + base-stat overrides on the common
+  Brainrot interface (prefer tint / material / `color` + optional prestige
+  `modelId` when a full mesh swap is needed)
+- **Mutations:** ability override and/or extra ability id list resolved by
+  `BrainrotBehavior` / Abilities (multi-ability tick without name branches)
+- Unlock / purchase / fuse flows (Brains, coins, and/or materials — decide at impl)
+- Persist owned evolutions + mutations via `SaveService` (`unlocks` /
+  `upgrades` / versioned fields)
+- Shop / Inventory / loadout show evolved + mutated variants when owned
+- Optional: evolution / mutation apply VFX + plant SFX variants
+
+## Architecture Notes
+
+- **Data-driven only** — no `if id == "DiamondTungTung"` combat trees; resolve
+  effective definition (stats + color) and ability set from registry + owned
+  modifiers
+- Evolutions compose onto base stats/color; mutations compose onto
+  `ability` / extra abilities — keep a single placement runtime shape
+- Server owns eligibility, spend, and grants (`ProgressService` or a dedicated
+  evolution/mutation API)
+- Models stay on the Milestone 15 pipeline when a prestige mesh is used
+- Save schema stays versioned; migrate players who already own bases
+
+## Complete When
+
+- At least one **evolution** path ships end-to-end (prefer **Tung Tung →
+  Diamond Tung Tung Tung Sahur**: unlock, color + stats, place, combat,
+  save/rejoin).
+- At least one **mutation** ships end-to-end (ability replaced **or** extra
+  ability active in combat, persist + rejoin).
+- Players obtain both through authored costs/requirements.
+- Exploits (free evolve/mutate, fake ownership) fail server validation.
+
+---
+
+
+
+# Milestone 25 — Boss Collection House
+
+**Status: 🔜 Planned** (house shell ✅ now; collection / income later)
+
+## Goal
+
+Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
+it for display; displayed bosses generate **brains** used for the store (M22)
+and evolutions/mutations (M24).
+
+## Prerequisites
+
+- Plot houses + empty `BossSlot_*` pedestals (`HouseBuilder` / `HouseConfig`) ✅
+- Brains currency + ProgressService ✅ (M13)
+- Boss monsters authored in levels (`isBoss`) ✅
+
+## Add
+
+- On **first defeat** of a boss species, unlock for the player's collection
+  (server-authoritative; persist `SaveData.collectedBosses`)
+- `HouseService` places a scaled display model on the next free pedestal
+- Passive **brains** income from displayed bosses (config rate per `monsterId`)
+- Optional UI: collection progress / brains-per-minute readout (display-only)
+
+## Architecture Notes
+
+- New **`HouseService`** owns display placement + income ticks; grants brains
+  through `ProgressService` (never invent balances on the client)
+- Only `SaveService` persists collected bosses
+- Pedestal markers already exist under `PlotN.House.BossDisplay`
+- Full design: **`docs/HOUSE.md`**
+
+## Complete When
+
+- Defeating Orc (and later bosses) once unlocks a house trophy.
+- Trophy appears on a pedestal after rejoin (save/load).
+- Displayed bosses grant brains over time; spend path uses existing brains sinks.
+- Exploits (fake collect, double income) fail server validation.
+
+---
