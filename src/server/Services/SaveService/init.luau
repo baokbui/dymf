@@ -2,8 +2,9 @@
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
-	(level, coins, brains, health, planted Brainrots, unlocks, loadout, stats).
-	Never persists transient combat/monster state.
+	(level, coins, brains, health, unlocks, loadout, stats). Does NOT persist
+	planted Brainrots or transient combat/monster state — rejoin is always a
+	fresh empty lawn at the saved day.
 
 	Milestone 9 / schema v2 (Milestone 13).
 ]]
@@ -55,22 +56,6 @@ local function deepCopyStringList(source: { string }): { string }
 	return result
 end
 
-local function deepCopyBrainrots(source: { Types.PlantedBrainrot }): { Types.PlantedBrainrot }
-	local result: { Types.PlantedBrainrot } = {}
-	for _, item in source do
-		table.insert(result, {
-			instanceId = item.instanceId,
-			brainrotId = item.brainrotId,
-			position = {
-				row = item.position.row,
-				column = item.position.column,
-			},
-			health = item.health,
-		})
-	end
-	return result
-end
-
 local function defaultSaveData(): Types.SaveData
 	return {
 		version = Constants.SAVE_VERSION,
@@ -107,7 +92,8 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 
 	local coins = payload.coins
 	if type(coins) == "number" then
-		save.coins = math.max(0, math.floor(coins))
+		-- Legacy: ignore persisted match coins; sessions always start at STARTING_COINS.
+		save.coins = EconomyConfig.STARTING_COINS
 	end
 
 	local brains = payload.brains
@@ -164,38 +150,8 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
-	local brainrots = payload.brainrots
-	if type(brainrots) == "table" then
-		for _, item in brainrots do
-			if type(item) ~= "table" then
-				continue
-			end
-			local position = (item :: any).position
-			local row = position and position.row
-			local column = position and position.column
-			local instanceId = (item :: any).instanceId
-			local brainrotId = (item :: any).brainrotId
-			local health = (item :: any).health
-			if type(row) ~= "number" or type(column) ~= "number" then
-				continue
-			end
-			if type(instanceId) ~= "string" or type(brainrotId) ~= "string" then
-				continue
-			end
-			if type(health) ~= "number" then
-				continue
-			end
-			table.insert(save.brainrots, {
-				instanceId = instanceId,
-				brainrotId = brainrotId,
-				position = {
-					row = math.floor(row),
-					column = math.floor(column),
-				},
-				health = math.floor(health),
-			})
-		end
-	end
+	-- Legacy field: planted brainrots are no longer restored. Keep empty.
+	save.brainrots = {}
 
 	save.version = Constants.SAVE_VERSION
 	return save
@@ -203,18 +159,17 @@ end
 
 local function collectSnapshot(player: Player): Types.SaveData
 	local currentLevel, highestUnlockedLevel, playerHealth = LevelService.getSaveProgress(player)
-	local plotModel = PlotService.getPlotModel(player)
-	local brainrots = if plotModel then BrainrotService.getSavePlacements(plotModel) else {}
 	local progress = ProgressService.getSaveSlice(player)
 
 	return {
 		version = Constants.SAVE_VERSION,
 		currentLevel = currentLevel,
 		highestLevel = highestUnlockedLevel,
-		coins = CoinService.getBalance(player),
+		coins = EconomyConfig.STARTING_COINS, -- match currency never carries across sessions
 		brains = progress.brains,
 		playerHealth = playerHealth,
-		brainrots = deepCopyBrainrots(brainrots),
+		-- Lawn is never persisted; rejoin always starts empty.
+		brainrots = {},
 		unlocks = progress.unlocks,
 		equipped = progress.equipped,
 		upgrades = {},
@@ -284,9 +239,14 @@ local function restorePlayer(player: Player, saveData: Types.SaveData)
 		statistics = saveData.statistics,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
-	CoinService.setBalance(player, saveData.coins)
+	-- Match coins always reset on join (PvZ-style); only brains/progression carry.
+	CoinService.resetBalance(player)
+
+	-- Always empty lawn on rejoin (ignore any legacy saved brainrots).
 	BrainrotService.clearPlot(plotModel)
-	BrainrotService.restorePlacements(player, saveData.brainrots)
+	local EnemyService = require(script.Parent.EnemyService)
+	EnemyService.clearPlot(plotModel)
+	CoinService.clearPlot(plotModel)
 end
 
 local function savePlayer(player: Player, reason: string)

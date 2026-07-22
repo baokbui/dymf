@@ -131,6 +131,15 @@ function MonsterModel.create(
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
 	applyIdentity(model, instanceId, definition, plotModel, row)
+	-- Toolbox parts must never block other monsters on the same lane.
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.Massless = true
+			descendant.Anchored = true
+		end
+	end
 	model.Parent = parent
 	return model
 end

@@ -18,6 +18,7 @@ local MonsterStatus = require(script.Parent.MonsterStatus)
 
 local GridService = require(script.Parent.Parent.GridService)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
 
 export type MonsterRuntime = {
 	instanceId: string,
@@ -68,11 +69,22 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 	}
 end
 
+local function lanePhaseZOffset(instanceId: string): number
+	-- Stable per-instance lateral offset so faster units can visibly pass through.
+	local hash = 0
+	for i = 1, #instanceId do
+		hash += string.byte(instanceId, i)
+	end
+	local slot = (hash % 5) - 2 -- -2 .. 2
+	return slot * PlotConfig.TILE_SIZE * MonsterConfig.LANE_PHASE_Z_RATIO
+end
+
 local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
 	if not worldPos then
 		return
 	end
+	worldPos = worldPos + Vector3.new(0, 0, lanePhaseZOffset(runtime.instanceId))
 	-- Preserve facing; move whole model (multi-part Toolbox templates).
 	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY)
 	MonsterModel.setColumn(runtime.model, runtime.column)
@@ -162,7 +174,23 @@ end
 function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number, callbacks: BehaviorCallbacks)
 	local now = os.clock()
 
+	-- East → west so trailing (often faster) units update after leaders and can
+	-- overtake in the same tick without appearing stuck behind.
+	local ordered: { MonsterRuntime } = {}
 	for _, runtime in runtimes do
+		table.insert(ordered, runtime)
+	end
+	table.sort(ordered, function(a, b)
+		if a.plotModel ~= b.plotModel then
+			return a.plotModel.Name < b.plotModel.Name
+		end
+		if a.row ~= b.row then
+			return a.row < b.row
+		end
+		return a.column > b.column
+	end)
+
+	for _, runtime in ordered do
 		if runtime.health <= 0 then
 			continue
 		end
@@ -194,6 +222,8 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			MonsterFeedback.setBubbled(runtime.model, false)
 		end
 
+		-- Movement / attack never considers other monsters — units phase through
+		-- each other and only stop for Brainrots (or the house).
 		local brainrotId, brainrotColumn = nearestBrainrotWest(runtime)
 		if brainrotId and shouldSkipBrainrot(runtime, brainrotId) then
 			brainrotId = nil

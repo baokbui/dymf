@@ -56,6 +56,10 @@ local MonsterConfig = {
 	-- Authored models face this world direction when spawned (toward the house).
 	MODEL_FACE_DIRECTION = Vector3.new(-1, 0, 0),
 
+	-- Lateral Z stagger so overlapping monsters on one row visibly phase through
+	-- each other (fraction of tile size). Movement never blocks on other monsters.
+	LANE_PHASE_Z_RATIO = 0.14,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

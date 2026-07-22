@@ -94,9 +94,13 @@ local function releasePlot(player: Player)
 	local plot = plotsByUserId[player.UserId]
 	if plot then
 		applyHouseOwnerLabel(plot.model, nil)
+		-- Clear service-owned runtimes before wiping folders (placements survive
+		-- folder ClearAllChildren and would otherwise be re-saved on leave).
+		require(script.Parent.BrainrotService).clearPlot(plot.model)
+		require(script.Parent.EnemyService).clearPlot(plot.model)
+		require(script.Parent.CoinService).clearPlot(plot.model)
 		plot:release()
 		GridService.resetPlot(plot.model)
-		require(script.Parent.EnemyService).clearPlot(plot.model)
 		plotsByUserId[player.UserId] = nil
 		log:info(string.format("released Plot%d from %s", plot.index, player.Name))
 	end

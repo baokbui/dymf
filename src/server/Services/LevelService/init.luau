@@ -138,7 +138,7 @@ local function onVictory(player: Player, state: PlayerState)
 		state.currentLevel += 1
 	end
 
-	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
+	-- Hearts stay progressive across days (only refill on defeat retry / reset).
 	state.activeRun = nil
 	state.phase = PHASE.Victory
 	state.bigWaveWarning = false
@@ -300,7 +300,7 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 	end
 
 	state.currentLevel = levelNumber
-	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
+	-- Keep progressive hearts when switching days (refill only on defeat / reset).
 	state.activeRun = nil
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
@@ -331,7 +331,12 @@ local function initPlayer(player: Player)
 end
 
 local function cleanupPlayer(player: Player)
-	states[player.UserId] = nil
+	-- Defer so SaveService can snapshot level/hearts on the same PlayerRemoving
+	-- wave before state is wiped (LevelService starts before SaveService).
+	local userId = player.UserId
+	task.defer(function()
+		states[userId] = nil
+	end)
 end
 
 function LevelService.getClientState(player: Player): { [string]: any }

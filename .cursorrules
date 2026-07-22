@@ -257,12 +257,8 @@ Persist:
 
 - Current Level
 - Highest Unlocked Level
-- Coins
 - Brains
-- Player Health
-- Planted Brainrots
-- Brainrot Positions
-- Brainrot Health
+- Player Health (progressive across days)
 - Unlocks
 - Equipped loadout
 - Upgrades
@@ -271,6 +267,8 @@ Persist:
 
 Do NOT persist:
 
+- Coins (reset to `STARTING_COINS` on every join)
+- Planted Brainrots (empty lawn on rejoin)
 - Monsters
 - Monster Positions
 - Projectiles
@@ -280,17 +278,13 @@ Do NOT persist:
 
 If the player leaves during a level:
 
-- Save the battlefield.
-- Save the current level progression.
-- End the active level.
+- Save progression (day, hearts, currencies that persist).
+- Clear lawn runtimes; end the active level.
 
 When they return:
 
-- Restore the battlefield.
-- Restore Brainrots.
-- Restore coins.
-- Restore progression.
-- Restart the saved level from its beginning.
+- Restore day, hearts, brains, unlocks.
+- Coins reset to starting balance; empty lawn — press Start Day again.
 
 Never erase save data unless Reset Progress is confirmed.
 

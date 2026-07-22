@@ -11,18 +11,20 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 Saved (player-owned progression):
 
-- Current level
+- Current level (campaign day)
 - Highest unlocked level
-- Coins
-- Player health
-- Planted Brainrots (+ positions, + health)
+- Brains
+- Player health (hearts — progressive across days)
 - Unlocks
+- Equipped loadout
 - Upgrades
 - Statistics
-- Future progression systems (evolutions, collected bosses, …)
+- Future progression systems (collected bosses, evolutions, …)
 
 Not saved (transient / runtime):
 
+- **Coins** (always `EconomyConfig.STARTING_COINS` on join — PvZ-style)
+- **Planted Brainrots** (lawn is always empty on rejoin)
 - Active monsters & their positions
 - Active projectiles
 - Ground coins
@@ -40,18 +42,19 @@ Not saved (transient / runtime):
 | `version`      | number (`SAVE_VERSION` = 2)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
-| `coins`        | number                     |
+| `coins`        | number (always written as `STARTING_COINS`) |
 | `brains`       | number                     |
 | `playerHealth` | number (hearts, max 5)     |
-| `brainrots`    | `{ PlantedBrainrot }`      |
+| `brainrots`    | `{ PlantedBrainrot }` (always `{}` — legacy field) |
 | `unlocks`      | `{ string }`               |
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M25 |
 
-`PlantedBrainrot` = `{ instanceId, brainrotId, position (GridPosition), health }`.
-`CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see `HOUSE.md`.
+`PlantedBrainrot` remains on the type for older payloads but is **never written or
+restored**. `CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }`
+— see `HOUSE.md`.
 
 Relevant constants (`Shared.Constants`):
 
@@ -68,10 +71,10 @@ Relevant constants (`Shared.Constants`):
 
 - Load a player's `SaveData` on join (defaulting new players from config:
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
-- Migrate older `version` payloads forward.
+- Migrate older `version` payloads forward (legacy `brainrots` cleared).
 - Persist on leave and on a periodic autosave.
-- Coordinate restore with other services (battlefield via `PlotService` /
-  `BrainrotService`, balance via `CoinService`, level via `LevelService`).
+- Coordinate restore with other services (empty lawn, balance via `CoinService`,
+  day/hearts via `LevelService`, unlocks via `ProgressService`).
 
 ---
 
@@ -79,14 +82,15 @@ Relevant constants (`Shared.Constants`):
 
 If a player leaves during a level:
 
-- Save the battlefield and the current level progression.
-- End the active level.
+- Save progression (day, hearts, brains, unlocks).
+- End the active level; clear Brainrot / monster / coin runtimes on plot release.
 
 On rejoin:
 
-- Restore the battlefield, coins, all Brainrots, and progression.
-- The saved level **restarts from the beginning**; the player must press Start
-  Level again (see `LEVELS.md`).
+- Restore day, hearts, brains, unlocks / loadout.
+- Coins reset to `STARTING_COINS` (125).
+- Lawn is **empty** — press Start Day to play again.
+- Monsters are never restored.
 
 ---
 

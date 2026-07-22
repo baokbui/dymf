@@ -138,8 +138,11 @@ MonsterBehavior (movement + attack tick)
        └──► MonsterFeedback (attack pulse)
 ```
 
-- Monsters spawn at column `COLUMNS + 0.5` on a chosen grid row.
+- Monsters spawn at column `COLUMNS + SPAWN_COLUMN_OFFSET` on a chosen grid row
+  (forest march).
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
+- Monsters **phase through each other** on the same row (no blocking). Slight Z
+  stagger keeps overlaps readable. They only stop for Brainrots (or the house).
 - When the tile **immediately west** holds a Brainrot, the monster walks toward it
   and stops at its natural position once **close enough** (`MELEE_CLOSE_REACH`) —
   no snap or teleport. It attacks on `attackInterval` and only advances once the

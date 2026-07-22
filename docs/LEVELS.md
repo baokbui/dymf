@@ -196,9 +196,10 @@ later as its own mode).
 
 ## Interaction with save (see `SAVE_SYSTEM.md`)
 
-- The **current level** and **highest unlocked level** are persisted.
-- Active monsters, projectiles, and level timers are **not** persisted.
-- If a player leaves mid-level: save the battlefield + level progression, end the
-  active level.
-- On rejoin: restore the battlefield, then the saved level **starts over from the
-  beginning** and the player must press Start Day again.
+- The **current level**, **highest unlocked level**, and **hearts** are persisted.
+- Hearts are **progressive** across days (not refilled on victory / Start Day /
+  day select). Full refill on **defeat retry** and Reset Progress only.
+- **Coins** reset to `STARTING_COINS` on every join (not persisted).
+- Planted Brainrots, monsters, projectiles, and level timers are **not** persisted.
+- If a player leaves mid-level: save progression, clear the lawn runtimes.
+- On rejoin: restore day + hearts + brains/unlocks; coins = 125; lawn empty; press Start Day.
