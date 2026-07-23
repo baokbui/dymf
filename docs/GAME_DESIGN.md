@@ -131,7 +131,7 @@ Currency: Coins
 Coins are earned by:
 
 - Passive drops (every ~30 seconds) ✅
-- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 25s) ✅
+- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s) ✅
 - Completing days 🔜 Milestone 8
 - Future achievements/events
 

@@ -37,7 +37,7 @@ Campaign spawn counts assume that growing board — see `Shared.Levels` /
 | `STARTING_COINS` | 125 | Day 1 purse only (Ballerina 50 + Tung Tung 75) |
 | `PASSIVE_DROP_INTERVAL` | 25s | Backup income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
-| Ballerina `coinGeneration` | 25 / 25s | Primary mid-level income (slower snowball) |
+| Ballerina `coinGeneration` | 25 / 18s | Primary mid-level income (slower snowball) |
 
 ---
 
@@ -63,7 +63,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 
 | Unit | Cost | Hits | Combat role |
 | ---- | ---- | ---- | ----------- |
-| Ballerina | 50 | 5 | Economy (25 / 25s) |
+| Ballerina | 50 | 5 | Economy (25 / 18s) |
 | Chimpanzini | 75 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 8 | Melee (40 / 1.5s ≈ 27 DPS; ~7 hits vs 250 HP Zombie) |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
