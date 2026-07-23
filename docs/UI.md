@@ -70,15 +70,20 @@ UI.
   only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
-  stroke on the viewport) so the row stays readable.
+  stroke on the viewport) so the row stays readable. After planting, the card
+  shows a **recharge overlay** (`PlantCooldownsUpdated`; cheaper units recharge
+  faster — see `BrainrotConfig.plantCooldownFor`).
 - **Plant toasts** ✅ — stacked messages just under Shop when a plant fails
-  (not enough coins, occupied tile, day not started, …). Newest stays under the
+  (not enough coins, occupied tile, day not started, still recharging, …). Newest stays under the
   shop; older ones slide up and fade.
 - **LevelUI** ✅ M8 — bottom-right Start/Restart **Day**, progress, big-wave banner
   (player copy uses "Day"; remotes stay `StartLevel` / `LevelStateChanged`).
 - **Settings** ✅ M13 — left HUD bar under Inventory opens the modal. Mute,
-  music/SFX volume, Brainrot SFX toggle, statistics, **Reset Progress**
-  (double-confirm). Day Select is deferred to a future dedicated UI.
+  music/SFX volume, Brainrot SFX toggle, statistics, **Danger Zone → Reset
+  Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
+  empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
+  `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time
+  played stays current. Day Select is deferred to a future dedicated UI.
 - **Inventory** ✅ M13 — left HUD bar under Hearts opens the loadout modal;
   equip/unequip unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Server
   validates via `SetEquipped`.

@@ -7,14 +7,19 @@ local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local MeleeBat = {}
 
 function MeleeBat.tryAct(ctx, callbacks)
-	local params = ctx.definition.abilityParams
-	local reach = if params and params.meleeReach then params.meleeReach else BrainrotConfig.MELEE_BAT_REACH
+	-- Tile-based reach from `rangeTiles` (Tung Tung = 1): own tile + one ahead.
+	-- Friendly Brainrots never block — a bat behind Ballerina, Lirili, a wall,
+	-- etc. can still hit a monster chewing that unit on the next tile.
+	local rangeTiles = ctx.definition.rangeTiles
+	if rangeTiles <= 0 then
+		rangeTiles = BrainrotConfig.MELEE_BAT_REACH_TILES
+	end
 
-	local targetId = CombatService.getFirstMonsterInMeleeReach(
+	local targetId = CombatService.getFirstMonsterInRow(
 		ctx.plotModel,
 		ctx.position.row,
 		ctx.position.column,
-		reach
+		rangeTiles
 	)
 	if not targetId then
 		return false

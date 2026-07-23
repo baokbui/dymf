@@ -42,6 +42,8 @@ local BLOCKED_COLOR = Color3.fromRGB(220, 110, 110)
 
 local selectedId: string? = nil
 local balance = 0
+-- brainrotId → readyAt (Workspace:GetServerTimeNow); mirrored from server.
+local plantReadyAt: { [string]: number } = {}
 local placementAllowed = false
 local selectionAllowed = false
 local shovelMode = false
@@ -275,6 +277,22 @@ function PlacementController.setBalance(amount: number)
 	balance = amount
 end
 
+function PlacementController.setPlantCooldowns(readyAtById: { [string]: number }?)
+	plantReadyAt = {}
+	if type(readyAtById) == "table" then
+		for id, readyAt in readyAtById do
+			if type(id) == "string" and type(readyAt) == "number" then
+				plantReadyAt[id] = readyAt
+			end
+		end
+	end
+end
+
+function PlacementController.isOnCooldown(brainrotId: string): boolean
+	local readyAt = plantReadyAt[brainrotId]
+	return type(readyAt) == "number" and readyAt > workspace:GetServerTimeNow()
+end
+
 function PlacementController.select(brainrotId: string)
 	if not selectionAllowed then
 		return
@@ -371,6 +389,10 @@ local function onPrimaryAction(position: Vector2)
 	end
 	if not canAfford() then
 		UIEvents.firePlantFailed("Unable to plant — not enough coins")
+		return
+	end
+	if PlacementController.isOnCooldown(id) then
+		UIEvents.firePlantFailed("Unable to plant — still recharging")
 		return
 	end
 

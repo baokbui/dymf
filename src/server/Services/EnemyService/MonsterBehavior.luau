@@ -46,8 +46,6 @@ export type BehaviorCallbacks = {
 local MonsterBehavior = {}
 
 local TILE_HALF = MonsterConfig.TILE_HALF_WIDTH
-local OVERSHOOT_EPS = MonsterConfig.MELEE_OVERSHOOT_EPSILON
-local CLOSE_REACH = MonsterConfig.MELEE_CLOSE_REACH
 
 local function abilityContext(runtime: MonsterRuntime): Abilities.AbilityContext
 	return {
@@ -84,21 +82,19 @@ local function tileAtColumn(column: number): number
 	return math.floor(column + TILE_HALF)
 end
 
-local function brainrotWestEdge(brainrotColumn: number): number
-	return brainrotColumn + TILE_HALF
+-- Stop / chew at the plant's column center (on the Brainrot's tile).
+local function meleeStopColumn(brainrotColumn: number): number
+	return brainrotColumn
 end
 
--- Closest column a melee monster holds while chewing (just east of the Brainrot).
-local function meleeEngageMaxColumn(brainrotColumn: number): number
-	return brainrotColumn + TILE_HALF + CLOSE_REACH
-end
-
+-- Engaged for the whole plant tile (any ally — wall, producer, attacker, …).
+-- Stops at column center so Brainrot melee from one tile west stays in range.
 local function closeEnoughToAttack(monsterColumn: number, brainrotColumn: number): boolean
-	local westEdge = brainrotWestEdge(brainrotColumn)
-	return monsterColumn > westEdge and monsterColumn <= meleeEngageMaxColumn(brainrotColumn)
+	return tileAtColumn(monsterColumn) == brainrotColumn
+		and monsterColumn >= meleeStopColumn(brainrotColumn)
 end
 
--- First occupied tile west of the monster on its row (the one it would chew).
+-- First occupied tile at/west of the monster on its row (the one it would chew).
 local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	local plotModel = runtime.plotModel
 	local row = runtime.row
@@ -119,10 +115,11 @@ local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	return nil, nil
 end
 
-local function clampOutOfBrainrotTile(runtime: MonsterRuntime, brainrotColumn: number)
-	local westEdge = brainrotWestEdge(brainrotColumn)
-	if runtime.column <= westEdge then
-		runtime.column = westEdge + OVERSHOOT_EPS
+-- While chewing, never walk past the plant center (keeps Brainrot melee in range).
+local function clampToPlantCenter(runtime: MonsterRuntime, brainrotColumn: number)
+	local stopAt = meleeStopColumn(brainrotColumn)
+	if runtime.column < stopAt then
+		runtime.column = stopAt
 	end
 end
 
@@ -231,10 +228,21 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		end
 
 		if brainrotId and brainrotColumn then
-			clampOutOfBrainrotTile(runtime, brainrotColumn)
+			clampToPlantCenter(runtime, brainrotColumn)
 
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then
 				setAttacking(runtime, true)
+
+				-- Keep closing to plant center while already on the tile (still chewing).
+				local stopAt = meleeStopColumn(brainrotColumn)
+				if runtime.column > stopAt then
+					local speed = runtime.definition.secondsPerGrid
+					if speed > 0 then
+						local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
+						local nextColumn = runtime.column - (dt / speed) * speedMult
+						runtime.column = math.max(nextColumn, stopAt)
+					end
+				end
 				syncTransform(runtime)
 
 				runtime.attackCooldown -= dt
@@ -249,7 +257,8 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				local speed = runtime.definition.secondsPerGrid
 				if speed > 0 then
 					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-					local minColumn = brainrotWestEdge(brainrotColumn) + OVERSHOOT_EPS
+					-- Walk onto the plant tile and stop at its column center.
+					local minColumn = meleeStopColumn(brainrotColumn)
 					local nextColumn = runtime.column - (dt / speed) * speedMult
 					runtime.column = math.max(nextColumn, minColumn)
 				end

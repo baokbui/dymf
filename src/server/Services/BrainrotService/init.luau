@@ -10,11 +10,12 @@
 		2. Resolve the definition from the data-driven Brainrots registry
 		   (never branch on Brainrot names).
 		3. Resolve the caller's owned plot (PlotService).
-		4. Pre-check affordability against the authoritative balance.
-		5. Reserve the tile (GridService.tryOccupy) — rejects occupied/unknown.
-		6. Charge coins (CoinService.trySpend); release the tile if the charge
-		   fails (guards against a balance race between steps 4 and 6).
-		7. Build the model and record the instance.
+		4. Reject if that Brainrot id is still recharging (plant cooldown).
+		5. Pre-check affordability against the authoritative balance.
+		6. Reserve the tile (GridService.tryOccupy) — rejects occupied/unknown.
+		7. Charge coins (CoinService.trySpend); release the tile if the charge
+		   fails (guards against a balance race between steps 5 and 7).
+		8. Build the model, record the instance, start plant cooldown.
 
 	Removal (RemoveBrainrot) verifies the caller owns the Brainrot on the tile,
 	frees the tile, and destroys the model. Digging up a Brainrot is NOT
@@ -29,6 +30,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
+local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local GridUtil = require(Shared.Utilities.GridUtil)
@@ -55,7 +57,83 @@ type Placement = BrainrotBehavior.RuntimePlacement
 
 -- instanceId -> placement (single source of runtime placement state).
 local placements: { [string]: Placement } = {}
+-- userId -> brainrotId -> readyAt (Workspace:GetServerTimeNow)
+local plantReadyAt: { [number]: { [string]: number } } = {}
 local nextInstanceId = 0
+
+local function nowServer(): number
+	return workspace:GetServerTimeNow()
+end
+
+local function getPlayerPlantReady(userId: number): { [string]: number }
+	local map = plantReadyAt[userId]
+	if not map then
+		map = {}
+		plantReadyAt[userId] = map
+	end
+	return map
+end
+
+local function pruneExpiredCooldowns(map: { [string]: number })
+	local now = nowServer()
+	for id, readyAt in map do
+		if readyAt <= now then
+			map[id] = nil
+		end
+	end
+end
+
+local function pushPlantCooldowns(player: Player)
+	local map = plantReadyAt[player.UserId]
+	if not map then
+		Remotes.getEvent("PlantCooldownsUpdated"):FireClient(player, {})
+		return
+	end
+	pruneExpiredCooldowns(map)
+	local payload: { [string]: number } = {}
+	for id, readyAt in map do
+		payload[id] = readyAt
+	end
+	Remotes.getEvent("PlantCooldownsUpdated"):FireClient(player, payload)
+end
+
+local function isPlantOnCooldown(player: Player, brainrotId: string): boolean
+	local map = plantReadyAt[player.UserId]
+	if not map then
+		return false
+	end
+	local readyAt = map[brainrotId]
+	return type(readyAt) == "number" and readyAt > nowServer()
+end
+
+local function startPlantCooldown(player: Player, definition: Types.BrainrotDefinition)
+	local duration = BrainrotConfig.plantCooldownFor(definition)
+	if duration <= 0 then
+		return
+	end
+	local map = getPlayerPlantReady(player.UserId)
+	map[definition.id] = nowServer() + duration
+	pushPlantCooldowns(player)
+end
+
+function BrainrotService.clearPlantCooldowns(player: Player)
+	plantReadyAt[player.UserId] = nil
+	pushPlantCooldowns(player)
+end
+
+-- brainrotId → readyAt server time (only entries still cooling down).
+function BrainrotService.getPlantCooldowns(player: Player): { [string]: number }
+	local map = plantReadyAt[player.UserId]
+	if not map then
+		return {}
+	end
+	pruneExpiredCooldowns(map)
+	local payload: { [string]: number } = {}
+	for id, readyAt in map do
+		payload[id] = readyAt
+	end
+	return payload
+end
 
 -- Coerces untrusted client input into a clean integer grid position, or nil.
 local function toGridPosition(raw: unknown): Types.GridPosition?
@@ -214,6 +292,11 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		return
 	end
 
+	if isPlantOnCooldown(player, brainrotId) then
+		notifyPlaceFailed(player, "Unable to plant — still recharging")
+		return
+	end
+
 	local plot = PlotService.getPlot(player)
 	if not plot then
 		return
@@ -250,6 +333,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	local ProgressService = require(script.Parent.ProgressService)
 	local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
+	startPlantCooldown(player, definition)
 end
 
 local function onRemoveBrainrot(player: Player, rawPosition: unknown)
@@ -288,6 +372,7 @@ local function onPlayerRemoving(player: Player)
 			destroyPlacement(placement)
 		end
 	end
+	plantReadyAt[player.UserId] = nil
 end
 
 -- ===== Public API (for other services) =====

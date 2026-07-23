@@ -33,8 +33,10 @@ column). When a Brainrot attacks a row:
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
 for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead.
-**Melee bat** uses fractional `abilityParams.meleeReach` (see `BrainrotConfig.MELEE_BAT_REACH`)
-so the attacker only hits monsters right beside the Brainrot.
+**Melee bat** uses tile-based `rangeTiles` (Tung Tung = 1): hits monsters on the
+Brainrot's own tile **or** one tile ahead. Friendly Brainrots do **not** block —
+a bat behind Ballerina, Lirili, Chimpanzini, etc. can still hit a monster chewing
+that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.)
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.

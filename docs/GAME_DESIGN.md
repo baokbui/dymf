@@ -117,6 +117,7 @@ Rules
 - One Brainrot per tile
 - Cannot plant outside grid
 - Cannot plant without enough coins
+- Cannot plant while that Brainrot id is recharging (cost-scaled plant cooldown)
 - Server validates every placement
 
 See `GRID.md` for implementation details.
@@ -130,7 +131,7 @@ Currency: Coins
 Coins are earned by:
 
 - Passive drops (every ~30 seconds) ✅
-- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 16s) ✅
+- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s) ✅
 - Completing days 🔜 Milestone 8
 - Future achievements/events
 
@@ -271,8 +272,8 @@ Supported effects:
 
 # Save System
 
-Player **progression** is persistent across sessions. The **lawn** is
-session-only carry-over after victories (not DataStore-persisted).
+Player **progression** is persistent across sessions. The **lawn** is persisted
+as a **victory checkpoint** (not a live mid-day mirror).
 
 Saved:
 
@@ -280,7 +281,7 @@ Saved:
 - Highest Unlocked Day
 - Brains
 - Player Health (progressive hearts)
-- Planted Brainrots (positions + HP)
+- Planted Brainrots from the last victory / wipe (positions + HP)
 - Unlocks
 - Equipped loadout
 - Upgrades
@@ -290,6 +291,7 @@ Saved:
 Not Saved:
 
 - Coins (Day 1 → `STARTING_COINS`; later days → 0)
+- Brainrots placed during an unfinished day (until that day is won)
 - Active Monsters
 - Monster Positions
 - Active Projectiles
@@ -297,21 +299,21 @@ Not Saved:
 - Temporary Combat Effects
 - Level Timers
 
-If a player leaves during a day:
+If a player leaves mid-day or before Start Day:
 
-- Save progression and planted Brainrots.
-- End the active day; clear combat runtimes.
+- Save progression and the **committed** lawn (prior day’s plants).
+- Discard mid-day placements; end the active day; clear combat runtimes.
 
 When the player rejoins:
 
-- Restore day, hearts, brains, unlocks, and planted Brainrots.
+- Restore day, hearts, brains, unlocks, and the committed lawn.
 - Coins via day purse (Day 1 → 125; later → 0).
 - The player must press Start Day again.
 
-Within a session, **victory keeps planted Brainrots**; coin purse is **125 on
-Day 1** and **0 after later days**; **defeat** clears the lawn and sets Day 1
-(with 125); **day select** clears the lawn. Brainrots idle outside **Active**.
-See `LEVELS.md` / `SAVE_SYSTEM.md`.
+Within a session, **victory keeps planted Brainrots** and commits them for
+rejoin; coin purse is **125 on Day 1** and **0 after later days**; **defeat**
+clears the lawn and sets Day 1 (with 125); **day select** clears the lawn.
+Brainrots idle outside **Active**. See `LEVELS.md` / `SAVE_SYSTEM.md`.
 
 ---
 

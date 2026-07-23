@@ -44,7 +44,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.Visible = false
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
-	parent.Size = UDim2.fromOffset(440, 400)
+	parent.Size = UDim2.fromOffset(440, 480)
 	parent.ZIndex = 25
 	UITheme.applyPanelLook(parent)
 
@@ -69,46 +69,62 @@ function Settings.new(parent: Frame): SettingsPanel
 	UITheme.applyOutlinedTitle(close)
 
 	local body = Instance.new("ScrollingFrame")
+	body.Name = "Body"
 	body.BackgroundTransparency = 1
 	body.Position = UDim2.fromOffset(16, 56)
 	body.Size = UDim2.new(1, -32, 1, -68)
-	body.CanvasSize = UDim2.fromOffset(0, 360)
-	body.ScrollBarThickness = 6
+	body.BorderSizePixel = 0
+	body.ScrollBarThickness = 8
+	body.ScrollingDirection = Enum.ScrollingDirection.Y
+	body.CanvasSize = UDim2.fromOffset(0, 0)
+	body.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	body.Parent = parent
 
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 10)
+	layout.Padding = UDim.new(0, 12)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = body
 
+	local bodyPad = Instance.new("UIPadding")
+	bodyPad.PaddingBottom = UDim.new(0, 16)
+	bodyPad.Parent = body
+
 	local function section(label: string, order: number): Frame
 		local frame = Instance.new("Frame")
+		frame.Name = label
 		frame.BackgroundTransparency = 1
-		frame.Size = UDim2.new(1, 0, 0, 0)
+		frame.Size = UDim2.new(1, -8, 0, 0)
 		frame.AutomaticSize = Enum.AutomaticSize.Y
 		frame.LayoutOrder = order
 		frame.Parent = body
-		local header = Instance.new("TextLabel")
-		header.BackgroundTransparency = 1
-		header.Size = UDim2.new(1, 0, 0, 22)
-		header.TextSize = 15
-		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.Text = label
-		header.Parent = frame
-		UITheme.applyOutlinedTitle(header, UITheme.ACCENT)
-		header.TextSize = 15
+
 		local stack = Instance.new("UIListLayout")
 		stack.Padding = UDim.new(0, 6)
 		stack.SortOrder = Enum.SortOrder.LayoutOrder
 		stack.Parent = frame
+
+		local header = Instance.new("TextLabel")
+		header.BackgroundTransparency = 1
+		header.Size = UDim2.new(1, 0, 0, 22)
+		header.LayoutOrder = 0
+		header.TextSize = 15
+		header.TextXAlignment = Enum.TextXAlignment.Left
+		header.Text = label
+		header.Parent = frame
+		UITheme.applyOutlinedTitle(header, if label == "Danger Zone" then UITheme.DANGER else UITheme.ACCENT)
+		header.TextSize = 15
 		return frame
 	end
 
 	local audioSection = section("Audio", 1)
 	local muteButton = makeButton(audioSection, "Mute: Off", UITheme.BUTTON_BG)
+	muteButton.LayoutOrder = 1
 	local musicButton = makeButton(audioSection, "Music Volume: High", UITheme.BUTTON_BG)
+	musicButton.LayoutOrder = 2
 	local sfxButton = makeButton(audioSection, "SFX Volume: High", UITheme.BUTTON_BG)
+	sfxButton.LayoutOrder = 3
 	local brainrotSfxButton = makeButton(audioSection, "Brainrot SFX: On", UITheme.BUTTON_BG)
+	brainrotSfxButton.LayoutOrder = 4
 
 	local muted = false
 	local musicLevel = 2
@@ -151,6 +167,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	local statsLabel = Instance.new("TextLabel")
 	statsLabel.BackgroundTransparency = 1
 	statsLabel.Size = UDim2.new(1, 0, 0, 120)
+	statsLabel.LayoutOrder = 1
 	statsLabel.TextSize = 14
 	statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statsLabel.TextYAlignment = Enum.TextYAlignment.Top
@@ -160,7 +177,20 @@ function Settings.new(parent: Frame): SettingsPanel
 	UITheme.applyBodyText(statsLabel, UITheme.SUBTEXT)
 
 	local dangerSection = section("Danger Zone", 3)
+	local dangerHint = Instance.new("TextLabel")
+	dangerHint.BackgroundTransparency = 1
+	dangerHint.Size = UDim2.new(1, 0, 0, 36)
+	dangerHint.TextSize = 12
+	dangerHint.TextXAlignment = Enum.TextXAlignment.Left
+	dangerHint.TextYAlignment = Enum.TextYAlignment.Top
+	dangerHint.TextWrapped = true
+	dangerHint.Text = "Resets you to Day 1, clears your lawn, and restores 125 coins. Requires two confirmations."
+	dangerHint.LayoutOrder = 1
+	dangerHint.Parent = dangerSection
+	UITheme.applyBodyText(dangerHint, UITheme.DANGER)
+
 	local resetButton = makeButton(dangerSection, "Reset Progress", UITheme.DANGER)
+	resetButton.LayoutOrder = 2
 
 	local self = setmetatable({
 		frame = parent,
@@ -174,17 +204,24 @@ function Settings.new(parent: Frame): SettingsPanel
 		self:setOpen(false)
 	end)
 
+	local RESET_LABELS = {
+		[0] = "Reset Progress",
+		[1] = "Are you sure? Click to confirm",
+		[2] = "Final confirm — wipe all progress",
+	}
+
 	resetButton.Activated:Connect(function()
 		AudioController.play("UiClick")
-		if self.resetStep == 0 then
-			self.resetStep = 1
-			resetButton.Text = "Confirm Reset? Click again"
-		elseif self.resetStep == 1 then
-			self.resetStep = 0
-			resetButton.Text = "Reset Progress"
-			Remotes.getEvent("ResetProgress"):FireServer()
-			self:setOpen(false)
+		if self.resetStep < 2 then
+			self.resetStep += 1
+			resetButton.Text = RESET_LABELS[self.resetStep]
+			return
 		end
+
+		self.resetStep = 0
+		resetButton.Text = RESET_LABELS[0]
+		Remotes.getEvent("ResetProgress"):FireServer()
+		self:setOpen(false)
 	end)
 
 	applyAudio()

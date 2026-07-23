@@ -9,9 +9,20 @@ local BrainrotConfig = {
 	-- rangeTiles value that means "entire row toward the enemy" (+X).
 	FULL_LINE_RANGE = -1,
 
-	-- Default bat-melee reach in fractional grid columns ahead of the Brainrot.
-	-- Matches the distance monsters stop at when chewing (see MonsterConfig).
-	MELEE_BAT_REACH = 0.85,
+	-- Default bat-melee tile reach when a definition omits / zeroes rangeTiles.
+	-- Tung Tung uses rangeTiles = 1 (own tile + one ahead) via MeleeBat.
+	MELEE_BAT_REACH_TILES = 1,
+
+	-- Legacy fractional reach (unused by MeleeBat; kept for older queries).
+	MELEE_BAT_REACH = 1.35,
+
+	-- Plant recharge after placing a unit (PvZ-style seed packet). Lower cost →
+	-- shorter cooldown. Linear map from COST_MIN→COOLDOWN_MIN to COST_MAX→COOLDOWN_MAX.
+	-- Optional definition.plantCooldown overrides the formula.
+	PLANT_COOLDOWN_MIN = 7.5, -- Ballerina (50 coins)
+	PLANT_COOLDOWN_MAX = 42, -- Bombardino (375 coins)
+	PLANT_COOLDOWN_COST_MIN = 50,
+	PLANT_COOLDOWN_COST_MAX = 375,
 
 	-- Server behavior tick rate (seconds). Cooldowns count down on this step.
 	BEHAVIOR_TICK = 0.1,
@@ -35,6 +46,20 @@ local BrainrotConfig = {
 	-- modelScale (Tralalero / Bombardino omit it and stay at full size).
 	COMPACT_MODEL_SCALE = 0.7,
 }
+
+-- Seconds before the same Brainrot id can be planted again (cost-scaled).
+function BrainrotConfig.plantCooldownFor(definition: { cost: number, plantCooldown: number? }): number
+	local override = definition.plantCooldown
+	if type(override) == "number" and override >= 0 then
+		return override
+	end
+	local span = BrainrotConfig.PLANT_COOLDOWN_COST_MAX - BrainrotConfig.PLANT_COOLDOWN_COST_MIN
+	local t = if span > 0
+		then math.clamp((definition.cost - BrainrotConfig.PLANT_COOLDOWN_COST_MIN) / span, 0, 1)
+		else 0
+	return BrainrotConfig.PLANT_COOLDOWN_MIN
+		+ t * (BrainrotConfig.PLANT_COOLDOWN_MAX - BrainrotConfig.PLANT_COOLDOWN_MIN)
+end
 
 table.freeze(BrainrotConfig)
 

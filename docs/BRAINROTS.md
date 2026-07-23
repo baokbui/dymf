@@ -46,6 +46,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `coinGeneration`  | number?                | Coins per cycle for producers                                      |
 | `abilityParams`   | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                       |
 | `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb)                        |
+| `plantCooldown`   | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)` |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
 | `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing (+X)                                      |
@@ -108,13 +109,13 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
-| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 16s      | —        | Spits coins onto random tiles | 25    |
-| Tung Tung Sahur      | 75   | 1000 (10)     | 45     | 1.35s    | Short melee (`meleeReach`) | Melee bat           | —     |
-| Tralalero Tralala    | 175  | 500 (5)       | 40     | 4.0s     | Full row | Bubble projectile → trap (1.2s) | —     |
-| Bombardino Crocodilo | 375  | — (1)         | 2800   | —        | Full row | Line bomb on place  | —     |
-| Lirili Larila        | 150  | 500 (5)       | 0      | 3.5s     | 2 tiles  | Freeze enemies 2s   | —     |
-| Cappuccino Assassino | 100  | 500 (5)       | 60     | 1.75s    | Full row | Throw spinning sword | —     |
-| Chimpanzini Bananini | 75   | 2500 (25)     | 0      | —        | —        | Wall                | —     |
+| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 18s      | —        | Spits coins onto random tiles | 25    |
+| Tung Tung Sahur      | 75   | 800 (8)       | 40     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
+| Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
+| Bombardino Crocodilo | 375  | — (1)         | 1000   | —        | Full row | Line bomb on place  | —     |
+| Lirili Larila        | 150  | 500 (5)       | 0      | 6.0s     | 2 tiles  | Freeze enemies 0.7s | —     |
+| Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning sword | —     |
+| Chimpanzini Bananini | 75   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
@@ -167,10 +168,30 @@ while tile blasts track under it, then despawns.
 monsters in range). **Coin producers** and **Lirili** always consume their
 cycle when they fire.
 
+### Plant recharge (shop) ✅
+
+After a successful plant, that Brainrot **id** recharges before it can be
+planted again (PvZ seed packet). Duration scales with **cost** via
+`BrainrotConfig.plantCooldownFor` (cheaper → shorter). Approximate roster:
+
+| Cost | Example | Recharge |
+| ---- | ------- | -------- |
+| 50 | Ballerina | ~7.5s |
+| 75 | Tung Tung / Chimpanzini | ~10s |
+| 100 | Cappuccino | ~13s |
+| 150 | Lirili | ~18s |
+| 175 | Tralalero | ~21s |
+| 375 | Bombardino | ~42s |
+
+Server enforces the lock; shop cards show a countdown overlay. Recharges reset
+on **Start Day**. Optional `definition.plantCooldown` overrides the formula.
+
 Monster targeting uses **first-in-row** acquisition for single-target attacks
 and projectiles (M7). Targets must be **on the plot** (`column ≤ COLUMNS`) —
-monsters still marching in the forest are ignored. Coin producers and line-bomb
-placement work independently of monster presence rules.
+monsters still marching in the forest are ignored. Friendly Brainrots never
+block targeting: Tung Tung (`rangeTiles = 1`) hits monsters on his tile or the
+tile ahead even while that tile's ally (any roster unit) is being chewed. Coin
+producers and line-bomb placement work independently of monster presence rules.
 
 ---
 

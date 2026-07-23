@@ -263,7 +263,7 @@ Persist:
 - Highest Unlocked Level
 - Brains
 - Player Health (progressive across days)
-- Planted Brainrots (id, tile, HP)
+- Planted Brainrots (id, tile, HP) — victory checkpoint only (not mid-day)
 - Unlocks
 - Equipped loadout
 - Upgrades
@@ -282,12 +282,12 @@ Do NOT persist:
 
 If the player leaves during a level:
 
-- Save progression and planted Brainrots.
-- Clear combat runtimes; end the active level.
+- Save progression and the **committed** lawn (last victory / wipe).
+- Discard mid-day placements; clear combat runtimes; end the active level.
 
 When they return:
 
-- Restore day, hearts, brains, unlocks, and planted Brainrots.
+- Restore day, hearts, brains, unlocks, and the committed lawn.
 - Coins via day purse (Day 1 → 125; later → 0); press Start Day again.
 
 Never erase save data unless Reset Progress is confirmed.

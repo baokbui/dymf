@@ -56,8 +56,9 @@ HP) stay on the plot. Coin purse: **Day 1 → `STARTING_COINS` (125)**; after an
 later day ends → **0**. After **Defeat**, the lawn is cleared and `currentLevel`
 resets to **Day 1** with 125 coins (`highestUnlocked` kept for Day Select).
 **Day Select** clears the lawn and applies the purse for the selected day.
-**Rejoin restores** saved plants (DataStore). Brainrots only attack / spit coins
-while the day is **`Active`**.
+**Rejoin restores** the **committed** lawn (plants from the last victory /
+wipe — not mid-day placements on an unfinished day). Brainrots only attack /
+spit coins while the day is **`Active`**.
 
 Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (unused /
 optional), `Active`, `Victory`, `Defeat`.
@@ -214,9 +215,11 @@ later as its own mode).
   sets the current day back to **1**.
 - **Coins** — Day 1 → `STARTING_COINS` (125); later days → **0** after each day
   ends (`CoinService.applyDayPurse`). Not DataStore-persisted.
-- Planted Brainrots are **persisted** (id, tile, HP) and restored on rejoin.
-  Defeat / Day Select clear the lawn (and the next save writes empty).
+- Planted Brainrots are **persisted as a victory checkpoint** (id, tile, HP) and
+  restored on rejoin. Defeat / Day Select clear the lawn (and the committed
+  checkpoint). Mid-day plants on an unfinished day are **not** saved.
 - Monsters, projectiles, and level timers are never persisted.
-- If a player leaves mid-level: save progression + plants; clear combat runtimes.
-- On rejoin: restore day + hearts + brains/unlocks + plants; coins via day purse;
-  press Start Day.
+- If a player leaves mid-day or before Start Day: save progression + committed
+  lawn only; clear combat runtimes. The unfinished day resets to Preparation.
+- On rejoin: restore day + hearts + brains/unlocks + committed plants; coins via
+  day purse; press Start Day.

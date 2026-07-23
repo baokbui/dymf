@@ -41,7 +41,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
-Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 16s —
+Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 18s —
 coins are **spat from the unit** and land on a **random grid tile**
 (`GenerateCoins` → `CoinService.dropRandomCoinForOwner(..., origin)`).
 

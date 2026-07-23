@@ -74,28 +74,56 @@ Relevant constants (`Shared.Constants`):
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
 - Migrate older `version` payloads forward.
 - Persist on leave, periodic autosave, day victory, and defeat (`saveNow`).
+- Own a **committed lawn** checkpoint (`commitLawn` / `clearCommittedLawn`):
+  only victory / wipe / load update it; leave and autosave write that checkpoint,
+  not mid-day live plants.
 - Leave-save is connected in `init()` so it runs **before** `PlotService` /
-  `BrainrotService` clear the lawn on `PlayerRemoving`.
+  `BrainrotService` clear the lawn on `PlayerRemoving`. Snapshot is captured
+  synchronously; if a save is already in flight, the leave payload is queued
+  and flushed when the in-flight write finishes (never dropped).
 - Writes via `UpdateAsync` with JSON round-trip + retries (Studio may still log
   transient Roblox-cloud `HTTP 500` lines; look for `SaveService` retry/success
   logs — enable **Studio Access to API Services** in Game Settings).
-- Coordinate restore: day/hearts via `LevelService`, unlocks via
-  `ProgressService`, purse via `CoinService.applyDayPurse`, lawn via
-  `BrainrotService.restorePlacements`.
+- Coordinate restore: day/hearts via `LevelService`, unlocks/stats via
+  `ProgressService` (**hydrated synchronously on join** so autosave cannot wipe
+  defaults over real statistics), purse via `CoinService.applyDayPurse`, lawn via
+  `BrainrotService.restorePlacements` (committed list only, after plot assign).
+- Statistics are live-pushed on increment (`ProfileUpdated`); time played includes
+  the current session in client payloads and is committed on save/leave.
+
+---
+
+## Committed lawn checkpoint
+
+The DataStore lawn is a **checkpoint**, not a live mirror of the plot:
+
+- **Updated** on Victory (`SaveService.commitLawn` → current plants + HP),
+  Defeat / Day Select / Reset (`clearCommittedLawn` → empty).
+- **Used** by leave, autosave, and shutdown (`collectSnapshot` reads the
+  checkpoint — never mid-day live placements).
+
+So if a player starts Day 2, plants more Brainrots, then leaves: only the lawn
+from after Day 1 victory is saved. Day 2 mid-day plants are discarded; on rejoin
+they are back in Preparation on Day 2 with the prior-day lawn and can press
+Start Day again. Day 1 has an empty checkpoint and purse → 125.
+
+Concurrent saves queue a resave so victory/leave are never dropped while an
+autosave `UpdateAsync` is in flight.
 
 ---
 
 ## Leave / rejoin behavior
 
-If a player leaves during a level:
+If a player leaves mid-day or before Start Day:
 
-- Save progression (day, hearts, brains, unlocks) **and** planted Brainrots.
-- End the active level; clear monster / coin runtimes on plot release.
+- Save progression (day, hearts, brains, unlocks) **and** the **committed** lawn
+  (last victory / wipe) — not plants placed during the unfinished day.
+- End the active day; clear monster / coin runtimes on plot release.
 
 On rejoin:
 
 - Restore day, hearts, brains, unlocks / loadout.
-- Restore planted Brainrots (positions + HP).
+- Restore the committed lawn (positions + HP from last checkpoint).
 - Coins via `applyDayPurse` (Day 1 → 125; later → 0).
 - Monsters are never restored — press Start Day to play again.
 
@@ -103,13 +131,14 @@ On rejoin:
 
 ## Session lawn rules
 
-| Event | Brainrots | Coins | Monsters / ground coins |
-| ----- | --------- | ----- | ----------------------- |
-| Victory → next day | **Keep** (current HP); saved | Day 1 → 125; else **0** | Cleared |
-| Defeat | Cleared; **current day → 1**; saved empty | **125** | Cleared |
-| Day Select | Cleared; next save empties store | Day 1 → 125; else **0** | Cleared |
-| Leave / Rejoin | **Persisted** / restored | Day purse (not saved) | Cleared |
-| Reset Progress | Cleared | **125** | Cleared |
+| Event | Live Brainrots | Committed / DataStore lawn | Coins | Monsters / ground coins |
+| ----- | -------------- | -------------------------- | ----- | ----------------------- |
+| Victory → next day | **Keep** (current HP) | **Commit** then save | Day 1 → 125; else **0** | Cleared |
+| Defeat | Cleared; **current day → 1** | **Empty** then save | **125** | Cleared |
+| Day Select | Cleared | **Empty** then save | Day 1 → 125; else **0** | Cleared |
+| Leave / Rejoin | Cleared on leave | **Checkpoint** restored | Day purse (not saved) | Cleared |
+| Mid-day place / damage | Live only | Unchanged until victory | Session purse | — |
+| Reset Progress | Cleared | **Empty** | **125** | Cleared |
 
 See `LEVELS.md` / `BALANCE.md` — campaign spawn pressure assumes carry-over.
 
@@ -117,7 +146,8 @@ See `LEVELS.md` / `BALANCE.md` — campaign spawn pressure assumes carry-over.
 
 ## Reset Progress
 
-A confirmed Reset (via Settings UI → `ResetProgress` remote, see `UI.md` /
-`NETWORKING.md`) deletes all saved progress and returns the player to level 1
-with starter coins, full hearts, default unlocks/loadout, empty lawn, and empty
-statistics. Never erase save data unless Reset is explicitly confirmed.
+A confirmed Reset (via Settings **Danger Zone** → red **Reset Progress**,
+**two confirmations**, then `ResetProgress` remote — see `UI.md` /
+`NETWORKING.md`) deletes all saved progress and returns the player to day 1
+with starter coins (125), full hearts, default unlocks/loadout, empty lawn, and
+empty statistics. Never erase save data unless Reset is explicitly confirmed.

@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
+local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Types = require(Shared.Types)
 
@@ -38,6 +39,8 @@ type Card = {
 	button: TextButton,
 	costLabel: TextLabel,
 	nameLabel: TextLabel,
+	cooldownCover: Frame,
+	cooldownLabel: TextLabel,
 	definition: Types.BrainrotDefinition,
 }
 
@@ -55,6 +58,8 @@ export type Shop = typeof(setmetatable(
 		balance: number,
 		selectedId: string?,
 		equippedIds: { string },
+		-- brainrotId → readyAt (Workspace:GetServerTimeNow)
+		plantReadyAt: { [string]: number },
 		shovelButton: TextButton,
 		cancelButton: TextButton,
 		callbacks: ShopCallbacks,
@@ -100,6 +105,7 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 		balance = 0,
 		selectedId = nil,
 		equippedIds = {},
+		plantReadyAt = {},
 		callbacks = callbacks,
 	}, Shop) :: Shop
 
@@ -263,6 +269,31 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	costLabel.Font = Enum.Font.GothamBold
 	costLabel.TextSize = 12
 
+	local cooldownCover = Instance.new("Frame")
+	cooldownCover.Name = "CooldownCover"
+	cooldownCover.AnchorPoint = Vector2.new(0, 1)
+	cooldownCover.Position = UDim2.fromScale(0, 1)
+	cooldownCover.Size = UDim2.fromScale(1, 0)
+	cooldownCover.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+	cooldownCover.BackgroundTransparency = 0.35
+	cooldownCover.BorderSizePixel = 0
+	cooldownCover.ZIndex = 5
+	cooldownCover.Visible = false
+	cooldownCover.Parent = button
+	UITheme.styleCorner(cooldownCover, UITheme.CORNER_CARD)
+
+	local cooldownLabel = Instance.new("TextLabel")
+	cooldownLabel.Name = "CooldownLabel"
+	cooldownLabel.BackgroundTransparency = 1
+	cooldownLabel.Size = UDim2.fromScale(1, 1)
+	cooldownLabel.TextSize = 16
+	cooldownLabel.Text = ""
+	cooldownLabel.ZIndex = 6
+	cooldownLabel.Visible = false
+	cooldownLabel.Parent = button
+	UITheme.applyOutlinedTitle(cooldownLabel, UITheme.TITLE)
+	cooldownLabel.TextSize = 16
+
 	button.Activated:Connect(function()
 		self.callbacks.onCardClicked(definition.id)
 	end)
@@ -271,24 +302,64 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 		button = button,
 		costLabel = costLabel,
 		nameLabel = nameLabel,
+		cooldownCover = cooldownCover,
+		cooldownLabel = cooldownLabel,
 		definition = definition,
 	})
 end
 
 function Shop.refresh(self: Shop)
+	local now = workspace:GetServerTimeNow()
 	for _, card in self.cards do
+		local readyAt = self.plantReadyAt[card.definition.id]
+		local remaining = if type(readyAt) == "number" then readyAt - now else 0
+		local onCooldown = remaining > 0
 		local affordable = self.balance >= card.definition.cost
 		local selected = self.selectedId == card.definition.id
 
-		Shop.styleCard(card.button, selected)
-		card.button.BackgroundTransparency = if affordable then 0 else 0.35
-		if affordable then
+		Shop.styleCard(card.button, selected and not onCooldown)
+		card.button.BackgroundTransparency = if (affordable and not onCooldown) then 0 else 0.35
+		if affordable and not onCooldown then
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.GOLD_TEXT)
 		else
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.DANGER)
 		end
 		card.costLabel.TextSize = 12
+
+		if onCooldown then
+			local duration = BrainrotConfig.plantCooldownFor(card.definition)
+			local fraction = if duration > 0 then math.clamp(remaining / duration, 0, 1) else 0
+			card.cooldownCover.Visible = true
+			card.cooldownCover.Size = UDim2.fromScale(1, fraction)
+			card.cooldownLabel.Visible = true
+			card.cooldownLabel.Text = string.format("%d", math.ceil(remaining))
+		else
+			card.cooldownCover.Visible = false
+			card.cooldownCover.Size = UDim2.fromScale(1, 0)
+			card.cooldownLabel.Visible = false
+			card.cooldownLabel.Text = ""
+			if type(readyAt) == "number" then
+				self.plantReadyAt[card.definition.id] = nil
+			end
+		end
 	end
+end
+
+function Shop.setPlantCooldowns(self: Shop, readyAtById: { [string]: number }?)
+	self.plantReadyAt = {}
+	if type(readyAtById) == "table" then
+		for id, readyAt in readyAtById do
+			if type(id) == "string" and type(readyAt) == "number" then
+				self.plantReadyAt[id] = readyAt
+			end
+		end
+	end
+	self:refresh()
+end
+
+function Shop.isOnCooldown(self: Shop, brainrotId: string): boolean
+	local readyAt = self.plantReadyAt[brainrotId]
+	return type(readyAt) == "number" and readyAt > workspace:GetServerTimeNow()
 end
 
 function Shop.setEquipped(self: Shop, ids: { string })

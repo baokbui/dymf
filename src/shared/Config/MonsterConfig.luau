@@ -11,7 +11,7 @@ local MonsterConfig = {
 	-- Columns east of the lawn where monsters spawn (fractional grid coords).
 	-- Deep enough to sit in the dark forest past FOREST_CLEAR_WEST; the walk
 	-- from here to the plot is the day's plant/setup window (no idle countdown).
-	-- Zombie (~4s/tile) ≈ 24s; Goblin (~3.4s/tile) ≈ 20s to reach the lawn edge.
+	-- Zombie (~3s/tile) ≈ 18s; Goblin (~2.3s/tile) ≈ 14s to reach the lawn edge.
 	SPAWN_COLUMN_OFFSET = 6,
 
 	-- Column west of column 1 — reaching here breaches the house (M8 defeat).
@@ -20,12 +20,12 @@ local MonsterConfig = {
 	-- Half a grid column in fractional space (tile edge = center ± this value).
 	TILE_HALF_WIDTH = 0.5,
 
-	-- Minimal eastward nudge when movement overshoots into a defended tile.
-	MELEE_OVERSHOOT_EPSILON = 0.02,
-
-	-- How far into the east-adjacent stand tile melee monsters move before stopping
-	-- (from the brainrot tile's east edge). Lower = closer to the Brainrot.
+	-- How far east of the Brainrot's column center a monster may stand while
+	-- still counting as engaged (on the plant tile). Lower = tighter to center.
 	MELEE_CLOSE_REACH = 0.35,
+
+	-- Minimal nudge so fractional column never sits exactly on a tile boundary.
+	MELEE_OVERSHOOT_EPSILON = 0.02,
 
 	-- Visual body size relative to a tile.
 	-- Authored models scale to BODY_HEIGHT (and not wider than FOOTPRINT_RATIO * tile).

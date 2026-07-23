@@ -2,11 +2,12 @@
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
-	(level, brains, health, unlocks, loadout, stats) and planted Brainrots on
-	the lawn. Match coins are never persisted (Day 1 purse / later days = 0).
-	Monsters and other combat transients are not saved.
+	(level, brains, health, unlocks, loadout, stats) and a *committed* lawn
+	snapshot (Brainrots after the last victory / wipe). Match coins are never
+	persisted (Day 1 purse / later days = 0). Mid-day placements are session-
+	only until the day is won. Monsters and other combat transients are not saved.
 
-	Milestone 9 / schema v2 (Milestone 13); lawn restore re-enabled for rejoin.
+	Milestone 9 / schema v2 (Milestone 13); lawn checkpoint for leave/rejoin.
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -40,7 +41,11 @@ local SAVE_RETRIES = 5
 local PLOT_WAIT_TIMEOUT = 10
 
 local loadedProfiles: { [number]: Types.SaveData } = {}
+-- Lawn checkpoint: only updates on victory / wipe / load — never mid-day live plants.
+local committedBrainrots: { [number]: { Types.PlantedBrainrot } } = {}
+local latestSnapshots: { [number]: Types.SaveData } = {}
 local saveInFlight: { [number]: boolean } = {}
+local needsResave: { [number]: boolean } = {}
 
 local function deepCopyNumberMap(source: { [string]: number }): { [string]: number }
 	local result: { [string]: number } = {}
@@ -54,6 +59,22 @@ local function deepCopyStringList(source: { string }): { string }
 	local result: { string } = {}
 	for _, value in source do
 		table.insert(result, value)
+	end
+	return result
+end
+
+local function deepCopyPlanted(source: { Types.PlantedBrainrot }): { Types.PlantedBrainrot }
+	local result: { Types.PlantedBrainrot } = {}
+	for _, entry in source do
+		table.insert(result, {
+			instanceId = entry.instanceId,
+			brainrotId = entry.brainrotId,
+			position = {
+				row = entry.position.row,
+				column = entry.position.column,
+			},
+			health = entry.health,
+		})
 	end
 	return result
 end
@@ -185,25 +206,27 @@ end
 local function collectSnapshot(player: Player): Types.SaveData
 	local currentLevel, highestUnlockedLevel, playerHealth = LevelService.getSaveProgress(player)
 	local progress = ProgressService.getSaveSlice(player)
+	local planted = deepCopyPlanted(committedBrainrots[player.UserId] or {})
 
-	local planted: { Types.PlantedBrainrot } = {}
-	local plotModel = PlotService.getPlotModel(player)
-	if plotModel then
-		planted = BrainrotService.getSavePlacements(plotModel)
-	end
+	-- If progression isn't hydrated yet, keep the last loaded/saved profile slice
+	-- so an early autosave cannot wipe brains / unlocks / statistics.
+	local fallback = loadedProfiles[player.UserId] or latestSnapshots[player.UserId]
 
 	return {
 		version = Constants.SAVE_VERSION,
 		currentLevel = currentLevel,
 		highestLevel = highestUnlockedLevel,
 		coins = EconomyConfig.STARTING_COINS, -- never persist match purse; applyDayPurse on join
-		brains = progress.brains,
+		brains = if progress then progress.brains elseif fallback then fallback.brains else ProgressConfig.STARTING_BRAINS,
 		playerHealth = playerHealth,
 		brainrots = planted,
-		unlocks = progress.unlocks,
-		equipped = progress.equipped,
+		unlocks = if progress then progress.unlocks elseif fallback then deepCopyStringList(fallback.unlocks) else deepCopyStringList(ProgressConfig.DEFAULT_UNLOCKS),
+		equipped = if progress then progress.equipped elseif fallback then deepCopyStringList(fallback.equipped) else deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED),
 		upgrades = {},
-		statistics = progress.statistics,
+		statistics = if progress
+			then progress.statistics
+			elseif fallback then deepCopyNumberMap(fallback.statistics)
+			else {},
 	}
 end
 
@@ -284,13 +307,9 @@ local function waitForPlot(player: Player, timeoutSeconds: number): Model?
 	return nil
 end
 
-local function restorePlayer(player: Player, saveData: Types.SaveData)
-	local plotModel = waitForPlot(player, PLOT_WAIT_TIMEOUT)
-	if not plotModel then
-		log:warn("restore skipped (no plot yet)", player.Name)
-		return
-	end
-
+-- Progression (brains / unlocks / stats / day) does not need a plot. Apply it
+-- immediately on join so UI and autosave never see empty defaults.
+local function hydrateProgression(player: Player, saveData: Types.SaveData)
 	ProgressService.applySaveSlice(player, {
 		brains = saveData.brains,
 		unlocks = saveData.unlocks,
@@ -298,39 +317,76 @@ local function restorePlayer(player: Player, saveData: Types.SaveData)
 		statistics = saveData.statistics,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
-	-- Day 1 → STARTING_COINS; later days → 0.
 	CoinService.applyDayPurse(player, saveData.currentLevel)
+end
+
+local function restoreLawn(player: Player, saveData: Types.SaveData)
+	local plotModel = waitForPlot(player, PLOT_WAIT_TIMEOUT)
+	if not plotModel then
+		log:warn("lawn restore skipped (no plot yet)", player.Name)
+		return
+	end
 
 	local EnemyService = require(script.Parent.EnemyService)
 	EnemyService.clearPlot(plotModel)
 	CoinService.clearPlot(plotModel)
 
-	-- Restore planted Brainrots (ids, tiles, HP). Clear first so restore is clean.
+	-- Restore committed lawn only (ids, tiles, HP from last victory / wipe).
 	BrainrotService.clearPlot(plotModel)
 	BrainrotService.restorePlacements(player, saveData.brainrots)
 end
 
+-- Capture snapshot synchronously, then flush to DataStore. Concurrent saves
+-- queue a resave so victory/leave are never dropped while autosave yields.
 local function savePlayer(player: Player, reason: string)
 	local userId = player.UserId
+	local snapshot = collectSnapshot(player)
+	latestSnapshots[userId] = snapshot
+	loadedProfiles[userId] = snapshot
+
 	if saveInFlight[userId] then
+		needsResave[userId] = true
+		log:info("queued save", player.Name, reason)
 		return
 	end
+
 	saveInFlight[userId] = true
 
 	local ok, err = pcall(function()
-		local snapshot = collectSnapshot(player)
-		loadedProfiles[userId] = snapshot
-
-		if not saveToStore(userId, snapshot) then
-			log:warn("failed save", player.Name, reason)
-		else
-			log:info("saved", player.Name, reason)
-		end
+		repeat
+			needsResave[userId] = false
+			local toWrite = latestSnapshots[userId]
+			if not toWrite then
+				break
+			end
+			if not saveToStore(userId, toWrite) then
+				log:warn("failed save", player.Name, reason)
+			else
+				log:info("saved", player.Name, reason)
+			end
+		until not needsResave[userId]
 	end)
+
 	saveInFlight[userId] = nil
+	needsResave[userId] = nil
 	if not ok then
 		log:warn("save threw", player.Name, reason, err)
 	end
+end
+
+-- Snapshot the live plot into the committed lawn (call on victory before saveNow).
+function SaveService.commitLawn(player: Player)
+	local plotModel = PlotService.getPlotModel(player)
+	if not plotModel then
+		committedBrainrots[player.UserId] = {}
+		return
+	end
+	committedBrainrots[player.UserId] = deepCopyPlanted(BrainrotService.getSavePlacements(plotModel))
+end
+
+-- Empty the committed lawn (defeat / day select / reset).
+function SaveService.clearCommittedLawn(player: Player)
+	committedBrainrots[player.UserId] = {}
 end
 
 -- Explicit flush for milestones that advance progression (victory, reset).
@@ -339,8 +395,12 @@ function SaveService.saveNow(player: Player, reason: string?)
 end
 
 function SaveService.resetProgress(player: Player)
+	-- Full wipe: Day 1, empty lawn checkpoint, starter coins (125), default
+	-- unlocks/loadout/stats. Requires two client confirmations before this fires.
 	local defaults = defaultSaveData()
 	loadedProfiles[player.UserId] = defaults
+	latestSnapshots[player.UserId] = defaults
+	committedBrainrots[player.UserId] = {}
 	saveToStore(player.UserId, defaults)
 
 	ProgressService.reset(player)
@@ -354,6 +414,7 @@ function SaveService.resetProgress(player: Player)
 		EnemyService.clearPlot(plotModel)
 		CoinService.clearPlot(plotModel)
 	end
+	BrainrotService.clearPlantCooldowns(player)
 
 	log:info("progress reset", player.Name)
 end
@@ -361,18 +422,27 @@ end
 local function onPlayerAdded(player: Player)
 	local saveData = loadFromStore(player.UserId)
 	loadedProfiles[player.UserId] = saveData
+	committedBrainrots[player.UserId] = deepCopyPlanted(saveData.brainrots)
+	latestSnapshots[player.UserId] = saveData
+
+	-- Sync hydrate first (LevelService already created state in its PlayerAdded).
+	hydrateProgression(player, saveData)
 
 	task.defer(function()
 		if Players:GetPlayerByUserId(player.UserId) then
-			restorePlayer(player, saveData)
+			restoreLawn(player, saveData)
 		end
 	end)
 end
 
 local function onPlayerRemoving(player: Player)
+	-- Always capture a leave snapshot (committed lawn + current day). If another
+	-- save is yielding, this queues a resave instead of being dropped.
 	savePlayer(player, "leave")
 	loadedProfiles[player.UserId] = nil
-	saveInFlight[player.UserId] = nil
+	committedBrainrots[player.UserId] = nil
+	-- Do not clear saveInFlight / latestSnapshots here — an in-flight write may
+	-- still need them to flush the leave snapshot after UpdateAsync resumes.
 end
 
 function SaveService.init()

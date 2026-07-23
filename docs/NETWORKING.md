@@ -38,7 +38,8 @@ Remotes module. That is the only required step.
 | ------------------ | --------------- | ------ | --------------------------------------- |
 | `PlaceBrainrot`    | client → server | ✅ M4  | Request to place a Brainrot on a tile   |
 | `RemoveBrainrot`   | client → server | ✅ M4  | Request to remove a placed Brainrot     |
-| `PlaceBrainrotFailed` | server → client | ✅ M4  | Plant rejected (coins / occupied / …) — toast under Shop |
+| `PlaceBrainrotFailed` | server → client | ✅ M4  | Plant rejected (coins / occupied / recharging / …) — toast under Shop |
+| `PlantCooldownsUpdated` | server → client | ✅ | `brainrotId` → `readyAt` (`GetServerTimeNow`) after plant / Start Day clear |
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
@@ -56,7 +57,8 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` returns `{ coins, level, profile }` — handled by `LevelService.start()`
+`RequestState` returns `{ coins, level, profile, plantCooldowns }` — handled by `LevelService.start()`
+(`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI).
 using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClientState`.
 
 ---

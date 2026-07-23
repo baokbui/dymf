@@ -6,9 +6,10 @@
 	straight to Active — monsters spawn in the forest and walk in (setup time).
 	Drives EnemyService for spawns; broadcasts state via LevelStateChanged.
 
-	Victory keeps planted Brainrots on the plot (also persisted for rejoin).
+	Victory keeps planted Brainrots on the plot and commits them for rejoin.
+	Leave / autosave persist that checkpoint only — mid-day plants are discarded.
 	Coin purse is STARTING_COINS on Day 1 only; after later days end the purse
-	resets to 0. Defeat / Day Select wipe the lawn.
+	resets to 0. Defeat / Day Select wipe the lawn (and the committed checkpoint).
 
 	Milestone 8.
 ]]
@@ -176,8 +177,9 @@ local function onVictory(player: Player, state: PlayerState)
 	})
 	log:info(string.format("%s cleared level %d (+%d brains)", player.Name, clearedNumber, brainsEarned))
 
-	-- Persist unlocked day immediately (don't wait for autosave / leave).
+	-- Commit lawn checkpoint, then persist (mid-day plants after this only stick on next victory).
 	local SaveService = require(script.Parent.SaveService)
+	SaveService.commitLawn(player)
 	SaveService.saveNow(player, "victory")
 
 	task.delay(RESULT_DISPLAY_TIME, function()
@@ -199,6 +201,7 @@ local function onDefeat(player: Player, state: PlayerState)
 	log:info(string.format("%s defeated on level %d — reset to day 1", player.Name, failedLevel))
 
 	local SaveService = require(script.Parent.SaveService)
+	SaveService.clearCommittedLawn(player)
 	SaveService.saveNow(player, "defeat")
 end
 
@@ -251,6 +254,9 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	state.countdownEnd = 0
 	state.activeRun = LevelRun.new(definition)
 	setPhase(player, state, PHASE.Active)
+
+	-- Fresh seed-packet recharges each Start Day (PvZ-style).
+	BrainrotService.clearPlantCooldowns(player)
 end
 
 local function tickCountdown(player: Player, state: PlayerState)
@@ -342,6 +348,7 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 
 	-- Persist empty lawn so rejoin doesn't restore plants from the previous day.
 	local SaveService = require(script.Parent.SaveService)
+	SaveService.clearCommittedLawn(player)
 	SaveService.saveNow(player, "day_select")
 end
 
@@ -428,6 +435,7 @@ function LevelService.start()
 			coins = CoinService.getBalance(player),
 			level = LevelService.getClientState(player),
 			profile = ProgressService.getClientState(player),
+			plantCooldowns = BrainrotService.getPlantCooldowns(player),
 		}
 	end
 

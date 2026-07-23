@@ -3,7 +3,11 @@
 	ProgressService
 	Owns brains, unlocks, equipped loadout, and statistics. SaveService persists
 	the slice; UI only displays ProfileUpdated pushes. Physical Brainrots Store
-	purchases are deferred (Milestone 20).
+	purchases are deferred (Milestone 22).
+
+	Statistics update live via ProfileUpdated. Time played includes the current
+	session in client payloads; it is committed into the saved total on flush
+	(save / leave).
 
 	Milestone 13.
 ]]
@@ -16,7 +20,6 @@ local Brainrots = require(Shared.Brainrots)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
-local Types = require(Shared.Types)
 
 local ProgressService = {}
 ProgressService.Name = "ProgressService"
@@ -29,6 +32,7 @@ type Profile = {
 	equipped: { string },
 	statistics: { [string]: number },
 	sessionStartedAt: number,
+	hydrated: boolean, -- false until SaveService.applySaveSlice (or reset)
 }
 
 local profiles: { [number]: Profile } = {}
@@ -95,9 +99,19 @@ local function ensureProfile(player: Player): Profile
 		equipped = defaultEquipped(),
 		statistics = {},
 		sessionStartedAt = os.clock(),
+		hydrated = false,
 	}
 	profiles[player.UserId] = profile
 	return profile
+end
+
+-- Client-facing stats include uncommitted session time (does not mutate storage).
+local function statsForClient(profile: Profile): { [string]: number }
+	local stats = copyStats(profile.statistics)
+	local elapsed = math.max(0, math.floor(os.clock() - profile.sessionStartedAt))
+	local key = ProgressConfig.STAT_TIME_PLAYED
+	stats[key] = (stats[key] or 0) + elapsed
+	return stats
 end
 
 local function buildPayload(profile: Profile): { [string]: any }
@@ -105,13 +119,13 @@ local function buildPayload(profile: Profile): { [string]: any }
 		brains = profile.brains,
 		unlocks = copyList(profile.unlocks),
 		equipped = copyList(profile.equipped),
-		statistics = copyStats(profile.statistics),
+		statistics = statsForClient(profile),
 	}
 end
 
 local function broadcast(player: Player)
 	local profile = profiles[player.UserId]
-	if not profile then
+	if not profile or not profile.hydrated then
 		return
 	end
 	Remotes.getEvent("ProfileUpdated"):FireClient(player, buildPayload(profile))
@@ -127,8 +141,22 @@ local function flushSessionTime(profile: Profile)
 	profile.sessionStartedAt = os.clock()
 end
 
+function ProgressService.isHydrated(player: Player): boolean
+	local profile = profiles[player.UserId]
+	return profile ~= nil and profile.hydrated
+end
+
 function ProgressService.getClientState(player: Player): { [string]: any }
-	return buildPayload(ensureProfile(player))
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return {
+			brains = profile.brains,
+			unlocks = copyList(profile.unlocks),
+			equipped = copyList(profile.equipped),
+			statistics = {},
+		}
+	end
+	return buildPayload(profile)
 end
 
 function ProgressService.getSaveSlice(player: Player): {
@@ -136,8 +164,12 @@ function ProgressService.getSaveSlice(player: Player): {
 	unlocks: { string },
 	equipped: { string },
 	statistics: { [string]: number },
-}
-	local profile = ensureProfile(player)
+}?
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
+		-- Avoid wiping DataStore with join defaults before SaveService restores.
+		return nil
+	end
 	flushSessionTime(profile)
 	return {
 		brains = profile.brains,
@@ -177,6 +209,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 		profile.statistics = {}
 	end
 	profile.sessionStartedAt = os.clock()
+	profile.hydrated = true
 	broadcast(player)
 end
 
@@ -187,6 +220,7 @@ function ProgressService.reset(player: Player)
 		equipped = defaultEquipped(),
 		statistics = {},
 		sessionStartedAt = os.clock(),
+		hydrated = true,
 	}
 	broadcast(player)
 end
@@ -226,6 +260,9 @@ function ProgressService.addBrains(player: Player, amount: number)
 		return
 	end
 	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
 	local grant = math.floor(amount)
 	profile.brains += grant
 	local key = ProgressConfig.STAT_BRAINS_EARNED
@@ -238,12 +275,16 @@ function ProgressService.brainsForLevel(levelNumber: number): number
 end
 
 function ProgressService.incrementStat(player: Player, key: string, amount: number?)
-	local profile = profiles[player.UserId]
-	if not profile then
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
 		return
 	end
 	local delta = amount or 1
+	if delta == 0 then
+		return
+	end
 	profile.statistics[key] = (profile.statistics[key] or 0) + delta
+	broadcast(player)
 end
 
 local function onSetEquipped(player: Player, raw: unknown)
@@ -251,6 +292,9 @@ local function onSetEquipped(player: Player, raw: unknown)
 		return
 	end
 	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
 	local unlocked = unlockSet(profile.unlocks)
 	local requested: { string } = {}
 	for _, value in raw :: { any } do
@@ -271,25 +315,15 @@ function ProgressService.init()
 end
 
 function ProgressService.start()
-	Players.PlayerAdded:Connect(function(player)
-		ensureProfile(player)
-		task.defer(function()
-			broadcast(player)
-		end)
-	end)
+	-- Profiles are created on demand / by SaveService.applySaveSlice. Do not
+	-- broadcast join defaults — that races restore and shows empty statistics.
 	Players.PlayerRemoving:Connect(function(player)
 		local profile = profiles[player.UserId]
-		if profile then
+		if profile and profile.hydrated then
 			flushSessionTime(profile)
 		end
 		profiles[player.UserId] = nil
 	end)
-	for _, player in Players:GetPlayers() do
-		ensureProfile(player)
-		task.defer(function()
-			broadcast(player)
-		end)
-	end
 	log:info("started")
 end
 

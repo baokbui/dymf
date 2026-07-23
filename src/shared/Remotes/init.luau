@@ -26,6 +26,7 @@ local EVENT_NAMES = {
 	"PlaceBrainrot",
 	"RemoveBrainrot",
 	"PlaceBrainrotFailed",
+	"PlantCooldownsUpdated", -- brainrotId → readyAt (Workspace:GetServerTimeNow)
 	-- Coins (Milestone 3)
 	"CollectCoin",
 	"CoinsUpdated",

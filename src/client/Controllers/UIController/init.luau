@@ -182,6 +182,15 @@ local function buildHudEntries()
 		if inventoryPanel then
 			inventoryPanel:setOpen(false)
 		end
+		if opening then
+			-- Pull fresh statistics (includes live session time) when opening.
+			local ok, state = pcall(function()
+				return Remotes.getFunction("RequestState"):InvokeServer()
+			end)
+			if ok and type(state) == "table" and type(state.profile) == "table" then
+				applyProfile(state.profile)
+			end
+		end
 		settingsPanel:setOpen(opening)
 	end)
 end
@@ -299,6 +308,14 @@ function UIController.start()
 		end
 	end)
 
+	Remotes.getEvent("PlantCooldownsUpdated").OnClientEvent:Connect(function(payload: unknown)
+		local map = if type(payload) == "table" then payload :: { [string]: number } else nil
+		PlacementController.setPlantCooldowns(map)
+		if shop then
+			shop:setPlantCooldowns(map)
+		end
+	end)
+
 	Remotes.getEvent("LevelStateChanged").OnClientEvent:Connect(function(state: unknown)
 		if type(state) == "table" then
 			applyLevelState(state)
@@ -339,7 +356,23 @@ function UIController.start()
 		if type(state.profile) == "table" then
 			applyProfile(state.profile)
 		end
+		if type(state.plantCooldowns) == "table" then
+			local map = state.plantCooldowns :: { [string]: number }
+			PlacementController.setPlantCooldowns(map)
+			if shop then
+				shop:setPlantCooldowns(map)
+			end
+		end
 	end
+
+	task.spawn(function()
+		while true do
+			task.wait(0.1)
+			if shop then
+				shop:refresh()
+			end
+		end
+	end)
 
 	log:info("started")
 end

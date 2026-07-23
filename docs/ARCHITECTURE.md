@@ -366,13 +366,15 @@ Full details in `SAVE_SYSTEM.md`. Summary:
 - **`SaveService`** is now the sole DataStore boundary (`BVZ_PlayerData_v1`), with
   versioned load/migrate/save logic.
 - Player progression (`currentLevel`, `highestLevel`, `brains`, `playerHealth`,
-  planted Brainrots, unlocks, loadout, statistics) persists on leave, autosave,
-  and victory/defeat.
+  committed lawn Brainrots, unlocks, loadout, statistics) persists on leave,
+  autosave, and victory/defeat.
+- Lawn is a **victory checkpoint** (`commitLawn` / `clearCommittedLawn`); mid-day
+  plants are not written until the day is won. Concurrent saves queue a resave.
 - Match coins always reset via `applyDayPurse` on join (not stored as balance).
 - Restore flow: `LevelService.applySaveProgress`, `CoinService.applyDayPurse`,
-  `BrainrotService.restorePlacements`.
-- Transient state remains unsaved: monsters, projectiles, ground coins, temporary
-  combat status, and active level timers.
+  `BrainrotService.restorePlacements` (committed list).
+- Transient state remains unsaved: mid-day plants, monsters, projectiles, ground
+  coins, temporary combat status, and active level timers.
 
 ### Milestone 10 — Additional Monsters ✅
 
@@ -403,7 +405,9 @@ Full details in `COMBAT.md`. Summary:
 Full details in `UI.md`. Summary:
 
 - **`ProgressService`** + **`ProgressConfig`** — brains, unlocks, equipped loadout,
-  statistics; `ProfileUpdated` / `SetEquipped` remotes.
+  statistics; `ProfileUpdated` / `SetEquipped` remotes. Stats increment broadcasts
+  immediately; time played includes the live session in client payloads. Join
+  hydrate is synchronous from `SaveService` so defaults cannot wipe saved stats.
 - **Hearts HUD** — 5 house hearts; LevelService −1 per breach, defeat at 0.
 - **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.

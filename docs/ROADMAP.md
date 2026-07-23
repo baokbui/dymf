@@ -448,7 +448,7 @@ Persist player progress.
 - **`docs/BALANCE.md`** — design targets and knob locations
 - **`EconomyConfig`** — `STARTING_COINS` 125; passive 25 coins / 25s
 - **`LevelConfig`** — 5 hearts; big-wave warning 5s; spawn fallbacks tuned
-- **`Shared.Brainrots`** — roster costs, DPS, wall tankiness, Bombardino 2800 row nuke
+- **`Shared.Brainrots`** — roster costs, DPS, wall tankiness, Bombardino 1000 row nuke
 - **`Shared.Monsters`** — single `Zombie` profile; `Goblin` / `GoblinElite` species mix
 - **`Shared.Levels`** — L1–4 Zombie-only (count/pacing); L5+ species mix; Goblin Elite spawn delay
 
