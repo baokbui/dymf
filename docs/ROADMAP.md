@@ -214,7 +214,7 @@ Create enemies.
 ## Roster
 
 - Zombie, Vampire, Werewolf, Skeleton, Goblin
-- Bosses: Orc, Necromancer, Goblin King, Queen Spider, Duke Vampire
+- Bosses: Goblin Elite, Necromancer, Goblin King, Queen Spider, Duke Vampire
 - Spider (jump ability)
 
 
@@ -275,7 +275,7 @@ Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 - Victory / Defeat detection
 - Rewards
 - Linear progression (unlock next level)
-
+- Lawn carry-over on victory (plants stay, coins reset); wipe on defeat / day select
 
 
 ## Complete When
@@ -344,7 +344,7 @@ Persist player progress.
 
 - Introduce monsters from the roster into campaign data.
 - **One** new non-boss every 5 levels (Level 5 = Goblin).
-- **One** boss every 10 levels (Level 10 = Orc); repeat at 15 / 20, etc.
+- **One** boss every 10 levels (Level 10 = Goblin Elite); repeat at 15 / 20, etc.
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
 
 
@@ -449,8 +449,8 @@ Persist player progress.
 - **`EconomyConfig`** — `STARTING_COINS` 125; passive 25 coins / 25s
 - **`LevelConfig`** — 5 hearts; big-wave warning 5s; spawn fallbacks tuned
 - **`Shared.Brainrots`** — roster costs, DPS, wall tankiness, Bombardino 2800 row nuke
-- **`Shared.Monsters`** — single `Zombie` profile; `Goblin` / `Orc` species mix
-- **`Shared.Levels`** — L1–4 Zombie-only (count/pacing); L5+ species mix; Orc spawn delay
+- **`Shared.Monsters`** — single `Zombie` profile; `Goblin` / `GoblinElite` species mix
+- **`Shared.Levels`** — L1–4 Zombie-only (count/pacing); L5+ species mix; Goblin Elite spawn delay
 
 ## Complete When
 
@@ -527,7 +527,7 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
 
 ## Complete When
 
-- Campaign monsters used in authored levels (at least Zombie, Goblin, Orc, plus
+- Campaign monsters used in authored levels (at least Zombie, Goblin, Goblin Elite, plus
   any other types already in `Shared.Levels`) use real models in-game instead of
   colored placeholder parts.
   - **Pipeline ✅** — insert Toolbox Models per `docs/MONSTERS.md` Models table to finish.
@@ -867,7 +867,7 @@ and evolutions/mutations (M24).
 
 ## Complete When
 
-- Defeating Orc (and later bosses) once unlocks a house trophy.
+- Defeating Goblin Elite (and later bosses) once unlocks a house trophy.
 - Trophy appears on a pedestal after rejoin (save/load).
 - Displayed bosses grant brains over time; spend path uses existing brains sinks.
 - Exploits (fake collect, double income) fail server validation.

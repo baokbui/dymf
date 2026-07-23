@@ -41,11 +41,19 @@ From `Shared.Types.MonsterDefinition`:
 | `color`           | Color3?                | Placeholder / fallback tint                          |
 | `modelId`         | string?                | Child name under `Assets.Monsters` (defaults to `id`) |
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing house (−X)                  |
+| `walkAnimationId` | string?                | Walk loop (`rbxassetid://…`); falls back to config   |
+| `attackAnimationId` | string?              | Melee swing while chewing; falls back to config      |
+| `laneSpan`        | number?                | Rows this unit occupies for targeting (default 1; Goblin Elite = 3) |
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
 (`GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET`) and walk toward
 the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
+
+**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan`
+tiles across Z, and Brainrots on adjacent rows can target them (half-span
+tolerance around the spawn row). Spawns pick a center row so the span stays
+on the lawn (e.g. span 3 → rows 2–4 on a 5-row grid).
 
 ---
 
@@ -53,10 +61,25 @@ to lawn is the day's plant/setup window.
 
 Placed visuals come from **Toolbox / Studio Models** under
 `ReplicatedStorage.Assets.Monsters`. `MonsterModel.create` resolves
-`definition.modelId or definition.id`, clones + scales to
-`MonsterConfig.FOOTPRINT_RATIO` (bosses ×1.15), faces
-`MonsterConfig.MODEL_FACE_DIRECTION` (−X toward the house), and tags identity.
-Shared helpers: `Shared.Utilities.ModelUtil`.
+`definition.modelId or definition.id`, clones + scales to fit
+`MonsterConfig` height/footprint, faces `MODEL_FACE_DIRECTION` (−X toward the
+house), and tags identity. Shared helpers: `Shared.Utilities.ModelUtil`.
+
+On `EnemyService.start`, `ModelUtil.sanitizeAllMonsterAssets` strips Scripts,
+LocalScripts, ModuleScripts, Sounds, Humanoids, and Tools from every template
+**in-place** (keeps welded club MeshParts, Motor6Ds, and Animation children).
+
+Clones use `preserveAnimationRig = true`: only the root part is Anchored so
+Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
+
+1. `WalkAnimation` / `AttackAnimation` children under the template (if present)
+2. `definition.walkAnimationId` / `attackAnimationId` (`""` disables that track)
+3. `MonsterConfig.DEFAULT_WALK_ANIMATION_ID` / `DEFAULT_ATTACK_ANIMATION_ID`
+   when the definition omits the field (`nil`)
+
+**Goblin** disables walk (`walkAnimationId = ""`) — catalog R15 walk looked
+buggy against grid snap — and plays a one-shot club swing (`ToolSlash`) each
+chew hit via `MonsterAnimation.playMelee`.
 
 If a template is missing, the server logs once and uses the colored Part
 placeholder so gameplay still works. Movement uses `snapFeetToTileTop` so
@@ -72,14 +95,17 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | ------------- | ---------------------- |
 | `Zombie` | `Zombie` |
 | `Goblin` | `Goblin` |
-| `Orc` | `Orc` |
+| `GoblinElite` | `GoblinElite` |
 
-Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`,
-strip Tools/Scripts, and use `modelOrientationDegrees` if the mesh needs a
-Tung-style upright fix.
+Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
+(prefer `HumanoidRootPart`). You do **not** need to hand-delete Scripts —
+`sanitizeAllMonsterAssets` does that on server start. Optional: parent
+`WalkAnimation` / `AttackAnimation` instances under the model to override
+catalog IDs. Use `modelOrientationDegrees` if the mesh needs a Tung-style
+upright fix.
 
 M16 **Complete When** is met once campaign monsters in authored levels use real
-models (at least Zombie, Goblin, Orc).
+models (at least Zombie, Goblin, Goblin Elite).
 
 ---
 
@@ -92,7 +118,7 @@ models (at least Zombie, Goblin, Orc).
 | Werewolf | 1400 | 3.2 | 130 | 1.1s | | — |
 | Skeleton | 950 | 4.5 | 95 | 1.5s | | — |
 | Goblin | 150 | 3.4 | 75 | 1.1s | | — |
-| Orc | 12000 | 7.5 | 8000 | 3.5s | Y | One-shot brainrot (club) |
+| Goblin Elite | 12000 | 11 | 8000 | 3.5s | Y | One-shot club; **laneSpan 3** |
 | Spider | 900 | 3.2 | 90 | 1.4s | | Jump over first brainrot |
 | Necromancer | 9000 | 6 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
 | Goblin King | 13000 | 6.5 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |
@@ -141,8 +167,9 @@ MonsterBehavior (movement + attack tick)
 - Monsters spawn at column `COLUMNS + SPAWN_COLUMN_OFFSET` on a chosen grid row
   (forest march).
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
-- Monsters **phase through each other** on the same row (no blocking). Slight Z
-  stagger keeps overlaps readable. They only stop for Brainrots (or the house).
+- Monsters **phase through each other** on the same row (no blocking — all parts
+  `CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
+  They only stop for Brainrots (or the house).
 - When the tile **immediately west** holds a Brainrot, the monster walks toward it
   and stops at its natural position once **close enough** (`MELEE_CLOSE_REACH`) —
   no snap or teleport. It attacks on `attackInterval` and only advances once the
@@ -150,6 +177,8 @@ MonsterBehavior (movement + attack tick)
   both sides can hit while the monster is in the east-adjacent stand tile.
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
+- On death, `MonsterDeath` freezes the Motor6D pose, tips (forward / side / back),
+  lingers, fades — so authored animated models do not glitch upright.
 
 Boss skill stubs (Queen Spider, Duke Vampire, Goblin King speed buff) are
 registered and will be completed in Milestones 7 and 10.
@@ -158,13 +187,13 @@ registered and will be completed in Milestones 7 and 10.
 
 ## Campaign rollout ✅ (Milestone 10)
 
-The roster is introduced **one monster at a time** through campaign levels:
+The roster is introduced **one monster at a time** through campaign levels
+(spawn counts assume **lawn carry-over** after victory — see `LEVELS.md`):
 
-- Levels 1–4: same `Zombie` profile, with gradual count/pacing changes only.
+- Levels 1–4: same `Zombie` profile, with rising counts/pacing (Day 1 empty board).
 - **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).
-- Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps slowly (Level 8 is a
-  plateau at roughly the same pressure as Level 7).
-- **Level 10:** first boss — `Orc` (heavy melee counterpart to the Goblin line).
+- Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps for a growing defense.
+- **Level 10:** first boss — `GoblinElite` / Goblin Elite (heavy melee counterpart to the Goblin line).
 
 Future cadence when levels are authored: **one** new non-boss every 5 levels
 (e.g. Level 15), **one** boss every 10 levels (e.g. Level 20). Further

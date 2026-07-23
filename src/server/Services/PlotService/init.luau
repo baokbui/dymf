@@ -94,8 +94,8 @@ local function releasePlot(player: Player)
 	local plot = plotsByUserId[player.UserId]
 	if plot then
 		applyHouseOwnerLabel(plot.model, nil)
-		-- Clear service-owned runtimes before wiping folders (placements survive
-		-- folder ClearAllChildren and would otherwise be re-saved on leave).
+		-- Clear service-owned runtimes before wiping folders.
+		-- SaveService already snapshotted the lawn on PlayerRemoving (connected in init).
 		require(script.Parent.BrainrotService).clearPlot(plot.model)
 		require(script.Parent.EnemyService).clearPlot(plot.model)
 		require(script.Parent.CoinService).clearPlot(plot.model)

@@ -22,7 +22,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
   final group is the **big wave** (the PvZ "flag"), preceded by a warning.
 - Clearing every group (no monsters left alive) → **Victory** → brains reward +
 unlock next day. A monster reaching the house → **−1 heart**; at **0 hearts** →
-**Defeat** → retry the same day.
+**Defeat** → reset to **Day 1** (lawn cleared; `highestUnlocked` kept for Day Select).
 
 This keeps the moment-to-moment PvZ pacing (rising intensity into a final rush)
 while making overall progress a finite, designed campaign rather than infinite
@@ -39,8 +39,9 @@ Start Day ─► Active (plant + fight; monsters march from forest)
    │                  (progress bar → big wave)
    │                              │
    └──── Reward + unlock next ◄── Victory
-                                  │
-              Defeat (house breached) ─► retry day
+         (keep planted Brainrots;     │
+          reset coins to STARTING)    │
+              Defeat (0 hearts) ─► clear lawn + coins → Day 1
 ```
 
 During `Preparation`, planting and ground-coin drops are blocked. Both unlock
@@ -49,6 +50,14 @@ deep in the dark forest (`MonsterConfig.SPAWN_COLUMN_OFFSET` columns east of
 the lawn) and walk west into the plot — that approach is the plant/setup
 window. First spawn groups use a short `startDelay` (~1.5s); travel time to
 the lawn edge is ~20–30s depending on species speed.
+
+**Lawn carry-over:** after **Victory**, planted Brainrots (and their remaining
+HP) stay on the plot. Coin purse: **Day 1 → `STARTING_COINS` (125)**; after any
+later day ends → **0**. After **Defeat**, the lawn is cleared and `currentLevel`
+resets to **Day 1** with 125 coins (`highestUnlocked` kept for Day Select).
+**Day Select** clears the lawn and applies the purse for the selected day.
+**Rejoin restores** saved plants (DataStore). Brainrots only attack / spit coins
+while the day is **`Active`**.
 
 Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (unused /
 optional), `Active`, `Victory`, `Defeat`.
@@ -96,23 +105,24 @@ Levels.count()             -- number of authored levels
 Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 `DEFAULT_GROUP_DELAY`.
 
-### Seeded campaign ✅ (Milestones 8 + 10)
+### Seeded campaign ✅ (Milestones 8 + 10; retuned for lawn carry-over)
 
-All levels use the same **`Zombie`** grunt stats. Early levels are easier because
-of **lower counts** and **slower pacing**, not weaker zombie types:
+All early levels use the same **`Zombie`** grunt stats. Day 1 is authored for an
+**empty lawn**; Days 2+ assume the player kept plants from prior victories, so
+counts and pacing are higher than a wipe-each-day campaign:
 
-| Day | name              | mix (count per group)                              |
-| ----- | ----------------- | -------------------------------------------------- |
-| 1     | First Contact     | 1, 2, **2** Zombie                                 |
-| 2     | Rising Tide       | 2, 2, **2** Zombie                                 |
-| 3     | Greenhorns        | 2, 3, **3** Zombie                                 |
-| 4     | Pressing Forward  | 2, 3, **3** Zombie                                 |
-| 5     | Goblin Scout      | 3 Zombie, **1** Goblin, 2 Zombie, **2** Goblin     |
-| 6     | Quick Feet        | 3 Zombie, 2 Goblin, 2 Zombie, **3** Goblin         |
-| 7     | Crooked Charge    | 3 Goblin, 3 Zombie, 2 Goblin, **2** Zombie         |
-| 8     | Hold the Line     | 3 Zombie, 3 Goblin, 2 Zombie, **3** Goblin       |
-| 9     | Before the Banner | 4 Goblin, 3 Zombie, 3 Goblin, **3** Zombie         |
-| 10    | Orc Warlord       | 4 Zombie, 4 Goblin, 3 Zombie, **1** Orc (boss)     |
+| Day | name              | mix (count per group) · total                  |
+| ----- | ----------------- | ---------------------------------------------- |
+| 1     | First Contact     | 1, 2, **2** Zombie · **5**                     |
+| 2     | Rising Tide       | 2, 3, **3** Zombie · **8**                     |
+| 3     | Greenhorns        | 3, 3, **4** Zombie · **10**                    |
+| 4     | Pressing Forward  | 3, 4, **5** Zombie · **12**                    |
+| 5     | Goblin Scout      | 4 Zombie, **2** Goblin, 3 Zombie, **3** Goblin · **12** |
+| 6     | Quick Feet        | 4 Zombie, 3 Goblin, 3 Zombie, **4** Goblin · **14** |
+| 7     | Crooked Charge    | 4 Goblin, 4 Zombie, 3 Goblin, **3** Zombie · **14** |
+| 8     | Hold the Line     | 4 Zombie, 4 Goblin, 3 Zombie, **5** Goblin · **16** |
+| 9     | Before the Banner | 5 Goblin, 4 Zombie, 4 Goblin, **5** Zombie · **18** |
+| 10    | Goblin Elite      | 5 Zombie, 5 Goblin, 4 Zombie, **1** GoblinElite · **15** |
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
 bundle of types in a single level.
@@ -122,23 +132,24 @@ Introduction cadence (repeat when authoring Levels 15, 20, …):
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
   `Goblin`; Level 15 would be the next roster entry when authored).
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
-  `Orc`; Level 20 would be the next boss when authored).
+  `GoblinElite`; Level 20 would be the next boss when authored).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 
 ### Difficulty ramp (early campaign)
 
 Progression is tuned in **small steps** across level data — never a single giant
-spike between adjacent levels:
+spike between adjacent levels. **Lawn carry-over** is part of the balance: later
+days expect a stronger board, so spawn pressure rises to match.
 
-1. **Species** — new monster types enter one at a time (Level 5 = `Goblin`; Level 10 = `Orc` boss).
-2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 6 →
-   Level 3: 8).
+1. **Species** — new monster types enter one at a time (Level 5 = `Goblin`; Level 10 = `GoblinElite` boss).
+2. **Count** — total enemies per level rise slowly (Level 1: 5 → Level 2: 8 →
+   Level 3: 10 → … → Level 9: 18).
 3. **Pacing** — inter-group `startDelay` and `spawnInterval` shrink gradually;
    first-group delay is short (~1.5s) because plant time is the forest march
    (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 4. **Big wave** — the final group is the hardest step *within* a level, not a
-   jump to endgame tuning. Level 10 Orc spawns with extra lead time (`startDelay` 22s).
+   jump to endgame tuning. Level 10 Goblin Elite spawns with lead time (`startDelay` 18s).
 
 Level 1 is intentionally gentle: one zombie at a time with long gaps, plus enough
 starting coins for Ballerina + Tung Tung (`EconomyConfig.STARTING_COINS` = 125).
@@ -177,13 +188,14 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
   move/fight), and announcing the big wave.
 - Tracking progress and detecting **Victory** (all groups spawned and cleared)
   vs. **Defeat** (a monster reaches the house).
-- On **Victory**: clearing the plot (Brainrots, monsters, ground coins) and
-  resetting coins to `EconomyConfig.STARTING_COINS` (PvZ-style fresh start),
-  then unlocking/advancing to the next level.
-- On **Defeat**: same plot reset (Brainrots, monsters, ground coins removed;
-  balance reset to starting coins). Phase stays **`Defeat`** until the player
-  presses **Restart Day** (`StartLevel` remote). Passive and ability coin
-  drops are blocked outside `Active`.
+- On **Victory**: clear monsters / projectiles / ground coins; **keep planted
+  Brainrots** (current HP); set coin purse via `applyDayPurse` (Day 1 → 125,
+  later days → 0); then unlock/advance to the next level.
+- On **Defeat**: clear Brainrots, monsters, ground coins; set `currentLevel` to
+  **1**; hearts refill; purse → 125 (`highestUnlockedLevel` unchanged). Phase
+  stays **`Defeat`** until the player presses **Start Day 1**. Passive and
+  ability coin drops are blocked outside `Active`.
+- On **Day Select**: full lawn wipe; purse via `applyDayPurse` for the selected day.
 - Broadcasting phase / level number / progress via `LevelStateChanged` (see
   `NETWORKING.md`).
 
@@ -198,8 +210,13 @@ later as its own mode).
 
 - The **current level**, **highest unlocked level**, and **hearts** are persisted.
 - Hearts are **progressive** across days (not refilled on victory / Start Day /
-  day select). Full refill on **defeat retry** and Reset Progress only.
-- **Coins** reset to `STARTING_COINS` on every join (not persisted).
-- Planted Brainrots, monsters, projectiles, and level timers are **not** persisted.
-- If a player leaves mid-level: save progression, clear the lawn runtimes.
-- On rejoin: restore day + hearts + brains/unlocks; coins = 125; lawn empty; press Start Day.
+  day select). Full refill on **defeat** (and Reset Progress). Defeat also
+  sets the current day back to **1**.
+- **Coins** — Day 1 → `STARTING_COINS` (125); later days → **0** after each day
+  ends (`CoinService.applyDayPurse`). Not DataStore-persisted.
+- Planted Brainrots are **persisted** (id, tile, HP) and restored on rejoin.
+  Defeat / Day Select clear the lawn (and the next save writes empty).
+- Monsters, projectiles, and level timers are never persisted.
+- If a player leaves mid-level: save progression + plants; clear combat runtimes.
+- On rejoin: restore day + hearts + brains/unlocks + plants; coins via day purse;
+  press Start Day.

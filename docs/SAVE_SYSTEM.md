@@ -15,6 +15,7 @@ Saved (player-owned progression):
 - Highest unlocked level
 - Brains
 - Player health (hearts — progressive across days)
+- **Planted Brainrots** (id, tile, remaining HP)
 - Unlocks
 - Equipped loadout
 - Upgrades
@@ -23,8 +24,8 @@ Saved (player-owned progression):
 
 Not saved (transient / runtime):
 
-- **Coins** (always `EconomyConfig.STARTING_COINS` on join — PvZ-style)
-- **Planted Brainrots** (lawn is always empty on rejoin)
+- **Coins** (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse` on
+  join / day end — never persisted as a balance)
 - Active monsters & their positions
 - Active projectiles
 - Ground coins
@@ -42,19 +43,19 @@ Not saved (transient / runtime):
 | `version`      | number (`SAVE_VERSION` = 2)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
-| `coins`        | number (always written as `STARTING_COINS`) |
+| `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
 | `brains`       | number                     |
 | `playerHealth` | number (hearts, max 5)     |
-| `brainrots`    | `{ PlantedBrainrot }` (always `{}` — legacy field) |
+| `brainrots`    | `{ PlantedBrainrot }`      |
 | `unlocks`      | `{ string }`               |
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M25 |
 
-`PlantedBrainrot` remains on the type for older payloads but is **never written or
-restored**. `CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }`
-— see `HOUSE.md`.
+`PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
+`CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see
+`HOUSE.md`.
 
 Relevant constants (`Shared.Constants`):
 
@@ -71,10 +72,16 @@ Relevant constants (`Shared.Constants`):
 
 - Load a player's `SaveData` on join (defaulting new players from config:
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
-- Migrate older `version` payloads forward (legacy `brainrots` cleared).
-- Persist on leave and on a periodic autosave.
-- Coordinate restore with other services (empty lawn, balance via `CoinService`,
-  day/hearts via `LevelService`, unlocks via `ProgressService`).
+- Migrate older `version` payloads forward.
+- Persist on leave, periodic autosave, day victory, and defeat (`saveNow`).
+- Leave-save is connected in `init()` so it runs **before** `PlotService` /
+  `BrainrotService` clear the lawn on `PlayerRemoving`.
+- Writes via `UpdateAsync` with JSON round-trip + retries (Studio may still log
+  transient Roblox-cloud `HTTP 500` lines; look for `SaveService` retry/success
+  logs — enable **Studio Access to API Services** in Game Settings).
+- Coordinate restore: day/hearts via `LevelService`, unlocks via
+  `ProgressService`, purse via `CoinService.applyDayPurse`, lawn via
+  `BrainrotService.restorePlacements`.
 
 ---
 
@@ -82,15 +89,29 @@ Relevant constants (`Shared.Constants`):
 
 If a player leaves during a level:
 
-- Save progression (day, hearts, brains, unlocks).
-- End the active level; clear Brainrot / monster / coin runtimes on plot release.
+- Save progression (day, hearts, brains, unlocks) **and** planted Brainrots.
+- End the active level; clear monster / coin runtimes on plot release.
 
 On rejoin:
 
 - Restore day, hearts, brains, unlocks / loadout.
-- Coins reset to `STARTING_COINS` (125).
-- Lawn is **empty** — press Start Day to play again.
-- Monsters are never restored.
+- Restore planted Brainrots (positions + HP).
+- Coins via `applyDayPurse` (Day 1 → 125; later → 0).
+- Monsters are never restored — press Start Day to play again.
+
+---
+
+## Session lawn rules
+
+| Event | Brainrots | Coins | Monsters / ground coins |
+| ----- | --------- | ----- | ----------------------- |
+| Victory → next day | **Keep** (current HP); saved | Day 1 → 125; else **0** | Cleared |
+| Defeat | Cleared; **current day → 1**; saved empty | **125** | Cleared |
+| Day Select | Cleared; next save empties store | Day 1 → 125; else **0** | Cleared |
+| Leave / Rejoin | **Persisted** / restored | Day purse (not saved) | Cleared |
+| Reset Progress | Cleared | **125** | Cleared |
+
+See `LEVELS.md` / `BALANCE.md` — campaign spawn pressure assumes carry-over.
 
 ---
 
@@ -98,5 +119,5 @@ On rejoin:
 
 A confirmed Reset (via Settings UI → `ResetProgress` remote, see `UI.md` /
 `NETWORKING.md`) deletes all saved progress and returns the player to level 1
-with starter coins, full hearts, default unlocks/loadout, and empty statistics.
-Never erase save data unless Reset is explicitly confirmed.
+with starter coins, full hearts, default unlocks/loadout, empty lawn, and empty
+statistics. Never erase save data unless Reset is explicitly confirmed.

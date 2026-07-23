@@ -12,13 +12,13 @@ local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local Abilities = require(script.Parent.Abilities)
+local MonsterAnimation = require(script.Parent.MonsterAnimation)
 local MonsterFeedback = require(script.Parent.MonsterFeedback)
 local MonsterModel = require(script.Parent.MonsterModel)
 local MonsterStatus = require(script.Parent.MonsterStatus)
 
 local GridService = require(script.Parent.Parent.GridService)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
-local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
 
 export type MonsterRuntime = {
 	instanceId: string,
@@ -69,23 +69,12 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 	}
 end
 
-local function lanePhaseZOffset(instanceId: string): number
-	-- Stable per-instance lateral offset so faster units can visibly pass through.
-	local hash = 0
-	for i = 1, #instanceId do
-		hash += string.byte(instanceId, i)
-	end
-	local slot = (hash % 5) - 2 -- -2 .. 2
-	return slot * PlotConfig.TILE_SIZE * MonsterConfig.LANE_PHASE_Z_RATIO
-end
-
 local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
 	if not worldPos then
 		return
 	end
-	worldPos = worldPos + Vector3.new(0, 0, lanePhaseZOffset(runtime.instanceId))
-	-- Preserve facing; move whole model (multi-part Toolbox templates).
+	-- Preserve facing; snap feet to the lane center (no lateral stagger).
 	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY)
 	MonsterModel.setColumn(runtime.model, runtime.column)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
@@ -168,7 +157,16 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 			handler.onSpawn(abilityContext(runtime), runtime.abilityState)
 		end
 	end
+	MonsterAnimation.bind(runtime.model, runtime.definition)
 	syncTransform(runtime)
+end
+
+local function setAttacking(runtime: MonsterRuntime, attacking: boolean)
+	if runtime.isAttacking == attacking then
+		return
+	end
+	runtime.isAttacking = attacking
+	MonsterAnimation.setAttacking(runtime.model, attacking)
 end
 
 function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number, callbacks: BehaviorCallbacks)
@@ -204,6 +202,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		end
 
 		if now < runtime.frozenUntil then
+			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			if runtime.freezeVisual == "Bubble" then
 				local bob = MonsterConfig.BUBBLE_FLOAT_OFFSET
 					+ math.sin(now * MonsterConfig.BUBBLE_BOB_SPEED) * MonsterConfig.BUBBLE_BOB_AMPLITUDE
@@ -221,6 +220,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			MonsterFeedback.setFrozen(runtime.model, false)
 			MonsterFeedback.setBubbled(runtime.model, false)
 		end
+		MonsterAnimation.setLocomotionPaused(runtime.model, false)
 
 		-- Movement / attack never considers other monsters — units phase through
 		-- each other and only stop for Brainrots (or the house).
@@ -234,17 +234,18 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			clampOutOfBrainrotTile(runtime, brainrotColumn)
 
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then
-				runtime.isAttacking = true
+				setAttacking(runtime, true)
 				syncTransform(runtime)
 
 				runtime.attackCooldown -= dt
 				if runtime.attackCooldown <= 0 then
 					callbacks.attackBrainrot(runtime, brainrotId)
+					MonsterAnimation.playMelee(runtime.model)
 					MonsterFeedback.pulseAttack(runtime.model)
 					runtime.attackCooldown = runtime.definition.attackInterval
 				end
 			else
-				runtime.isAttacking = false
+				setAttacking(runtime, false)
 				local speed = runtime.definition.secondsPerGrid
 				if speed > 0 then
 					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
@@ -255,7 +256,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				syncTransform(runtime)
 			end
 		else
-			runtime.isAttacking = false
+			setAttacking(runtime, false)
 			local speed = runtime.definition.secondsPerGrid
 			if speed > 0 then
 				local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)

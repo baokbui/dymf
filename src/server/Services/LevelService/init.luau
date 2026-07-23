@@ -6,6 +6,10 @@
 	straight to Active — monsters spawn in the forest and walk in (setup time).
 	Drives EnemyService for spawns; broadcasts state via LevelStateChanged.
 
+	Victory keeps planted Brainrots on the plot (also persisted for rejoin).
+	Coin purse is STARTING_COINS on Day 1 only; after later days end the purse
+	resets to 0. Defeat / Day Select wipe the lawn.
+
 	Milestone 8.
 ]]
 
@@ -16,6 +20,7 @@ local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Levels = require(Shared.Levels)
+local Monsters = require(Shared.Monsters)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
@@ -105,15 +110,23 @@ local function beginPreparation(player: Player, state: PlayerState)
 	setPhase(player, state, PHASE.Preparation)
 end
 
--- PvZ-style reset: empty lawn and starting coins (victory advance or defeat retry).
-local function resetPlotForFreshAttempt(player: Player)
+-- Clear combat leftovers. Brainrots stay on victory; coin purse depends on next day.
+local function clearTransientCombat(player: Player)
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		EnemyService.clearPlot(plotModel)
+		CoinService.clearPlot(plotModel)
+	end
+end
+
+-- Full wipe: Brainrots + monsters + ground coins (defeat / day select).
+local function clearLawn(player: Player)
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
 		BrainrotService.clearPlot(plotModel)
 		EnemyService.clearPlot(plotModel)
 		CoinService.clearPlot(plotModel)
 	end
-	CoinService.resetBalance(player)
 end
 
 local function onVictory(player: Player, state: PlayerState)
@@ -122,7 +135,8 @@ local function onVictory(player: Player, state: PlayerState)
 		return
 	end
 
-	resetPlotForFreshAttempt(player)
+	-- Keep planted Brainrots (and their HP); clear fight leftovers.
+	clearTransientCombat(player)
 
 	local clearedNumber = definition.number
 	local brainsEarned = ProgressService.brainsForLevel(clearedNumber)
@@ -137,6 +151,9 @@ local function onVictory(player: Player, state: PlayerState)
 	if nextDefinition then
 		state.currentLevel += 1
 	end
+
+	-- Day 1 purse = STARTING_COINS; later days start at 0.
+	CoinService.applyDayPurse(player, state.currentLevel)
 
 	-- Hearts stay progressive across days (only refill on defeat retry / reset).
 	state.activeRun = nil
@@ -159,6 +176,10 @@ local function onVictory(player: Player, state: PlayerState)
 	})
 	log:info(string.format("%s cleared level %d (+%d brains)", player.Name, clearedNumber, brainsEarned))
 
+	-- Persist unlocked day immediately (don't wait for autosave / leave).
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.saveNow(player, "victory")
+
 	task.delay(RESULT_DISPLAY_TIME, function()
 		if states[player.UserId] == state then
 			beginPreparation(player, state)
@@ -167,11 +188,18 @@ local function onVictory(player: Player, state: PlayerState)
 end
 
 local function onDefeat(player: Player, state: PlayerState)
+	local failedLevel = state.currentLevel
 	state.activeRun = nil
 	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
-	resetPlotForFreshAttempt(player)
+	-- Full campaign soft-reset: back to Day 1 (keep highestUnlocked for Day Select).
+	state.currentLevel = 1
+	clearLawn(player)
+	CoinService.applyDayPurse(player, 1)
 	setPhase(player, state, PHASE.Defeat)
-	log:info(string.format("%s defeated on level %d", player.Name, state.currentLevel))
+	log:info(string.format("%s defeated on level %d — reset to day 1", player.Name, failedLevel))
+
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.saveNow(player, "defeat")
 end
 
 local function tickActivePlayer(player: Player, state: PlayerState)
@@ -199,7 +227,9 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	if step.spawn then
 		local group = run:getCurrentGroup()
 		if group then
-			EnemyService.spawn(plotModel, group.monsterId, LevelRun.randomRow())
+			local monsterDef = Monsters.get(group.monsterId)
+			local span = if monsterDef and monsterDef.laneSpan then monsterDef.laneSpan else 1
+			EnemyService.spawn(plotModel, group.monsterId, LevelRun.randomRowForSpan(span))
 		end
 	end
 
@@ -301,18 +331,18 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 
 	state.currentLevel = levelNumber
 	-- Keep progressive hearts when switching days (refill only on defeat / reset).
+	-- Day Select starts a fresh lawn — carry-over only applies when advancing via victory.
 	state.activeRun = nil
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
 
-	local plotModel = PlotService.getPlotModel(player)
-	if plotModel then
-		EnemyService.clearPlot(plotModel)
-		BrainrotService.clearPlot(plotModel)
-		CoinService.clearPlot(plotModel)
-	end
-	CoinService.resetBalance(player)
+	clearLawn(player)
+	CoinService.applyDayPurse(player, levelNumber)
 	beginPreparation(player, state)
+
+	-- Persist empty lawn so rejoin doesn't restore plants from the previous day.
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.saveNow(player, "day_select")
 end
 
 local function initPlayer(player: Player)

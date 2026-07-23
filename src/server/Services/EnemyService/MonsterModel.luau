@@ -25,8 +25,18 @@ local MonsterModel = {}
 local log = Logger.new("MonsterModel")
 local missingTemplateLogged: { [string]: boolean } = {}
 
+local function laneSpanFor(definition: Types.MonsterDefinition): number
+	local span = definition.laneSpan or 1
+	return math.max(1, math.floor(span))
+end
+
 local function bodyHeightFor(definition: Types.MonsterDefinition): number
 	local height = MonsterConfig.BODY_HEIGHT
+	local span = laneSpanFor(definition)
+	if span >= 3 then
+		-- Tall enough to match the wide 3-lane footprint without looking squat.
+		return height * 2.15
+	end
 	if definition.isBoss then
 		return height * 1.25
 	end
@@ -34,6 +44,11 @@ local function bodyHeightFor(definition: Types.MonsterDefinition): number
 end
 
 local function footprintFor(definition: Types.MonsterDefinition): number
+	local span = laneSpanFor(definition)
+	if span > 1 then
+		-- Cover ~span tiles across the lawn (Z).
+		return PlotConfig.TILE_SIZE * span * MonsterConfig.LANE_SPAN_FOOTPRINT_RATIO
+	end
 	local footprint = PlotConfig.TILE_SIZE * MonsterConfig.FOOTPRINT_RATIO
 	if definition.isBoss then
 		return footprint * 1.15
@@ -52,6 +67,7 @@ local function applyIdentity(
 	model:SetAttribute("MonsterId", definition.id)
 	model:SetAttribute("PlotName", plotModel.Name)
 	model:SetAttribute("Row", row)
+	model:SetAttribute("LaneSpan", laneSpanFor(definition))
 	model:SetAttribute("Health", definition.health)
 	model:SetAttribute("MaxHealth", definition.health)
 	model:SetAttribute("IsBoss", definition.isBoss == true)
@@ -67,17 +83,14 @@ local function createPlaceholder(
 	parent: Instance
 ): Model
 	local footprint = footprintFor(definition)
-	local bodyHeight = MonsterConfig.BODY_HEIGHT
-	if definition.isBoss then
-		bodyHeight *= 1.25
-	end
+	local bodyHeight = bodyHeightFor(definition)
 
 	local model = Instance.new("Model")
 	model.Name = string.format("%s_%s", definition.id, instanceId)
 
 	local body = Instance.new("Part")
 	body.Name = "Body"
-	body.Size = Vector3.new(footprint, bodyHeight, footprint)
+	body.Size = Vector3.new(footprint * 0.55, bodyHeight, footprint)
 	body.Position = worldPosition + Vector3.new(0, bodyHeight / 2, 0)
 	body.Anchored = true
 	body.Locked = true
@@ -117,12 +130,21 @@ function MonsterModel.create(
 		return createPlaceholder(instanceId, definition, plotModel, row, worldPosition, parent)
 	end
 
-	local model = ModelUtil.cloneTemplate(template, {
+	local span = laneSpanFor(definition)
+	local cloneOptions: ModelUtil.PrepareOptions = {
 		targetFootprint = footprintFor(definition),
-		targetHeight = bodyHeightFor(definition),
 		faceDirection = MonsterConfig.MODEL_FACE_DIRECTION,
 		orientationDegrees = definition.modelOrientationDegrees,
-	})
+		preserveAnimationRig = true,
+		skipBodyAlias = true,
+	}
+	-- Multi-lane bosses size by footprint so they actually span the lawn rows;
+	-- a tight height cap would shrink them back to a single-tile silhouette.
+	if span <= 1 then
+		cloneOptions.targetHeight = bodyHeightFor(definition)
+	end
+
+	local model = ModelUtil.cloneTemplate(template, cloneOptions)
 	model.Name = string.format("%s_%s", definition.id, instanceId)
 	ModelUtil.pivotToTileTop(
 		model,
@@ -131,13 +153,14 @@ function MonsterModel.create(
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
 	applyIdentity(model, instanceId, definition, plotModel, row)
-	-- Toolbox parts must never block other monsters on the same lane.
+	-- Never block other monsters; keep only the root anchored so Motor6Ds animate.
+	local root = model.PrimaryPart
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.Massless = true
-			descendant.Anchored = true
+			descendant.Anchored = descendant == root
 		end
 	end
 	model.Parent = parent

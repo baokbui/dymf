@@ -9,6 +9,7 @@
 	Milestone 14 balance pass — see docs/BALANCE.md.
 ]]
 
+local MonsterConfig = require(script.Parent.Config.MonsterConfig)
 local Types = require(script.Parent.Types)
 
 local Monsters = {}
@@ -67,18 +68,25 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 1.1,
 		isBoss = false,
 		color = Color3.fromRGB(70, 130, 60),
+		-- Catalog R15 walk fights grid snap on this Toolbox rig — club swing only.
+		walkAnimationId = "",
+		attackAnimationId = MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID,
 	},
 
-	Orc = {
-		id = "Orc",
-		name = "Orc",
+	GoblinElite = {
+		id = "GoblinElite",
+		name = "Goblin Elite",
 		health = 12000,
-		secondsPerGrid = 7.5,
+		secondsPerGrid = 11,
 		damage = 8000,
 		attackInterval = 3.5,
 		isBoss = true,
-		abilities = { "OrcClubOneShot" },
+		abilities = { "GoblinEliteClubOneShot" },
+		-- Spans 3 rows: Brainrots on adjacent lanes can attack it. Model scales to match.
+		laneSpan = 3,
 		color = Color3.fromRGB(60, 100, 50),
+		walkAnimationId = "",
+		attackAnimationId = MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID,
 	},
 
 	Spider = {

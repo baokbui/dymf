@@ -221,6 +221,10 @@ LevelService exclusively controls:
 - Victory / Defeat detection
 - Rewards
 - Linear Progression (unlock next day)
+- Lawn rules: **keep Brainrots on victory**; coin purse Day 1 = 125 / later days
+  = 0 after day end; **clear lawn and reset to Day 1 on defeat**; day select
+  clears lawn; **rejoin restores saved plants**. Brainrots only attack /
+  produce while the day is Active.
 
 No other service advances days.
 
@@ -259,6 +263,7 @@ Persist:
 - Highest Unlocked Level
 - Brains
 - Player Health (progressive across days)
+- Planted Brainrots (id, tile, HP)
 - Unlocks
 - Equipped loadout
 - Upgrades
@@ -267,8 +272,7 @@ Persist:
 
 Do NOT persist:
 
-- Coins (reset to `STARTING_COINS` on every join)
-- Planted Brainrots (empty lawn on rejoin)
+- Coins (Day 1 → `STARTING_COINS`; later days → 0 on day end / join)
 - Monsters
 - Monster Positions
 - Projectiles
@@ -278,13 +282,13 @@ Do NOT persist:
 
 If the player leaves during a level:
 
-- Save progression (day, hearts, currencies that persist).
-- Clear lawn runtimes; end the active level.
+- Save progression and planted Brainrots.
+- Clear combat runtimes; end the active level.
 
 When they return:
 
-- Restore day, hearts, brains, unlocks.
-- Coins reset to starting balance; empty lawn — press Start Day again.
+- Restore day, hearts, brains, unlocks, and planted Brainrots.
+- Coins via day purse (Day 1 → 125; later → 0); press Start Day again.
 
 Never erase save data unless Reset Progress is confirmed.
 

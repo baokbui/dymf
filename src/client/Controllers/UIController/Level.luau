@@ -135,7 +135,7 @@ local function phaseMessage(phase: string, countdownRemaining: number?): string
 	elseif phase == PHASE.Victory then
 		return "Victory!"
 	elseif phase == PHASE.Defeat then
-		return "Defeat — try again"
+		return "Defeat — back to Day 1"
 	end
 	return phase
 end
@@ -169,7 +169,7 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 
 	self.startButton.Visible = state.canStart == true
 	if phase == PHASE.Defeat then
-		self.startButton.Text = "Restart Day"
+		self.startButton.Text = "Start Day 1"
 		UITheme.applyButtonLook(self.startButton, UITheme.DANGER)
 		UITheme.applyOutlinedTitle(self.startButton)
 	else

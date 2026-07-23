@@ -58,6 +58,10 @@ export type MonsterDefinition = {
 	color: Color3?,
 	modelId: string?, -- Assets.Monsters child name; defaults to `id`
 	modelOrientationDegrees: Vector3?, -- local Euler after facing house (−X)
+	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
+	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
+	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
+	laneSpan: number?,
 }
 
 -- One ordered burst of monsters within a level (an internal "wave"). A level is

@@ -12,17 +12,21 @@ Status: ✅ Milestone 14
 
 | Phase | Days | Goal |
 | ----- | ------ | ---- |
-| Opening | 1–4 | Learn plant → earn → defend; **Zombie** only, gentle counts/pacing |
+| Opening | 1–4 | Learn plant → earn → defend; **Zombie** only; Day 1 empty board, then carry-over |
 | Campaign | 5–9 | **Zombie** + **Goblin** mix; economy opens mid-tier units |
-| Boss intro | 10 | **Orc** big wave; row clear + sustained DPS, not one bomb |
+| Boss intro | 10 | **Goblin Elite** big wave; row clear + sustained DPS, not one bomb |
 
 Difficulty never uses duplicate stat tiers of the same enemy. It ramps through
 **spawn counts**, **pacing** (`startDelay` / `spawnInterval`), and **monster
-species** (Zombie → Goblin → Orc, …).
+species** (Zombie → Goblin → Goblin Elite, …).
 
-**House hearts:** 5 (one lost per breach). **Match coins** reset to
-`STARTING_COINS` each level (PvZ-style); income during the level funds the
-current attempt only.
+**House hearts:** 5 (one lost per breach). **Match coins:** Day 1 opens with
+`STARTING_COINS` (125); after later days end the purse resets to **0** (earn
+in-match via producers / passive). **Planted Brainrots** carry across
+**victories** and **rejoin** (DataStore); the lawn is wiped on defeat, day
+select, and reset progress. Brainrots only act while the day is **Active**.
+Campaign spawn counts assume that growing board — see `Shared.Levels` /
+`LEVELS.md`.
 
 ---
 
@@ -30,8 +34,8 @@ current attempt only.
 
 | Knob | Value | Rationale |
 | ---- | ----- | --------- |
-| `STARTING_COINS` | 125 | Exactly Ballerina (50) + Tung Tung (75) on level 1 |
-| `PASSIVE_DROP_INTERVAL` | 25s | Passive income cadence during Active levels |
+| `STARTING_COINS` | 125 | Day 1 purse only (Ballerina 50 + Tung Tung 75) |
+| `PASSIVE_DROP_INTERVAL` | 25s | Backup income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
 | Ballerina `coinGeneration` | 25 / 16s | Primary mid-level income when planted |
 
@@ -49,7 +53,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit.
 | Cappuccino | 100 | 5 | Row sniper (60 dmg / 1.75s; 3 hits vs 180 HP Zombie) |
 | Lirili | 150 | 5 | Freeze support (2s; 3.5s interval) |
 | Tralalero | 175 | 5 | Bubble projectile (40 dmg / 4.0s; weaker than Cappuccino) + 1.2s trap |
-| Bombardino | 375 | 1 | Row nuke (2800); ~4× on Orc |
+| Bombardino | 375 | 1 | Row nuke (2800); ~4× on Goblin Elite |
 
 ---
 
@@ -62,7 +66,7 @@ data, not weaker zombie variants:
 | -- | ---- | -- | -------- | -------- |
 | `Zombie` | Grunt (L1+) | 180 | 4.0 | 85 |
 | `Goblin` | Fast grunt (L5+) | 150 | 3.4 | 75 |
-| `Orc` | Boss (L10) | 12000 | 7.5 | 8000 + one-shot ability |
+| `GoblinElite` | Boss (L10) | 12000 | 11 | 8000 + one-shot; **laneSpan 3** (hit from 3 rows) |
 
 ---
 
@@ -72,7 +76,9 @@ data, not weaker zombie variants:
   forest march (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 - Adjacent levels change **counts/pacing/species** — never hidden HP scaling.
 - Big-wave groups use `isBigWave`; warning lead = `BIG_WAVE_WARNING_TIME` (5s).
-- Level 10 Orc wave: extra `startDelay` before the boss spawns.
+- Level 10 Goblin Elite wave: `startDelay` 18s before the boss spawns.
+- **Carry-over retune:** Day 1 total **5** zombies (empty board). Later days
+  scale ~8 → 18 enemies so a kept defense still feels challenged.
 
 ---
 

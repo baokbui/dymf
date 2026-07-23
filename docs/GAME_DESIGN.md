@@ -271,26 +271,25 @@ Supported effects:
 
 # Save System
 
-The battlefield is persistent.
-
-Everything player-owned should be saved.
+Player **progression** is persistent across sessions. The **lawn** is
+session-only carry-over after victories (not DataStore-persisted).
 
 Saved:
 
 - Current Day
 - Highest Unlocked Day
-- Coins
-- Player Health
-- Planted Brainrots
-- Brainrot Positions
-- Brainrot Health
+- Brains
+- Player Health (progressive hearts)
+- Planted Brainrots (positions + HP)
 - Unlocks
+- Equipped loadout
 - Upgrades
 - Statistics
 - Future progression systems
 
 Not Saved:
 
+- Coins (Day 1 → `STARTING_COINS`; later days → 0)
 - Active Monsters
 - Monster Positions
 - Active Projectiles
@@ -300,18 +299,19 @@ Not Saved:
 
 If a player leaves during a day:
 
-- Save the battlefield.
-- Save the current day progression.
-- End the active day.
+- Save progression and planted Brainrots.
+- End the active day; clear combat runtimes.
 
 When the player rejoins:
 
-- Restore the battlefield.
-- Restore coins.
-- Restore all Brainrots.
-- Restore progression.
-- The current day starts over from the beginning.
+- Restore day, hearts, brains, unlocks, and planted Brainrots.
+- Coins via day purse (Day 1 → 125; later → 0).
 - The player must press Start Day again.
+
+Within a session, **victory keeps planted Brainrots**; coin purse is **125 on
+Day 1** and **0 after later days**; **defeat** clears the lawn and sets Day 1
+(with 125); **day select** clears the lawn. Brainrots idle outside **Active**.
+See `LEVELS.md` / `SAVE_SYSTEM.md`.
 
 ---
 

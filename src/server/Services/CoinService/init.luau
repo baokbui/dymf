@@ -159,6 +159,12 @@ function CoinService.resetBalance(player: Player)
 	fireBalance(player)
 end
 
+-- Day 1 opens with STARTING_COINS; later days start the purse at 0 (earn in-match).
+function CoinService.applyDayPurse(player: Player, levelNumber: number)
+	local amount = if levelNumber <= 1 then EconomyConfig.STARTING_COINS else 0
+	CoinService.setBalance(player, amount)
+end
+
 function CoinService.clearPlot(plotModel: Model)
 	local toRemove: { string } = {}
 	for coinId, entry in groundCoins do

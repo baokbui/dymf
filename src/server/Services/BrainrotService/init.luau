@@ -350,6 +350,9 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 			then saved.instanceId
 			else string.format("Brainrot_%d", nextInstanceId + 1)
 		local health = if type(saved.health) == "number" then saved.health else definition.health
+		if health <= 0 then
+			continue
+		end
 
 		local numericSuffix = string.match(instanceId, "^Brainrot_(%d+)$")
 		if numericSuffix then

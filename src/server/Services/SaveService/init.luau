@@ -2,14 +2,15 @@
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
-	(level, coins, brains, health, unlocks, loadout, stats). Does NOT persist
-	planted Brainrots or transient combat/monster state — rejoin is always a
-	fresh empty lawn at the saved day.
+	(level, brains, health, unlocks, loadout, stats) and planted Brainrots on
+	the lawn. Match coins are never persisted (Day 1 purse / later days = 0).
+	Monsters and other combat transients are not saved.
 
-	Milestone 9 / schema v2 (Milestone 13).
+	Milestone 9 / schema v2 (Milestone 13); lawn restore re-enabled for rejoin.
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -35,10 +36,11 @@ local log = Logger.new(SaveService.Name)
 local store = DataStoreService:GetDataStore(Constants.SAVE_DATASTORE_NAME)
 local AUTOSAVE_INTERVAL = 60
 local LOAD_RETRIES = 3
-local SAVE_RETRIES = 3
+local SAVE_RETRIES = 5
 local PLOT_WAIT_TIMEOUT = 10
 
 local loadedProfiles: { [number]: Types.SaveData } = {}
+local saveInFlight: { [number]: boolean } = {}
 
 local function deepCopyNumberMap(source: { [string]: number }): { [string]: number }
 	local result: { [string]: number } = {}
@@ -150,8 +152,31 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
-	-- Legacy field: planted brainrots are no longer restored. Keep empty.
-	save.brainrots = {}
+	local brainrots = payload.brainrots
+	if type(brainrots) == "table" then
+		save.brainrots = {}
+		for _, entry in brainrots do
+			if type(entry) ~= "table" then
+				continue
+			end
+			local row = entry.position and entry.position.row
+			local column = entry.position and entry.position.column
+			local brainrotId = entry.brainrotId
+			local health = entry.health
+			if type(brainrotId) ~= "string" or type(row) ~= "number" or type(column) ~= "number" then
+				continue
+			end
+			table.insert(save.brainrots, {
+				instanceId = if type(entry.instanceId) == "string" then entry.instanceId else "",
+				brainrotId = brainrotId,
+				position = {
+					row = math.floor(row),
+					column = math.floor(column),
+				},
+				health = if type(health) == "number" then math.max(0, health) else 0,
+			})
+		end
+	end
 
 	save.version = Constants.SAVE_VERSION
 	return save
@@ -161,20 +186,44 @@ local function collectSnapshot(player: Player): Types.SaveData
 	local currentLevel, highestUnlockedLevel, playerHealth = LevelService.getSaveProgress(player)
 	local progress = ProgressService.getSaveSlice(player)
 
+	local planted: { Types.PlantedBrainrot } = {}
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		planted = BrainrotService.getSavePlacements(plotModel)
+	end
+
 	return {
 		version = Constants.SAVE_VERSION,
 		currentLevel = currentLevel,
 		highestLevel = highestUnlockedLevel,
-		coins = EconomyConfig.STARTING_COINS, -- match currency never carries across sessions
+		coins = EconomyConfig.STARTING_COINS, -- never persist match purse; applyDayPurse on join
 		brains = progress.brains,
 		playerHealth = playerHealth,
-		-- Lawn is never persisted; rejoin always starts empty.
-		brainrots = {},
+		brainrots = planted,
 		unlocks = progress.unlocks,
 		equipped = progress.equipped,
 		upgrades = {},
 		statistics = progress.statistics,
 	}
+end
+
+-- Round-trip through JSON so DataStore only ever receives plain serializable tables.
+local function encodeForStore(snapshot: Types.SaveData): Types.SaveData?
+	local okEncode, encodedOrErr = pcall(function()
+		return HttpService:JSONEncode(snapshot)
+	end)
+	if not okEncode or type(encodedOrErr) ~= "string" then
+		log:warn("snapshot JSON encode failed", encodedOrErr)
+		return nil
+	end
+	local okDecode, decodedOrErr = pcall(function()
+		return HttpService:JSONDecode(encodedOrErr)
+	end)
+	if not okDecode or type(decodedOrErr) ~= "table" then
+		log:warn("snapshot JSON decode failed", decodedOrErr)
+		return nil
+	end
+	return migrateAndSanitize(decodedOrErr)
 end
 
 local function saveKey(userId: number): string
@@ -192,23 +241,33 @@ local function loadFromStore(userId: number): Types.SaveData
 		if ok then
 			return migrateAndSanitize(raw)
 		end
-		task.wait(0.5 * attempts)
+		log:warn(string.format("GetAsync failed (attempt %d/%d)", attempts, LOAD_RETRIES), raw)
+		task.wait(0.75 * attempts)
 	end
 	return defaultSaveData()
 end
 
 local function saveToStore(userId: number, snapshot: Types.SaveData): boolean
+	local payload = encodeForStore(snapshot)
+	if not payload then
+		return false
+	end
+
 	local key = saveKey(userId)
 	local attempts = 0
 	while attempts < SAVE_RETRIES do
 		attempts += 1
-		local ok = pcall(function()
-			store:SetAsync(key, snapshot)
+		local ok, err = pcall(function()
+			store:UpdateAsync(key, function(_old)
+				return payload
+			end)
 		end)
 		if ok then
 			return true
 		end
-		task.wait(0.5 * attempts)
+		-- Studio often surfaces transient Roblox-cloud HTTP 500s here; retry with backoff.
+		log:warn(string.format("UpdateAsync failed (attempt %d/%d)", attempts, SAVE_RETRIES), err)
+		task.wait(math.min(4, 0.6 * (2 ^ (attempts - 1))))
 	end
 	return false
 end
@@ -239,23 +298,44 @@ local function restorePlayer(player: Player, saveData: Types.SaveData)
 		statistics = saveData.statistics,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
-	-- Match coins always reset on join (PvZ-style); only brains/progression carry.
-	CoinService.resetBalance(player)
+	-- Day 1 → STARTING_COINS; later days → 0.
+	CoinService.applyDayPurse(player, saveData.currentLevel)
 
-	-- Always empty lawn on rejoin (ignore any legacy saved brainrots).
-	BrainrotService.clearPlot(plotModel)
 	local EnemyService = require(script.Parent.EnemyService)
 	EnemyService.clearPlot(plotModel)
 	CoinService.clearPlot(plotModel)
+
+	-- Restore planted Brainrots (ids, tiles, HP). Clear first so restore is clean.
+	BrainrotService.clearPlot(plotModel)
+	BrainrotService.restorePlacements(player, saveData.brainrots)
 end
 
 local function savePlayer(player: Player, reason: string)
-	local snapshot = collectSnapshot(player)
-	loadedProfiles[player.UserId] = snapshot
-
-	if not saveToStore(player.UserId, snapshot) then
-		log:warn("failed save", player.Name, reason)
+	local userId = player.UserId
+	if saveInFlight[userId] then
+		return
 	end
+	saveInFlight[userId] = true
+
+	local ok, err = pcall(function()
+		local snapshot = collectSnapshot(player)
+		loadedProfiles[userId] = snapshot
+
+		if not saveToStore(userId, snapshot) then
+			log:warn("failed save", player.Name, reason)
+		else
+			log:info("saved", player.Name, reason)
+		end
+	end)
+	saveInFlight[userId] = nil
+	if not ok then
+		log:warn("save threw", player.Name, reason, err)
+	end
+end
+
+-- Explicit flush for milestones that advance progression (victory, reset).
+function SaveService.saveNow(player: Player, reason: string?)
+	savePlayer(player, reason or "manual")
 end
 
 function SaveService.resetProgress(player: Player)
@@ -292,6 +372,7 @@ end
 local function onPlayerRemoving(player: Player)
 	savePlayer(player, "leave")
 	loadedProfiles[player.UserId] = nil
+	saveInFlight[player.UserId] = nil
 end
 
 function SaveService.init()
@@ -299,11 +380,19 @@ function SaveService.init()
 	Remotes.getEvent("ResetProgress").OnServerEvent:Connect(function(player: Player)
 		SaveService.resetProgress(player)
 	end)
+
+	-- Connect leave-save in init() so it runs before other services' start()
+	-- PlayerRemoving handlers (PlotService / BrainrotService clear the lawn).
+	Players.PlayerRemoving:Connect(onPlayerRemoving)
+	game:BindToClose(function()
+		for _, player in Players:GetPlayers() do
+			savePlayer(player, "shutdown")
+		end
+	end)
 end
 
 function SaveService.start()
 	Players.PlayerAdded:Connect(onPlayerAdded)
-	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	for _, player in Players:GetPlayers() do
 		onPlayerAdded(player)
 	end
@@ -314,12 +403,6 @@ function SaveService.start()
 			for _, player in Players:GetPlayers() do
 				savePlayer(player, "autosave")
 			end
-		end
-	end)
-
-	game:BindToClose(function()
-		for _, player in Players:GetPlayers() do
-			savePlayer(player, "shutdown")
 		end
 	end)
 

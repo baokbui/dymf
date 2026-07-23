@@ -152,4 +152,16 @@ function LevelRun.randomRow(): number
 	return math.random(1, GridConfig.ROWS)
 end
 
+-- Pick a spawn row that keeps a multi-lane unit fully on the lawn (span 3 → rows 2–4).
+function LevelRun.randomRowForSpan(laneSpan: number): number
+	local span = math.max(1, math.floor(laneSpan))
+	local half = math.floor((span - 1) / 2)
+	local minRow = 1 + half
+	local maxRow = GridConfig.ROWS - half
+	if minRow > maxRow then
+		return math.clamp(math.ceil(GridConfig.ROWS / 2), 1, GridConfig.ROWS)
+	end
+	return math.random(minRow, maxRow)
+end
+
 return LevelRun

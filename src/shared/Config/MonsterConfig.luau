@@ -32,6 +32,9 @@ local MonsterConfig = {
 	BODY_HEIGHT = 7,
 	FOOTPRINT_RATIO = 0.72,
 
+	-- Multi-lane bosses (laneSpan > 1): uniform scale so Z covers ~laneSpan tiles.
+	LANE_SPAN_FOOTPRINT_RATIO = 0.92,
+
 	-- Attack pulse tween (replicated on model body).
 	ATTACK_PULSE_SCALE = 1.15,
 	ATTACK_PULSE_DURATION = 0.1,
@@ -56,9 +59,12 @@ local MonsterConfig = {
 	-- Authored models face this world direction when spawned (toward the house).
 	MODEL_FACE_DIRECTION = Vector3.new(-1, 0, 0),
 
-	-- Lateral Z stagger so overlapping monsters on one row visibly phase through
-	-- each other (fraction of tile size). Movement never blocks on other monsters.
-	LANE_PHASE_Z_RATIO = 0.14,
+	-- Default R15 catalog anims when a definition / model omits IDs.
+	-- Override per monster via walkAnimationId / attackAnimationId, or by
+	-- parenting Animation instances named WalkAnimation / AttackAnimation under
+	-- the Assets.Monsters template.
+	DEFAULT_WALK_ANIMATION_ID = "rbxassetid://507777826", -- R15 Walk
+	DEFAULT_ATTACK_ANIMATION_ID = "rbxassetid://522635514", -- R15 ToolSlash (club swing)
 
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.

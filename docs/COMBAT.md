@@ -39,6 +39,10 @@ so the attacker only hits monsters right beside the Brainrot.
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
 
+Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 3) are valid targets from
+their center row **and** adjacent rows within `floor((laneSpan−1)/2)`. Melee,
+projectiles, and row splash all use this rule via `EnemyService` queries.
+
 ---
 
 ## Projectiles ✅ (Milestone 7)

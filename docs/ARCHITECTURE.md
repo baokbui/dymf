@@ -325,7 +325,7 @@ Full details in `MONSTERS.md`. Summary:
   Movement uses `secondsPerGrid`; attacks use `attackInterval`.
 - **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, dev test spawns.
 - **`EnemyService`** — `spawn`, `MonsterBehavior` grid movement, attack-on-tile,
-  `Abilities/` handlers (Orc one-shot, Spider jump, Necromancer summon, …).
+  `Abilities/` handlers (Goblin Elite one-shot, Spider jump, Necromancer summon, …).
 - **`MonsterModel`** / **`MonsterFeedback`** — models clone from
   `Assets.Monsters` via `ModelUtil` (M16; Part fallback); pulse / hit flash /
   freeze / bubble feedback on the model.
@@ -352,8 +352,8 @@ Full details in `LEVELS.md`. Summary:
 
 - **`LevelService`** — preparation → Start Day → Active (monsters stage in the
   forest, then enter the plot); spawn groups via `LevelRun` scheduler;
-  victory/defeat; plot + coin reset on victory or defeat; `LevelStateChanged`
-  remote.
+  victory keeps planted Brainrots and resets coins; defeat / day select wipe
+  the lawn; `LevelStateChanged` remote.
 - **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
 - **`UIController/Level.luau`** — bottom-right level title, Start / Restart button, progress bar, big-wave banner.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
@@ -365,10 +365,12 @@ Full details in `SAVE_SYSTEM.md`. Summary:
 
 - **`SaveService`** is now the sole DataStore boundary (`BVZ_PlayerData_v1`), with
   versioned load/migrate/save logic.
-- Player progression (`currentLevel`, `highestLevel`, `coins`, `playerHealth`,
-  planted Brainrots, unlocks, upgrades, statistics) persists on leave plus periodic autosave.
-- Restore flow is service-coordinated: `LevelService.applySaveProgress`,
-  `CoinService.setBalance`, and `BrainrotService.restorePlacements` after plot assignment.
+- Player progression (`currentLevel`, `highestLevel`, `brains`, `playerHealth`,
+  planted Brainrots, unlocks, loadout, statistics) persists on leave, autosave,
+  and victory/defeat.
+- Match coins always reset via `applyDayPurse` on join (not stored as balance).
+- Restore flow: `LevelService.applySaveProgress`, `CoinService.applyDayPurse`,
+  `BrainrotService.restorePlacements`.
 - Transient state remains unsaved: monsters, projectiles, ground coins, temporary
   combat status, and active level timers.
 
@@ -379,7 +381,7 @@ Full details in `MONSTERS.md` / `LEVELS.md`. Summary:
 - Campaign content in `Shared.Levels` now includes Levels 4–10.
 - **One** new non-boss monster (`Goblin`) is introduced at Level 5; Levels 6–9
   mix only `Zombie` + `Goblin` with a slow difficulty ramp.
-- **One** boss (`Orc`) is introduced at Level 10 as the big final wave.
+- **One** boss (`GoblinElite`) is introduced at Level 10 as the big final wave.
 - Cadence repeats every 5 / 10 levels when more campaign content is authored.
 - All additions are data-driven level entries; no changes to base enemy AI/service
   architecture were required.

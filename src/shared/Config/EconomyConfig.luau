@@ -21,7 +21,8 @@ local EconomyConfig = {
 	PRODUCER_SPIT_DURATION = 0.85,
 	PRODUCER_SPIT_ARC_HEIGHT = 6,
 
-	-- Reserved for future bonus rewards (victory resets to STARTING_COINS).
+	-- Reserved: future bonus reward amount. Day purse: Day 1 = STARTING_COINS,
+	-- later days = 0 after each day ends (see CoinService.applyDayPurse).
 	LEVEL_COMPLETION_REWARD = 50,
 
 	GROUND_COIN_LIFETIME = 60, -- seconds

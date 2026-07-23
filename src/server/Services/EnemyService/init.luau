@@ -20,6 +20,7 @@ local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local Abilities = require(script.Abilities)
+local MonsterAnimation = require(script.MonsterAnimation)
 local MonsterBehavior = require(script.MonsterBehavior)
 local MonsterDeath = require(script.MonsterDeath)
 local MonsterFeedback = require(script.MonsterFeedback)
@@ -68,6 +69,7 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 		end
 	end
 	monsters[runtime.instanceId] = nil
+	MonsterAnimation.unbind(runtime.model)
 	MonsterFeedback.cleanup(runtime.model)
 	if silent then
 		runtime.model:Destroy()
@@ -223,10 +225,17 @@ function EnemyService.setHouseBreachHandler(handler: (plotModel: Model, row: num
 	houseBreachHandler = handler
 end
 
+local function occupiesRow(runtime: MonsterRuntime, row: number): boolean
+	local span = runtime.definition.laneSpan or 1
+	span = math.max(1, math.floor(span))
+	local half = math.floor((span - 1) / 2)
+	return math.abs(runtime.row - row) <= half
+end
+
 function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { string }
 	local result: { string } = {}
 	for _, runtime in monsters do
-		if runtime.plotModel == plotModel and runtime.row == row and GridUtil.isOnPlotColumn(runtime.column) then
+		if runtime.plotModel == plotModel and occupiesRow(runtime, row) and GridUtil.isOnPlotColumn(runtime.column) then
 			table.insert(result, runtime.instanceId)
 		end
 	end
@@ -243,7 +252,7 @@ function EnemyService.getFirstMonsterInRow(
 	local bestId: string? = nil
 	local bestColumn = math.huge
 	for instanceId, runtime in monsters do
-		if runtime.plotModel ~= plotModel or runtime.row ~= row then
+		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
 			continue
 		end
 		if not GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -266,7 +275,7 @@ function EnemyService.getFirstMonsterInMeleeReach(
 	local bestId: string? = nil
 	local bestColumn = math.huge
 	for instanceId, runtime in monsters do
-		if runtime.plotModel ~= plotModel or runtime.row ~= row then
+		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
 			continue
 		end
 		if not GridUtil.isWithinMeleeReach(fromColumn, runtime.column, reachColumns) then
@@ -289,7 +298,7 @@ function EnemyService.getMonstersInRow(
 	local fullLine = require(ReplicatedStorage.Shared.Config.BrainrotConfig).FULL_LINE_RANGE
 	local result: { string } = {}
 	for _, runtime in monsters do
-		if runtime.plotModel ~= plotModel or runtime.row ~= row then
+		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
 			continue
 		end
 		if GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -419,6 +428,10 @@ function EnemyService.init()
 end
 
 function EnemyService.start()
+	-- Strip Toolbox Scripts / Tools / Humanoids from Assets.Monsters in-place;
+	-- keep Motor6D + AnimationController for walk/attack tracks.
+	ModelUtil.sanitizeAllMonsterAssets()
+
 	task.spawn(function()
 		while true do
 			task.wait(MonsterConfig.BEHAVIOR_TICK)

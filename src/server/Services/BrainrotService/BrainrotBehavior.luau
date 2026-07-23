@@ -161,6 +161,13 @@ function BrainrotBehavior.tick(dt: number)
 			continue
 		end
 
+		-- Lazy require avoids LevelService ↔ BrainrotService cycle.
+		local LevelService = require(script.Parent.Parent.LevelService)
+		local owner = Players:GetPlayerByUserId(placement.ownerUserId)
+		if not owner or not LevelService.isLevelActive(owner) then
+			continue
+		end
+
 		local interval = placement.definition.attackInterval
 		if interval <= 0 then
 			continue

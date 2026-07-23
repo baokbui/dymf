@@ -7,8 +7,9 @@
 	Ground contact uses ModelUtil visual AABB (same as foot snap) so invisible
 	HumanoidRootPart / hitboxes do not leave corpses floating.
 
-	Before tipping, R6/R15 arms are tucked along the torso so they lie flat on
-	the lawn instead of sticking out in a T-pose.
+	Before tipping, freezeCorpse anchors every part and clears Motor6D / Animator
+	so walk/attack rigs do not fight the PivotTo tween. Arms are then tucked
+	along the torso so they lie flat instead of sticking out in a T-pose.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -196,12 +197,51 @@ local function snapVisualToGround(model: Model, pivot: CFrame, groundY: number):
 	return pivot + Vector3.new(0, groundY - GROUND_SINK - minY, 0)
 end
 
+--[[
+	Lock the current pose into a rigid corpse before tipping. Authored monsters
+	keep Motor6D limbs free for walk/attack; leaving them unanchored makes
+	PivotTo fight the Animator and look like a standing glitch.
+]]
+local function freezeCorpse(model: Model)
+	local controller = model:FindFirstChildOfClass("AnimationController")
+	if controller then
+		local animator = controller:FindFirstChildOfClass("Animator")
+		if animator then
+			for _, track in animator:GetPlayingAnimationTracks() do
+				track:Stop(0)
+				track:Destroy()
+			end
+		end
+		controller:Destroy()
+	end
+
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+			descendant.CanCollide = false
+			descendant.AssemblyLinearVelocity = Vector3.zero
+			descendant.AssemblyAngularVelocity = Vector3.zero
+		end
+	end
+
+	-- Drop joints after anchoring so foldArms / PivotTo own every part.
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Motor6D") or descendant:IsA("Weld") or descendant:IsA("WeldConstraint") then
+			descendant:Destroy()
+		end
+	end
+end
+
 function MonsterDeath.play(model: Model)
 	if not model.Parent then
 		return
 	end
 
 	model:SetAttribute("Dying", true)
+
+	-- Rigged Toolbox monsters keep Motor6D + Animator; freeze the pose so the
+	-- tip tween isn't fighting unanchored limbs / residual animation tracks.
+	freezeCorpse(model)
 
 	-- Tuck T-pose arms before tipping so they stay flush with the body on landing.
 	foldArmsToSides(model)

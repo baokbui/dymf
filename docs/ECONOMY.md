@@ -16,7 +16,9 @@ From `GAME_DESIGN.md`:
 
 - Passive drops (every ~25 seconds) ✅
 - Coin-producing Brainrots (e.g. **Ballerina Cappucina** — see `BRAINROTS.md`) ✅
-- Completing a level ✅ Milestone 8 — **resets** balance to `STARTING_COINS` (PvZ-style; no carry-over)
+- Completing a level ✅ Milestone 8 — after Day 1, purse resets to **0**;
+  Day 1 (and defeat → Day 1) gets `STARTING_COINS` (125). Plants may stay on
+  victory; coin purse does not carry.
 - Future achievements / events
 
 ---
@@ -27,7 +29,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 
 | Key                    | Value | Meaning                                  |
 | ---------------------- | ----- | ---------------------------------------- |
-| `STARTING_COINS`       | 125   | Balance for a new player (Ballerina + Tung Tung) |
+| `STARTING_COINS`       | 125   | Day 1 opening purse only (Ballerina + Tung Tung) |
 | `PASSIVE_DROP_INTERVAL`| 25    | Seconds between passive drops            |
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
 | `PASSIVE_RAIN_HEIGHT`  | 42    | Studs above the tile for passive rain    |
@@ -35,7 +37,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `PASSIVE_RAIN_DRIFT`   | 3     | Random horizontal spawn drift (studs)    |
 | `PRODUCER_SPIT_DURATION` | 0.85 | Seconds for Ballerina spit arc         |
 | `PRODUCER_SPIT_ARC_HEIGHT` | 6  | Peak loft of spit arc (studs)            |
-| `LEVEL_COMPLETION_REWARD`| 50  | Reserved for future bonus rewards (victory resets to `STARTING_COINS`) |
+| `LEVEL_COMPLETION_REWARD`| 50  | Reserved; day purse uses Day 1 / 0 rules |
 | `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
@@ -51,8 +53,8 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 
 `CoinService` (server) is the **sole authority** over currency:
 
-- Holds each player's authoritative coin balance (starts at `STARTING_COINS`;
-  persisted by `SaveService` in Milestone 9).
+- Holds each player's authoritative coin balance (`applyDayPurse`: Day 1 →
+  `STARTING_COINS`, later days → 0).
 - Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
   coins** (one per active player per interval, **only while the level is
   `Active`**), each worth `PASSIVE_DROP_AMOUNT`. Passive coins **rain slowly
@@ -71,7 +73,8 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 | Function                          | Use                                          |
 | --------------------------------- | -------------------------------------------- |
 | `getBalance(player) -> number`    | read a balance (placement pre-check, M4)     |
-| `resetBalance(player)`            | set balance to `STARTING_COINS` (level clear) ✅ |
+| `resetBalance(player)`            | set balance to `STARTING_COINS` (Reset Progress) ✅ |
+| `applyDayPurse(player, level)`    | Day 1 → 125; else → 0 ✅ |
 | `clearPlot(plotModel)`            | despawn all ground coins on a plot ✅          |
 | `addCoins(player, amount)`        | credit rewards/income                        |
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4) ✅  |

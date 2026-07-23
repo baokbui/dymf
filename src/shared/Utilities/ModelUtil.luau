@@ -29,11 +29,19 @@ local AUDIO_CLASSES: { [string]: boolean } = {
 	AudioListener = true,
 }
 
-local STRIP_CLASSES: { [string]: boolean } = {
+local STRIP_ALWAYS: { [string]: boolean } = {
 	Humanoid = true,
+	ControllerManager = true,
+}
+
+local STRIP_ANIMATION: { [string]: boolean } = {
 	AnimationController = true,
 	Animator = true,
-	ControllerManager = true,
+}
+
+local TOOL_CLASSES: { [string]: boolean } = {
+	Tool = true,
+	HopperBin = true,
 }
 
 local INVISIBLE_TRANSPARENCY = 0.95
@@ -206,11 +214,17 @@ local function ensureBodyAlias(model: Model, primary: BasePart)
 	primary.Name = "Body"
 end
 
-local function hardenParts(model: Model, keepCollision: boolean?)
+local function hardenParts(model: Model, keepCollision: boolean?, animationRig: boolean?)
+	local root = model.PrimaryPart
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
-			descendant.Anchored = true
 			descendant.Massless = true
+			if animationRig then
+				-- Root stays anchored for grid moves; Motor6D limbs must be free.
+				descendant.Anchored = descendant == root
+			else
+				descendant.Anchored = true
+			end
 			if keepCollision then
 				descendant.CanTouch = false
 			else
@@ -220,6 +234,22 @@ local function hardenParts(model: Model, keepCollision: boolean?)
 			end
 		end
 	end
+end
+
+local function ensureAnimationController(model: Model): Animator
+	local controller = model:FindFirstChildOfClass("AnimationController")
+	if not controller then
+		controller = Instance.new("AnimationController")
+		controller.Name = "AnimationController"
+		controller.Parent = model
+	end
+	local animator = controller:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Name = "Animator"
+		animator.Parent = controller
+	end
+	return animator
 end
 
 local function applyOrientationDegrees(model: Model, degrees: Vector3?)
@@ -272,6 +302,8 @@ export type PrepareOptions = {
 	keepCollision: boolean?,
 	-- Houses / props: don't rename PrimaryPart to "Body".
 	skipBodyAlias: boolean?,
+	-- Monsters: keep Motor6D rig + Animator; only root part stays anchored.
+	preserveAnimationRig: boolean?,
 }
 
 --[[
@@ -308,20 +340,64 @@ function ModelUtil.snapFeetToTileTop(model: Model, topCenter: Vector3, floatY: n
 	model:PivotTo(model:GetPivot() + delta)
 end
 
+--[[
+	Strip Scripts / Tools / Sounds / Humanoids from an Assets.Monsters template
+	in-place (Studio shelf). Keeps Animation instances and Motor6D rigs.
+]]
+function ModelUtil.sanitizeMonsterAsset(template: Model)
+	destroyByClass(template, SCRIPT_CLASSES)
+	destroyByClass(template, AUDIO_CLASSES)
+	destroyByClass(template, STRIP_ALWAYS)
+	destroyByClass(template, TOOL_CLASSES)
+
+	-- Prefer HRP as PrimaryPart for animation rigs.
+	local hrp = template:FindFirstChild("HumanoidRootPart", true)
+	if hrp and hrp:IsA("BasePart") then
+		template.PrimaryPart = hrp
+	elseif not template.PrimaryPart then
+		local primary = pickPrimaryPart(template)
+		if primary then
+			template.PrimaryPart = primary
+		end
+	end
+end
+
+function ModelUtil.sanitizeAllMonsterAssets()
+	local folder = ModelUtil.getMonsterTemplatesFolder()
+	if not folder then
+		return
+	end
+	for _, child in folder:GetChildren() do
+		if child:IsA("Model") then
+			ModelUtil.sanitizeMonsterAsset(child)
+		end
+	end
+end
+
 function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Model
 	local model = template:Clone()
+	local preserveAnim = options.preserveAnimationRig == true
+
 	destroyByClass(model, SCRIPT_CLASSES)
 	destroyByClass(model, AUDIO_CLASSES)
-	destroyByClass(model, STRIP_CLASSES)
+	destroyByClass(model, STRIP_ALWAYS)
+	destroyByClass(model, TOOL_CLASSES)
+	if not preserveAnim then
+		destroyByClass(model, STRIP_ANIMATION)
+	end
 	destroyInvisibleParts(model)
-	hardenParts(model, options.keepCollision)
 
 	local primary = pickPrimaryPart(model)
 	if primary then
 		model.PrimaryPart = primary
-		if not options.skipBodyAlias then
+		if not options.skipBodyAlias and not preserveAnim then
 			ensureBodyAlias(model, primary)
 		end
+	end
+
+	hardenParts(model, options.keepCollision, preserveAnim)
+	if preserveAnim then
+		ensureAnimationController(model)
 	end
 
 	local pos = model:GetPivot().Position
@@ -345,6 +421,12 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 		end
 		scale = math.clamp(scale, 0.05, 20)
 		model:ScaleTo(model:GetScale() * scale)
+	end
+
+	-- Re-apply rig harden after ScaleTo (ScaleTo can leave anchors inconsistent).
+	if preserveAnim then
+		hardenParts(model, options.keepCollision, true)
+		ensureAnimationController(model)
 	end
 
 	if options.ghost then
