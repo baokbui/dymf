@@ -113,17 +113,17 @@ models (at least Zombie, Goblin, Goblin Elite).
 
 | Name | Health | Sec/grid | Damage | Atk interval | Boss | Ability |
 | ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
-| Zombie | 250 | 3.0 | 100 | 1.5s | | — |
-| Vampire | 900 | 2.2 | 70 | 1.1s | | — |
-| Werewolf | 1400 | 2.5 | 130 | 1.1s | | — |
-| Skeleton | 950 | 3.5 | 95 | 1.5s | | — |
-| Goblin | 200 | 2.3 | 110 | 1.0s | | — |
-| Goblin Elite | 14000 | 8 | 8000 | 3.5s | Y | One-shot club; **laneSpan 3** |
-| Spider | 900 | 2.5 | 90 | 1.4s | | Jump over first brainrot |
-| Necromancer | 9000 | 4.8 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
-| Goblin King | 13000 | 5.2 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |
-| Queen Spider | 13000 | 5.5 | 140 | 1.5s | Y | Stun + poison brainrot on attack ✅ |
-| Duke Vampire | 13000 | 4.4 | 140 | 1.5s | Y | Self-freeze heal / terrify (stubs — M10) |
+| Zombie | 250 | 3.5 | 100 | 1.5s | | — |
+| Vampire | 900 | 2.5 | 70 | 1.1s | | — |
+| Werewolf | 1400 | 2.9 | 130 | 1.1s | | — |
+| Skeleton | 950 | 4.0 | 95 | 1.5s | | — |
+| Goblin | 200 | 2.7 | 110 | 1.0s | | — |
+| Goblin Elite | 14000 | 9.2 | 8000 | 3.5s | Y | One-shot club; **laneSpan 3** |
+| Spider | 900 | 2.9 | 90 | 1.4s | | Jump over first brainrot |
+| Necromancer | 9000 | 5.5 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
+| Goblin King | 13000 | 6.0 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |
+| Queen Spider | 13000 | 6.3 | 140 | 1.5s | Y | Stun + poison brainrot on attack ✅ |
+| Duke Vampire | 13000 | 5.1 | 140 | 1.5s | Y | Self-freeze heal / terrify (stubs — M10) |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
@@ -171,10 +171,11 @@ MonsterBehavior (movement + attack tick)
   `CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
   They only stop for Brainrots (or the house).
 - When a tile holds a Brainrot (any type — wall, producer, attacker, …), the
-  monster walks **onto that tile** and chews while closing to the plant's column
-  center — PvZ-style overlap. It attacks on `attackInterval` and only advances
-  once the Brainrot is destroyed. It never walks west of the plant center while
-  chewing (so a melee bat one tile behind still reaches the monster).
+  monster walks **onto that tile** and chews at a **standoff** east of the plant
+  center (`MonsterConfig.MELEE_CLOSE_REACH`) so models don't overlap. It attacks
+  on `attackInterval` and only advances once the Brainrot is destroyed. It never
+  walks west of the standoff while chewing (so a melee bat one tile behind still
+  reaches the monster).
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
 - On death, `MonsterDeath` freezes the Motor6D pose, tips (forward / side / back),

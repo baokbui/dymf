@@ -121,3 +121,12 @@ Brains currency + victory grants are live so the store can plug in later.
 - Send only intent via remotes; the server validates (see `NETWORKING.md`).
 - Display Brainrot/monster info from shared registries.
 - Keep visual/sound feedback on the client.
+
+## Shop tool row ✅
+
+- **Shovel** — toggles remove mode; cursor becomes a shovel icon.
+- **Cancel (red X)** — clears the current Brainrot selection **and** exits
+  shovel mode; visible whenever either is active (`Shop.setCancelVisible`).
+- Clicking a card that is still on plant-recharge cooldown does not select it —
+  it shows the same plant-failure toast as a rejected server placement
+  ("still recharging").

@@ -82,13 +82,14 @@ local function tileAtColumn(column: number): number
 	return math.floor(column + TILE_HALF)
 end
 
--- Stop / chew at the plant's column center (on the Brainrot's tile).
+-- Stop / chew east of the plant center (same tile) — visual standoff gap.
 local function meleeStopColumn(brainrotColumn: number): number
-	return brainrotColumn
+	return brainrotColumn + MonsterConfig.MELEE_CLOSE_REACH
 end
 
--- Engaged for the whole plant tile (any ally — wall, producer, attacker, …).
--- Stops at column center so Brainrot melee from one tile west stays in range.
+-- Engaged on the plant tile (any ally — wall, producer, attacker, …).
+-- Stops east of center so models don't overlap; Brainrot melee from one tile
+-- west still reaches (monster remains on the plant tile).
 local function closeEnoughToAttack(monsterColumn: number, brainrotColumn: number): boolean
 	return tileAtColumn(monsterColumn) == brainrotColumn
 		and monsterColumn >= meleeStopColumn(brainrotColumn)
@@ -115,7 +116,7 @@ local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	return nil, nil
 end
 
--- While chewing, never walk past the plant center (keeps Brainrot melee in range).
+-- While chewing, never walk past the standoff stop (keeps Brainrot melee in range).
 local function clampToPlantCenter(runtime: MonsterRuntime, brainrotColumn: number)
 	local stopAt = meleeStopColumn(brainrotColumn)
 	if runtime.column < stopAt then
@@ -233,7 +234,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then
 				setAttacking(runtime, true)
 
-				-- Keep closing to plant center while already on the tile (still chewing).
+				-- Keep closing to standoff stop while already on the tile (still chewing).
 				local stopAt = meleeStopColumn(brainrotColumn)
 				if runtime.column > stopAt then
 					local speed = runtime.definition.secondsPerGrid
@@ -257,7 +258,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				local speed = runtime.definition.secondsPerGrid
 				if speed > 0 then
 					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-					-- Walk onto the plant tile and stop at its column center.
+					-- Walk onto the plant tile and stop at the standoff column.
 					local minColumn = meleeStopColumn(brainrotColumn)
 					local nextColumn = runtime.column - (dt / speed) * speedMult
 					runtime.column = math.max(nextColumn, minColumn)

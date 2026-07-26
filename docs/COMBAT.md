@@ -125,9 +125,16 @@ Hit flash on damage uses server-side `MonsterFeedback.flashHit` /
 
 ## Health bars ✅ (Milestone 7)
 
-`HealthBarController` attaches a `BillboardGui` to `Body` on tagged Brainrots and
-Monsters **on the local player's plot**. Bars read `Health` / `MaxHealth`
-attributes (server-authoritative). Boss monsters use a wider bar.
+`HealthBarController` attaches a `BillboardGui` to `Body` on **every** tagged
+Brainrot and Monster **on the local player's plot** (including plants restored
+on rejoin) — bars read `Health` / `MaxHealth` attributes
+(server-authoritative). Boss monsters use a wider bar. Ownership is checked via
+the replicated `OwnerUserId` attribute (not workspace ancestry), since identity
+attributes land before the model is parented — attaching by ancestry alone
+would race live placements. Planted Brainrots additionally get a name tag
+above the health bar, resolved from `Shared.Brainrots` (never from the model
+name). Look is cartoon/rounded (`Shared.Config.UITheme` tokens, `FredokaOne`
+font) to match the rest of the HUD.
 
 ---
 

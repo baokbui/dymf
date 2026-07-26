@@ -110,7 +110,7 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
 | Ballerina Cappucina  | 50   | 500 (5)       | 0      | 18s      | —        | Spits coins onto random tiles | 25    |
-| Tung Tung Sahur      | 75   | 800 (8)       | 40     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
+| Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 1000   | —        | Full row | Line bomb on place  | —     |
 | Lirili Larila        | 150  | 500 (5)       | 0      | 6.0s     | 2 tiles  | Freeze enemies 0.7s | —     |

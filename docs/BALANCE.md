@@ -65,7 +65,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | ---- | ---- | ---- | ----------- |
 | Ballerina | 50 | 5 | Economy (25 / 18s) |
 | Chimpanzini | 75 | 20 | Wall (~30s vs one Zombie) |
-| Tung Tung | 75 | 8 | Melee (40 / 1.5s ≈ 27 DPS; ~7 hits vs 250 HP Zombie) |
+| Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Lirili | 150 | 5 | Freeze support (0.7s / 6.0s; range 2) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
@@ -83,18 +83,21 @@ were raised so early boards need real DPS:
 
 | Id | Role | HP | Sec/tile | Chew |
 | -- | ---- | -- | -------- | ---- |
-| `Zombie` | Grunt (L1+) | 250 | 3.0 | 100 / 1.5s |
-| `Goblin` | Fast grunt (L5+) | 200 | 2.3 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10) | 14000 | 8 | 8000 + one-shot; **laneSpan 3** |
+| `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
+| `Goblin` | Fast grunt (L5+) | 200 | 2.7 | 110 / 1.0s |
+| `GoblinElite` | Boss (L10) | 14000 | 9.2 | 8000 + one-shot; **laneSpan 3** |
 
-Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~18s Zombie,
-~14s Goblin).
+Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
+~16s Goblin).
+
+Chew standoff: monsters stop `MELEE_CLOSE_REACH` (0.42 columns ≈ 7.5 studs)
+east of the plant center so models don't overlap.
 
 ---
 
 ## Day pacing (`Shared.Levels` + `LevelConfig`)
 
-- First spawn group uses a short delay; **≥14–18s** plant time comes from the
+- First spawn group uses a short delay; **≥16–21s** plant time comes from the
   forest march (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 - Adjacent levels change **counts/pacing/species** — never hidden HP scaling.
 - Big-wave groups use `isBigWave`; warning lead = `BIG_WAVE_WARNING_TIME` (5s).

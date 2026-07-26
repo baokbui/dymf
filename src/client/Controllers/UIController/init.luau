@@ -104,6 +104,11 @@ local function buildShop(): Shop.Shop
 	local frame = buildMain():WaitForChild("Shop") :: Frame
 	return Shop.new(frame, {
 		onCardClicked = function(id: string)
+			if PlacementController.isOnCooldown(id) then
+				UIEvents.firePlantFailed("Unable to plant — still recharging")
+				AudioController.play("UiClick")
+				return
+			end
 			if selectedId == id then
 				PlacementController.cancel()
 			else
@@ -115,6 +120,7 @@ local function buildShop(): Shop.Shop
 		end,
 		onCancelClicked = function()
 			PlacementController.cancel()
+			PlacementController.setShovelMode(false)
 			AudioController.play("UiClick")
 		end,
 	})
@@ -332,13 +338,14 @@ function UIController.start()
 		selectedId = id
 		if shop then
 			shop:setSelected(id)
-			shop:setCancelVisible(id ~= nil)
+			shop:setCancelVisible(id ~= nil or PlacementController.isShovelMode())
 		end
 	end)
 
 	PlacementController.shovelModeChanged:Connect(function(active: boolean)
 		if shop then
 			shop:setShovelActive(active)
+			shop:setCancelVisible(active or selectedId ~= nil)
 		end
 	end)
 

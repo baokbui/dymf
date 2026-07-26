@@ -154,7 +154,7 @@ days expect a stronger board, so spawn pressure rises to match.
 
 Level 1 is intentionally gentle: one zombie at a time with long gaps, plus enough
 starting coins for Ballerina + Tung Tung (`EconomyConfig.STARTING_COINS` = 125).
-The first zombie appears in the forest almost immediately and takes ~24s to
+The first zombie appears in the forest almost immediately and takes ~21s to
 reach the lawn.
 
 ---
