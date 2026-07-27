@@ -114,4 +114,30 @@ function GridUtil.isWithinMeleeReach(attackerColumn: number, targetColumn: numbe
 	return targetColumn <= attackerColumn + reachColumns
 end
 
+-- Multi-lane units (laneSpan > 1) occupy rows [row, row + laneSpan - 1] —
+-- `row` is the lowest/anchor row, not a center. This works uniformly for any
+-- span (odd or even) without needing fractional "center row" occupancy math.
+function GridUtil.occupiesLaneRow(row: number, laneSpan: number, targetRow: number): boolean
+	local span = math.max(1, math.floor(laneSpan))
+	return targetRow >= row and targetRow <= row + span - 1
+end
+
+-- Visual midpoint of a multi-lane unit's occupied rows, for world-position
+-- placement (may be a half-integer for even spans — GridService accepts
+-- fractional rows fine).
+function GridUtil.laneCenterRow(row: number, laneSpan: number): number
+	local span = math.max(1, math.floor(laneSpan))
+	return row + (span - 1) / 2
+end
+
+-- Random anchor row that keeps a multi-lane unit's full span on the lawn.
+function GridUtil.randomRowForSpan(laneSpan: number): number
+	local span = math.max(1, math.floor(laneSpan))
+	local maxRow = GridConfig.ROWS - span + 1
+	if maxRow < 1 then
+		return 1
+	end
+	return math.random(1, maxRow)
+end
+
 return GridUtil

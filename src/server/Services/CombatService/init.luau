@@ -203,11 +203,11 @@ function CombatService.launchProjectile(
 	if not worldY then
 		return false
 	end
-	-- Swords tumble tip-to-handle; raise them so the spin clears the lawn.
-	if options and options.kind == "Sword" then
+	-- Shurikens spin flat and fly a little higher than the legacy bolt.
+	if options and options.kind == "Shuriken" then
 		worldY = worldY
 			- CombatConfig.PROJECTILE_HEIGHT_OFFSET
-			+ CombatConfig.SWORD_PROJECTILE_HEIGHT_OFFSET
+			+ CombatConfig.SHURIKEN_PROJECTILE_HEIGHT_OFFSET
 	end
 
 	local targetColumn = monsterHandlers.getMonsterColumn(targetId)

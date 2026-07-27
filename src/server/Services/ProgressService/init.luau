@@ -274,6 +274,34 @@ function ProgressService.brainsForLevel(levelNumber: number): number
 	return math.max(0, math.floor(levelNumber * ProgressConfig.BRAINS_PER_LEVEL_NUMBER))
 end
 
+-- Starter-roster unlock cadence (ProgressConfig.UNLOCK_SCHEDULE). Idempotent:
+-- returns the newly unlocked Brainrot id the first time `clearedLevelNumber`
+-- is reached, nil on replay (Day Select) or if nothing is scheduled for it.
+-- Auto-equips the unlock when there's an open loadout slot.
+function ProgressService.grantUnlockForLevel(player: Player, clearedLevelNumber: number): string?
+	local scheduled: string? = nil
+	for _, entry in ProgressConfig.UNLOCK_SCHEDULE do
+		if entry.day == clearedLevelNumber then
+			scheduled = entry.brainrotId
+			break
+		end
+	end
+	if not scheduled or not Brainrots.exists(scheduled) then
+		return nil
+	end
+
+	local profile = ensureProfile(player)
+	if not profile.hydrated or ProgressService.isUnlocked(player, scheduled) then
+		return nil
+	end
+
+	table.insert(profile.unlocks, scheduled)
+	if #profile.equipped < ProgressConfig.MAX_EQUIPPED then
+		table.insert(profile.equipped, scheduled)
+	end
+	return scheduled
+end
+
 function ProgressService.incrementStat(player: Player, key: string, amount: number?)
 	local profile = ensureProfile(player)
 	if not profile.hydrated then

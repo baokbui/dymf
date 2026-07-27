@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Hearts
-	House health as five ♥ icons inside a horizontal HUD box (below coins).
+	House health as five ♥ icons inside a horizontal HUD box (below coins/brains).
 	Cartoon thick-outline look via UITheme.
 ]]
 
@@ -32,9 +32,9 @@ function Hearts.new(parent: Frame): HeartsHud
 	local maxHealth = ProgressConfig.MAX_PLAYER_HEALTH
 	parent.Visible = true
 	parent.AnchorPoint = Vector2.new(0, 0)
-	parent.Position = UDim2.fromOffset(16, 76)
+	parent.Position = UDim2.fromOffset(16, 136)
 	parent.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
-	UITheme.applyChipLook(parent)
+	UITheme.applyChipLook(parent, UITheme.CHIP_BG_HEARTS)
 
 	local rowWidth = maxHealth * (HEART_SIZE + HEART_GAP) - HEART_GAP
 	local startX = math.floor((PANEL_WIDTH - rowWidth) / 2)

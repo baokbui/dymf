@@ -243,7 +243,6 @@ Implement combat.
 - Damage
 - Death
 - Target acquisition
-- Health bars
 
 
 
@@ -404,13 +403,13 @@ Persist player progress.
 
 # Milestone 13 — UI Polish
 
-**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 22)
+**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 19)
 
 ## Improve and Add
 
 - Shop (Already implemented in a previous milestone. Can improve if needed) ✅
-- Brainrots Store (Buy new brainrots) → **deferred to Milestone 22** (physical world shop)
-- Brains (currency) ✅ granted on victory; spent at store in M22
+- Brainrots Store (Buy new brainrots) → **deferred to Milestone 19** (physical world shop)
+- Brains (currency) ✅ granted on victory; spent at store in M19
 - Reward System ✅ victory popup shows brains earned (level number × config)
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
 - Coins ✅ (prior milestone)
@@ -520,8 +519,8 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
   (`MonsterConfig`), preserves identity attributes / `Monster` tag ✅
   (`ModelUtil`; Part fallback if missing; faces house −X)
 - Bosses keep correct bounds (larger footprint / PrimaryPart) after swap ✅
-- Hit flash, freeze/bubble shells, and health bars still resolve against
-  `PrimaryPart` / `"Body"` (or shared `ModelUtil` helpers) ✅
+- Hit flash and freeze/bubble shells still resolve against `PrimaryPart` /
+  `"Body"` (or shared `ModelUtil` helpers) ✅
   - Movement / knockback: `ModelUtil.snapFeetToTileTop`
   - Pulse: `Model:ScaleTo`; flash/freeze tint visible BaseParts
 
@@ -569,78 +568,7 @@ Animator for gameplay authority (`.cursorrules`).
 
 
 
-# Milestone 18 — Optimization
-
-
-
-## Improve
-
-- Performance
-- Memory usage
-- Network traffic
-- Object cleanup
-- Event management
-
-
-
-## Complete When
-
-- Stable performance with multiple players and many units.
-
----
-
-
-
-# Milestone 19 — Testing
-
-
-
-## Test
-
-- Saving
-- Rejoining
-- Multiplayer
-- Placement
-- Combat
-- Bosses
-- Exploit prevention
-- Edge cases
-
-
-
-## Complete When
-
-- No critical bugs remain.
-
----
-
-
-
-# Milestone 20 — Release
-
-
-
-## Final Tasks
-
-- Publish game
-- Create icon
-- Create thumbnails
-- Create trailer
-- Configure game page
-- Enable analytics
-- Final playtesting
-
-
-
-## Complete When
-
-- Brainrots vs. Monsters is publicly released.
-
----
-
-
-
-# Milestone 21 — Retention Systems
+# Milestone 18 — Retention Systems
 
 
 
@@ -703,7 +631,7 @@ UI only displays and sends intents.
 
 
 
-# Milestone 22 — Progression Store
+# Milestone 19 — Progression Store
 
 **Status: 🔜 Planned** (deferred from Milestone 13)
 
@@ -721,31 +649,7 @@ UI only displays and sends intents.
 
 
 
-# Milestone 23 — Post-Launch
-
-
-
-## Continue Development
-
-- **New Brainrots** — expand the roster beyond the launch seven (registry +
-  ability handlers; additional model work as needed)
-- Brainrot evolution & mutations → **Milestone 24**
-- Boss collection house (display defeated bosses → brains income) → **Milestone 25**
-- New Monsters
-- New Maps
-- Seasonal Events
-- Achievements
-- Cosmetics
-- Quality of Life updates
-- Balance patches
-
-Development continues indefinitely after release.
-
----
-
-
-
-# Milestone 24 — Brainrot Evolution & Mutations
+# Milestone 20 — Brainrot Evolution & Mutations
 
 **Status: 🔜 Planned**
 
@@ -777,7 +681,7 @@ Evolutions and mutations can stack on the same unit if authored that way
 | ---- | ---------------------- | --------- |
 | Tung Tung Tung Sahur | Diamond Tung Tung Tung Sahur | Diamond look + higher HP / damage |
 | Ballerina Cappucina | (TBD) | Prestige tint + faster / richer coin generation |
-| Cappuccino Assassino | (TBD) | Prestige tint + stronger / faster sword stats |
+| Cappuccino Assassino | (TBD) | Prestige tint + stronger / faster shuriken stats |
 | Other roster units | (TBD) | At least one evolution path each for this system’s launch |
 
 ### Mutations (ability change / extra ability)
@@ -833,15 +737,15 @@ tables above are flavor targets, not final numbers.
 
 
 
-# Milestone 25 — Boss Collection House
+# Milestone 21 — Boss Collection House
 
 **Status: 🔜 Planned** (house shell ✅ now; collection / income later)
 
 ## Goal
 
 Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
-it for display; displayed bosses generate **brains** used for the store (M22)
-and evolutions/mutations (M24).
+it for display; displayed bosses generate **brains** used for the store (M19)
+and evolutions/mutations (M20).
 
 ## Prerequisites
 
@@ -871,5 +775,100 @@ and evolutions/mutations (M24).
 - Trophy appears on a pedestal after rejoin (save/load).
 - Displayed bosses grant brains over time; spend path uses existing brains sinks.
 - Exploits (fake collect, double income) fail server validation.
+
+---
+
+
+
+# Milestone 22 — Optimization
+
+
+
+## Improve
+
+- Performance
+- Memory usage
+- Network traffic
+- Object cleanup
+- Event management
+
+
+
+## Complete When
+
+- Stable performance with multiple players and many units.
+
+---
+
+
+
+# Milestone 23 — Testing
+
+
+
+## Test
+
+- Saving
+- Rejoining
+- Multiplayer
+- Placement
+- Combat
+- Bosses
+- Exploit prevention
+- Edge cases
+
+
+
+## Complete When
+
+- No critical bugs remain.
+
+---
+
+
+
+# Milestone 24 — Release
+
+
+
+## Final Tasks
+
+- Publish game
+- Create icon
+- Create thumbnails
+- Create trailer
+- Configure game page
+- Enable analytics
+- Final playtesting
+
+
+
+## Complete When
+
+- Brainrots vs. Monsters is publicly released.
+
+---
+
+
+
+# Milestone 25 — Post-Launch
+
+
+
+## Continue Development
+
+- **New Brainrots** — expand the roster beyond the launch seven (registry +
+  ability handlers; additional model work as needed)
+- Brainrot evolution & mutations → **Milestone 20**
+- Boss collection house (display defeated bosses → brains income) → **Milestone 21**
+- New Monsters
+- New Maps
+- Seasonal Events
+- Achievements
+- Cosmetics
+- Quality of Life updates
+- Balance patches
+
+Development continues indefinitely after release.
 
 ---

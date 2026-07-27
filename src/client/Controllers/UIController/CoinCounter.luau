@@ -36,18 +36,28 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	frame.Position = UDim2.fromOffset(16, 16)
 	frame.Size = UDim2.fromOffset(168, 52)
 	frame.ClipsDescendants = false
-	UITheme.applyChipLook(frame)
+	UITheme.applyChipLook(frame, UITheme.CHIP_BG_COINS)
 
 	local icon = Instance.new("Frame")
 	icon.Name = "Icon"
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.Position = UDim2.new(0, 12, 0.5, 0)
 	icon.Size = UDim2.fromOffset(28, 28)
-	icon.BackgroundColor3 = UITheme.GOLD
+	icon.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
 	icon.BorderSizePixel = 0
 	icon.Parent = frame
 	UITheme.styleCorner(icon, 14)
 	UITheme.applyStroke(icon, UITheme.STROKE_CARD)
+
+	local iconImage = Instance.new("ImageLabel")
+	iconImage.Name = "Glyph"
+	iconImage.BackgroundTransparency = 1
+	iconImage.AnchorPoint = Vector2.new(0.5, 0.5)
+	iconImage.Position = UDim2.fromScale(0.5, 0.5)
+	iconImage.Size = UDim2.fromScale(0.8, 0.8)
+	iconImage.Image = "rbxassetid://15993201893"
+	iconImage.ScaleType = Enum.ScaleType.Fit
+	iconImage.Parent = icon
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
@@ -59,7 +69,7 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
-	UITheme.applyOutlinedTitle(label, UITheme.GOLD_TEXT)
+	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
 	label.TextSize = 22
 
 	self.amountLabel = label

@@ -149,7 +149,10 @@ clears the plot (Brainrots, monsters, ground coins), resets coins to the
 starting balance, and sets phase to `Defeat`. The client shows a red **Restart
 Level** button; pressing it fires the same `StartLevel` remote. **Victory** —
 when all spawn groups are finished and no monsters remain, the server grants
-coins and unlocks the next level.
+coins and unlocks the next level. The Victory payload's `reward` table may
+include `unlockedBrainrotId` when clearing that day grants a starter-roster
+Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`) — the client shows this as an
+`UnlockPopup` after the reward popup (see `BRAINROTS.md` / `UI.md`).
 
 ---
 

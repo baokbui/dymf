@@ -46,7 +46,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.Position = UDim2.fromScale(0.5, 0.5)
 	parent.Size = UDim2.fromOffset(440, 480)
 	parent.ZIndex = 25
-	UITheme.applyPanelLook(parent)
+	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_SETTINGS)
 
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
@@ -85,7 +85,14 @@ function Settings.new(parent: Frame): SettingsPanel
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = body
 
+	-- ScrollingFrame always clips its contents — without inset padding, any
+	-- child flush against an edge has its rounded UIStroke corner (which
+	-- draws half outside the child's bounds) chopped off flat. Padding on all
+	-- sides keeps every card/button's outline fully visible.
 	local bodyPad = Instance.new("UIPadding")
+	bodyPad.PaddingTop = UDim.new(0, 6)
+	bodyPad.PaddingLeft = UDim.new(0, 6)
+	bodyPad.PaddingRight = UDim.new(0, 6)
 	bodyPad.PaddingBottom = UDim.new(0, 16)
 	bodyPad.Parent = body
 
@@ -116,15 +123,33 @@ function Settings.new(parent: Frame): SettingsPanel
 		return frame
 	end
 
+	-- Compact 2x2 grid instead of four stacked full-width rows — same four
+	-- toggles, half the vertical footprint.
 	local audioSection = section("Audio", 1)
-	local muteButton = makeButton(audioSection, "Mute: Off", UITheme.BUTTON_BG)
+	local audioGrid = Instance.new("Frame")
+	audioGrid.Name = "AudioGrid"
+	audioGrid.BackgroundTransparency = 1
+	audioGrid.Size = UDim2.new(1, 0, 0, 82)
+	audioGrid.LayoutOrder = 1
+	audioGrid.Parent = audioSection
+
+	local audioGridLayout = Instance.new("UIGridLayout")
+	audioGridLayout.CellSize = UDim2.new(0.5, -6, 0, 36)
+	audioGridLayout.CellPadding = UDim2.fromOffset(6, 10)
+	audioGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	audioGridLayout.Parent = audioGrid
+
+	local muteButton = makeButton(audioGrid, "Mute: Off", UITheme.BUTTON_BG)
 	muteButton.LayoutOrder = 1
-	local musicButton = makeButton(audioSection, "Music Volume: High", UITheme.BUTTON_BG)
+	local musicButton = makeButton(audioGrid, "Music: High", UITheme.BUTTON_BG)
 	musicButton.LayoutOrder = 2
-	local sfxButton = makeButton(audioSection, "SFX Volume: High", UITheme.BUTTON_BG)
+	local sfxButton = makeButton(audioGrid, "SFX: High", UITheme.BUTTON_BG)
 	sfxButton.LayoutOrder = 3
-	local brainrotSfxButton = makeButton(audioSection, "Brainrot SFX: On", UITheme.BUTTON_BG)
+	local brainrotSfxButton = makeButton(audioGrid, "Brainrot SFX: On", UITheme.BUTTON_BG)
 	brainrotSfxButton.LayoutOrder = 4
+	for _, button in { muteButton, musicButton, sfxButton, brainrotSfxButton } do
+		button.TextSize = 13
+	end
 
 	local muted = false
 	local musicLevel = 2
@@ -137,9 +162,12 @@ function Settings.new(parent: Frame): SettingsPanel
 		AudioController.setSfxVolumeScale(if sfxLevel == 0 then 0 elseif sfxLevel == 1 then 0.45 else 1)
 		AudioController.setBrainrotSfxEnabled(brainrotSfx)
 		muteButton.Text = if muted then "Mute: On" else "Mute: Off"
-		musicButton.Text = "Music Volume: " .. (if musicLevel == 0 then "Off" elseif musicLevel == 1 then "Low" else "High")
-		sfxButton.Text = "SFX Volume: " .. (if sfxLevel == 0 then "Off" elseif sfxLevel == 1 then "Low" else "High")
+		musicButton.Text = "Music: " .. (if musicLevel == 0 then "Off" elseif musicLevel == 1 then "Low" else "High")
+		sfxButton.Text = "SFX: " .. (if sfxLevel == 0 then "Off" elseif sfxLevel == 1 then "Low" else "High")
 		brainrotSfxButton.Text = if brainrotSfx then "Brainrot SFX: On" else "Brainrot SFX: Off"
+		for _, button in { muteButton, musicButton, sfxButton, brainrotSfxButton } do
+			button.TextSize = 13
+		end
 	end
 
 	muteButton.Activated:Connect(function()

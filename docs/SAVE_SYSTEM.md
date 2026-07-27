@@ -51,7 +51,7 @@ Not saved (transient / runtime):
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
-| `collectedBosses` | `{ CollectedBoss }?` 🔜 M25 |
+| `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
 `CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see

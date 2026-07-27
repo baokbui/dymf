@@ -82,8 +82,9 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 3.5,
 		isBoss = true,
 		abilities = { "GoblinEliteClubOneShot" },
-		-- Spans 3 rows: Brainrots on adjacent lanes can attack it. Model scales to match.
-		laneSpan = 3,
+		-- Spans 2 rows: Brainrots on adjacent lanes can attack it. Model scales to match.
+		-- (Kept < 3 so more of the lawn's rows are valid random spawn anchors.)
+		laneSpan = 2,
 		color = Color3.fromRGB(60, 100, 50),
 		walkAnimationId = "",
 		attackAnimationId = MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID,

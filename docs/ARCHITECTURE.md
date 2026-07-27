@@ -98,7 +98,6 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         InputController/  (primary intent signal)
         BrainrotController/ (BrainrotAction SFX + client attack pulse — M5/M12)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
-        HealthBarController/ (billboard health bars — M7)
         AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
@@ -200,7 +199,7 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   `SpawnLocation` at the play area's left edge facing the enemy (+X),
   `HouseAnchor` (−X) / `CoinSpawner` markers, a walkable **`House`** cottage
   (`HouseBuilder` + `HouseConfig`; Toolbox model under `Assets.Houses` when
-  present, procedural fallback) with boss pedestals for Milestone 25, and
+  present, procedural fallback) with boss pedestals for Milestone 21, and
   empty `Grid` / `Path` / `Decorations` folders. Lane layout left→right: house
   zone (cottage + yard), play area (grid). Monsters stage in the matching
   east-column `EnemyLane` (`EnemySpawn` attachment at its west edge).
@@ -315,7 +314,7 @@ Full details in `BRAINROTS.md`. Summary:
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
   pushes (gameplay stays server-side).
 - **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
-  Full combat: projectiles, target acquisition, status effects, health bars (M7).
+  Full combat: projectiles, target acquisition, status effects (M7).
 
 ### Milestone 6 — Monster Framework ✅
 
@@ -339,11 +338,11 @@ Full details in `MONSTERS.md`. Summary:
 
 Full details in `COMBAT.md`. Summary:
 
-- **`Shared.Config.CombatConfig`** — projectile speed, DoT ticks, health bar layout.
+- **`Shared.Config.CombatConfig`** — projectile speed, DoT ticks, death timings.
 - **`CombatService`** — `attackFirstInRow`, `attackInRow`, `dealEntireRowDamage`,
   `launchProjectile`, status APIs; `Projectile` submodule.
 - **`EnemyService/MonsterStatus`** — Slow / Poison / Burn / Knockback on monsters.
-- **`CombatController`** + **`HealthBarController`** (client) — visuals only.
+- **`CombatController`** (client) — visuals only.
 - **`CombatVisual`** remote — plot-owner feedback for hits and deaths.
 
 ### Milestone 8 — Level System ✅
@@ -408,11 +407,15 @@ Full details in `UI.md`. Summary:
   statistics; `ProfileUpdated` / `SetEquipped` remotes. Stats increment broadcasts
   immediately; time played includes the live session in client payloads. Join
   hydrate is synchronous from `SaveService` so defaults cannot wipe saved stats.
+  Starter roster unlocks only 3 Brainrots by default (`DEFAULT_UNLOCKS`); the
+  rest of the launch seven unlock via `UNLOCK_SCHEDULE`
+  (`grantUnlockForLevel`, called from `LevelService.onVictory`) — see
+  `BRAINROTS.md`.
 - **Hearts HUD** — 5 house hearts; LevelService −1 per breach, defeat at 0.
 - **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
 - **Inventory** — separate left HUD bar + modal for equip/unequip loadout.
-- **Reward popup** — victory shows brains earned (store purchases → M22).
+- **Reward popup** — victory shows brains earned (store purchases → M19).
 - Save schema **v2** adds `brains` + `equipped`.
 
 ### Milestone 12 — Audio ✅

@@ -37,7 +37,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `id`              | string                 | Unique key (matches registry key)                                  |
 | `name`            | string                 | Display name                                                       |
 | `cost`            | number                 | Coin cost to place                                                 |
-| `maxHealth`       | number                 | HP pool (display / health bar)                                     |
+| `maxHealth`       | number                 | HP pool (combat)                                                   |
 | `health`          | number                 | Hits the Brainrot can take                                         |
 | `damage`          | number                 | Damage per attack (0 for non-attackers)                            |
 | `attackInterval`  | number                 | Seconds between attacks/actions (0 = wall)                         |
@@ -104,6 +104,31 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 
 
 
+## Starter unlock cadence ✅
+
+New players start Day 1 with only three roster entries unlocked and equipped
+— **Ballerina Cappucina**, **Tung Tung Sahur**, **Chimpanzini Bananini**
+(`ProgressConfig.DEFAULT_UNLOCKS` / `DEFAULT_EQUIPPED`) — so the opening board
+is economy + melee + wall only, matched against the Day 1–4 Zombie-only ramp
+(see `BALANCE.md`). The remaining four unlock by clearing a day for the first
+time (`ProgressConfig.UNLOCK_SCHEDULE`, granted server-side in
+`LevelService.onVictory` → `ProgressService.grantUnlockForLevel`), auto-equipped
+when there's an open loadout slot, and shown via a center-screen
+`UnlockPopup` (client, display-only):
+
+| Clear Day | Unlocks |
+| --------- | ------- |
+| 3 | Cappuccino Assassino |
+| 5 | Lirili Larila |
+| 7 | Tralalero Tralala |
+| 9 | Bombardino Crocodilo |
+
+This cadence is **starter-roster only** — a one-time, free unlock path tied to
+campaign progress. It never applies to post-launch Brainrots (Milestone 25+),
+which cost **Brains** at the physical Store (Milestone 19). Re-clearing an
+already-cleared day (Day Select) does not re-grant or re-show the popup
+(`grantUnlockForLevel` is idempotent per player).
+
 ## Roster ✅ (Milestone 5)
 
 
@@ -114,7 +139,7 @@ M15 **Complete When** (all seven real models in-game) ✅ — templates under
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 375  | — (1)         | 1000   | —        | Full row | Line bomb on place  | —     |
 | Lirili Larila        | 150  | 500 (5)       | 0      | 6.0s     | 2 tiles  | Freeze enemies 0.7s | —     |
-| Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning sword | —     |
+| Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 75   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
@@ -197,14 +222,14 @@ producers and line-bomb placement work independently of monster presence rules.
 
 
 
-## Planned roster (Milestone 23)
+## Planned roster (Milestone 25)
 
 Expand beyond the initial seven after launch. Each addition is registry data
 plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).
 
-## Planned evolution & mutations (Milestone 24)
+## Planned evolution & mutations (Milestone 20)
 
-Two progression layers on existing Brainrots (see `ROADMAP.md` Milestone 24):
+Two progression layers on existing Brainrots (see `ROADMAP.md` Milestone 20):
 
 - **Evolution** — changes **color / look** and **base stats** (e.g. Diamond Tung
   Tung Tung Sahur: diamond tint + stronger HP/damage; same core ability).

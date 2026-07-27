@@ -156,7 +156,10 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 	local instanceId = string.format("Monster_%d", nextInstanceId)
 	local spawnColumn = GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET
 
-	local worldPos = GridService.getWorldPositionAtColumn(plotModel, gridRow, spawnColumn)
+	-- gridRow is the anchor (lowest) row for multi-lane units; visual
+	-- placement centers on the midpoint of the occupied span.
+	local centerRow = GridUtil.laneCenterRow(gridRow, definition.laneSpan or 1)
+	local worldPos = GridService.getWorldPositionAtColumn(plotModel, centerRow, spawnColumn)
 	if not worldPos then
 		return nil
 	end
@@ -226,10 +229,7 @@ function EnemyService.setHouseBreachHandler(handler: (plotModel: Model, row: num
 end
 
 local function occupiesRow(runtime: MonsterRuntime, row: number): boolean
-	local span = runtime.definition.laneSpan or 1
-	span = math.max(1, math.floor(span))
-	local half = math.floor((span - 1) / 2)
-	return math.abs(runtime.row - row) <= half
+	return GridUtil.occupiesLaneRow(runtime.row, runtime.definition.laneSpan or 1, row)
 end
 
 function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { string }
@@ -379,7 +379,8 @@ function EnemyService.applyStatusToMonster(
 		end
 	end
 	if kind == "Knockback" then
-		local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
+		local centerRow = GridUtil.laneCenterRow(runtime.row, runtime.definition.laneSpan or 1)
+		local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, centerRow, runtime.column)
 		if worldPos then
 			ModelUtil.snapFeetToTileTop(runtime.model, worldPos)
 			MonsterModel.setColumn(runtime.model, runtime.column)

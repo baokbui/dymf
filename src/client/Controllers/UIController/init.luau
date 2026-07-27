@@ -21,10 +21,12 @@ local UIEvents = require(script.Parent.Parent.UIEvents)
 local Shop = require(script.Shop)
 local Level = require(script.Level)
 local CoinCounter = require(script.CoinCounter)
+local BrainsCounter = require(script.BrainsCounter)
 local Hearts = require(script.Hearts)
 local Settings = require(script.Settings)
 local Inventory = require(script.Inventory)
 local RewardPopup = require(script.RewardPopup)
+local UnlockPopup = require(script.UnlockPopup)
 local PlantToast = require(script.PlantToast)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
@@ -36,12 +38,14 @@ local log = Logger.new(UIController.Name)
 
 local localPlayer = Players.LocalPlayer
 local coinCounter: CoinCounter.CoinCounter? = nil
+local brainsCounter: BrainsCounter.BrainsCounter? = nil
 local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local heartsHud: Hearts.HeartsHud? = nil
 local settingsPanel: Settings.SettingsPanel? = nil
 local inventoryPanel: Inventory.InventoryPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
+local unlockPopup: UnlockPopup.UnlockPopupHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
@@ -65,6 +69,9 @@ end
 local function applyProfile(profile: { [string]: any }?)
 	if type(profile) ~= "table" then
 		return
+	end
+	if brainsCounter and type(profile.brains) == "number" then
+		brainsCounter:setBalance(profile.brains)
 	end
 	if shop and type(profile.equipped) == "table" then
 		local equipped = profile.equipped :: { string }
@@ -98,6 +105,11 @@ end
 local function buildCoinCounter(): CoinCounter.CoinCounter
 	local frame = buildMain():WaitForChild("Coins") :: Frame
 	return CoinCounter.new(frame)
+end
+
+local function buildBrainsCounter(): BrainsCounter.BrainsCounter
+	local frame = buildMain():WaitForChild("Brains") :: Frame
+	return BrainsCounter.new(frame)
 end
 
 local function buildShop(): Shop.Shop
@@ -142,11 +154,15 @@ local function buildRewardPopup(): RewardPopup.RewardPopupHud
 	return RewardPopup.new(buildMain():WaitForChild("RewardPopup") :: Frame)
 end
 
+local function buildUnlockPopup(): UnlockPopup.UnlockPopupHud
+	return UnlockPopup.new(buildMain():WaitForChild("UnlockPopup") :: Frame)
+end
+
 local function buildSettings(): Settings.SettingsPanel
 	return Settings.new(buildMain():WaitForChild("Settings") :: Frame)
 end
 
-local function makeHudEntry(name: string, label: string, y: number, onClick: () -> ()): TextButton
+local function makeHudEntry(name: string, label: string, y: number, fill: Color3, onClick: () -> ()): TextButton
 	local main = buildMain()
 	local button = Instance.new("TextButton")
 	button.Name = name
@@ -158,7 +174,7 @@ local function makeHudEntry(name: string, label: string, y: number, onClick: () 
 	button.Text = label
 	button.ZIndex = 15
 	button.Parent = main
-	UITheme.applyChipLook(button)
+	UITheme.applyChipLook(button, fill)
 	UITheme.applyOutlinedTitle(button, UITheme.TITLE)
 	button.TextSize = 18
 	button.Activated:Connect(function()
@@ -169,8 +185,9 @@ local function makeHudEntry(name: string, label: string, y: number, onClick: () 
 end
 
 local function buildHudEntries()
-	-- Coins (16,16 h52) → Hearts (16,76 h48) → Inventory → Settings (8px gaps).
-	inventoryEntry = makeHudEntry("InventoryEntry", "Inventory", 132, function()
+	-- Coins (16,16 h52) → Brains (16,76 h52) → Hearts (16,136 h48) →
+	-- Inventory → Settings (8px gaps).
+	inventoryEntry = makeHudEntry("InventoryEntry", "Inventory", 192, UITheme.CHIP_BG_INVENTORY_BUTTON, function()
 		if not inventoryPanel then
 			return
 		end
@@ -180,7 +197,7 @@ local function buildHudEntries()
 		end
 		inventoryPanel:setOpen(opening)
 	end)
-	settingsEntry = makeHudEntry("SettingsEntry", "Settings", 184, function()
+	settingsEntry = makeHudEntry("SettingsEntry", "Settings", 244, UITheme.CHIP_BG_SETTINGS_BUTTON, function()
 		if not settingsPanel then
 			return
 		end
@@ -223,6 +240,9 @@ local function applyLevelState(state: { [string]: any }?)
 			task.delay(3, function()
 				if rewardPopup then
 					rewardPopup:hide()
+				end
+				if unlockPopup and type(reward.unlockedBrainrotId) == "string" then
+					unlockPopup:show(reward.unlockedBrainrotId)
 				end
 			end)
 		end
@@ -270,12 +290,14 @@ end
 
 function UIController.init()
 	coinCounter = buildCoinCounter()
+	brainsCounter = buildBrainsCounter()
 	shop = buildShop()
 	plantToast = PlantToast.new(buildMain())
 	levelPanel = buildLevelPanel()
 	heartsHud = buildHearts()
 	inventoryPanel = buildInventory()
 	rewardPopup = buildRewardPopup()
+	unlockPopup = buildUnlockPopup()
 	settingsPanel = buildSettings()
 	buildHudEntries()
 end

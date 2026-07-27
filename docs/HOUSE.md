@@ -2,7 +2,7 @@
 
 Each player plot has a **walkable cottage** in the `HOUSE_ZONE` (west of the
 lawn, behind the spawn). The shell and interior pedestals ship now; boss
-collection and passive brains income are **Milestone 25**.
+collection and passive brains income are **Milestone 21**.
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -44,7 +44,7 @@ Tune size / pedestal count in `HouseConfig` — never inline.
 
 ---
 
-## Future: Boss collection & brains (Milestone 25) 🔜
+## Future: Boss collection & brains (Milestone 21) 🔜
 
 Design target (not implemented yet):
 
@@ -56,7 +56,7 @@ Design target (not implemented yet):
    house to see their trophies.
 3. **Income** — displayed bosses generate **brains** on a slow server tick
    (rate from config per `monsterId`). Brains remain the progression currency
-   already used for the Brainrots Store (M22) and evolutions/mutations (M24).
+   already used for the Brainrots Store (M19) and evolutions/mutations (M20).
 4. **Spend** — no new currency: brains buy unlocks / evolves as those
    milestones define. House income is an additional brains source.
 
@@ -80,5 +80,5 @@ Design target (not implemented yet):
 
 - `docs/GAME_DESIGN.md` — battlefield / house zone
 - `docs/ECONOMY.md` — brains vs coins
-- `docs/ROADMAP.md` — Milestone 25
+- `docs/ROADMAP.md` — Milestone 21
 - `docs/SAVE_SYSTEM.md` — persistence rules

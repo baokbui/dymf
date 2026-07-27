@@ -11,7 +11,7 @@ function ThrowKnife.tryAct(ctx, callbacks)
 		ctx.definition.damage,
 		ctx.ownerUserId,
 		{
-			kind = "Sword",
+			kind = "Shuriken",
 			soundKey = "ThrowKnifeHit",
 		}
 	)

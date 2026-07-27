@@ -20,6 +20,12 @@ Difficulty never uses duplicate stat tiers of the same enemy. It ramps through
 **spawn counts**, **pacing** (`startDelay` / `spawnInterval`), and **monster
 species** (Zombie → Goblin → Goblin Elite, …).
 
+**Starter roster:** Day 1 begins with only Ballerina, Tung Tung, and
+Chimpanzini unlocked (economy + melee + wall) — the other four launch
+Brainrots unlock at Days 3/5/7/9 as the board grows and Goblin/Elite pressure
+ramps up (see `BRAINROTS.md`). This keeps the early game (and the monsters!)
+fair: no day-one full roster against a Zombie-only opener.
+
 **House hearts:** 5 (one lost per breach). **Match coins:** Day 1 opens with
 `STARTING_COINS` (125); after later days end the purse resets to **0** (earn
 in-match via producers / passive). **Planted Brainrots** carry across
@@ -85,7 +91,7 @@ were raised so early boards need real DPS:
 | -- | ---- | -- | -------- | ---- |
 | `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
 | `Goblin` | Fast grunt (L5+) | 200 | 2.7 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10) | 14000 | 9.2 | 8000 + one-shot; **laneSpan 3** |
+| `GoblinElite` | Boss (L10) | 14000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
 ~16s Goblin).

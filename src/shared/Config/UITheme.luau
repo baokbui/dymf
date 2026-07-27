@@ -8,6 +8,8 @@
 local UITheme = {}
 
 -- Fills (saturated sticker colors — avoid flat white)
+-- PANEL_BG / CHIP_BG stay light blue: the Day/Start Day panel's look is the
+-- reference "house style" every other panel's stroke/corner geometry matches.
 UITheme.PANEL_BG = Color3.fromRGB(90, 175, 255)
 UITheme.PANEL_BG_ALT = Color3.fromRGB(70, 155, 240)
 UITheme.CHIP_BG = Color3.fromRGB(90, 175, 255)
@@ -16,6 +18,19 @@ UITheme.CARD_SELECTED_BG = Color3.fromRGB(120, 255, 170)
 UITheme.ROW_BG = Color3.fromRGB(255, 170, 210)
 UITheme.BUTTON_BG = Color3.fromRGB(160, 210, 255)
 UITheme.MODAL_SCRIM = Color3.fromRGB(20, 24, 40)
+
+-- Per-panel accent fills — same cartoon stroke/corner geometry as PANEL_BG /
+-- CHIP_BG, just a different saturated sticker color so each HUD piece reads
+-- as its own colorful "candy" rather than one wall of blue.
+UITheme.CHIP_BG_COINS = Color3.fromRGB(255, 200, 60) -- gold
+UITheme.CHIP_BG_BRAINS = Color3.fromRGB(180, 120, 255) -- purple
+UITheme.CHIP_BG_HEARTS = Color3.fromRGB(255, 120, 150) -- rosy red
+UITheme.CHIP_BG_INVENTORY_BUTTON = Color3.fromRGB(90, 210, 140) -- leafy green
+UITheme.CHIP_BG_SETTINGS_BUTTON = Color3.fromRGB(255, 150, 70) -- orange
+UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
+UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
+UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold
+UITheme.PANEL_BG_UNLOCK = Color3.fromRGB(200, 130, 255) -- purple
 
 -- Accents
 UITheme.OUTLINE = Color3.fromRGB(15, 15, 20)
@@ -74,16 +89,16 @@ function UITheme.applyStroke(gui: GuiObject, thickness: number?, color: Color3?)
 	return stroke
 end
 
-function UITheme.applyPanelLook(gui: GuiObject, cornerRadius: number?)
-	gui.BackgroundColor3 = UITheme.PANEL_BG
+function UITheme.applyPanelLook(gui: GuiObject, cornerRadius: number?, fill: Color3?)
+	gui.BackgroundColor3 = fill or UITheme.PANEL_BG
 	gui.BackgroundTransparency = 0
 	gui.BorderSizePixel = 0
 	UITheme.styleCorner(gui, cornerRadius or UITheme.CORNER_PANEL)
 	UITheme.applyStroke(gui, UITheme.STROKE_PANEL)
 end
 
-function UITheme.applyChipLook(gui: GuiObject)
-	gui.BackgroundColor3 = UITheme.CHIP_BG
+function UITheme.applyChipLook(gui: GuiObject, fill: Color3?)
+	gui.BackgroundColor3 = fill or UITheme.CHIP_BG
 	gui.BackgroundTransparency = 0
 	gui.BorderSizePixel = 0
 	UITheme.styleCorner(gui, UITheme.CORNER_CHIP)

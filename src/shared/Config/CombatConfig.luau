@@ -12,20 +12,18 @@ local CombatConfig = {
 	PROJECTILE_COLUMNS_PER_SECOND = 6,
 
 	-- Replicated projectile body (server-spawned, visible to all).
-	-- Legacy bolt size kept for non-sword kinds; Cappuccino uses sword dims below.
+	-- Legacy bolt size kept for non-shuriken kinds; Cappuccino uses shuriken dims below.
 	PROJECTILE_SIZE = Vector3.new(0.35, 0.35, 1.4),
 	PROJECTILE_COLOR = Color3.fromRGB(220, 220, 230),
 
-	-- Cappuccino spinning sword (procedural Model; long axis = +X toward enemy).
-	SWORD_BLADE_SIZE = Vector3.new(5.5, 0.65, 0.28),
-	SWORD_GUARD_SIZE = Vector3.new(0.32, 1.7, 0.85),
-	SWORD_HANDLE_SIZE = Vector3.new(1.25, 0.28, 0.28),
-	SWORD_BLADE_COLOR = Color3.fromRGB(230, 235, 245),
-	SWORD_GUARD_COLOR = Color3.fromRGB(255, 200, 70),
-	SWORD_HANDLE_COLOR = Color3.fromRGB(90, 55, 35),
-	SWORD_SPIN_RADIANS_PER_SECOND = math.pi * 10, -- 5 turns/sec
-	-- Tip-to-handle cartwheel needs clearance ≈ half sword length above the lawn.
-	SWORD_PROJECTILE_HEIGHT_OFFSET = 7.0,
+	-- Cappuccino spinning shuriken (procedural Model; flat disc spun face-on toward enemy).
+	SHURIKEN_BLADE_SIZE = Vector3.new(2.2, 0.14, 2.2), -- span (X/Z) x thickness (Y)
+	SHURIKEN_HUB_SIZE = Vector3.new(0.55, 0.18, 0.55),
+	SHURIKEN_BLADE_COLOR = Color3.fromRGB(210, 215, 225),
+	SHURIKEN_HUB_COLOR = Color3.fromRGB(60, 60, 68),
+	SHURIKEN_SPIN_RADIANS_PER_SECOND = math.pi * 14, -- 7 turns/sec
+	-- Flat disc needs less clearance than the old cartwheeling sword.
+	SHURIKEN_PROJECTILE_HEIGHT_OFFSET = 3.2,
 
 	-- Tralalero bubble projectile (Ball + ForceField; color from MonsterConfig.BUBBLE_COLOR).
 	BUBBLE_PROJECTILE_SIZE = Vector3.new(1.6, 1.6, 1.6),
@@ -38,15 +36,6 @@ local CombatConfig = {
 	BURN_DAMAGE_PER_TICK = 40,
 	SLOW_SPEED_FACTOR = 0.5, -- movement multiplier while slowed
 	KNOCKBACK_TILES = 0.75,
-
-	-- Client health bar (BillboardGui on Body).
-	HEALTH_BAR_WIDTH = 52,
-	HEALTH_BAR_HEIGHT = 7,
-	HEALTH_BAR_OFFSET_Y = 1.2,
-	HEALTH_BAR_BG = Color3.fromRGB(30, 30, 36),
-	HEALTH_BAR_FILL = Color3.fromRGB(90, 210, 90),
-	HEALTH_BAR_FILL_LOW = Color3.fromRGB(220, 80, 80),
-	HEALTH_BAR_BOSS_WIDTH = 72,
 
 	-- Monster death: slow tip-over (server-replicated), linger on ground, then fade.
 	DEATH_FALL_DURATION = 1.0,

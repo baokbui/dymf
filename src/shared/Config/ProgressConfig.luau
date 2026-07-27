@@ -15,25 +15,31 @@ local ProgressConfig = {
 	-- Max Brainrots shown in the placement shop bar at once.
 	MAX_EQUIPPED = 7,
 
-	-- Starter roster: unlocked + equipped for new players (all current units).
+	-- Starter roster: unlocked + equipped for new players. Keeping the opening
+	-- board small (economy + melee + wall) is part of Day 1's balance — the
+	-- rest of the launch roster unlocks through UNLOCK_SCHEDULE below.
 	DEFAULT_UNLOCKS = {
 		"BallerinaCappucina",
 		"TungTungSahur",
-		"TralaleroTralala",
-		"BombardinoCrocodilo",
-		"LiriliLarila",
-		"CappuccinoAssassino",
 		"ChimpanziniBananini",
 	},
 
 	DEFAULT_EQUIPPED = {
 		"BallerinaCappucina",
 		"TungTungSahur",
-		"TralaleroTralala",
-		"BombardinoCrocodilo",
-		"LiriliLarila",
-		"CappuccinoAssassino",
 		"ChimpanziniBananini",
+	},
+
+	-- Starter-roster unlock cadence: clearing `day` for the first time grants
+	-- `brainrotId` (auto-equipped if there's an open loadout slot) and shows
+	-- an unlock popup. Ordered by rising cost/power alongside the campaign's
+	-- species ramp (see docs/LEVELS.md). Never applies to future post-launch
+	-- Brainrots — those cost Brains at the Store (Milestone 22).
+	UNLOCK_SCHEDULE = {
+		{ day = 3, brainrotId = "CappuccinoAssassino" },
+		{ day = 5, brainrotId = "LiriliLarila" },
+		{ day = 7, brainrotId = "TralaleroTralala" },
+		{ day = 9, brainrotId = "BombardinoCrocodilo" },
 	},
 
 	-- Brains granted on victory = level number * this multiplier (level 1 → 1).

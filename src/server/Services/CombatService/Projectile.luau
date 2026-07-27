@@ -29,7 +29,7 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
-	-- "Knife" (legacy bolt), "Sword" (Cappuccino), or "Bubble"
+	-- "Knife" (legacy bolt), "Shuriken" (Cappuccino), or "Bubble"
 	kind: string?,
 	impact: ImpactSpec?,
 }
@@ -89,76 +89,47 @@ local function weldAccessory(root: BasePart, part: BasePart)
 end
 
 --[[
-	Procedural sword: long axis = local +X. In flight we tip it upright (+Y) and
-	spin around world +X so it reads as a vertical wheel toward the enemy.
+	Procedural shuriken: a flat 4-point star (thin disc + wedge blades) built
+	flat in the world XZ plane. In flight we spin it around world +Y so it
+	stays horizontal and reads as a real thrown shuriken spinning flat.
 ]]
-local function createSwordModel(): (Model, BasePart)
+local function createShurikenModel(): (Model, BasePart)
 	local model = Instance.new("Model")
-	model.Name = "SwordProjectile"
+	model.Name = "ShurikenProjectile"
 
-	local blade = Instance.new("Part")
-	blade.Name = "Blade"
-	blade.Size = CombatConfig.SWORD_BLADE_SIZE
-	blade.Material = Enum.Material.Metal
-	blade.Color = CombatConfig.SWORD_BLADE_COLOR
-	blade.CFrame = CFrame.new()
-	blade.Parent = model
-	hardenRoot(blade)
+	local hub = Instance.new("Part")
+	hub.Name = "Hub"
+	hub.Shape = Enum.PartType.Cylinder
+	hub.Size = CombatConfig.SHURIKEN_HUB_SIZE
+	hub.Material = Enum.Material.Metal
+	hub.Color = CombatConfig.SHURIKEN_HUB_COLOR
+	hub.CFrame = CFrame.new() * CFrame.Angles(0, 0, math.rad(90))
+	hub.Parent = model
+	hardenRoot(hub)
 
-	local tip = Instance.new("WedgePart")
-	tip.Name = "Tip"
-	tip.Size = Vector3.new(
-		CombatConfig.SWORD_BLADE_SIZE.Z,
-		CombatConfig.SWORD_BLADE_SIZE.Y,
-		CombatConfig.SWORD_BLADE_SIZE.Y * 0.9
-	)
-	tip.Material = Enum.Material.Metal
-	tip.Color = CombatConfig.SWORD_BLADE_COLOR
-	tip.CFrame = CFrame.new(CombatConfig.SWORD_BLADE_SIZE.X * 0.5 + tip.Size.Z * 0.5, 0, 0)
-		* CFrame.Angles(0, math.rad(90), 0)
-	tip.Parent = model
-	weldAccessory(blade, tip)
+	local bladeSpan = CombatConfig.SHURIKEN_BLADE_SIZE.X
+	local bladeThickness = CombatConfig.SHURIKEN_BLADE_SIZE.Y
+	local bladeWidth = CombatConfig.SHURIKEN_BLADE_SIZE.Z
 
-	local guard = Instance.new("Part")
-	guard.Name = "Guard"
-	guard.Size = CombatConfig.SWORD_GUARD_SIZE
-	guard.Material = Enum.Material.Neon
-	guard.Color = CombatConfig.SWORD_GUARD_COLOR
-	guard.CFrame = CFrame.new(-CombatConfig.SWORD_BLADE_SIZE.X * 0.42, 0, 0)
-	guard.Parent = model
-	weldAccessory(blade, guard)
+	-- Four wedge blades pointing outward at 90° increments in the XZ plane.
+	for i = 0, 3 do
+		local angle = math.rad(90 * i)
+		local blade = Instance.new("WedgePart")
+		blade.Name = string.format("Blade%d", i + 1)
+		blade.Size = Vector3.new(bladeThickness, bladeWidth, bladeSpan * 0.5)
+		blade.Material = Enum.Material.Metal
+		blade.Color = CombatConfig.SHURIKEN_BLADE_COLOR
+		blade.CFrame = CFrame.new(hub.Position)
+			* CFrame.Angles(math.rad(90), angle, 0)
+			* CFrame.new(0, 0, -bladeSpan * 0.25)
+		blade.Parent = model
+		weldAccessory(hub, blade)
+	end
 
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = CombatConfig.SWORD_HANDLE_SIZE
-	handle.Material = Enum.Material.SmoothPlastic
-	handle.Color = CombatConfig.SWORD_HANDLE_COLOR
-	handle.CFrame = CFrame.new(
-		-CombatConfig.SWORD_BLADE_SIZE.X * 0.42 - CombatConfig.SWORD_HANDLE_SIZE.X * 0.55,
-		0,
-		0
-	)
-	handle.Parent = model
-	weldAccessory(blade, handle)
-
-	local pommel = Instance.new("Part")
-	pommel.Name = "Pommel"
-	pommel.Shape = Enum.PartType.Ball
-	pommel.Size = Vector3.new(0.5, 0.5, 0.5)
-	pommel.Material = Enum.Material.Neon
-	pommel.Color = CombatConfig.SWORD_GUARD_COLOR
-	pommel.CFrame = CFrame.new(
-		-CombatConfig.SWORD_BLADE_SIZE.X * 0.42 - CombatConfig.SWORD_HANDLE_SIZE.X * 1.05,
-		0,
-		0
-	)
-	pommel.Parent = model
-	weldAccessory(blade, pommel)
-
-	model.PrimaryPart = blade
-	model:SetAttribute("ProjectileKind", "Sword")
-	blade:SetAttribute("ProjectileKind", "Sword")
-	return model, blade
+	model.PrimaryPart = hub
+	model:SetAttribute("ProjectileKind", "Shuriken")
+	hub:SetAttribute("ProjectileKind", "Shuriken")
+	return model, hub
 end
 
 local function createBoltPart(): BasePart
@@ -208,11 +179,11 @@ function Projectile.launch(
 	local part: BasePart
 	local model: Model? = nil
 
-	if kind == "Sword" then
-		local swordModel, blade = createSwordModel()
-		model = swordModel
-		part = blade
-		swordModel.Parent = folder
+	if kind == "Shuriken" then
+		local shurikenModel, hub = createShurikenModel()
+		model = shurikenModel
+		part = hub
+		shurikenModel.Parent = folder
 	elseif kind == "Bubble" then
 		part = createBubblePart()
 		part.Parent = folder
@@ -259,13 +230,11 @@ function Projectile.tick(
 		)
 
 		if projectile.model then
-			projectile.spinRadians += CombatConfig.SWORD_SPIN_RADIANS_PER_SECOND * dt
-			-- Vertical wheel: tip starts +Y, rolls around travel (+X) so the blade
-			-- spins in the YZ plane (reads as upright spin when facing the enemy).
+			projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
+			-- Flat disc: spin around world +Y so it stays horizontal and reads
+			-- as a real thrown shuriken spinning flat while it flies.
 			local pos = projectile.part.Position
-			projectile.part.CFrame = CFrame.new(pos)
-				* CFrame.fromAxisAngle(Vector3.xAxis, projectile.spinRadians)
-				* CFrame.Angles(0, 0, math.pi / 2)
+			projectile.part.CFrame = CFrame.new(pos) * CFrame.fromAxisAngle(Vector3.yAxis, projectile.spinRadians)
 		end
 
 		if projectile.column >= liveColumn then

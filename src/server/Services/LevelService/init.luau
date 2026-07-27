@@ -141,6 +141,7 @@ local function onVictory(player: Player, state: PlayerState)
 
 	local clearedNumber = definition.number
 	local brainsEarned = ProgressService.brainsForLevel(clearedNumber)
+	local unlockedBrainrotId = ProgressService.grantUnlockForLevel(player, clearedNumber)
 	ProgressService.addBrains(player, brainsEarned)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_LEVELS_CLEARED)
 
@@ -173,6 +174,7 @@ local function onVictory(player: Player, state: PlayerState)
 		reward = {
 			clearedLevel = clearedNumber,
 			brains = brainsEarned,
+			unlockedBrainrotId = unlockedBrainrotId,
 		},
 	})
 	log:info(string.format("%s cleared level %d (+%d brains)", player.Name, clearedNumber, brainsEarned))

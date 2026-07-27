@@ -33,8 +33,8 @@ end
 local function bodyHeightFor(definition: Types.MonsterDefinition): number
 	local height = MonsterConfig.BODY_HEIGHT
 	local span = laneSpanFor(definition)
-	if span >= 3 then
-		-- Tall enough to match the wide 3-lane footprint without looking squat.
+	if span >= 2 then
+		-- Tall enough to match the wide multi-lane footprint without looking squat.
 		return height * 2.15
 	end
 	if definition.isBoss then

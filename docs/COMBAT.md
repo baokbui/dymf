@@ -16,7 +16,6 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 | `EnemyService` | Monster runtime state, movement, status fields, death cleanup |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
 | `CombatController` (client) | Hit/death/explosion VFX, projectile trails (`CombatVisual` + plot watcher) |
-| `HealthBarController` (client) | Billboard health bars on the local plot |
 
 ---
 
@@ -41,9 +40,13 @@ that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.)
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
 
-Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 3) are valid targets from
-their center row **and** adjacent rows within `floor((laneSpan−1)/2)`. Melee,
-projectiles, and row splash all use this rule via `EnemyService` queries.
+Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 2) occupy rows
+`[row, row + laneSpan − 1]` — `row` is the unit's lowest/anchor row, not a
+center — and are valid targets from **any** row in that range
+(`GridUtil.occupiesLaneRow`). Melee, projectiles, and row splash all use this
+rule via `EnemyService` queries. Visual placement centers the model on the
+midpoint of its occupied span (`GridUtil.laneCenterRow`) so even spans still
+render centered between their lanes instead of snapped to one edge.
 
 ---
 
@@ -55,10 +58,10 @@ projectiles, and row splash all use this rule via `EnemyService` queries.
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Sword` (blade + guard + handle; vertical wheel spin around +X) | Damage + `ThrowKnifeHit` |
+| Cappuccino (`ThrowKnife`) | `Shuriken` (flat 4-blade disc; spins horizontally around +Y) | Damage + `ThrowKnifeHit` |
 | Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
-Tuning: `CombatConfig` (speed, sword/bubble size, `SWORD_SPIN_RADIANS_PER_SECOND`)
+Tuning: `CombatConfig` (speed, shuriken/bubble size, `SHURIKEN_SPIN_RADIANS_PER_SECOND`)
 + `MonsterConfig.BUBBLE_COLOR`. Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`).
 
@@ -110,9 +113,8 @@ values remain in `CombatConfig`.
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
    `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner.
 3. Client plays `Death_<monsterId>` when configured (else `Death`), then a death
-   particle burst and hides the health bar. After tip-over + linger, a
-   Thanos-style ash disintegrate (`VfxUtil.playDeathDisintegrate`) plays as the
-   corpse fades.
+   particle burst. After tip-over + linger, a Thanos-style ash disintegrate
+   (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.
 4. Server `MonsterDeath` tips the model slowly onto the ground (randomized
    faceplant / side flop / backfall), leaves the corpse for
    `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
@@ -123,26 +125,10 @@ Hit flash on damage uses server-side `MonsterFeedback.flashHit` /
 
 ---
 
-## Health bars ✅ (Milestone 7)
-
-`HealthBarController` attaches a `BillboardGui` to `Body` on **every** tagged
-Brainrot and Monster **on the local player's plot** (including plants restored
-on rejoin) — bars read `Health` / `MaxHealth` attributes
-(server-authoritative). Boss monsters use a wider bar. Ownership is checked via
-the replicated `OwnerUserId` attribute (not workspace ancestry), since identity
-attributes land before the model is parented — attaching by ancestry alone
-would race live placements. Planted Brainrots additionally get a name tag
-above the health bar, resolved from `Shared.Brainrots` (never from the model
-name). Look is cartoon/rounded (`Shared.Config.UITheme` tokens, `FredokaOne`
-font) to match the rest of the HUD.
-
----
-
 ## Config
 
-`Shared.Config.CombatConfig` — projectile speed, DoT intervals, health bar layout,
-monster death fall / linger / fade timings. **Never hardcode** combat tuning in
-services.
+`Shared.Config.CombatConfig` — projectile speed, DoT intervals, monster death
+fall / linger / fade timings. **Never hardcode** combat tuning in services.
 
 ---
 

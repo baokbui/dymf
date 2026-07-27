@@ -83,7 +83,7 @@ Each player plot contains:
 - Grid (5 × 9 tiles — see Grid System)
 - Spawn point (player respawns here, facing the enemy)
 - **House** ✅ — cottage in the house strip (−X); Toolbox model from
-  `Assets.Houses` when present (see `HOUSE.md`); boss pedestals for Milestone 25
+  `Assets.Houses` when present (see `HOUSE.md`); boss pedestals for Milestone 21
 - House anchor (legacy marker on the plot base)
 - Coin spawner marker (passive drop origin)
 - Path / Decorations folders (populated in later milestones)

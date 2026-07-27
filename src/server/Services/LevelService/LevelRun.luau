@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local LevelConfig = require(ReplicatedStorage.Shared.Config.LevelConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 
 local LevelRun = {}
 LevelRun.__index = LevelRun
@@ -152,16 +153,11 @@ function LevelRun.randomRow(): number
 	return math.random(1, GridConfig.ROWS)
 end
 
--- Pick a spawn row that keeps a multi-lane unit fully on the lawn (span 3 → rows 2–4).
+-- Pick a spawn row (anchor / lowest row occupied) that keeps a multi-lane
+-- unit's full span on the lawn. See GridUtil.occupiesLaneRow for the matching
+-- occupancy convention.
 function LevelRun.randomRowForSpan(laneSpan: number): number
-	local span = math.max(1, math.floor(laneSpan))
-	local half = math.floor((span - 1) / 2)
-	local minRow = 1 + half
-	local maxRow = GridConfig.ROWS - half
-	if minRow > maxRow then
-		return math.clamp(math.ceil(GridConfig.ROWS / 2), 1, GridConfig.ROWS)
-	end
-	return math.random(minRow, maxRow)
+	return GridUtil.randomRowForSpan(laneSpan)
 end
 
 return LevelRun

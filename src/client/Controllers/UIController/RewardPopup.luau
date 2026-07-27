@@ -26,7 +26,7 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 	parent.Position = UDim2.fromScale(0.5, 0.42)
 	parent.Size = UDim2.fromOffset(320, 140)
 	parent.ZIndex = 20
-	UITheme.applyPanelLook(parent)
+	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_REWARD)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -36,7 +36,7 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 	title.TextSize = 24
 	title.Text = "Victory!"
 	title.Parent = parent
-	UITheme.applyOutlinedTitle(title, UITheme.SUCCESS)
+	UITheme.applyOutlinedTitle(title, UITheme.TITLE)
 
 	local detail = Instance.new("TextLabel")
 	detail.Name = "Detail"

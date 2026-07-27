@@ -17,11 +17,13 @@ StarterGui/
     MainUI (ScreenGui)
         Shop         (Frame)   ✅ M4 / loadout-driven M13
         Coins        (Frame)   ✅ M3
+        Brains       (Frame)   ✅ M13
         Hearts       (Frame)   ✅ M13
         LevelUI      (Frame)   ✅ M8
         Settings     (Frame)   ✅ M13
         Inventory    (Frame)   ✅ M13 (loadout)
         RewardPopup  (Frame)   ✅ M13
+        UnlockPopup  (Frame)   ✅ M13
 ```
 
 `UIController` builds each panel at runtime (except scaffolding frames).
@@ -33,15 +35,21 @@ StarterGui/
 All HUD panels share a **cartoon thick-outline** look from
 `ReplicatedStorage.Shared.Config.UITheme` (also `Config.UI`):
 
-- Solid panel / chip fills (light cool blue or cream stickers)
+- Solid panel / chip fills — same rounded-corner + thick black `UIStroke`
+  geometry everywhere, but each HUD piece gets its own saturated "candy" color
+  so the screen doesn't read as one wall of blue: Day/Start Day panel and Shop
+  dock stay cool blue (the reference look), Coins is gold, Brains is purple,
+  Hearts is rosy red, Inventory is leafy green, Settings is orange,
+  RewardPopup is gold, UnlockPopup is purple.
 - Black `UIStroke` borders (thick on panels, slightly thinner on cards)
 - Bold white/accent titles with black `TextStroke`
 - Flat saturated accents (gold coins, red hearts/danger, green start)
 
 Layout and structure are unchanged — panels only consume theme tokens/helpers
 (`applyPanelLook`, `applyChipLook`, `applyCardLook`, `applyButtonLook`,
-`applyOutlinedTitle`, `applyBodyText`). Do not hardcode a second palette in new
-UI.
+`applyOutlinedTitle`, `applyBodyText`), passing an optional per-panel `fill`
+Color3 override (`UITheme.PANEL_BG_*` / `CHIP_BG_*`) for accent color. Do not
+hardcode a second palette in new UI.
 
 ---
 
@@ -49,11 +57,10 @@ UI.
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Hearts, Level, Settings, Inventory, Rewards | ✅ M3–M4, M8, M13 |
+| `UIController`        | Shop, Coins, Brains, Hearts, Level, Settings, Inventory, Rewards, Unlock popup | ✅ M3–M4, M8, M13 |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
-| `HealthBarController`   | Billboard health bars on local plot               | ✅ M7 |
 | `AudioController`       | BGM, ambient, SFX + Settings volume/mute hooks    | ✅ M12/M13 |
 | `GridController`      | Hover highlight + tile resolver for previews | ✅ M2  |
 | `PlacementController` | Selection, ghost preview, placement intent   | ✅ M4  |
@@ -65,7 +72,9 @@ UI.
 ## Panels
 
 - **Coins** ✅ M3 — top-left counter; floating ±N feedback on collect/spend.
-- **Hearts** ✅ M13 — five house hearts in a rounded HUD box under Coins.
+- **Brains** ✅ M13 — top-left counter directly under Coins; display-only,
+  synced from `ProfileUpdated` / `RequestState` (`profile.brains`).
+- **Hearts** ✅ M13 — five house hearts in a rounded HUD box under Brains.
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
   only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
@@ -84,13 +93,24 @@ UI.
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time
   played stays current. Day Select is deferred to a future dedicated UI.
-- **Inventory** ✅ M13 — left HUD bar under Hearts opens the loadout modal;
-  equip/unequip unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Server
-  validates via `SetEquipped`.
+- **Inventory** ✅ M13 — left HUD bar under Hearts opens the loadout modal; a
+  PvZ-style **seed packet grid** (portrait + name plate + status ribbon) for
+  equip/unequip of unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only
+  unlocked entries appear — locked starter-roster Brainrots are simply absent
+  until their unlock day clears (see `BRAINROTS.md`). Hovering a packet opens
+  an info tooltip (portrait + stat rows + ability blurb) built from
+  `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
+  resolved from the same `Shared.Brainrots` registry). Server validates equip
+  changes via `SetEquipped`.
+- **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
+  a starter-roster Brainrot unlocks (portrait, name, stat summary, ability
+  blurb, dismiss button). Shown after the victory `RewardPopup` fades, driven
+  by `reward.unlockedBrainrotId` on `LevelStateChanged` (server-decided; UI is
+  display-only).
 - **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
   day (`LevelStateChanged.reward`).
 
-### Deferred (Milestone 22 — Progression Store)
+### Deferred (Milestone 19 — Progression Store)
 
 - Physical **Brainrots Store** (world shop to spend brains on new unlocks).
 - Purchasing locked roster entries with brains.

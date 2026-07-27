@@ -43,7 +43,7 @@ From `Shared.Types.MonsterDefinition`:
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing house (−X)                  |
 | `walkAnimationId` | string?                | Walk loop (`rbxassetid://…`); falls back to config   |
 | `attackAnimationId` | string?              | Melee swing while chewing; falls back to config      |
-| `laneSpan`        | number?                | Rows this unit occupies for targeting (default 1; Goblin Elite = 3) |
+| `laneSpan`        | number?                | Rows this unit occupies for targeting (default 1; Goblin Elite = 2) |
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
 (`GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET`) and walk toward
@@ -51,9 +51,12 @@ the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
 
 **Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan`
-tiles across Z, and Brainrots on adjacent rows can target them (half-span
-tolerance around the spawn row). Spawns pick a center row so the span stays
-on the lawn (e.g. span 3 → rows 2–4 on a 5-row grid).
+tiles across Z, and Brainrots on any row in that span can target them
+(`GridUtil.occupiesLaneRow`). The spawn row is a random **anchor** (lowest
+row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a
+5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a
+span-3 unit which only has 3 valid centered positions. Visual placement
+centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
 
 ---
 
@@ -118,7 +121,7 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Werewolf | 1400 | 2.9 | 130 | 1.1s | | — |
 | Skeleton | 950 | 4.0 | 95 | 1.5s | | — |
 | Goblin | 200 | 2.7 | 110 | 1.0s | | — |
-| Goblin Elite | 14000 | 9.2 | 8000 | 3.5s | Y | One-shot club; **laneSpan 3** |
+| Goblin Elite | 14000 | 9.2 | 8000 | 3.5s | Y | One-shot club; **laneSpan 2** |
 | Spider | 900 | 2.9 | 90 | 1.4s | | Jump over first brainrot |
 | Necromancer | 9000 | 5.5 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
 | Goblin King | 13000 | 6.0 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |

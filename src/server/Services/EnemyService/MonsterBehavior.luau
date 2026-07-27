@@ -18,6 +18,7 @@ local MonsterModel = require(script.Parent.MonsterModel)
 local MonsterStatus = require(script.Parent.MonsterStatus)
 
 local GridService = require(script.Parent.Parent.GridService)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 export type MonsterRuntime = {
@@ -68,7 +69,10 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 end
 
 local function syncTransform(runtime: MonsterRuntime, floatY: number?)
-	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, runtime.row, runtime.column)
+	-- runtime.row is the anchor (lowest) row for multi-lane units; render at
+	-- the midpoint of the occupied span so it stays visually centered.
+	local centerRow = GridUtil.laneCenterRow(runtime.row, runtime.definition.laneSpan or 1)
+	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, centerRow, runtime.column)
 	if not worldPos then
 		return
 	end
