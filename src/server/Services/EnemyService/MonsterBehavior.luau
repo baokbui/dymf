@@ -99,25 +99,55 @@ local function closeEnoughToAttack(monsterColumn: number, brainrotColumn: number
 		and monsterColumn >= meleeStopColumn(brainrotColumn)
 end
 
--- First occupied tile at/west of the monster on its row (the one it would chew).
+-- All rows a (possibly multi-lane) monster occupies, anchored at runtime.row.
+local function occupiedRows(runtime: MonsterRuntime): { number }
+	local span = math.max(1, math.floor(runtime.definition.laneSpan or 1))
+	local rows = table.create(span)
+	for offset = 0, span - 1 do
+		table.insert(rows, runtime.row + offset)
+	end
+	return rows
+end
+
+-- First occupied tile at/west of the monster, checking every row it spans
+-- (multi-lane units chew whichever lane's Brainrot they reach first).
 local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	local plotModel = runtime.plotModel
-	local row = runtime.row
+	local rows = occupiedRows(runtime)
 	local currentTile = tileAtColumn(runtime.column)
 
-	local standing = GridService.getTile(plotModel, { row = row, column = currentTile })
-	if standing and standing.occupied and standing.brainrotInstanceId then
-		return standing.brainrotInstanceId, currentTile
+	for _, row in rows do
+		local standing = GridService.getTile(plotModel, { row = row, column = currentTile })
+		if standing and standing.occupied and standing.brainrotInstanceId then
+			return standing.brainrotInstanceId, currentTile
+		end
 	end
 
 	for col = currentTile - 1, 1, -1 do
-		local tile = GridService.getTile(plotModel, { row = row, column = col })
-		if tile and tile.occupied and tile.brainrotInstanceId then
-			return tile.brainrotInstanceId, col
+		for _, row in rows do
+			local tile = GridService.getTile(plotModel, { row = row, column = col })
+			if tile and tile.occupied and tile.brainrotInstanceId then
+				return tile.brainrotInstanceId, col
+			end
 		end
 	end
 
 	return nil, nil
+end
+
+-- Every Brainrot standing on the given column across all rows a (possibly
+-- multi-lane) monster occupies — lets wide units cleave every lane at once
+-- instead of only ever hitting their anchor row.
+local function brainrotsAtColumn(runtime: MonsterRuntime, column: number): { string }
+	local plotModel = runtime.plotModel
+	local hits: { string } = {}
+	for _, row in occupiedRows(runtime) do
+		local tile = GridService.getTile(plotModel, { row = row, column = column })
+		if tile and tile.occupied and tile.brainrotInstanceId then
+			table.insert(hits, tile.brainrotInstanceId)
+		end
+	end
+	return hits
 end
 
 -- While chewing, never walk past the standoff stop (keeps Brainrot melee in range).
@@ -252,7 +282,12 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 
 				runtime.attackCooldown -= dt
 				if runtime.attackCooldown <= 0 then
-					callbacks.attackBrainrot(runtime, brainrotId)
+					-- Multi-lane units cleave every occupied row on this tile, not
+					-- just the Brainrot that first drew them in (e.g. Goblin Elite
+					-- one-shots Brainrots in both of its lanes).
+					for _, targetId in brainrotsAtColumn(runtime, brainrotColumn) do
+						callbacks.attackBrainrot(runtime, targetId)
+					end
 					MonsterAnimation.playMelee(runtime.model)
 					MonsterFeedback.pulseAttack(runtime.model)
 					runtime.attackCooldown = runtime.definition.attackInterval

@@ -27,36 +27,32 @@ Monsters.getAll()    -- { [id]: MonsterDefinition }  (do not mutate)
 
 From `Shared.Types.MonsterDefinition`:
 
-| Field             | Type                   | Meaning                                              |
-| ----------------- | ---------------------- | ---------------------------------------------------- |
-| `id`              | string                 | Unique key                                           |
-| `name`            | string                 | Display name                                         |
-| `health`          | number                 | Starting HP                                          |
-| `secondsPerGrid`  | number                 | Seconds to move one tile toward the house (higher = slower) |
-| `damage`          | number                 | Damage per attack (0 when abilities handle damage)   |
-| `attackInterval`  | number                 | Seconds between attacks while chewing a tile         |
-| `isBoss`          | boolean?               | Boss flag (larger model, authored into levels)       |
-| `abilities`       | `{ string }?`          | Ability handler ids (`EnemyService/Abilities`)       |
-| `abilityParams`   | `{ [string]: number }?`| Per-ability tuning                                   |
-| `color`           | Color3?                | Placeholder / fallback tint                          |
-| `modelId`         | string?                | Child name under `Assets.Monsters` (defaults to `id`) |
-| `modelOrientationDegrees` | Vector3?         | Local Euler after facing house (−X)                  |
-| `walkAnimationId` | string?                | Walk loop (`rbxassetid://…`); falls back to config   |
-| `attackAnimationId` | string?              | Melee swing while chewing; falls back to config      |
-| `laneSpan`        | number?                | Rows this unit occupies for targeting (default 1; Goblin Elite = 2) |
+
+| Field                     | Type                    | Meaning                                                             |
+| ------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `id`                      | string                  | Unique key                                                          |
+| `name`                    | string                  | Display name                                                        |
+| `health`                  | number                  | Starting HP                                                         |
+| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)         |
+| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                  |
+| `attackInterval`          | number                  | Seconds between attacks while chewing a tile                        |
+| `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                      |
+| `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                      |
+| `abilityParams`           | `{ [string]: number }?` | Per-ability tuning                                                  |
+| `color`                   | Color3?                 | Placeholder / fallback tint                                         |
+| `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)               |
+| `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                 |
+| `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                  |
+| `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                     |
+| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2) |
+
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
 (`GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET`) and walk toward
 the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
 
-**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan`
-tiles across Z, and Brainrots on any row in that span can target them
-(`GridUtil.occupiesLaneRow`). The spawn row is a random **anchor** (lowest
-row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a
-5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a
-span-3 unit which only has 3 valid centered positions. Visual placement
-centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
+**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan `tiles across Z, and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
 
 ---
 
@@ -78,7 +74,7 @@ Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 1. `WalkAnimation` / `AttackAnimation` children under the template (if present)
 2. `definition.walkAnimationId` / `attackAnimationId` (`""` disables that track)
 3. `MonsterConfig.DEFAULT_WALK_ANIMATION_ID` / `DEFAULT_ATTACK_ANIMATION_ID`
-   when the definition omits the field (`nil`)
+  when the definition omits the field (`nil`)
 
 **Goblin** disables walk (`walkAnimationId = ""`) — catalog R15 walk looked
 buggy against grid snap — and plays a one-shot club swing (`ToolSlash`) each
@@ -94,11 +90,15 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 (`$ignoreUnknownInstances`). Name children to match registry `id` (or set
 `modelId`). Campaign-critical first:
 
+
 | Registry `id` | Suggested Assets child |
 | ------------- | ---------------------- |
-| `Zombie` | `Zombie` |
-| `Goblin` | `Goblin` |
-| `GoblinElite` | `GoblinElite` |
+| `Zombie`      | `Zombie`               |
+| `Goblin`      | `Goblin`               |
+| `GoblinElite` | `GoblinElite`          |
+| `Vampire`     | `Vampire`              |
+| `DukeVampire` | `DukeVampire`          |
+
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
 (prefer `HumanoidRootPart`). You do **not** need to hand-delete Scripts —
@@ -114,38 +114,40 @@ models (at least Zombie, Goblin, Goblin Elite).
 
 ## Roster ✅ (Milestone 6)
 
-| Name | Health | Sec/grid | Damage | Atk interval | Boss | Ability |
-| ---- | ------ | -------- | ------ | ------------ | ---- | ------- |
-| Zombie | 250 | 3.5 | 100 | 1.5s | | — |
-| Vampire | 900 | 2.5 | 70 | 1.1s | | — |
-| Werewolf | 1400 | 2.9 | 130 | 1.1s | | — |
-| Skeleton | 950 | 4.0 | 95 | 1.5s | | — |
-| Goblin | 200 | 2.7 | 110 | 1.0s | | — |
-| Goblin Elite | 14000 | 9.2 | 8000 | 3.5s | Y | One-shot club; **laneSpan 2** |
-| Spider | 900 | 2.9 | 90 | 1.4s | | Jump over first brainrot |
-| Necromancer | 9000 | 5.5 | 0 | 5s | Y | Summon zombie/skeleton; lane change (passive stub) |
-| Goblin King | 13000 | 6.0 | 140 | 1.5s | Y | +90 HP / 8s; speed buff (stub) |
-| Queen Spider | 13000 | 6.3 | 140 | 1.5s | Y | Stun + poison brainrot on attack ✅ |
-| Duke Vampire | 13000 | 5.1 | 140 | 1.5s | Y | Self-freeze heal / terrify (stubs — M10) |
 
-Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
+| Name         | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                    |
+| ------------ | ------ | -------- | ------ | ------------ | ---- | ---------------------------------------------------------- |
+| Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                          |
+| Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                          |
+| Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                          |
+| Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                          |
+| Goblin       | 200    | 2.7      | 110    | 1.0s         |      | —                                                          |
+| Goblin Elite | 4000   | 9.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
+| Spider       | 900    | 2.9      | 90     | 1.4s         |      | Jump over first brainrot                                   |
+| Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)         |
+| Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                             |
+| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | Stun + poison brainrot on attack ✅                         |
+| Duke Vampire | 10000  | 6.0      | 110    | 1.5s         | Y    | Self-freeze heal / terrify (stubs — M10); nerfed vs. other L10+ bosses |
+
+
+Milestone 14 tuning rationale: `docs/BALANCE.md`.
 
 ---
 
 ## Service ownership
 
-- **`EnemyService`** (server) ✅ M6 — spawning, grid movement, per-instance state,
-  death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
-  On death, `MonsterDeath` tips the model (3 random styles), lingers 2s, fades,
-  then destroys. Driven by `LevelService` in M8. Public: `spawn`, `clearPlot`.
-  `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
-  spawns (set `ENABLED = true` in config for isolated monster testing).
-- **`CombatService`** (server) ✅ M7 — routes Brainrot damage to monsters and
-  monster damage to Brainrots; projectiles, status effects, target acquisition.
-  See `COMBAT.md`.
-- **`LevelService`** (server) ✅ M8 — campaign loop: preparation → Active,
-  spawn groups, big-wave warning, victory/defeat, rewards, progression.
-  See `LEVELS.md`.
+- `EnemyService` (server) ✅ M6 — spawning, grid movement, per-instance state,
+death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
+On death, `MonsterDeath` tips the model (3 random styles), lingers 2s, fades,
+then destroys. Driven by `LevelService` in M8. Public: `spawn`, `clearPlot`.
+`MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
+spawns (set `ENABLED = true` in config for isolated monster testing).
+- `CombatService` (server) ✅ M7 — routes Brainrot damage to monsters and
+monster damage to Brainrots; projectiles, status effects, target acquisition.
+See `COMBAT.md`.
+- `LevelService` (server) ✅ M8 — campaign loop: preparation → Active,
+spawn groups, big-wave warning, victory/defeat, rewards, progression.
+See `LEVELS.md`.
 
 Spawned monsters are tagged `Monster` (`Shared.Constants.TAGS.Monster`) with
 `InstanceId`, `MonsterId`, `Row`, `Column`, `Health`, `MaxHealth` attributes.
@@ -168,21 +170,21 @@ MonsterBehavior (movement + attack tick)
 ```
 
 - Monsters spawn at column `COLUMNS + SPAWN_COLUMN_OFFSET` on a chosen grid row
-  (forest march).
+(forest march).
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
 - Monsters **phase through each other** on the same row (no blocking — all parts
-  `CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
-  They only stop for Brainrots (or the house).
+`CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
+They only stop for Brainrots (or the house).
 - When a tile holds a Brainrot (any type — wall, producer, attacker, …), the
-  monster walks **onto that tile** and chews at a **standoff** east of the plant
-  center (`MonsterConfig.MELEE_CLOSE_REACH`) so models don't overlap. It attacks
-  on `attackInterval` and only advances once the Brainrot is destroyed. It never
-  walks west of the standoff while chewing (so a melee bat one tile behind still
-  reaches the monster).
+monster walks **onto that tile** and chews at a **standoff** east of the plant
+center (`MonsterConfig.MELEE_CLOSE_REACH`) so models don't overlap. It attacks
+on `attackInterval` and only advances once the Brainrot is destroyed. It never
+walks west of the standoff while chewing (so a melee bat one tile behind still
+reaches the monster).
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
 - On death, `MonsterDeath` freezes the Motor6D pose, tips (forward / side / back),
-  lingers, fades — so authored animated models do not glitch upright.
+lingers, fades — so authored animated models do not glitch upright.
 
 Boss skill stubs (Queen Spider, Duke Vampire, Goblin King speed buff) are
 registered and will be completed in Milestones 7 and 10.
@@ -198,8 +200,21 @@ The roster is introduced **one monster at a time** through campaign levels
 - **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).
 - Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps for a growing defense.
 - **Level 10:** first boss — `GoblinElite` / Goblin Elite (heavy melee counterpart to the Goblin line).
+- Levels 11–12: still `Zombie` + `Goblin` only — counts/pacing keep ramping to
+  recover from the Level 10 boss dip before Goblin Elite starts recurring.
+- **Levels 13–14, 17–19:** `GoblinElite` recurs as a mixed-in miniboss (not
+  always the big-wave finale) alongside the existing roster — a recognizable
+  recurring threat, not a one-off boss fight.
+- **Level 15:** next new non-boss — `Vampire` (fast, high-HP grunt), introduced
+  gently (low count, generous `spawnInterval`) the same way Goblin was at
+  Level 5.
+- Levels 16–19: `Vampire` count/pacing ramps steadily alongside `Zombie` /
+  `Goblin` / recurring `GoblinElite`.
+- **Level 20:** next boss — `DukeVampire` / Duke Vampire, tuned as the softest
+  of the Milestone-10 boss roster (below Goblin King / Queen Spider) since
+  it's the very next boss after Goblin Elite.
 
-Future cadence when levels are authored: **one** new non-boss every 5 levels
-(e.g. Level 15), **one** boss every 10 levels (e.g. Level 20). Further
+Future cadence when further levels are authored: **one** new non-boss every 5
+levels (e.g. Level 25), **one** boss every 10 levels (e.g. Level 30). Further
 archetypes (Shield, Flying, Carrier, …) follow the same pattern: registry data
 plus ability handlers, never duplicated base AI.

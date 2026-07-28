@@ -76,7 +76,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	GoblinElite = {
 		id = "GoblinElite",
 		name = "Goblin Elite",
-		health = 14000,
+		health = 4000,
 		secondsPerGrid = 9.2,
 		damage = 8000,
 		attackInterval = 3.5,
@@ -144,9 +144,12 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	DukeVampire = {
 		id = "DukeVampire",
 		name = "Duke Vampire",
-		health = 13000,
-		secondsPerGrid = 5.1,
-		damage = 140,
+		-- Nerfed vs. the other Milestone-10 bosses (Goblin King / Queen Spider):
+		-- Level 20 is the very next boss after Goblin Elite, so it needs to be
+		-- beatable off a still-growing board, not a straight stat-tier jump.
+		health = 10000,
+		secondsPerGrid = 6.0,
+		damage = 110,
 		attackInterval = 1.5,
 		isBoss = true,
 		abilities = { "DukeVampireFreeze", "DukeVampireTerrify" },

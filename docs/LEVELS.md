@@ -124,18 +124,33 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 8     | Hold the Line     | 4 Zombie, 4 Goblin, 3 Zombie, **5** Goblin · **16** |
 | 9     | Before the Banner | 5 Goblin, 4 Zombie, 4 Goblin, **5** Zombie · **18** |
 | 10    | Goblin Elite      | 5 Zombie, 5 Goblin, 4 Zombie, **1** GoblinElite · **15** |
+| 11    | Advancing Ranks   | 5 Zombie, 5 Goblin, 4 Zombie, **5** Goblin · **19** |
+| 12    | Iron Ranks        | 5 Goblin, 5 Zombie, 5 Goblin, **6** Zombie · **21** |
+| 13    | Elite Vanguard    | 5 Zombie, 5 Goblin, 4 Zombie, **1** GoblinElite · **15** |
+| 14    | Elite Pressure    | 5 Zombie, **1** GoblinElite, 6 Goblin, **5** Zombie · **17** |
+| 15    | Night Falls       | 5 Zombie, 5 Goblin, 2 Vampire, **3** Vampire · **15** |
+| 16    | Bloodlust Rising  | 5 Zombie, 5 Goblin, 4 Vampire, **4** Vampire · **18** |
+| 17    | Crimson Vanguard  | 5 Zombie, 4 Vampire, 5 Goblin, **1** GoblinElite · **15** |
+| 18    | Twin Terror       | 5 Zombie, 5 Vampire, **1** GoblinElite, 5 Vampire · **16** |
+| 19    | Final Bloodline   | 5 Zombie, 5 Vampire, **1** GoblinElite, 6 Vampire · **17** |
+| 20    | Duke Vampire      | 5 Zombie, 5 Vampire, 5 Goblin, **1** DukeVampire · **16** |
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
 bundle of types in a single level.
 
-Introduction cadence (repeat when authoring Levels 15, 20, …):
+Introduction cadence (repeat when authoring Levels 25, 30, …):
 
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
-  `Goblin`; Level 15 would be the next roster entry when authored).
+  `Goblin`; Level 15 = `Vampire`).
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
-  `GoblinElite`; Level 20 would be the next boss when authored).
+  `GoblinElite`; Level 20 = `DukeVampire`, nerfed vs. the other Milestone-10
+  bosses since it's the very next boss after Goblin Elite).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
+- Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
+  in later levels (not always the big-wave finale) instead of only ever
+  appearing once — e.g. `GoblinElite` reappears in Levels 13, 14, 17, 18, 19
+  ahead of the Level 20 `DukeVampire` fight.
 
 ### Difficulty ramp (early campaign)
 

@@ -48,6 +48,12 @@ rule via `EnemyService` queries. Visual placement centers the model on the
 midpoint of its occupied span (`GridUtil.laneCenterRow`) so even spans still
 render centered between their lanes instead of snapped to one edge.
 
+The reverse direction also respects the span: when a multi-lane unit attacks,
+it hits every Brainrot standing on its current tile across **all** occupied
+rows (`MonsterBehavior.brainrotsAtColumn`), not just its anchor row. This is
+what lets Goblin Elite's one-shot club (`GoblinEliteClubOneShot`) down
+Brainrots in either of its two lanes in the same swing.
+
 ---
 
 ## Projectiles ✅ (Milestone 7)

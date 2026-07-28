@@ -15,10 +15,15 @@ Status: ✅ Milestone 14 (retuned after plant cooldowns)
 | Opening | 1–4 | Learn plant → earn → defend; **Zombie** only; Day 1 empty board, then carry-over |
 | Campaign | 5–9 | **Zombie** + **Goblin** mix; economy opens mid-tier units |
 | Boss intro | 10 | **Goblin Elite** big wave; row clear + sustained DPS, not one bomb |
+| Ramp | 11–12 | **Zombie** + **Goblin** only; counts/pacing recover from the L10 dip |
+| Elite recurs | 13–14, 17–19 | **Goblin Elite** mixed in as a recurring miniboss (not always the finale) |
+| New species | 15 | **Vampire** intro — fast, high-HP grunt; gentle counts/pacing like Goblin's L5 debut |
+| Campaign | 16–19 | **Vampire** count/pacing ramps alongside Zombie/Goblin/Goblin Elite |
+| Boss #2 | 20 | **Duke Vampire** big wave; nerfed HP/speed/damage vs. later M10 bosses since it's the very next boss after Goblin Elite |
 
 Difficulty never uses duplicate stat tiers of the same enemy. It ramps through
 **spawn counts**, **pacing** (`startDelay` / `spawnInterval`), and **monster
-species** (Zombie → Goblin → Goblin Elite, …).
+species** (Zombie → Goblin → Goblin Elite → Vampire → Duke Vampire, …).
 
 **Starter roster:** Day 1 begins with only Ballerina, Tung Tung, and
 Chimpanzini unlocked (economy + melee + wall) — the other four launch
@@ -91,10 +96,12 @@ were raised so early boards need real DPS:
 | -- | ---- | -- | -------- | ---- |
 | `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
 | `Goblin` | Fast grunt (L5+) | 200 | 2.7 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10) | 14000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
+| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 4000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
+| `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
+| `DukeVampire` | Boss (L20) | 10000 | 6.0 | 110 / 1.5s; nerfed vs. Goblin King / Queen Spider |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
-~16s Goblin).
+~16s Goblin, ~15s Vampire).
 
 Chew standoff: monsters stop `MELEE_CLOSE_REACH` (0.42 columns ≈ 7.5 studs)
 east of the plant center so models don't overlap.
@@ -107,9 +114,13 @@ east of the plant center so models don't overlap.
   forest march (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
 - Adjacent levels change **counts/pacing/species** — never hidden HP scaling.
 - Big-wave groups use `isBigWave`; warning lead = `BIG_WAVE_WARNING_TIME` (5s).
-- Level 10 Goblin Elite wave: `startDelay` 18s before the boss spawns.
+- Level 10 Goblin Elite wave: `startDelay` 18s before the boss spawns. Level 20
+  Duke Vampire wave uses the same 18s lead-in.
+- Levels 13/14/17-19 mix a single `GoblinElite` in as a recurring miniboss
+  (only sometimes the `isBigWave` finale) rather than a one-off boss.
 - **Carry-over retune:** Day 1 total **5** zombies (empty board). Later days
-  scale ~8 → 18 enemies so a kept defense still feels challenged.
+  scale ~8 → 21 enemies (dipping at Levels 10/13/15/17/20 where a new/boss
+  species eats a full group slot) so a kept defense still feels challenged.
 
 ---
 

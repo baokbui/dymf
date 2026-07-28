@@ -134,6 +134,136 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			{ monsterId = "GoblinElite", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},
+
+	-- Levels 11-14: no new species yet — count/pacing keep ramping on the
+	-- Zombie + Goblin mix the player already knows, easing back up after the
+	-- Level 10 boss dip before Goblin Elites start recurring.
+	Level11 = {
+		id = "Level11",
+		number = 11,
+		name = "Advancing Ranks",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.8 },
+			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.6 },
+			{ monsterId = "Zombie", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level12 = {
+		id = "Level12",
+		number = 12,
+		name = "Iron Ranks",
+		groups = {
+			{ monsterId = "Goblin", count = 5, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "Zombie", count = 5, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Zombie", count = 6, startDelay = 11, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	-- Goblin Elite starts recurring as a mixed-in miniboss (not always the
+	-- finale) so it stays a recognizable threat rather than a one-off boss.
+	Level13 = {
+		id = "Level13",
+		number = 13,
+		name = "Elite Vanguard",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 4, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	Level14 = {
+		id = "Level14",
+		number = 14,
+		name = "Elite Pressure",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Goblin", count = 6, startDelay = 14, spawnInterval = 2.2 },
+			{ monsterId = "Zombie", count = 5, startDelay = 11, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	-- Level 15: next roster entry (`Vampire`) — gentle counts/pacing on the new
+	-- species, same as Goblin's Level 5 debut, before ramping through 16-19.
+	Level15 = {
+		id = "Level15",
+		number = 15,
+		name = "Night Falls",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 2, startDelay = 12, spawnInterval = 3.5 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 3.0, isBigWave = true },
+		},
+	},
+
+	Level16 = {
+		id = "Level16",
+		number = 16,
+		name = "Bloodlust Rising",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4, isBigWave = true },
+		},
+	},
+
+	Level17 = {
+		id = "Level17",
+		number = 17,
+		name = "Crimson Vanguard",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.0 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	Level18 = {
+		id = "Level18",
+		number = 18,
+		name = "Twin Terror",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 5, startDelay = 10, spawnInterval = 2.2 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 12, spawnInterval = 2 },
+			{ monsterId = "Vampire", count = 5, startDelay = 11, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	Level19 = {
+		id = "Level19",
+		number = 19,
+		name = "Final Bloodline",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.0 },
+			{ monsterId = "Vampire", count = 5, startDelay = 9, spawnInterval = 2.0 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 11, spawnInterval = 2 },
+			{ monsterId = "Vampire", count = 6, startDelay = 11, spawnInterval = 1.8, isBigWave = true },
+		},
+	},
+
+	-- Level 20: next boss (`DukeVampire`), same cadence as Level 10's
+	-- Goblin Elite intro — long `startDelay` lead-in, big-wave warning, and a
+	-- total dip vs. Level 19 since the boss itself is the real check.
+	Level20 = {
+		id = "Level20",
+		number = 20,
+		name = "Duke Vampire",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 5, startDelay = 10, spawnInterval = 2.2 },
+			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.0 },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
+		},
+	},
 }
 
 local ordered: { Types.LevelDefinition } = {}
