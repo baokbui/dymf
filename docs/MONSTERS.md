@@ -45,6 +45,7 @@ From `Shared.Types.MonsterDefinition`:
 | `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                  |
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                     |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2) |
+| `auraColor`               | Color3?                 | Persistent tinted particle + glow (`MonsterFeedback.applyAura`); omit for none |
 
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
@@ -65,8 +66,12 @@ Placed visuals come from **Toolbox / Studio Models** under
 house), and tags identity. Shared helpers: `Shared.Utilities.ModelUtil`.
 
 On `EnemyService.start`, `ModelUtil.sanitizeAllMonsterAssets` strips Scripts,
-LocalScripts, ModuleScripts, Sounds, Humanoids, and Tools from every template
-**in-place** (keeps welded club MeshParts, Motor6Ds, and Animation children).
+LocalScripts, ModuleScripts, Sounds, and Tools from every template **in-place**
+(keeps welded club MeshParts, Motor6Ds, and Animation children). The Humanoid
+is kept — Shirt/Pants and layered clothing only render on a rig that still has
+one — but neutralized (`ModelUtil` `neutralizeHumanoid`: no floating name/
+health UI, `WalkSpeed`/`JumpPower` zeroed, `PlatformStand` on) so it can't
+fight our own grid-driven movement or draw Roblox's built-in nameplate.
 
 Clones use `preserveAnimationRig = true`: only the root part is Anchored so
 Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
@@ -121,13 +126,13 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                          |
 | Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                          |
 | Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                          |
-| Goblin       | 200    | 2.7      | 110    | 1.0s         |      | —                                                          |
-| Goblin Elite | 4000   | 9.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
+| Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                          |
+| Goblin Elite | 6000   | 9.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
 | Spider       | 900    | 2.9      | 90     | 1.4s         |      | Jump over first brainrot                                   |
 | Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)         |
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                             |
 | Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | Stun + poison brainrot on attack ✅                         |
-| Duke Vampire | 10000  | 6.0      | 110    | 1.5s         | Y    | Self-freeze heal / terrify (stubs — M10); nerfed vs. other L10+ bosses |
+| Duke Vampire | 10000  | 6.0      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -186,8 +191,42 @@ reaches the monster).
 - On death, `MonsterDeath` freezes the Motor6D pose, tips (forward / side / back),
 lingers, fades — so authored animated models do not glitch upright.
 
-Boss skill stubs (Queen Spider, Duke Vampire, Goblin King speed buff) are
-registered and will be completed in Milestones 7 and 10.
+Boss skill stubs (Goblin King speed buff) are registered and will be completed
+in a later milestone. Duke Vampire's two skills are fully implemented:
+
+- **`DukeVampireFreeze`** (last stand) — a small `onTick` state machine that
+  does nothing until his HP first drops to/below `lastStandTriggerPercent`
+  (20%). It then triggers exactly **once** (`state.lastStandUsed` guard) and
+  runs two phases, both covered by a single `setInvulnerable` call
+  (`MonsterRuntime.invulnerableUntil`, checked in
+  `EnemyService.damageMonster` — every monster damage path, including DoT,
+  routes through it) sized to the full sequence so Brainrots can't finish him
+  off mid-animation:
+  - **Falling** (`lastStandFallDuration`, 1.4s) — `beginFall` reuses the
+    regular death tip-over pose (`MonsterDeath.playDowned`) but leaves the
+    rig intact (no `freezeCorpse` / fade), and `MonsterBehavior.tick` skips
+    movement/attack/transform-sync entirely while `runtime.downedUntil` is in
+    the future so the tween isn't fought every frame.
+  - **Rising** (`lastStandRiseDuration`, 0.7s) — `beginRise` tweens back to
+    the pre-fall pivot (`MonsterDeath.riseUp`) while queuing enough heal via
+    the shared `pendingHeal` mechanism (`MonsterBehavior.applyPendingHeal`,
+    also used by Goblin King's regen) to reach `lastStandHealPercent` (50%)
+    of max HP by the time he's back on his feet.
+- **`DukeVampireTerrify`** — deals **no damage**. On a `terrifyCooldown` timer
+  (10s), it afflicts the Brainrot directly in front of him plus the ones in
+  the lane above/below (his row ± 1, independent of `laneSpan` which stays 1)
+  with a `"Weaken"` status (`Types.StatusEffectKind` — scales the Brainrot's
+  own outgoing damage down by `terrifyDamageReduction`%, implemented as a
+  non-mutating `__index`-fallback override of `damage` on the ability
+  context's `definition` in `BrainrotBehavior.effectiveDefinition`, so every
+  existing Brainrot ability respects it for free) plus a `"Stun"` (freezes its
+  attacks) for `terrifyFreezeDuration` (2s).
+- His **regular chew** (`damage` / `attackInterval` on the definition, no
+  ability) matches a Vampire's pace (1.1s) with a bit more bite (100 vs. 70).
+
+He also carries a persistent dark `auraColor` (`MonsterFeedback.applyAura`) —
+a data-driven, per-definition dual-layer particle (tight wisps + a larger
+slow-drifting haze) + bright `PointLight` glow any boss can opt into.
 
 ---
 

@@ -38,6 +38,8 @@ export type RuntimePlacement = {
 	burnUntil: number,
 	burnHitsPerTick: number,
 	burnNextTick: number,
+	weakenUntil: number,
+	weakenFactor: number,
 }
 
 local BrainrotBehavior = {}
@@ -46,10 +48,23 @@ local active: { [string]: RuntimePlacement } = {}
 local destroyHandler: ((placement: RuntimePlacement) -> ())?
 local detachHandler: ((placement: RuntimePlacement) -> Model?)?
 
+-- "Weaken" (e.g. Duke Vampire's Terrify) scales outgoing damage without
+-- mutating the shared registry definition — every ability reads
+-- `ctx.definition.damage`, so overriding it once here (via `__index` fallback
+-- to the real definition for every other field) applies everywhere for free.
+local function effectiveDefinition(placement: RuntimePlacement): Types.BrainrotDefinition
+	if os.clock() >= placement.weakenUntil then
+		return placement.definition
+	end
+	local base = placement.definition
+	local scaled = setmetatable({ damage = base.damage * (1 - placement.weakenFactor) }, { __index = base })
+	return (scaled :: any) :: Types.BrainrotDefinition
+end
+
 local function buildContext(placement: RuntimePlacement)
 	return {
 		instanceId = placement.instanceId,
-		definition = placement.definition,
+		definition = effectiveDefinition(placement),
 		ownerUserId = placement.ownerUserId,
 		plotModel = placement.plotModel,
 		position = placement.position,
@@ -116,6 +131,8 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.burnUntil = 0
 	placement.burnHitsPerTick = 0
 	placement.burnNextTick = 0
+	placement.weakenUntil = 0
+	placement.weakenFactor = 0
 	active[placement.instanceId] = placement
 
 	if placement.definition.triggersOnPlace then

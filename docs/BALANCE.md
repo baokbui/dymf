@@ -95,10 +95,10 @@ were raised so early boards need real DPS:
 | Id | Role | HP | Sec/tile | Chew |
 | -- | ---- | -- | -------- | ---- |
 | `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
-| `Goblin` | Fast grunt (L5+) | 200 | 2.7 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 4000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
+| `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 110 / 1.0s |
+| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
-| `DukeVampire` | Boss (L20) | 10000 | 6.0 | 110 / 1.5s; nerfed vs. Goblin King / Queen Spider |
+| `DukeVampire` | Boss (L20) | 10000 | 6.0 | 100 / 1.1s; nerfed vs. Goblin King / Queen Spider |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
 ~16s Goblin, ~15s Vampire).

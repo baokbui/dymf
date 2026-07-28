@@ -13,6 +13,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 
 local Abilities = require(script.Parent.Abilities)
 local MonsterAnimation = require(script.Parent.MonsterAnimation)
+local MonsterDeath = require(script.Parent.MonsterDeath)
 local MonsterFeedback = require(script.Parent.MonsterFeedback)
 local MonsterModel = require(script.Parent.MonsterModel)
 local MonsterStatus = require(script.Parent.MonsterStatus)
@@ -36,6 +37,12 @@ export type MonsterRuntime = {
 	abilityState: Abilities.AbilityState,
 	skippedBrainrots: { [string]: boolean },
 	freezeVisual: string?,
+	invulnerableUntil: number,
+	-- "Downed" window (e.g. Duke Vampire's last-stand fall): movement, attack
+	-- and grid-transform sync are suspended so a manual tip/rise tween can
+	-- play uninterrupted. `preFallCFrame` is the pivot to rise back to.
+	downedUntil: number,
+	preFallCFrame: CFrame?,
 } & MonsterStatus.StatusFields
 
 export type BehaviorCallbacks = {
@@ -64,6 +71,20 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 	return {
 		spawnMinion = function(monsterId: string, row: number)
 			callbacks.spawnMinion(runtime.plotModel, monsterId, row)
+		end,
+		setInvulnerable = function(duration: number)
+			runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+		end,
+		beginFall = function(duration: number)
+			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			MonsterAnimation.setLocomotionPaused(runtime.model, true)
+			runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
+		end,
+		beginRise = function(duration: number)
+			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			if runtime.preFallCFrame then
+				MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
+			end
 		end,
 	}
 end
@@ -231,6 +252,12 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			if handler.onTick then
 				handler.onTick(abilityContext(runtime), runtime.abilityState, dt, abilityCallbacks(runtime, callbacks))
 			end
+		end
+
+		-- Downed (falling/rising): skip movement, attack, and grid-transform
+		-- sync entirely so the manual tip/rise tween isn't fought every frame.
+		if now < runtime.downedUntil then
+			continue
 		end
 
 		if now < runtime.frozenUntil then

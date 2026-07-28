@@ -84,11 +84,21 @@ Applied only through `CombatService.applyStatusToMonster` or
 | Slow | Reduces movement speed | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick |
 | Knockback | Pushes column east (+X) | — |
+| Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
 **Queen Spider** ✅ — stuns brainrots on attack; poisons for `% max HP` per tick
 (data in `abilityParams`).
 
-Boss polish for Duke Vampire / Goblin King continues in **Milestone 10**.
+**Duke Vampire** ✅ — `DukeVampireFreeze` is a **once-only** last stand: at
+≤20% HP he falls over (`MonsterDeath.playDowned`, rig intact —
+`MonsterBehavior` suspends movement/attack/sync via `runtime.downedUntil`)
+for 1.4s while invulnerable (`MonsterRuntime.invulnerableUntil`, checked in
+`EnemyService.damageMonster`), then rises (`MonsterDeath.riseUp`) already
+healed to 50% max HP. `DukeVampireTerrify`
+deals **no damage**; on a 10s cooldown it applies `Weaken` + `Stun` to his row
+± 1 (independent of `laneSpan`, which stays 1). His regular chew is a plain
+stat-driven attack (no ability) at Vampire pace with more damage. Goblin
+King's speed-buff stub still awaits a follow-up milestone.
 
 ---
 

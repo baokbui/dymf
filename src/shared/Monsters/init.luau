@@ -62,7 +62,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Goblin = {
 		id = "Goblin",
 		name = "Goblin",
-		health = 200,
+		health = 350,
 		secondsPerGrid = 2.7,
 		damage = 110,
 		attackInterval = 1.0,
@@ -76,7 +76,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	GoblinElite = {
 		id = "GoblinElite",
 		name = "Goblin Elite",
-		health = 4000,
+		health = 6000,
 		secondsPerGrid = 9.2,
 		damage = 8000,
 		attackInterval = 3.5,
@@ -149,18 +149,33 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- beatable off a still-growing board, not a straight stat-tier jump.
 		health = 10000,
 		secondsPerGrid = 6.0,
-		damage = 110,
-		attackInterval = 1.5,
+		-- Regular chew = a Vampire's cadence (1.1s) with a bit more bite (Vampire = 70).
+		damage = 100,
+		attackInterval = 1.1,
 		isBoss = true,
+		-- laneSpan stays 1 (default) — he only ever walks/occupies one lane.
+		-- `isBoss` alone already scales him up a bit vs. regular Vampires
+		-- (see `MonsterModel.bodyHeightFor` / `footprintFor`).
 		abilities = { "DukeVampireFreeze", "DukeVampireTerrify" },
 		abilityParams = {
-			freezeDuration = 2,
-			healPercent = 22,
-			terrifyDamage = 90,
-			terrifyDamageReduction = 10,
-			terrifyDuration = 2,
+			-- Last stand (DukeVampireFreeze): once, at ≤20% HP, falls over
+			-- (like a regular death-tip, rig intact) for lastStandFallDuration,
+			-- invulnerable the whole time, then rises already healed to
+			-- lastStandHealPercent max HP.
+			lastStandTriggerPercent = 20,
+			lastStandHealPercent = 50,
+			lastStandFallDuration = 1.4,
+			lastStandRiseDuration = 0.7,
+			-- Terrify (DukeVampireTerrify): no damage — row ±1 Weaken + Stun,
+			-- 10s cooldown.
+			terrifyCooldown = 10,
+			terrifyDamageReduction = 15,
+			terrifyFreezeDuration = 2,
 		},
 		color = Color3.fromRGB(60, 20, 40),
+		-- Dark aura to stand out from a duplicated-Vampire model — see
+		-- `MonsterFeedback.applyAura`.
+		auraColor = Color3.fromRGB(90, 15, 40),
 	},
 }
 

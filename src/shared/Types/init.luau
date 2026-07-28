@@ -13,8 +13,10 @@ export type GridPosition = {
 	column: number,
 }
 
--- Status effects applied through CombatService.
-export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Knockback" | "Stun"
+-- Status effects applied through CombatService. "Weaken" is Brainrot-only:
+-- reduces the Brainrot's own outgoing damage by `magnitude` percent for
+-- `duration` (see BrainrotBehavior effective-definition damage override).
+export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Knockback" | "Stun" | "Weaken"
 
 export type StatusEffect = {
 	kind: StatusEffectKind,
@@ -63,6 +65,9 @@ export type MonsterDefinition = {
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
+	-- Persistent tinted particle + glow around the model (e.g. Duke Vampire's
+	-- dark aura) — omit for no aura. See `MonsterFeedback.applyAura`.
+	auraColor: Color3?,
 }
 
 -- One ordered burst of monsters within a level (an internal "wave"). A level is

@@ -108,6 +108,79 @@ local function clearFreezeVfx(body: BasePart)
 	end
 end
 
+--[[
+	Persistent tinted aura for standout bosses (e.g. Duke Vampire's dark aura).
+	Data-driven via `MonsterDefinition.auraColor` — never branch on names.
+	Attached once at spawn; torn down in `cleanup` like every other VFX here.
+]]
+function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
+	if not auraColor then
+		return
+	end
+	local body = resolveBody(model)
+	if not body then
+		return
+	end
+	if body:FindFirstChild("AuraVfx") then
+		return
+	end
+
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "AuraVfx"
+	attachment.Parent = body
+
+	local wisps = Instance.new("ParticleEmitter")
+	wisps.Name = "AuraWisps"
+	wisps.Color = ColorSequence.new(auraColor)
+	wisps.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.6),
+		NumberSequenceKeypoint.new(0.5, 2.2),
+		NumberSequenceKeypoint.new(1, 0.3),
+	})
+	wisps.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.15),
+		NumberSequenceKeypoint.new(0.7, 0.4),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	wisps.Lifetime = NumberRange.new(1.4, 2.2)
+	wisps.Speed = NumberRange.new(1, 2.4)
+	wisps.SpreadAngle = Vector2.new(180, 180)
+	wisps.Rate = 28
+	wisps.LightEmission = 0.6
+	wisps.LightInfluence = 0
+	wisps.Parent = attachment
+
+	-- Bigger, slower-drifting outer haze so the aura reads at a distance too.
+	local haze = Instance.new("ParticleEmitter")
+	haze.Name = "AuraHaze"
+	haze.Color = ColorSequence.new(auraColor)
+	haze.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.5),
+		NumberSequenceKeypoint.new(0.6, 4),
+		NumberSequenceKeypoint.new(1, 5.5),
+	})
+	haze.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.55),
+		NumberSequenceKeypoint.new(0.5, 0.75),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	haze.Lifetime = NumberRange.new(1.8, 2.6)
+	haze.Speed = NumberRange.new(0.2, 0.6)
+	haze.SpreadAngle = Vector2.new(180, 180)
+	haze.Rate = 6
+	haze.LightEmission = 0.3
+	haze.LightInfluence = 0
+	haze.Parent = attachment
+
+	local glow = Instance.new("PointLight")
+	glow.Name = "AuraGlow"
+	glow.Color = auraColor
+	glow.Brightness = 4
+	glow.Range = 20
+	glow.Shadows = false
+	glow.Parent = attachment
+end
+
 function MonsterFeedback.pulseAttack(model: Model)
 	local token = (pulseTokens[model] or 0) + 1
 	pulseTokens[model] = token
@@ -352,6 +425,10 @@ function MonsterFeedback.cleanup(model: Model)
 	local body = resolveBody(model)
 	if body then
 		clearFreezeVfx(body)
+		local aura = body:FindFirstChild("AuraVfx")
+		if aura then
+			aura:Destroy()
+		end
 	end
 
 	local shell = getBubbleShell(model)

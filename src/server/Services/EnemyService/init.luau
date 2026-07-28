@@ -172,6 +172,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		worldPos,
 		monstersFolder(plotModel)
 	)
+	MonsterFeedback.applyAura(model, definition.auraColor)
 
 	local runtime: MonsterRuntime = {
 		instanceId = instanceId,
@@ -188,6 +189,9 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		abilityState = {},
 		skippedBrainrots = {},
 		freezeVisual = nil,
+		invulnerableUntil = 0,
+		downedUntil = 0,
+		preFallCFrame = nil,
 	}
 	for key, value in MonsterStatus.createFields() do
 		(runtime :: any)[key] = value
@@ -340,6 +344,9 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 	if not runtime or runtime.health <= 0 then
 		return false
 	end
+	if os.clock() < runtime.invulnerableUntil then
+		return false
+	end
 
 	runtime.health = math.max(0, runtime.health - damage)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
@@ -429,8 +436,9 @@ function EnemyService.init()
 end
 
 function EnemyService.start()
-	-- Strip Toolbox Scripts / Tools / Humanoids from Assets.Monsters in-place;
-	-- keep Motor6D + AnimationController for walk/attack tracks.
+	-- Strip Toolbox Scripts / Tools / Sounds from Assets.Monsters in-place;
+	-- keep Motor6D + AnimationController for walk/attack tracks. Humanoid is
+	-- kept but neutralized (Shirt/Pants + layered clothing need one to render).
 	ModelUtil.sanitizeAllMonsterAssets()
 
 	task.spawn(function()

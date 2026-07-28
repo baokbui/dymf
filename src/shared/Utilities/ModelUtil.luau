@@ -29,8 +29,10 @@ local AUDIO_CLASSES: { [string]: boolean } = {
 	AudioListener = true,
 }
 
+-- Humanoid is intentionally NOT stripped: Shirt/Pants and layered clothing
+-- only render on a rig that still has one. It's neutralized instead (see
+-- `neutralizeHumanoid`) so it can't drive its own movement/ragdoll/UI.
 local STRIP_ALWAYS: { [string]: boolean } = {
-	Humanoid = true,
 	ControllerManager = true,
 }
 
@@ -236,6 +238,32 @@ local function hardenParts(model: Model, keepCollision: boolean?, animationRig: 
 	end
 end
 
+--[[
+	Keep the Humanoid (required for Shirt/Pants + layered clothing to render)
+	but strip everything that would fight our own grid-driven movement/combat
+	or draw Roblox's built-in floating name/health UI — HealthBarController was
+	intentionally removed, so no default nameplate should reappear via Humanoid.
+]]
+local function neutralizeHumanoid(model: Model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+	humanoid.NameDisplayDistance = 0
+	humanoid.HealthDisplayDistance = 0
+	humanoid.WalkSpeed = 0
+	humanoid.JumpHeight = 0
+	humanoid.JumpPower = 0
+	humanoid.PlatformStand = true
+	humanoid.BreakJointsOnDeath = false
+	humanoid.RequiresNeck = false
+	humanoid.AutoRotate = false
+	humanoid.MaxHealth = math.huge
+	humanoid.Health = math.huge
+end
+
 local function ensureAnimationController(model: Model): Animator
 	local controller = model:FindFirstChildOfClass("AnimationController")
 	if not controller then
@@ -341,14 +369,16 @@ function ModelUtil.snapFeetToTileTop(model: Model, topCenter: Vector3, floatY: n
 end
 
 --[[
-	Strip Scripts / Tools / Sounds / Humanoids from an Assets.Monsters template
-	in-place (Studio shelf). Keeps Animation instances and Motor6D rigs.
+	Strip Scripts / Tools / Sounds from an Assets.Monsters template in-place
+	(Studio shelf). Keeps Animation instances and Motor6D rigs; the Humanoid is
+	kept too (neutralized) so Shirt/Pants / layered clothing still render.
 ]]
 function ModelUtil.sanitizeMonsterAsset(template: Model)
 	destroyByClass(template, SCRIPT_CLASSES)
 	destroyByClass(template, AUDIO_CLASSES)
 	destroyByClass(template, STRIP_ALWAYS)
 	destroyByClass(template, TOOL_CLASSES)
+	neutralizeHumanoid(template)
 
 	-- Prefer HRP as PrimaryPart for animation rigs.
 	local hrp = template:FindFirstChild("HumanoidRootPart", true)
@@ -385,6 +415,7 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	if not preserveAnim then
 		destroyByClass(model, STRIP_ANIMATION)
 	end
+	neutralizeHumanoid(model)
 	destroyInvisibleParts(model)
 
 	local primary = pickPrimaryPart(model)

@@ -285,4 +285,36 @@ function MonsterDeath.play(model: Model)
 	end)
 end
 
+--[[
+	Temporary "downed" pose reusing the death tip-over animation, but the rig
+	is left intact (no freezeCorpse / arm tuck / fade) so the monster can
+	stand back up and keep walking/attacking afterward. Returns the pre-fall
+	CFrame so the caller can restore it later via `riseUp`.
+]]
+function MonsterDeath.playDowned(model: Model, fallDuration: number, onLanded: (() -> ())?): CFrame
+	local start = model:GetPivot()
+	if not model.Parent then
+		return start
+	end
+
+	local groundY = visualMinY(model)
+	local drift = math.max(visualHeight(model) * 0.2, 0.35)
+	local rotated = start * CFrame.Angles(math.rad(90), 0, 0)
+	local drifted = rotated + start.LookVector * drift
+	local goal = snapVisualToGround(model, drifted, groundY)
+	model:PivotTo(start)
+
+	tweenPivot(model, start, goal, fallDuration, onLanded)
+	return start
+end
+
+-- Tween back up to `standCFrame` (the pre-fall pivot returned by `playDowned`).
+function MonsterDeath.riseUp(model: Model, standCFrame: CFrame, riseDuration: number, onRisen: (() -> ())?)
+	if not model.Parent then
+		return
+	end
+	local current = model:GetPivot()
+	tweenPivot(model, current, standCFrame, riseDuration, onRisen)
+end
+
 return MonsterDeath

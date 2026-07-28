@@ -208,6 +208,8 @@ local function createPlacement(
 		burnUntil = 0,
 		burnHitsPerTick = 0,
 		burnNextTick = 0,
+		weakenUntil = 0,
+		weakenFactor = 0,
 	}
 
 	placements[instanceId] = placement
@@ -489,6 +491,13 @@ local function applyBrainrotStatus(
 	local now = os.clock()
 	if kind == "Stun" or kind == "Freeze" then
 		placement.frozenUntil = math.max(placement.frozenUntil, now + duration)
+		return
+	end
+
+	if kind == "Weaken" then
+		local percent = math.clamp(magnitude or 10, 0, 100)
+		placement.weakenUntil = math.max(placement.weakenUntil, now + duration)
+		placement.weakenFactor = percent / 100
 		return
 	end
 

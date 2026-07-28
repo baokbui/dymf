@@ -20,6 +20,17 @@ export type AbilityState = { [string]: any }
 
 export type AbilityCallbacks = {
 	spawnMinion: (monsterId: string, row: number) -> (),
+	-- Ignore incoming damage for `duration` seconds (e.g. Duke Vampire's
+	-- last-stand heal). Does not pause movement/attack — pair with a Freeze
+	-- status if a channel-like pause is also wanted.
+	setInvulnerable: (duration: number) -> (),
+	-- Temporarily "downs" the monster (Duke Vampire's last-stand fall):
+	-- suspends movement/attack/transform-sync and tips it over for
+	-- `duration` seconds, mirroring the regular death-fall pose.
+	beginFall: (duration: number) -> (),
+	-- Tweens the monster back upright over `duration` seconds. Movement
+	-- stays suspended until `duration` elapses.
+	beginRise: (duration: number) -> (),
 }
 
 export type AbilityHandler = {
