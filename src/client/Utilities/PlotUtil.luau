@@ -62,9 +62,30 @@ function PlotUtil.getTileTopCenter(plotModel: Model, row: number, column: number
 	return nil
 end
 
-function PlotUtil.getModelBodyCenter(model: Model): Vector3?
-	local body = model:FindFirstChild("Body")
+-- Best-effort "torso" part for VFX anchoring. Procedural placeholders always
+-- have a direct "Body" child, but authored Toolbox rigs (monsters keep their
+-- original animation rig — see `ModelUtil.PrepareOptions.preserveAnimationRig`
+-- / `skipBodyAlias`) never get one, so fall back the same way the server's
+-- `MonsterFeedback.resolveBody` does: recursive "Body", PrimaryPart, then
+-- HumanoidRootPart.
+local function resolveAnchorPart(model: Model): BasePart?
+	local body = model:FindFirstChild("Body", true)
 	if body and body:IsA("BasePart") then
+		return body
+	end
+	if model.PrimaryPart then
+		return model.PrimaryPart
+	end
+	local hrp = model:FindFirstChild("HumanoidRootPart", true)
+	if hrp and hrp:IsA("BasePart") then
+		return hrp
+	end
+	return model:FindFirstChildWhichIsA("BasePart", true)
+end
+
+function PlotUtil.getModelBodyCenter(model: Model): Vector3?
+	local body = resolveAnchorPart(model)
+	if body then
 		return body.Position + Vector3.new(0, body.Size.Y / 2, 0)
 	end
 	return nil

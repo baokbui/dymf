@@ -6,7 +6,7 @@
 
 local PlayerConfig = {
 	-- Roblox default is 16; higher speed improves coin collection pacing.
-	WALK_SPEED = 22,
+	WALK_SPEED = 26,
 }
 
 table.freeze(PlayerConfig)

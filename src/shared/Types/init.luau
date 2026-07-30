@@ -63,11 +63,16 @@ export type MonsterDefinition = {
 	modelOrientationDegrees: Vector3?, -- local Euler after facing house (−X)
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
+	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld
+	-- leg joints (for Toolbox spiders without a matching uploaded Animation).
+	proceduralWalk: boolean?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
 	-- Persistent tinted particle + glow around the model (e.g. Duke Vampire's
 	-- dark aura) — omit for no aura. See `MonsterFeedback.applyAura`.
 	auraColor: Color3?,
+	-- Scales the aura's particle size / glow range; nil = 1 (default size).
+	auraScale: number?,
 }
 
 -- One ordered burst of monsters within a level (an internal "wave"). A level is
@@ -90,6 +95,8 @@ export type LevelDefinition = {
 	name: string,
 	groups: { SpawnGroup },
 	reward: number?, -- coins on completion (defaults to EconomyConfig base)
+	-- Optional weather id (e.g. WeatherConfig.NIGHT / NIGHT_FOG). Nil = clear day.
+	weather: string?,
 }
 
 -- Runtime tile state tracked by the grid (server-authoritative).

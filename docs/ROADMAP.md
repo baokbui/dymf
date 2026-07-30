@@ -342,9 +342,12 @@ Persist player progress.
 ## Add
 
 - Introduce monsters from the roster into campaign data.
-- **One** new non-boss every 5 levels (Level 5 = Goblin).
-- **One** boss every 10 levels (Level 10 = Goblin Elite); repeat at 15 / 20, etc.
+- **One** new non-boss every 5 levels (Level 5 = Goblin; 15 = Vampire; 25 = Spider).
+- **One** boss every 10 levels (Level 10 = Goblin Elite; 20 = Duke Vampire;
+  30 = Queen Spider).
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
+- Days 21–24: Night weather; Days 25–30: NightFog (`docs/WEATHER.md`) +
+  Spider / Queen Spider intros.
 
 
 

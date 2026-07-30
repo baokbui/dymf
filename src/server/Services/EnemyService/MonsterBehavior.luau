@@ -80,6 +80,9 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
 		end,
+		holdDowned = function(duration: number)
+			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+		end,
 		beginRise = function(duration: number)
 			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
 			if runtime.preFallCFrame then
@@ -202,6 +205,7 @@ local function applyPendingHeal(runtime: MonsterRuntime)
 	end
 	runtime.health = math.min(runtime.maxHealth, runtime.health + pending)
 	runtime.abilityState.pendingHeal = 0
+	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 end
 
 function MonsterBehavior.onSpawn(runtime: MonsterRuntime)

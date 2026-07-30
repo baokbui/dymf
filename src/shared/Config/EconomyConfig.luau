@@ -25,7 +25,7 @@ local EconomyConfig = {
 	-- later days = 0 after each day ends (see CoinService.applyDayPurse).
 	LEVEL_COMPLETION_REWARD = 50,
 
-	GROUND_COIN_LIFETIME = 60, -- seconds
+	GROUND_COIN_LIFETIME = 15, -- seconds
 	COIN_COLLECT_RADIUS = 16, -- studs (server re-validates pickup)
 }
 

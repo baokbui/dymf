@@ -197,6 +197,30 @@ local function snapVisualToGround(model: Model, pivot: CFrame, groundY: number):
 	return pivot + Vector3.new(0, groundY - GROUND_SINK - minY, 0)
 end
 
+-- Shared "tip over" pose picker (3 randomized styles: face-plant, left/right
+-- side, back-flop) used by both the real death fall and the temporary
+-- last-stand downed pose, so the latter looks like a normal fall.
+local function randomTipGoal(model: Model, start: CFrame, groundY: number): CFrame
+	local drift = math.max(visualHeight(model) * 0.2, 0.35)
+	local style = math.random(1, 3)
+	local rotated: CFrame
+	local drifted: CFrame
+
+	if style == 1 then
+		rotated = start * CFrame.Angles(math.rad(90), 0, 0)
+		drifted = rotated + start.LookVector * drift
+	elseif style == 2 then
+		local sideDeg = if math.random(1, 2) == 1 then 90 else -90
+		rotated = start * CFrame.Angles(0, 0, math.rad(sideDeg))
+		drifted = rotated + start.RightVector * (drift * 0.75 * math.sign(sideDeg))
+	else
+		rotated = start * CFrame.Angles(math.rad(-90), 0, 0)
+		drifted = rotated - start.LookVector * drift
+	end
+
+	return snapVisualToGround(model, drifted, groundY)
+end
+
 --[[
 	Lock the current pose into a rigid corpse before tipping. Authored monsters
 	keep Motor6D limbs free for walk/attack; leaving them unanchored makes
@@ -248,25 +272,7 @@ function MonsterDeath.play(model: Model)
 
 	local start = model:GetPivot()
 	local groundY = visualMinY(model)
-	local drift = math.max(visualHeight(model) * 0.2, 0.35)
-
-	local style = math.random(1, 3)
-	local rotated: CFrame
-	local drifted: CFrame
-
-	if style == 1 then
-		rotated = start * CFrame.Angles(math.rad(90), 0, 0)
-		drifted = rotated + start.LookVector * drift
-	elseif style == 2 then
-		local sideDeg = if math.random(1, 2) == 1 then 90 else -90
-		rotated = start * CFrame.Angles(0, 0, math.rad(sideDeg))
-		drifted = rotated + start.RightVector * (drift * 0.75 * math.sign(sideDeg))
-	else
-		rotated = start * CFrame.Angles(math.rad(-90), 0, 0)
-		drifted = rotated - start.LookVector * drift
-	end
-
-	local goal = snapVisualToGround(model, drifted, groundY)
+	local goal = randomTipGoal(model, start, groundY)
 	model:PivotTo(start)
 
 	tweenPivot(model, start, goal, CombatConfig.DEATH_FALL_DURATION, function()
@@ -286,10 +292,11 @@ function MonsterDeath.play(model: Model)
 end
 
 --[[
-	Temporary "downed" pose reusing the death tip-over animation, but the rig
-	is left intact (no freezeCorpse / arm tuck / fade) so the monster can
-	stand back up and keep walking/attacking afterward. Returns the pre-fall
-	CFrame so the caller can restore it later via `riseUp`.
+	Temporary "downed" pose reusing the same randomized tip-over fall as a
+	regular death, but the rig is left intact (no freezeCorpse / arm tuck /
+	fade) so the monster can stand back up and keep walking/attacking
+	afterward. Returns the pre-fall CFrame so the caller can restore it later
+	via `riseUp`.
 ]]
 function MonsterDeath.playDowned(model: Model, fallDuration: number, onLanded: (() -> ())?): CFrame
 	local start = model:GetPivot()
@@ -298,10 +305,7 @@ function MonsterDeath.playDowned(model: Model, fallDuration: number, onLanded: (
 	end
 
 	local groundY = visualMinY(model)
-	local drift = math.max(visualHeight(model) * 0.2, 0.35)
-	local rotated = start * CFrame.Angles(math.rad(90), 0, 0)
-	local drifted = rotated + start.LookVector * drift
-	local goal = snapVisualToGround(model, drifted, groundY)
+	local goal = randomTipGoal(model, start, groundY)
 	model:PivotTo(start)
 
 	tweenPivot(model, start, goal, fallDuration, onLanded)

@@ -96,9 +96,11 @@ were raised so early boards need real DPS:
 | -- | ---- | -- | -------- | ---- |
 | `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
 | `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 9.2 | 8000 + one-shot; **laneSpan 2** |
+| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 6.2 | 8000 + one-shot; **laneSpan 2** |
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
-| `DukeVampire` | Boss (L20) | 10000 | 6.0 | 100 / 1.1s; nerfed vs. Goblin King / Queen Spider |
+| `DukeVampire` | Boss (L20; recurs L24/28) | 10000 | 6.0 | 100 / 1.1s; nerfed vs. Goblin King / Queen Spider |
+| `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
+| `QueenSpider` | Boss (L30) | 13000 | 6.3 | 140 / 1.5s; stun + poison |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
 ~16s Goblin, ~15s Vampire).
@@ -121,6 +123,12 @@ east of the plant center so models don't overlap.
 - **Carry-over retune:** Day 1 total **5** zombies (empty board). Later days
   scale ~8 → 21 enemies (dipping at Levels 10/13/15/17/20 where a new/boss
   species eats a full group slot) so a kept defense still feels challenged.
+- **Days 21–24 (Night):** moonlit night, full lawn plantable — same roster mix,
+  quieter/harder alternation.
+- **Days 25–30 (NightFog):** easternmost 3 lawn columns are unplantable, so
+  effective depth shrinks — keep totals in the ~12–15 range and alternate
+  quieter days (27) with spikes (28 Duke, 29 Elite, 30 Queen). Fog is a
+  visible cosmetic bank; monsters stay fully visible.
 
 ---
 
@@ -130,6 +138,7 @@ east of the plant center so models don't overlap.
 | ---- | ----- |
 | Unit costs/stats | `Shared.Brainrots`, `Shared.Monsters` |
 | Wave content | `Shared.Levels` |
+| Weather / fog | `WeatherConfig`, `WeatherUtil` (see `WEATHER.md`) |
 | Coins / drops | `EconomyConfig` |
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |

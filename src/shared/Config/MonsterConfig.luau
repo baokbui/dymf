@@ -67,6 +67,12 @@ local MonsterConfig = {
 	DEFAULT_WALK_ANIMATION_ID = "rbxassetid://507777826", -- R15 Walk
 	DEFAULT_ATTACK_ANIMATION_ID = "rbxassetid://522635514", -- R15 ToolSlash (club swing)
 
+	-- Procedural crawl gait (MonsterDefinition.proceduralWalk — e.g. Spider).
+	-- Drives Motor6D / Bone / Weld limb joints; no uploaded Animation required.
+	PROCEDURAL_WALK_HZ = 2.4,
+	PROCEDURAL_WALK_PITCH = 0.38, -- radians
+	PROCEDURAL_WALK_ROLL = 0.22,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

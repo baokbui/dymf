@@ -63,8 +63,6 @@ local BRAINROT_SFX: { [string]: boolean } = {
 	ThrowKnifeHit = true,
 }
 
-local lastBrainrotHealth: { [Model]: number } = {}
-
 local function applyGroupVolumes()
 	if not musicGroup then
 		return
@@ -279,29 +277,9 @@ local function onMonsterAdded(instance: Instance)
 	end
 end
 
-local function onBrainrotAdded(instance: Instance)
-	if not instance:IsA("Model") or not isOnLocalPlot(instance) then
-		return
-	end
-	local health = instance:GetAttribute("Health")
-	if type(health) == "number" then
-		lastBrainrotHealth[instance] = health
-	end
-	instance:GetAttributeChangedSignal("Health"):Connect(function()
-		local current = instance:GetAttribute("Health")
-		if type(current) ~= "number" then
-			return
-		end
-		local previous = lastBrainrotHealth[instance]
-		lastBrainrotHealth[instance] = current
-		if previous and current < previous then
-			AudioController.play("MonsterAttack")
-		end
-	end)
-	instance.Destroying:Connect(function()
-		lastBrainrotHealth[instance] = nil
-	end)
-end
+-- Chew / club SFX are fired from the server via CombatVisual kind
+-- `MonsterAttack` (per-monster keys like MonsterAttack_Goblin). Health-attribute
+-- listeners were removed so goblin clubs don't double-play with the generic hit.
 
 function AudioController.init()
 	ensureGroups()
@@ -315,11 +293,6 @@ function AudioController.start()
 	CollectionService:GetInstanceAddedSignal(Constants.TAGS.Monster):Connect(onMonsterAdded)
 	for _, monster in CollectionService:GetTagged(Constants.TAGS.Monster) do
 		onMonsterAdded(monster)
-	end
-
-	CollectionService:GetInstanceAddedSignal(Constants.TAGS.Brainrot):Connect(onBrainrotAdded)
-	for _, brainrot in CollectionService:GetTagged(Constants.TAGS.Brainrot) do
-		onBrainrotAdded(brainrot)
 	end
 
 	task.spawn(function()

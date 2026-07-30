@@ -103,6 +103,35 @@ local function playDeathVfx(instanceId: string?)
 	end)
 end
 
+local function playTerrifyPulse(instanceId: string?)
+	if not instanceId then
+		return
+	end
+	local model = findModelByInstanceId(instanceId)
+	if not model then
+		return
+	end
+	local center = PlotUtil.getModelBodyCenter(model)
+	if not center then
+		return
+	end
+	-- Waves travel forward with the scream: along his facing (toward the
+	-- house / lawn), matching DukeVampireTerrify's forward column AoE.
+	local look = model:GetPivot().LookVector
+	local screamDir = Vector3.new(look.X, 0, look.Z)
+	VfxUtil.playTerrifySoundwave(center, screamDir)
+end
+
+local function playDizzy(instanceId: string?, duration: unknown)
+	if not instanceId or type(duration) ~= "number" then
+		return
+	end
+	local model = findModelByInstanceId(instanceId)
+	if model then
+		VfxUtil.playDizzy(model, duration)
+	end
+end
+
 local function playExplosion(row: number?, column: number?, entireRow: boolean?, staggerOverride: number?)
 	if type(row) ~= "number" then
 		return
@@ -194,6 +223,17 @@ local function playHitSound(soundKey: unknown)
 	end
 end
 
+local function playMonsterAttackSound(monsterId: unknown)
+	if type(monsterId) == "string" then
+		local keyed = "MonsterAttack_" .. monsterId
+		if AudioConfig.SFX[keyed] then
+			AudioController.play(keyed)
+			return
+		end
+	end
+	AudioController.play("MonsterAttack")
+end
+
 local function onCombatVisual(payload: unknown)
 	if type(payload) ~= "table" then
 		return
@@ -215,6 +255,13 @@ local function onCombatVisual(payload: unknown)
 			AudioController.play("Explosion")
 		end
 		playExplosion(data.row, data.column, data.entireRow == true, data.stagger)
+	elseif kind == "Terrify" then
+		AudioController.play("Terrify")
+		playTerrifyPulse(data.instanceId)
+	elseif kind == "Dizzy" then
+		playDizzy(data.instanceId, data.duration)
+	elseif kind == "MonsterAttack" then
+		playMonsterAttackSound(data.monsterId)
 	end
 
 	tryConnectProjectileWatcher()

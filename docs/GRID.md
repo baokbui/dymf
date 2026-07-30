@@ -116,6 +116,8 @@ attribute set by `PlotService`).
 - Raycasts the cursor, accepts the hit only if it is tagged `GridTile` and on the
   player's own plot, then repositions a single reused highlight part over it.
 - Colors the highlight by the tile's `Occupied` attribute (valid vs. blocked).
+  On NightFog days, fog-blocked east columns get **no** hover highlight
+  (`WEATHER.md`).
 - Exposes `getHoveredTile() -> { row, column }?` and the side-effect-free
   `resolveTileAt(x, y) -> BasePart?` (same raycast + own-plot/tag rules as the
   highlight). `PlacementController` (Milestone 4) reuses `resolveTileAt` to
@@ -132,4 +134,6 @@ server, and highlighting is a local visual.
 - One Brainrot per tile.
 - Cannot plant outside the grid.
 - Cannot plant without enough coins.
+- Cannot plant on NightFog fog columns (easternmost 3; server + client —
+  `WEATHER.md`).
 - The server validates every placement (via `GridService` + cost checks).

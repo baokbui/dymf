@@ -211,12 +211,29 @@ planted again (PvZ seed packet). Duration scales with **cost** via
 Server enforces the lock; shop cards show a countdown overlay. Recharges reset
 on **Start Day**. Optional `definition.plantCooldown` overrides the formula.
 
+Separately, each placed unit's **ability cooldown** (`attackInterval` —
+`BrainrotBehavior.cooldownRemaining`, e.g. Ballerina's coin spit) only ticks
+while `LevelService.isLevelActive` is true, so it's implicitly paused for the
+whole time between a day ending and the next Start Day. Freshly-planted units
+start at a full `attackInterval` (first act after one full interval of active
+play). Units restored together (rejoin / committed-lawn restore via
+`BrainrotService.restorePlacements`) get a **randomized** initial cooldown
+instead, so several Ballerinas kept across a rejoin don't all spit coins in
+lockstep the moment the day starts.
+
 Monster targeting uses **first-in-row** acquisition for single-target attacks
-and projectiles (M7). Targets must be **on the plot** (`column ≤ COLUMNS`) —
-monsters still marching in the forest are ignored. Friendly Brainrots never
-block targeting: Tung Tung (`rangeTiles = 1`) hits monsters on his tile or the
-tile ahead even while that tile's ally (any roster unit) is being chewed. Coin
-producers and line-bomb placement work independently of monster presence rules.
+and projectiles (M7). Targets must be **on the plot** — `GridUtil.isOnPlotColumn`
+compares by **tile index** (`tileAtColumn(column) ≤ COLUMNS`), not raw
+fractional column, so a monster stopped at its melee standoff on the frontmost
+tile (`COLUMNS + MELEE_CLOSE_REACH`, a fraction past that tile's center) still
+counts as on-plot; monsters still marching in the forest (a full tile+ away)
+are ignored. This matters for melee units planted on the last column — e.g.
+Tung Tung Sahur standing on the frontmost tile, or one tile behind a wall on
+that tile — which would otherwise never see the monster actively chewing
+them. Friendly Brainrots never block targeting: Tung Tung (`rangeTiles = 1`)
+hits monsters on his tile or the tile ahead even while that tile's ally (any
+roster unit) is being chewed. Coin producers and line-bomb placement work
+independently of monster presence rules.
 
 ---
 

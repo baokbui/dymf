@@ -334,6 +334,9 @@ local function restoreLawn(player: Player, saveData: Types.SaveData)
 	-- Restore committed lawn only (ids, tiles, HP from last victory / wipe).
 	BrainrotService.clearPlot(plotModel)
 	BrainrotService.restorePlacements(player, saveData.brainrots)
+
+	-- NightFog days cannot hold plants on east fog columns — strip after restore.
+	LevelService.applyWeatherRulesForPlayer(player)
 end
 
 -- Capture snapshot synchronously, then flush to DataStore. Concurrent saves

@@ -22,6 +22,7 @@ local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
+local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local UIEvents = require(script.Parent.Parent.UIEvents)
 local GridController = require(script.Parent.GridController)
@@ -46,6 +47,7 @@ local balance = 0
 local plantReadyAt: { [string]: number } = {}
 local placementAllowed = false
 local selectionAllowed = false
+local currentWeather: string? = nil
 local shovelMode = false
 local ghostModel: Model? = nil
 local ghostPart: BasePart? = nil
@@ -170,7 +172,9 @@ local function updateGhost(tile: BasePart?)
 	ensureGhostFor(definition)
 	local topCenter = tile.Position + Vector3.new(0, tile.Size.Y / 2, 0)
 	local occupied = tile:GetAttribute("Occupied") == true
-	local placeable = placementAllowed and not occupied and canAfford()
+	local column = tile:GetAttribute("Column")
+	local fogBlocked = type(column) == "number" and WeatherUtil.isFogPlotColumn(column, currentWeather)
+	local placeable = placementAllowed and not occupied and not fogBlocked and canAfford()
 
 	if ghostModel then
 		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees)
@@ -311,6 +315,10 @@ function PlacementController.setPlacementAllowed(allowed: boolean)
 	placementAllowed = allowed
 end
 
+function PlacementController.setWeather(weather: string?)
+	currentWeather = weather
+end
+
 -- Shop selection (ghost) may still enable during legacy Countdown; planting is Active-only.
 function PlacementController.setSelectionAllowed(allowed: boolean)
 	selectionAllowed = allowed
@@ -387,6 +395,11 @@ local function onPrimaryAction(position: Vector2)
 		UIEvents.firePlantFailed("Unable to plant — that spot is already taken")
 		return
 	end
+	local column = tile:GetAttribute("Column")
+	if type(column) == "number" and WeatherUtil.isFogPlotColumn(column, currentWeather) then
+		UIEvents.firePlantFailed("Unable to plant — that tile is covered in fog")
+		return
+	end
 	if not canAfford() then
 		UIEvents.firePlantFailed("Unable to plant — not enough coins")
 		return
@@ -399,7 +412,7 @@ local function onPrimaryAction(position: Vector2)
 	UIEvents.markPendingSpend()
 	placeRemote:FireServer(id, {
 		row = tile:GetAttribute("Row"),
-		column = tile:GetAttribute("Column"),
+		column = column,
 	})
 	local placeKey = "PlaceBrainrot_" .. id
 	if AudioConfig.SFX[placeKey] then

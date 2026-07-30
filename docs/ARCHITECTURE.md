@@ -68,10 +68,10 @@ entry-point Script / LocalScript.
 
 ```
 ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Level, Plot + aggregator init
+    Config/        Grid, Economy, Level, Plot, Weather + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
-    Utilities/     Logger, GridUtil + aggregator init
+    Utilities/     Logger, GridUtil, WeatherUtil + aggregator init
     Brainrots/     data-driven Brainrot registry
     Monsters/      data-driven Monster registry
     Levels/        data-driven campaign level registry
@@ -99,6 +99,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         BrainrotController/ (BrainrotAction SFX + client attack pulse — M5/M12)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
+        WeatherController/ (night Lighting + fog volumes / monster hide)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)

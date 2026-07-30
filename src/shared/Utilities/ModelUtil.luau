@@ -46,6 +46,13 @@ local TOOL_CLASSES: { [string]: boolean } = {
 	HopperBin = true,
 }
 
+-- Classic Toolbox free-model junk (e.g. purple Sparkles on the Spider pack).
+local DECOR_FX_CLASSES: { [string]: boolean } = {
+	Sparkles = true,
+	Fire = true,
+	Smoke = true,
+}
+
 local INVISIBLE_TRANSPARENCY = 0.95
 
 local function assetsFolder(): Folder?
@@ -264,7 +271,20 @@ local function neutralizeHumanoid(model: Model)
 	humanoid.Health = math.huge
 end
 
-local function ensureAnimationController(model: Model): Animator
+-- Prefer Humanoid.Animator (Toolbox R15 / spider packs); fall back to
+-- AnimationController for non-humanoid Motor6D props.
+local function ensureAnimator(model: Model): Animator
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Name = "Animator"
+			animator.Parent = humanoid
+		end
+		return animator
+	end
+
 	local controller = model:FindFirstChildOfClass("AnimationController")
 	if not controller then
 		controller = Instance.new("AnimationController")
@@ -278,6 +298,29 @@ local function ensureAnimationController(model: Model): Animator
 		animator.Parent = controller
 	end
 	return animator
+end
+
+-- Toolbox packs often nest the real Animation under a Script named "Animation".
+-- We strip Scripts, so reparent those Animation instances onto the model first
+-- (rename generic "Animation" → WalkAnimation for MonsterAnimation lookup).
+local function salvageAnimationsFromScripts(model: Model)
+	local salvaged: { Animation } = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Animation") and descendant.AnimationId ~= "" then
+			local parent = descendant.Parent
+			if parent
+				and (parent:IsA("LuaSourceContainer"))
+			then
+				table.insert(salvaged, descendant)
+			end
+		end
+	end
+	for _, animation in salvaged do
+		if animation.Name == "Animation" or animation.Name == "Animate" then
+			animation.Name = "WalkAnimation"
+		end
+		animation.Parent = model
+	end
 end
 
 local function applyOrientationDegrees(model: Model, degrees: Vector3?)
@@ -374,10 +417,12 @@ end
 	kept too (neutralized) so Shirt/Pants / layered clothing still render.
 ]]
 function ModelUtil.sanitizeMonsterAsset(template: Model)
+	salvageAnimationsFromScripts(template)
 	destroyByClass(template, SCRIPT_CLASSES)
 	destroyByClass(template, AUDIO_CLASSES)
 	destroyByClass(template, STRIP_ALWAYS)
 	destroyByClass(template, TOOL_CLASSES)
+	destroyByClass(template, DECOR_FX_CLASSES)
 	neutralizeHumanoid(template)
 
 	-- Prefer HRP as PrimaryPart for animation rigs.
@@ -408,10 +453,12 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	local model = template:Clone()
 	local preserveAnim = options.preserveAnimationRig == true
 
+	salvageAnimationsFromScripts(model)
 	destroyByClass(model, SCRIPT_CLASSES)
 	destroyByClass(model, AUDIO_CLASSES)
 	destroyByClass(model, STRIP_ALWAYS)
 	destroyByClass(model, TOOL_CLASSES)
+	destroyByClass(model, DECOR_FX_CLASSES)
 	if not preserveAnim then
 		destroyByClass(model, STRIP_ANIMATION)
 	end
@@ -428,7 +475,7 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 
 	hardenParts(model, options.keepCollision, preserveAnim)
 	if preserveAnim then
-		ensureAnimationController(model)
+		ensureAnimator(model)
 	end
 
 	local pos = model:GetPivot().Position
@@ -457,7 +504,7 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	-- Re-apply rig harden after ScaleTo (ScaleTo can leave anchors inconsistent).
 	if preserveAnim then
 		hardenParts(model, options.keepCollision, true)
-		ensureAnimationController(model)
+		ensureAnimator(model)
 	end
 
 	if options.ghost then

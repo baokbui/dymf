@@ -34,6 +34,7 @@ local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local GridUtil = require(Shared.Utilities.GridUtil)
+local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
 
@@ -171,7 +172,8 @@ local function createPlacement(
 	ownerUserId: number,
 	plotModel: Model,
 	position: Types.GridPosition,
-	health: number
+	health: number,
+	randomizeCooldown: boolean?
 ): Placement?
 	local topCenter = GridService.getWorldPosition(plotModel, position)
 	if not topCenter then
@@ -200,7 +202,13 @@ local function createPlacement(
 		model = model,
 		health = clampedHealth,
 		definition = definition,
-		cooldownRemaining = definition.attackInterval,
+		-- Multiple units restored together (rejoin / day restore) must not fire
+		-- in lockstep — jitter their first cooldown instead of all starting at
+		-- the same full `attackInterval` (fresh plants keep the full interval
+		-- so the shop's "recharges, then acts" feel stays intact).
+		cooldownRemaining = if randomizeCooldown
+			then math.random() * definition.attackInterval
+			else definition.attackInterval,
 		frozenUntil = 0,
 		poisonUntil = 0,
 		poisonHitsPerTick = 0,
@@ -296,6 +304,12 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	if isPlantOnCooldown(player, brainrotId) then
 		notifyPlaceFailed(player, "Unable to plant — still recharging")
+		return
+	end
+
+	local weather = LevelService.getWeather(player)
+	if WeatherUtil.isFogPlotColumn(position.column, weather) then
+		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
 		return
 	end
 
@@ -452,7 +466,7 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 			continue
 		end
 
-		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health) then
+		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health, true) then
 			GridService.release(plot.model, position)
 		end
 	end
@@ -473,6 +487,28 @@ function BrainrotService.clearPlot(plotModel: Model)
 	local lineBomb = Abilities.get("LineBomb")
 	if lineBomb and (lineBomb :: any).clearPlot then
 		(lineBomb :: any).clearPlot(plotModel)
+	end
+end
+
+-- Remove Brainrots standing on NightFog-blocked lawn columns (east fog zone).
+function BrainrotService.clearFogBlockedPlacements(player: Player, weather: string?)
+	if not WeatherUtil.isNightFog(weather) then
+		return
+	end
+	local plot = PlotService.getPlot(player)
+	if not plot then
+		return
+	end
+	local toRemove: { Placement } = {}
+	for _, placement in placements do
+		if placement.plotModel == plot.model
+			and WeatherUtil.isFogPlotColumn(placement.position.column, weather)
+		then
+			table.insert(toRemove, placement)
+		end
+	end
+	for _, placement in toRemove do
+		destroyPlacement(placement)
 	end
 end
 

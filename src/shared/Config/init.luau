@@ -24,6 +24,7 @@ local Config = {
 	Vfx = require(script.VfxConfig),
 	Audio = require(script.AudioConfig),
 	UI = require(script.UITheme),
+	Weather = require(script.WeatherConfig),
 }
 
 table.freeze(Config)

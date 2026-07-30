@@ -85,6 +85,13 @@ Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 buggy against grid snap — and plays a one-shot club swing (`ToolSlash`) each
 chew hit via `MonsterAnimation.playMelee`.
 
+**Spider** Toolbox packs often ship a Script named `Animation` with a child
+`Animation` (`rbxassetid`). Those IDs are usually **permission-locked** for
+other experiences — do not play them. With `proceduralWalk = true`,
+`MonsterAnimation` registers a KeyframeSequence from `AnimSaves` via
+`AnimationClipProvider` (local, owned by this place) when present; otherwise
+`MonsterProceduralGait` drives the legs. Sanitize still strips the Script.
+
 If a template is missing, the server logs once and uses the colored Part
 placeholder so gameplay still works. Movement uses `snapFeetToTileTop` so
 multi-part models keep their facing while walking.
@@ -103,14 +110,15 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | `GoblinElite` | `GoblinElite`          |
 | `Vampire`     | `Vampire`              |
 | `DukeVampire` | `DukeVampire`          |
+| `Spider`      | `Spider`               |
 
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
 (prefer `HumanoidRootPart`). You do **not** need to hand-delete Scripts —
-`sanitizeAllMonsterAssets` does that on server start. Optional: parent
-`WalkAnimation` / `AttackAnimation` instances under the model to override
-catalog IDs. Use `modelOrientationDegrees` if the mesh needs a Tung-style
-upright fix.
+`sanitizeAllMonsterAssets` strips Scripts / Tools / Sounds / Sparkles / Fire /
+Smoke on server start. Optional: parent `WalkAnimation` / `AttackAnimation`
+instances under the model to override catalog IDs. Use
+`modelOrientationDegrees` if the mesh needs a Tung-style upright fix.
 
 M16 **Complete When** is met once campaign monsters in authored levels use real
 models (at least Zombie, Goblin, Goblin Elite).
@@ -127,12 +135,12 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                          |
 | Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                          |
 | Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                          |
-| Goblin Elite | 6000   | 9.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
-| Spider       | 900    | 2.9      | 90     | 1.4s         |      | Jump over first brainrot                                   |
+| Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
+| Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first brainrot                                   |
 | Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)         |
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                             |
-| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | Stun + poison brainrot on attack ✅                         |
-| Duke Vampire | 10000  | 6.0      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
+| Queen Spider | 10000  | 6.3      | 140    | 1.5s         | Y    | Stun + poison brainrot on attack ✅                         |
+| Duke Vampire | 10000  | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -202,31 +210,63 @@ in a later milestone. Duke Vampire's two skills are fully implemented:
   `EnemyService.damageMonster` — every monster damage path, including DoT,
   routes through it) sized to the full sequence so Brainrots can't finish him
   off mid-animation:
-  - **Falling** (`lastStandFallDuration`, 1.4s) — `beginFall` reuses the
-    regular death tip-over pose (`MonsterDeath.playDowned`) but leaves the
-    rig intact (no `freezeCorpse` / fade), and `MonsterBehavior.tick` skips
+  - **Falling** (`lastStandFallDuration`, 1.0s — same speed as a regular
+    death) — `beginFall` reuses `MonsterDeath.playDowned`, which shares the
+    same randomized 3-style tip-over pose picker as a real death
+    (`randomTipGoal`) so it falls exactly like any other monster, but leaves
+    the rig intact (no `freezeCorpse` / fade). `MonsterBehavior.tick` skips
     movement/attack/transform-sync entirely while `runtime.downedUntil` is in
     the future so the tween isn't fought every frame.
+  - **Grounded** (`lastStandGroundDuration`, 3s) — lies motionless on the
+    ground; `holdDowned` extends `runtime.downedUntil` without playing a new
+    tween (no separate visual, just a hold before rising).
   - **Rising** (`lastStandRiseDuration`, 0.7s) — `beginRise` tweens back to
     the pre-fall pivot (`MonsterDeath.riseUp`) while queuing enough heal via
     the shared `pendingHeal` mechanism (`MonsterBehavior.applyPendingHeal`,
     also used by Goblin King's regen) to reach `lastStandHealPercent` (50%)
     of max HP by the time he's back on his feet.
+  Fatal overkill that would skip the ≤20% check between behavior ticks is
+  rescued by `DukeVampireFreeze.onWouldDie` (wired from
+  `EnemyService.damageMonster`) so a single big hit can't delete him before
+  last stand starts.
 - **`DukeVampireTerrify`** — deals **no damage**. On a `terrifyCooldown` timer
-  (10s), it afflicts the Brainrot directly in front of him plus the ones in
-  the lane above/below (his row ± 1, independent of `laneSpan` which stays 1)
-  with a `"Weaken"` status (`Types.StatusEffectKind` — scales the Brainrot's
-  own outgoing damage down by `terrifyDamageReduction`%, implemented as a
-  non-mutating `__index`-fallback override of `damage` on the ability
-  context's `definition` in `BrainrotBehavior.effectiveDefinition`, so every
-  existing Brainrot ability respects it for free) plus a `"Stun"` (freezes its
-  attacks) for `terrifyFreezeDuration` (2s).
+  (10s), it afflicts the Brainrot directly in front of him, the
+  `terrifyColumnsBehind` (2) tiles ahead of that one (west, toward the
+  house), plus the lanes above/below at each of those columns (his row ± 1,
+  independent of `laneSpan` which stays 1) with a `"Weaken"` status
+  (`Types.StatusEffectKind` — scales the Brainrot's own outgoing damage down
+  by `terrifyDamageReduction`%, implemented as a non-mutating
+  `__index`-fallback override of `damage` on the ability context's
+  `definition` in `BrainrotBehavior.effectiveDefinition`, so every existing
+  Brainrot ability respects it for free) plus a `"Stun"` (freezes its attacks)
+  for `terrifyFreezeDuration` (4s). Visible feedback (no gameplay effect):
+  a row of red curved comic-book soundwave lines (`CombatVisual` kind
+  `"Terrify"` → `VfxUtil.playTerrifySoundwave`) fans out from him along the
+  terrify cone (forward / toward the house — matching his column −
+  `terrifyColumnsBehind` AoE) whenever he actually hits something, and each
+  afflicted Brainrot gets three yellow ★ stars orbiting in a dizzy halo over
+  its head (kind `"Dizzy"` → `VfxUtil.playDizzy`) for the freeze duration.
+  The scream **never** fires while he's still in the forest, while
+  last-standing, or when the cone has zero living Brainrots (short retry
+  poll instead of burning the full cooldown / playing VFX).
 - His **regular chew** (`damage` / `attackInterval` on the definition, no
   ability) matches a Vampire's pace (1.1s) with a bit more bite (100 vs. 70).
 
 He also carries a persistent dark `auraColor` (`MonsterFeedback.applyAura`) —
 a data-driven, per-definition dual-layer particle (tight wisps + a larger
-slow-drifting haze) + bright `PointLight` glow any boss can opt into.
+slow-drifting haze) + bright `PointLight` glow any boss can opt into. Duke
+Vampire sets `auraScale = 1.6` (default 1) to scale up the particle sizes /
+speeds / glow range so his boss "tell" reads clearly at a distance.
+
+Visual feedback for Terrify (`CombatVisual` kind `"Terrify"` / `"Dizzy"` →
+`VfxUtil.playTerrifySoundwave` / `playDizzy`) anchors on the model via
+`PlotUtil.getModelBodyCenter` (client) / `MonsterFeedback.resolveBody`
+(server). Both fall back through a recursive `"Body"` search → `PrimaryPart`
+→ `HumanoidRootPart` → any `BasePart`, since authored Toolbox rigs with
+`preserveAnimationRig` never get the procedural `"Body"` alias
+(`ModelUtil.ensureBodyAlias` is skipped for them) — without that fallback
+chain, effects anchored on real (non-placeholder) monster models would
+silently never render.
 
 ---
 
@@ -252,8 +292,15 @@ The roster is introduced **one monster at a time** through campaign levels
 - **Level 20:** next boss — `DukeVampire` / Duke Vampire, tuned as the softest
   of the Milestone-10 boss roster (below Goblin King / Queen Spider) since
   it's the very next boss after Goblin Elite.
+- **Levels 21–24:** Night weather (`WEATHER.md`); mix of prior roster
+  (`Zombie` / `Goblin` / `GoblinElite` / `Vampire` / `DukeVampire`) with
+  alternating easier/harder pacing.
+- **Level 25:** next new non-boss — `Spider` (jump over first Brainrot), gentle
+  intro counts as NightFog begins.
+- **Levels 26–29:** Spider mixes with the fog roster; Elite / Duke recur as
+  pressure spikes.
+- **Level 30:** next boss — `QueenSpider` / Queen Spider (stun + poison) as the
+  NightFog finale.
 
-Future cadence when further levels are authored: **one** new non-boss every 5
-levels (e.g. Level 25), **one** boss every 10 levels (e.g. Level 30). Further
-archetypes (Shield, Flying, Carrier, …) follow the same pattern: registry data
-plus ability handlers, never duplicated base AI.
+Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:
+registry data plus ability handlers, never duplicated base AI.

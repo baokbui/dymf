@@ -123,7 +123,9 @@ function BrainrotBehavior.setDetachHandler(handler: (placement: RuntimePlacement
 end
 
 function BrainrotBehavior.register(placement: RuntimePlacement)
-	placement.cooldownRemaining = placement.definition.attackInterval
+	-- cooldownRemaining is initialized by the caller (BrainrotService.createPlacement)
+	-- — fresh plants get the full interval, restored/rejoined units get a
+	-- jittered one so they don't all fire in lockstep. Don't stomp it here.
 	placement.frozenUntil = 0
 	placement.poisonUntil = 0
 	placement.poisonHitsPerTick = 0

@@ -4,6 +4,11 @@
 	Client visual-effect tuning. Gameplay values stay in CombatConfig / registries.
 ]]
 
+local PlotConfig = require(script.Parent.PlotConfig)
+
+-- Lawn tiles are ~19 studs; terrify arcs must scale to them or they look tiny.
+local TILE = PlotConfig.TILE_SIZE
+
 local VfxConfig = {
 	-- Hit spark burst on damaged units.
 	HIT_BURST_COUNT = 6,
@@ -37,13 +42,20 @@ local VfxConfig = {
 	EXPLOSION_RING_SIZE = Vector3.new(8, 1.2, 8),
 	EXPLOSION_RING_DURATION = 0.25,
 
-	-- Per-tile blasts along a Bombardino row (`entireRow` Explosion).
-	TILE_EXPLOSION_BURST_COUNT = 10,
-	TILE_EXPLOSION_BURST_SPEED = 12,
-	TILE_EXPLOSION_BURST_SIZE = 0.35,
-	TILE_EXPLOSION_BURST_LIFETIME = 0.4,
-	TILE_EXPLOSION_RING_SIZE = Vector3.new(3.2, 0.7, 3.2),
-	TILE_EXPLOSION_RING_DURATION = 0.2,
+	-- Per-tile blasts along a Bombardino row (`entireRow` Explosion) — big and
+	-- exaggerated so a full-row line bomb reads as the game's biggest hit.
+	TILE_EXPLOSION_BURST_COUNT = 26,
+	TILE_EXPLOSION_BURST_SPEED = 22,
+	TILE_EXPLOSION_BURST_SIZE = 0.75,
+	TILE_EXPLOSION_BURST_LIFETIME = 0.6,
+	TILE_EXPLOSION_RING_SIZE = Vector3.new(7, 1.4, 7),
+	TILE_EXPLOSION_RING_DURATION = 0.35,
+	-- Secondary shockwave ring (expands further, fades slower) layered on top
+	-- of the main ring for extra punch.
+	TILE_EXPLOSION_SHOCKWAVE_SIZE = Vector3.new(10.5, 0.5, 10.5),
+	TILE_EXPLOSION_SHOCKWAVE_DURATION = 0.5,
+	TILE_EXPLOSION_FLASH_SIZE = Vector3.new(4.5, 3, 4.5),
+	TILE_EXPLOSION_FLASH_DURATION = 0.15,
 	ROW_EXPLOSION_STAGGER = 0.035,
 
 	-- Ground coin pickup sparkle.
@@ -67,6 +79,30 @@ local VfxConfig = {
 	BUBBLE_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(170, 230, 255),
 	BUBBLE_PROJECTILE_GLOW_BRIGHTNESS = 1.2,
 	BUBBLE_PROJECTILE_GLOW_RANGE = 7,
+
+	-- Duke Vampire's Terrify scream: curved red soundwave lines scaled to the
+	-- lawn tile size so they visibly span ~3 rows and several columns.
+	TERRIFY_WAVE_COLOR = Color3.fromRGB(255, 25, 25),
+	TERRIFY_WAVE_COUNT = 6,
+	TERRIFY_WAVE_STAGGER = 0.09,
+	TERRIFY_WAVE_START_DISTANCE = TILE * 0.35,
+	TERRIFY_WAVE_SPACING = TILE * 0.9,
+	TERRIFY_WAVE_HEIGHT = TILE * 3.4, -- ~3 rows across Z
+	TERRIFY_WAVE_BOW = TILE * 0.45,
+	TERRIFY_WAVE_THICKNESS = 0.65,
+	TERRIFY_WAVE_SEGMENTS = 16,
+	TERRIFY_WAVE_LIFETIME = 0.75,
+
+	-- Dizzy stars orbiting over a Brainrot afflicted by Terrify (classic
+	-- cartoon "dizzy" halo).
+	DIZZY_COLOR = Color3.fromRGB(255, 225, 90),
+	DIZZY_SIZE = UDim2.fromOffset(90, 90),
+	DIZZY_OFFSET = Vector3.new(0, 2.4, 0),
+	DIZZY_STAR_COUNT = 3,
+	DIZZY_STAR_SIZE = UDim2.fromOffset(26, 26),
+	DIZZY_ORBIT_RADIUS = 22, -- pixels, in the billboard's 2D plane
+	DIZZY_ORBIT_FLATTEN = 0.45, -- vertical squash for an elliptical "halo" orbit
+	DIZZY_SPIN_SECONDS = 1.2,
 
 	-- Cappuccino spinning shuriken trail.
 	SHURIKEN_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(255, 230, 140),

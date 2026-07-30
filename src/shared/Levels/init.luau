@@ -264,6 +264,141 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			{ monsterId = "DukeVampire", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},
+
+	-- Days 21–24: Night only. Days 25–30: NightFog (forest/east-lawn fog;
+	-- easternmost 3 columns unplantable; monsters hidden until they exit).
+	-- Day 25 intro Spider, Day 30 Queen Spider.
+	Level21 = {
+		id = "Level21",
+		number = 21,
+		name = "Fogbound",
+		weather = "Night",
+		groups = {
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 2, startDelay = 14, spawnInterval = 3.2 },
+			{ monsterId = "Zombie", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level22 = {
+		id = "Level22",
+		number = 22,
+		name = "Mist March",
+		weather = "Night",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.8 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 16, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	Level23 = {
+		id = "Level23",
+		number = 23,
+		name = "Quiet Night",
+		weather = "Night",
+		groups = {
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.8 },
+			{ monsterId = "Goblin", count = 3, startDelay = 14, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 2, startDelay = 14, spawnInterval = 3.4 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.4, isBigWave = true },
+		},
+	},
+
+	Level24 = {
+		id = "Level24",
+		number = 24,
+		name = "Blood Fog",
+		weather = "Night",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.0 },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 16, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	-- Level 25: Spider intro — jump-over first Brainrot; gentle counts.
+	Level25 = {
+		id = "Level25",
+		number = 25,
+		name = "Webbed Path",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Spider", count = 2, startDelay = 14, spawnInterval = 3.5 },
+			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 3.0, isBigWave = true },
+		},
+	},
+
+	Level26 = {
+		id = "Level26",
+		number = 26,
+		name = "Silk and Steel",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Spider", count = 3, startDelay = 11, spawnInterval = 2.8 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	Level27 = {
+		id = "Level27",
+		number = 27,
+		name = "Lull in the Mist",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.8 },
+			{ monsterId = "Spider", count = 2, startDelay = 13, spawnInterval = 3.2 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.8, isBigWave = true },
+		},
+	},
+
+	Level28 = {
+		id = "Level28",
+		number = 28,
+		name = "Duke's Night",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 3, startDelay = 10, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 15, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	Level29 = {
+		id = "Level29",
+		number = 29,
+		name = "Closing Webs",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Goblin", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 13, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	-- Level 30: Queen Spider boss intro.
+	Level30 = {
+		id = "Level30",
+		number = 30,
+		name = "Queen Spider",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Spider", count = 4, startDelay = 11, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
+		},
+	},
 }
 
 local ordered: { Types.LevelDefinition } = {}

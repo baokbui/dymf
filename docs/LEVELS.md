@@ -85,13 +85,14 @@ Levels.count()             -- number of authored levels
 
 ### `LevelDefinition` (`Shared.Types`)
 
-| Field    | Type             | Meaning                                       |
-| -------- | ---------------- | --------------------------------------------- |
-| `id`     | string           | Unique key (matches registry key)             |
-| `number` | number           | 1-based campaign position (ordering + display)|
-| `name`   | string           | Display name                                  |
-| `groups` | `{ SpawnGroup }` | Ordered internal waves to spawn               |
-| `reward` | number?          | Completion coins (defaults to economy base)   |
+| Field     | Type             | Meaning                                       |
+| --------- | ---------------- | --------------------------------------------- |
+| `id`      | string           | Unique key (matches registry key)             |
+| `number`  | number           | 1-based campaign position (ordering + display)|
+| `name`    | string           | Display name                                  |
+| `groups`  | `{ SpawnGroup }` | Ordered internal waves to spawn               |
+| `weather` | string?          | Optional weather id (`Night`, `NightFog`, …); see `WEATHER.md` |
+| `reward`  | number?          | Completion coins (defaults to economy base)   |
 
 ### `SpawnGroup` (`Shared.Types`)
 
@@ -134,23 +135,36 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 18    | Twin Terror       | 5 Zombie, 5 Vampire, **1** GoblinElite, 5 Vampire · **16** |
 | 19    | Final Bloodline   | 5 Zombie, 5 Vampire, **1** GoblinElite, 6 Vampire · **17** |
 | 20    | Duke Vampire      | 5 Zombie, 5 Vampire, 5 Goblin, **1** DukeVampire · **16** |
+| 21    | Fogbound          | Night · Zombie/Goblin/Vampire · **15** |
+| 22    | Mist March        | Night · + GoblinElite finale · **14** |
+| 23    | Quiet Night       | Night · easier breather · **13** |
+| 24    | Blood Fog         | Night · DukeVampire finale · **15** |
+| 25    | Webbed Path       | NightFog · **Spider** intro · **13** |
+| 26    | Silk and Steel    | NightFog · Spider + GoblinElite · **12** |
+| 27    | Lull in the Mist  | NightFog · easier mix · **13** |
+| 28    | Duke's Night      | NightFog · DukeVampire finale · **13** |
+| 29    | Closing Webs      | NightFog · Spider pressure + Elite · **14** |
+| 30    | Queen Spider      | NightFog · **QueenSpider** boss finale · **13** |
+
+Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
+Days **25–30** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
+easternmost 3 columns unplantable; monsters stay visible — see `WEATHER.md`).
+Fog days keep moderate totals and alternate easier/harder pacing.
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
 bundle of types in a single level.
 
-Introduction cadence (repeat when authoring Levels 25, 30, …):
+Introduction cadence:
 
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
-  `Goblin`; Level 15 = `Vampire`).
+  `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`).
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
-  `GoblinElite`; Level 20 = `DukeVampire`, nerfed vs. the other Milestone-10
-  bosses since it's the very next boss after Goblin Elite).
+  `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
   in later levels (not always the big-wave finale) instead of only ever
-  appearing once — e.g. `GoblinElite` reappears in Levels 13, 14, 17, 18, 19
-  ahead of the Level 20 `DukeVampire` fight.
+  appearing once — e.g. `GoblinElite` / `DukeVampire` recur through the fog stretch.
 
 ### Difficulty ramp (early campaign)
 
@@ -212,8 +226,9 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
   stays **`Defeat`** until the player presses **Start Day 1**. Passive and
   ability coin drops are blocked outside `Active`.
 - On **Day Select**: full lawn wipe; purse via `applyDayPurse` for the selected day.
-- Broadcasting phase / level number / progress via `LevelStateChanged` (see
-  `NETWORKING.md`).
+- Broadcasting phase / level number / progress / `weather` via `LevelStateChanged`
+  (see `NETWORKING.md`). Applying NightFog plant rules on prep / lawn restore
+  (`WEATHER.md`).
 
 Progression is **linear**: victory advances `currentLevel` and raises
 `highestLevel`; players may replay any unlocked level via Day Select

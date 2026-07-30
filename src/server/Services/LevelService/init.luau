@@ -24,6 +24,7 @@ local Levels = require(Shared.Levels)
 local Monsters = require(Shared.Monsters)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
+local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local LevelRun = require(script.LevelRun)
 local BrainrotService = require(script.Parent.BrainrotService)
@@ -74,6 +75,7 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		bigWaveWarning = state.bigWaveWarning,
 		canStart = state.phase == PHASE.Preparation or state.phase == PHASE.Defeat,
 		progress = 0,
+		weather = if definition then definition.weather else nil,
 	}
 
 	if state.phase == PHASE.Countdown then
@@ -105,9 +107,23 @@ local function setPhase(player: Player, state: PlayerState, phase: string)
 	broadcast(player)
 end
 
+-- NightFog days: strip Brainrots from fog-blocked east columns and refresh the
+-- committed lawn so rejoin doesn't restore plants into the fog.
+local function applyWeatherRules(player: Player, state: PlayerState)
+	local definition = getDefinition(state.currentLevel)
+	local weather = if definition then definition.weather else nil
+	if not WeatherUtil.isNightFog(weather) then
+		return
+	end
+	BrainrotService.clearFogBlockedPlacements(player, weather)
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.commitLawn(player)
+end
+
 local function beginPreparation(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.bigWaveWarning = false
+	applyWeatherRules(player, state)
 	setPhase(player, state, PHASE.Preparation)
 end
 
@@ -161,16 +177,18 @@ local function onVictory(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.phase = PHASE.Victory
 	state.bigWaveWarning = false
+	local nextDef = getDefinition(state.currentLevel)
 	Remotes.getEvent("LevelStateChanged"):FireClient(player, {
 		phase = PHASE.Victory,
 		levelNumber = state.currentLevel,
-		levelName = if getDefinition(state.currentLevel) then getDefinition(state.currentLevel).name else "Unknown",
+		levelName = if nextDef then nextDef.name else "Unknown",
 		highestUnlockedLevel = state.highestUnlockedLevel,
 		playerHealth = state.playerHealth,
 		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
 		canStart = false,
 		progress = 0,
 		bigWaveWarning = false,
+		weather = if nextDef then nextDef.weather else nil,
 		reward = {
 			clearedLevel = clearedNumber,
 			brains = brainsEarned,
@@ -380,6 +398,23 @@ end
 
 function LevelService.getClientState(player: Player): { [string]: any }
 	return buildPayloadForPlayer(player)
+end
+
+function LevelService.getWeather(player: Player): string?
+	local state = states[player.UserId]
+	if not state then
+		return nil
+	end
+	local definition = getDefinition(state.currentLevel)
+	return if definition then definition.weather else nil
+end
+
+-- After lawn restore on join — strip fog-column plants if the current day is NightFog.
+function LevelService.applyWeatherRulesForPlayer(player: Player)
+	local state = states[player.UserId]
+	if state then
+		applyWeatherRules(player, state)
+	end
 end
 
 function LevelService.getSaveProgress(player: Player): (number, number, number)

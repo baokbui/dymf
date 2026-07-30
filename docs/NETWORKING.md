@@ -43,9 +43,9 @@ Remotes module. That is the only required step.
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
-| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion VFX + SFX (**plot owner only**) |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / Terrify / Dizzy / MonsterAttack VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
-| `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress updates  |
+| `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats |
@@ -141,8 +141,11 @@ Monsters spawn in the forest and walk toward the plot (setup time).
 
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
 whenever phase, progress, or big-wave warning changes. The client
-`UIController/Level.luau` panel only displays this payload. Initial join state
-includes `level` inside the `RequestState` pull (`{ coins, level }`).
+`UIController/Level.luau` panel only displays this payload. Payload includes
+optional `weather` (e.g. `"Night"` / `"NightFog"`) from the current
+`LevelDefinition` — `WeatherController` / placement use it for night/fog
+presentation and fog-tile rules (`WEATHER.md`). Initial join state includes
+`level` inside the `RequestState` pull (`{ coins, level }`).
 
 **Defeat** — when a monster breaches the house during `Active`, `LevelService`
 clears the plot (Brainrots, monsters, ground coins), resets coins to the

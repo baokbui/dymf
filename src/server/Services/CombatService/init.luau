@@ -84,6 +84,33 @@ function CombatService.applyStatusToBrainrot(
 	end
 end
 
+-- Duke Vampire's Terrify: a visible "scream" pulse centered on him, plus a
+-- dizzy icon over each Brainrot it afflicts. No damage — purely feedback for
+-- the Weaken + Stun already applied via applyStatusToBrainrot.
+function CombatService.notifyTerrifyPulse(ownerUserId: number, instanceId: string)
+	fireCombatVisual(ownerUserId, {
+		kind = "Terrify",
+		instanceId = instanceId,
+	})
+end
+
+function CombatService.notifyDizzy(ownerUserId: number, brainrotInstanceId: string, duration: number)
+	fireCombatVisual(ownerUserId, {
+		kind = "Dizzy",
+		instanceId = brainrotInstanceId,
+		duration = duration,
+	})
+end
+
+-- Monster chew / club swing SFX on the owning client (`MonsterAttack_<id>` or
+-- generic `MonsterAttack`).
+function CombatService.notifyMonsterAttack(ownerUserId: number, monsterId: string)
+	fireCombatVisual(ownerUserId, {
+		kind = "MonsterAttack",
+		monsterId = monsterId,
+	})
+end
+
 -- Damages the closest monster in range on a row (lowest column = nearest the house).
 function CombatService.attackFirstInRow(
 	plotModel: Model,

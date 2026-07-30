@@ -68,17 +68,22 @@ function GridUtil.randomPosition(): Types.GridPosition
 	}
 end
 
--- True if a fractional column is on the player lawn (not still in the forest
--- east of the grid). Brainrots only engage monsters once they enter the plot.
-function GridUtil.isOnPlotColumn(column: number): boolean
-	return column <= GridConfig.COLUMNS
-end
-
 -- True when `targetColumn` is within `rangeTiles` ahead of the Brainrot's column
 -- on the same row (+X toward the enemy). Uses tile indices so a monster standing
 -- anywhere in the adjacent east tile counts for melee range 1.
 function GridUtil.tileAtColumn(column: number): number
 	return math.floor(column + 0.5)
+end
+
+-- True if a fractional column is on the player lawn (not still marching in the
+-- forest east of the grid). Compares by **tile index**, not raw column, so a
+-- monster standing on the frontmost tile (column = COLUMNS) but stopped at its
+-- melee standoff (`COLUMNS + MELEE_CLOSE_REACH`, a fraction past the tile
+-- center) still counts as on-plot — otherwise Brainrots targeting the very
+-- last column (e.g. Tung Tung Sahur planted there, or one tile behind a wall
+-- on that column) could never see the monster actively chewing them.
+function GridUtil.isOnPlotColumn(column: number): boolean
+	return GridUtil.tileAtColumn(column) <= GridConfig.COLUMNS
 end
 
 function GridUtil.isColumnInRange(

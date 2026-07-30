@@ -23,6 +23,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/BRAINROTS.md — Brainrot registry and definitions
 - docs/MONSTERS.md — Monster registry and definitions
 - docs/LEVELS.md — PvZ-style campaign: levels, spawn groups, progression
+- docs/WEATHER.md — per-day weather (NightFog, plant rules, client visuals)
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
 - docs/HOUSE.md — plot houses + boss collection (M25)

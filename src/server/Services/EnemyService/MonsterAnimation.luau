@@ -1,19 +1,25 @@
 --!strict
 --[[
 	MonsterAnimation
-	Plays walk / attack AnimationTracks on authored monster models that keep an
-	AnimationController + Motor6D rig. IDs come from the model (Animation
-	children), the MonsterDefinition, or MonsterConfig defaults.
+	Plays walk / attack AnimationTracks on authored monster models that keep a
+	Humanoid.Animator or AnimationController + Motor6D rig. IDs come from the
+	model (WalkAnimation / AttackAnimation / AnimSaves), the MonsterDefinition,
+	or MonsterConfig defaults.
 
 	walkAnimationId = "" explicitly disables walk (catalog R15 walks often look
 	wrong on Toolbox rigs that snap along the grid).
+	proceduralWalk: skip Toolbox AnimationIds (often permission-locked) and use
+	AnimSaves KeyframeSequences or MonsterProceduralGait instead.
 ]]
 
+local AnimationClipProvider = game:GetService("AnimationClipProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
+
+local MonsterProceduralGait = require(script.Parent.MonsterProceduralGait)
 
 local MonsterAnimation = {}
 
@@ -36,15 +42,96 @@ local function findChildAnimation(model: Model, name: string): Animation?
 	return nil
 end
 
+local function findAnimator(model: Model): Animator?
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		local underHumanoid = humanoid:FindFirstChildOfClass("Animator")
+		if underHumanoid then
+			return underHumanoid
+		end
+	end
+	local controller = model:FindFirstChildOfClass("AnimationController")
+	if controller then
+		return controller:FindFirstChildOfClass("Animator")
+	end
+	return nil
+end
+
+-- Register a KeyframeSequence from AnimSaves as a temporary clip owned by this
+-- experience (avoids Toolbox Animation permission errors).
+local function registerAnimSavesWalkId(model: Model): string?
+	local animSaves = model:FindFirstChild("AnimSaves")
+	if not animSaves then
+		return nil
+	end
+
+	local sequences: { KeyframeSequence } = {}
+	for _, descendant in animSaves:GetDescendants() do
+		if descendant:IsA("KeyframeSequence") then
+			table.insert(sequences, descendant)
+		end
+	end
+	if #sequences == 0 then
+		return nil
+	end
+
+	-- Prefer a clip whose name suggests walk/move; otherwise first sequence.
+	local chosen = sequences[1]
+	for _, sequence in sequences do
+		local lower = string.lower(sequence.Name)
+		if string.find(lower, "walk", 1, true)
+			or string.find(lower, "run", 1, true)
+			or string.find(lower, "move", 1, true)
+			or string.find(lower, "crawl", 1, true)
+		then
+			chosen = sequence
+			break
+		end
+	end
+
+	local ok, idOrErr = pcall(function()
+		return AnimationClipProvider:RegisterAnimationClip(chosen)
+	end)
+	if not ok or type(idOrErr) ~= "string" or idOrErr == "" then
+		log:warn("AnimSaves register failed on", model.Name, idOrErr)
+		return nil
+	end
+	return idOrErr
+end
+
 local function resolveAnimationId(
 	model: Model,
 	definition: Types.MonsterDefinition,
 	kind: "Walk" | "Attack"
 ): string?
+	-- Toolbox packs often ship AnimationIds the experience can't play. For
+	-- proceduralWalk units, only try local AnimSaves (then gait fallback).
+	if kind == "Walk" and definition.proceduralWalk then
+		local savesId = registerAnimSavesWalkId(model)
+		if savesId then
+			return savesId
+		end
+		if definition.walkAnimationId ~= nil and definition.walkAnimationId ~= "" then
+			return definition.walkAnimationId
+		end
+		return nil
+	end
+
 	local childName = if kind == "Walk" then "WalkAnimation" else "AttackAnimation"
 	local embedded = findChildAnimation(model, childName)
 	if embedded then
 		return embedded.AnimationId
+	end
+	-- Toolbox packs often ship a single Animation instance named "Animation".
+	if kind == "Walk" then
+		local packAnim = findChildAnimation(model, "Animation")
+		if packAnim then
+			return packAnim.AnimationId
+		end
+		local savesId = registerAnimSavesWalkId(model)
+		if savesId then
+			return savesId
+		end
 	end
 
 	if kind == "Walk" then
@@ -90,18 +177,25 @@ end
 function MonsterAnimation.bind(model: Model, definition: Types.MonsterDefinition)
 	MonsterAnimation.unbind(model)
 
-	local controller = model:FindFirstChildOfClass("AnimationController")
-	local animator = controller and controller:FindFirstChildOfClass("Animator")
+	local animator = findAnimator(model)
+	local walkId = resolveAnimationId(model, definition, "Walk")
+	local attackId = resolveAnimationId(model, definition, "Attack")
+	local walkTrack = if animator
+		then loadTrack(animator, walkId, true, Enum.AnimationPriority.Movement)
+		else nil
+
+	-- Procedural crawl only when the pack/authored walk track is missing.
+	if definition.proceduralWalk and not walkTrack then
+		MonsterProceduralGait.bind(model)
+	end
+
 	if not animator then
 		return
 	end
 
-	local walkId = resolveAnimationId(model, definition, "Walk")
-	local attackId = resolveAnimationId(model, definition, "Attack")
-
 	local state: AnimState = {
 		animator = animator,
-		walk = loadTrack(animator, walkId, true, Enum.AnimationPriority.Movement),
+		walk = walkTrack,
 		-- One-shot club / melee swing; replayed each chew hit.
 		attack = loadTrack(animator, attackId, false, Enum.AnimationPriority.Action),
 		mode = "Idle",
@@ -118,6 +212,11 @@ end
 
 function MonsterAnimation.setAttacking(model: Model, attacking: boolean)
 	local state = states[model]
+	if attacking then
+		MonsterProceduralGait.setActive(model, false)
+	else
+		MonsterProceduralGait.setActive(model, true)
+	end
 	if not state then
 		return
 	end
@@ -168,6 +267,7 @@ end
 
 -- Pause locomotion while status-frozen / bubbled; resume walk when cleared.
 function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
+	MonsterProceduralGait.setActive(model, not paused)
 	local state = states[model]
 	if not state then
 		return
@@ -201,6 +301,7 @@ function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
 end
 
 function MonsterAnimation.unbind(model: Model)
+	MonsterProceduralGait.unbind(model)
 	local state = states[model]
 	if not state then
 		return

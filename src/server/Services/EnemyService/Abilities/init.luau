@@ -28,6 +28,11 @@ export type AbilityCallbacks = {
 	-- suspends movement/attack/transform-sync and tips it over for
 	-- `duration` seconds, mirroring the regular death-fall pose.
 	beginFall: (duration: number) -> (),
+	-- Extends the "downed" (movement/attack suspended) window by `duration`
+	-- without playing a new fall tween — used to linger on the ground
+	-- between the fall landing and the rise starting (Duke Vampire's
+	-- last-stand hold).
+	holdDowned: (duration: number) -> (),
 	-- Tweens the monster back upright over `duration` seconds. Movement
 	-- stays suspended until `duration` elapses.
 	beginRise: (duration: number) -> (),
@@ -36,6 +41,10 @@ export type AbilityCallbacks = {
 export type AbilityHandler = {
 	onSpawn: ((ctx: AbilityContext, state: AbilityState) -> ())?,
 	onTick: ((ctx: AbilityContext, state: AbilityState, dt: number, callbacks: AbilityCallbacks) -> ())?,
+	-- Called when a hit would reduce HP to 0. Return true to cancel death
+	-- (e.g. Duke Vampire's once-only last stand). Must leave the monster
+	-- alive (caller clamps HP) and kick off any downed sequence via callbacks.
+	onWouldDie: ((ctx: AbilityContext, state: AbilityState, callbacks: AbilityCallbacks) -> boolean)?,
 	shouldSkipBrainrot: ((ctx: AbilityContext, state: AbilityState, brainrotInstanceId: string) -> boolean)?,
 	getBrainrotHits: ((ctx: AbilityContext, state: AbilityState, defaultHits: number) -> number)?,
 	onBrainrotAttacked: ((ctx: AbilityContext, state: AbilityState, brainrotInstanceId: string) -> ())?,

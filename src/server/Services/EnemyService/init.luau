@@ -117,6 +117,10 @@ local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: strin
 	if runtime.definition.damage > 0 then
 		local hits = computeBrainrotHits(runtime, brainrotInstanceId)
 		CombatService.damageBrainrot(brainrotInstanceId, hits)
+		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" then
+			CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
+		end
 	end
 
 	local ctx = {
@@ -172,7 +176,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		worldPos,
 		monstersFolder(plotModel)
 	)
-	MonsterFeedback.applyAura(model, definition.auraColor)
+	MonsterFeedback.applyAura(model, definition.auraColor, definition.auraScale)
 
 	local runtime: MonsterRuntime = {
 		instanceId = instanceId,
@@ -356,6 +360,47 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 	MonsterFeedback.flashHit(runtime.model, isFatal)
 
 	if isFatal then
+		-- Let abilities rescue overkill (Duke Vampire last stand) so a single
+		-- big hit can't skip the ≤20% threshold between behavior ticks.
+		local ctx = {
+			instanceId = runtime.instanceId,
+			definition = runtime.definition,
+			plotModel = runtime.plotModel,
+			row = runtime.row,
+			column = runtime.column,
+			health = 0,
+			maxHealth = runtime.maxHealth,
+		}
+		local rescueCallbacks: Abilities.AbilityCallbacks = {
+			spawnMinion = function() end,
+			setInvulnerable = function(duration: number)
+				runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+			end,
+			beginFall = function(duration: number)
+				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				MonsterAnimation.setLocomotionPaused(runtime.model, true)
+				runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
+			end,
+			holdDowned = function(duration: number)
+				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			end,
+			beginRise = function(duration: number)
+				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				if runtime.preFallCFrame then
+					MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
+				end
+			end,
+		}
+		for _, handler in Abilities.iterate(runtime.definition) do
+			if handler.onWouldDie and handler.onWouldDie(ctx, runtime.abilityState, rescueCallbacks) then
+				-- Keep a sliver of HP; rise phase heals to lastStandHealPercent.
+				runtime.health = math.max(1, math.floor(runtime.maxHealth * 0.01))
+				MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
+				MonsterFeedback.flashHit(runtime.model, false)
+				return false
+			end
+		end
+
 		destroyMonster(runtime)
 		return true
 	end

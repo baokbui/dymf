@@ -113,7 +113,7 @@ end
 	Data-driven via `MonsterDefinition.auraColor` — never branch on names.
 	Attached once at spawn; torn down in `cleanup` like every other VFX here.
 ]]
-function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
+function MonsterFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?)
 	if not auraColor then
 		return
 	end
@@ -125,6 +125,8 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 		return
 	end
 
+	local scale = auraScale or 1
+
 	local attachment = Instance.new("Attachment")
 	attachment.Name = "AuraVfx"
 	attachment.Parent = body
@@ -133,9 +135,9 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 	wisps.Name = "AuraWisps"
 	wisps.Color = ColorSequence.new(auraColor)
 	wisps.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.6),
-		NumberSequenceKeypoint.new(0.5, 2.2),
-		NumberSequenceKeypoint.new(1, 0.3),
+		NumberSequenceKeypoint.new(0, 0.6 * scale),
+		NumberSequenceKeypoint.new(0.5, 2.2 * scale),
+		NumberSequenceKeypoint.new(1, 0.3 * scale),
 	})
 	wisps.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.15),
@@ -143,7 +145,7 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 		NumberSequenceKeypoint.new(1, 1),
 	})
 	wisps.Lifetime = NumberRange.new(1.4, 2.2)
-	wisps.Speed = NumberRange.new(1, 2.4)
+	wisps.Speed = NumberRange.new(1 * scale, 2.4 * scale)
 	wisps.SpreadAngle = Vector2.new(180, 180)
 	wisps.Rate = 28
 	wisps.LightEmission = 0.6
@@ -155,9 +157,9 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 	haze.Name = "AuraHaze"
 	haze.Color = ColorSequence.new(auraColor)
 	haze.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1.5),
-		NumberSequenceKeypoint.new(0.6, 4),
-		NumberSequenceKeypoint.new(1, 5.5),
+		NumberSequenceKeypoint.new(0, 1.5 * scale),
+		NumberSequenceKeypoint.new(0.6, 4 * scale),
+		NumberSequenceKeypoint.new(1, 5.5 * scale),
 	})
 	haze.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.55),
@@ -165,7 +167,7 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 		NumberSequenceKeypoint.new(1, 1),
 	})
 	haze.Lifetime = NumberRange.new(1.8, 2.6)
-	haze.Speed = NumberRange.new(0.2, 0.6)
+	haze.Speed = NumberRange.new(0.2 * scale, 0.6 * scale)
 	haze.SpreadAngle = Vector2.new(180, 180)
 	haze.Rate = 6
 	haze.LightEmission = 0.3
@@ -176,7 +178,7 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?)
 	glow.Name = "AuraGlow"
 	glow.Color = auraColor
 	glow.Brightness = 4
-	glow.Range = 20
+	glow.Range = 20 * scale
 	glow.Shadows = false
 	glow.Parent = attachment
 end

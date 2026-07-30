@@ -38,6 +38,16 @@ local AudioConfig = {
 		"Hit",
 		"Death",
 		"Death_Zombie",
+		"Death_Vampire",
+		"Death_DukeVampire",
+		"Death_Goblin",
+		"Death_GoblinElite",
+		"Death_GoblinKing",
+		"MonsterAttack",
+		"MonsterAttack_Goblin",
+		"MonsterAttack_GoblinElite",
+		"MonsterAttack_GoblinKing",
+		"Terrify",
 		"FreezeTime",
 		"BubbleTrap",
 		"CoinCollect",
@@ -149,6 +159,26 @@ local AudioConfig = {
 			Volume = 0.85,
 			StartOffset = 0.05,
 		},
+		Death_Vampire = {
+			SoundId = "rbxassetid://119636957649573",
+			Volume = 0.85,
+		},
+		Death_DukeVampire = {
+			SoundId = "rbxassetid://119636957649573",
+			Volume = 0.85,
+		},
+		Death_Goblin = {
+			SoundId = "rbxassetid://83502215419926",
+			Volume = 0.85,
+		},
+		Death_GoblinElite = {
+			SoundId = "rbxassetid://83502215419926",
+			Volume = 0.9,
+		},
+		Death_GoblinKing = {
+			SoundId = "rbxassetid://83502215419926",
+			Volume = 0.9,
+		},
 		Explosion = {
 			SoundId = "rbxasset://sounds/impact_explosion_03.mp3",
 			Volume = 0.7,
@@ -181,13 +211,29 @@ local AudioConfig = {
 			Volume = 0.75,
 			PlaybackSpeed = 0.9,
 		},
+		-- Goblin club swing (Goblin / Goblin Elite / Goblin King chew).
+		MonsterAttack_Goblin = {
+			SoundId = "rbxassetid://128854594485072",
+			Volume = 0.85,
+		},
+		MonsterAttack_GoblinElite = {
+			SoundId = "rbxassetid://128854594485072",
+			Volume = 0.9,
+		},
+		MonsterAttack_GoblinKing = {
+			SoundId = "rbxassetid://128854594485072",
+			Volume = 0.9,
+		},
+		-- Duke Vampire Terrify scream (CombatVisual kind "Terrify").
+		Terrify = {
+			SoundId = "rbxassetid://5527368920",
+			Volume = 0.85,
+		},
 
 		-- Brainrot abilities (keys match BrainrotAction.action / ability ids)
 		MeleeBat = {
-			SoundId = "rbxassetid://9113322410",
-			Volume = 0.75,
-			-- Asset has a long grassy tail; keep only the hit transient.
-			MaxDuration = 0.22,
+			SoundId = "rbxassetid://173818824",
+			Volume = 0.8,
 		},
 		BubbleTrap = {
 			SoundId = "rbxassetid://5852470908",

@@ -212,7 +212,9 @@ function VfxUtil.playExplosion(position: Vector3)
 	end)
 end
 
--- Smaller blast for each tile along a line-bomb row.
+-- Big, exaggerated blast for each tile along a Bombardino line-bomb row:
+-- a bright flash pop, a heavy expanding ring, a second slower shockwave
+-- ring, and a large spark burst.
 function VfxUtil.playTileExplosion(position: Vector3)
 	emitBurst(
 		position,
@@ -223,6 +225,30 @@ function VfxUtil.playTileExplosion(position: Vector3)
 		VfxConfig.TILE_EXPLOSION_BURST_LIFETIME
 	)
 
+	-- Instant bright flash at the core for a punchier first frame.
+	local flash = Instance.new("Part")
+	flash.Name = "TileExplosionFlash"
+	flash.Shape = Enum.PartType.Ball
+	flash.Anchored = true
+	flash.CanCollide = false
+	flash.CanQuery = false
+	flash.CanTouch = false
+	flash.Material = Enum.Material.Neon
+	flash.Color = Color3.fromRGB(255, 240, 200)
+	flash.Transparency = 0.05
+	flash.Size = VfxConfig.TILE_EXPLOSION_FLASH_SIZE * 0.3
+	flash.CFrame = CFrame.new(position)
+	flash.Parent = effectsFolder()
+
+	TweenService:Create(
+		flash,
+		TweenInfo.new(VfxConfig.TILE_EXPLOSION_FLASH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Size = VfxConfig.TILE_EXPLOSION_FLASH_SIZE, Transparency = 1 }
+	):Play()
+	task.delay(VfxConfig.TILE_EXPLOSION_FLASH_DURATION + 0.1, function()
+		flash:Destroy()
+	end)
+
 	local ring = Instance.new("Part")
 	ring.Name = "TileExplosionRing"
 	ring.Anchored = true
@@ -231,8 +257,8 @@ function VfxUtil.playTileExplosion(position: Vector3)
 	ring.CanTouch = false
 	ring.Material = Enum.Material.Neon
 	ring.Color = VfxConfig.EXPLOSION_COLOR
-	ring.Transparency = 0.4
-	ring.Size = VfxConfig.TILE_EXPLOSION_RING_SIZE * 0.4
+	ring.Transparency = 0.25
+	ring.Size = VfxConfig.TILE_EXPLOSION_RING_SIZE * 0.3
 	ring.CFrame = CFrame.new(position)
 	ring.Parent = effectsFolder()
 
@@ -247,6 +273,207 @@ function VfxUtil.playTileExplosion(position: Vector3)
 
 	task.delay(VfxConfig.TILE_EXPLOSION_RING_DURATION + 0.1, function()
 		ring:Destroy()
+	end)
+
+	-- Secondary shockwave ring: starts where the main ring started, expands
+	-- further and lingers a touch longer for a two-layer "boom" read.
+	local shockwave = Instance.new("Part")
+	shockwave.Name = "TileExplosionShockwave"
+	shockwave.Anchored = true
+	shockwave.CanCollide = false
+	shockwave.CanQuery = false
+	shockwave.CanTouch = false
+	shockwave.Material = Enum.Material.Neon
+	shockwave.Color = Color3.fromRGB(255, 210, 120)
+	shockwave.Transparency = 0.45
+	shockwave.Size = VfxConfig.TILE_EXPLOSION_RING_SIZE * 0.3
+	shockwave.CFrame = CFrame.new(position)
+	shockwave.Parent = effectsFolder()
+
+	TweenService:Create(
+		shockwave,
+		TweenInfo.new(VfxConfig.TILE_EXPLOSION_SHOCKWAVE_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{
+			Size = VfxConfig.TILE_EXPLOSION_SHOCKWAVE_SIZE,
+			Transparency = 1,
+		}
+	):Play()
+
+	task.delay(VfxConfig.TILE_EXPLOSION_SHOCKWAVE_DURATION + 0.1, function()
+		shockwave:Destroy()
+	end)
+end
+
+-- Thin neon segment between two world points (used to build curved soundwaves).
+local function createWaveSegment(a: Vector3, b: Vector3, color: Color3, thickness: number): BasePart
+	local mid = (a + b) * 0.5
+	local delta = b - a
+	local length = math.max(delta.Magnitude, 0.05)
+	local part = Instance.new("Part")
+	part.Name = "TerrifyWaveSeg"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Color = color
+	part.Transparency = 0.05
+	part.Size = Vector3.new(thickness, thickness, length)
+	part.CFrame = CFrame.lookAt(mid, b)
+	part.Parent = effectsFolder()
+	return part
+end
+
+--[[
+	One comic-book ")" soundwave arc: a vertical crescent spanning `height`
+	studs across the lawn rows, bowed `bow` studs outward along `dir`. Built
+	from thin neon segments so it reads as a red curved line like the sketch.
+]]
+local function emitTerrifyArc(
+	origin: Vector3,
+	dir: Vector3,
+	right: Vector3,
+	distance: number,
+	delaySec: number
+)
+	local function spawn()
+		local height = VfxConfig.TERRIFY_WAVE_HEIGHT
+		local bow = VfxConfig.TERRIFY_WAVE_BOW
+		local segments = VfxConfig.TERRIFY_WAVE_SEGMENTS
+		local thickness = VfxConfig.TERRIFY_WAVE_THICKNESS
+		local color = VfxConfig.TERRIFY_WAVE_COLOR
+		local lifetime = VfxConfig.TERRIFY_WAVE_LIFETIME
+		local lift = Vector3.new(0, 4, 0)
+
+		local function pointAt(t: number): Vector3
+			-- Parabola: max bow at the center (t = 0), flat at the tips (±1).
+			local bowOffset = bow * (1 - t * t)
+			return origin + lift + dir * (distance + bowOffset) + right * (t * height * 0.5)
+		end
+
+		local parts: { BasePart } = {}
+		for s = 0, segments - 1 do
+			local t0 = -1 + (2 * s) / segments
+			local t1 = -1 + (2 * (s + 1)) / segments
+			table.insert(parts, createWaveSegment(pointAt(t0), pointAt(t1), color, thickness))
+		end
+
+		-- Drift farther along the scream and fade out.
+		local drift = dir * (VfxConfig.TERRIFY_WAVE_SPACING * 0.55)
+		for _, part in parts do
+			TweenService:Create(
+				part,
+				TweenInfo.new(lifetime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{
+					CFrame = part.CFrame + drift,
+					Transparency = 1,
+					Size = part.Size + Vector3.new(0.15, 0.15, 0),
+				}
+			):Play()
+		end
+
+		task.delay(lifetime + 0.1, function()
+			for _, part in parts do
+				part:Destroy()
+			end
+		end)
+	end
+
+	if delaySec <= 0 then
+		spawn()
+	else
+		task.delay(delaySec, spawn)
+	end
+end
+
+--[[
+	Duke Vampire's Terrify scream: a row of red curved soundwave lines
+	(comic-book "))) ") fanning out from him along `direction` (defaults to
+	world −X / toward the house — matching the terrify forward AoE cone).
+]]
+function VfxUtil.playTerrifySoundwave(origin: Vector3, direction: Vector3?)
+	local flat = if direction then Vector3.new(direction.X, 0, direction.Z) else Vector3.new(-1, 0, 0)
+	local dir = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(1, 0, 0)
+	-- Perpendicular across the lawn rows (Z when traveling along ±X).
+	local right = Vector3.new(-dir.Z, 0, dir.X)
+	if right.Magnitude < 1e-3 then
+		right = Vector3.zAxis
+	else
+		right = right.Unit
+	end
+
+	for i = 0, VfxConfig.TERRIFY_WAVE_COUNT - 1 do
+		local distance = VfxConfig.TERRIFY_WAVE_START_DISTANCE + i * VfxConfig.TERRIFY_WAVE_SPACING
+		emitTerrifyArc(origin, dir, right, distance, i * VfxConfig.TERRIFY_WAVE_STAGGER)
+	end
+end
+
+--[[
+	Cartoon dizzy: several ★ stars orbiting in a flat halo above the Brainrot.
+	Replaces any prior DizzyVfx on the same model so refreshes don't stack.
+]]
+function VfxUtil.playDizzy(model: Model, duration: number)
+	local anchor = model.PrimaryPart
+		or model:FindFirstChild("Body", true)
+		or model:FindFirstChild("HumanoidRootPart", true)
+		or model:FindFirstChildWhichIsA("BasePart", true)
+	if not (anchor and anchor:IsA("BasePart")) then
+		return
+	end
+
+	local existing = anchor:FindFirstChild("DizzyVfx")
+	if existing then
+		existing:Destroy()
+	end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "DizzyVfx"
+	gui.Adornee = anchor
+	gui.Size = VfxConfig.DIZZY_SIZE
+	gui.StudsOffset = VfxConfig.DIZZY_OFFSET
+	gui.AlwaysOnTop = true
+	gui.Parent = anchor
+
+	local stars: { TextLabel } = {}
+	local starCount = VfxConfig.DIZZY_STAR_COUNT
+	for i = 1, starCount do
+		local star = Instance.new("TextLabel")
+		star.Name = "Star" .. i
+		star.BackgroundTransparency = 1
+		star.Size = VfxConfig.DIZZY_STAR_SIZE
+		star.AnchorPoint = Vector2.new(0.5, 0.5)
+		star.Font = Enum.Font.FredokaOne
+		star.Text = "★"
+		star.TextScaled = true
+		star.TextColor3 = VfxConfig.DIZZY_COLOR
+		star.TextStrokeColor3 = Color3.fromRGB(80, 40, 0)
+		star.TextStrokeTransparency = 0.25
+		star.Parent = gui
+		table.insert(stars, star)
+	end
+
+	local RunService = game:GetService("RunService")
+	local angle = 0
+	local spinConnection = RunService.Heartbeat:Connect(function(dt)
+		angle += dt * (math.pi * 2 / VfxConfig.DIZZY_SPIN_SECONDS)
+		local radius = VfxConfig.DIZZY_ORBIT_RADIUS
+		local flatten = VfxConfig.DIZZY_ORBIT_FLATTEN
+		for i, star in stars do
+			local a = angle + (i - 1) * (math.pi * 2 / starCount)
+			local x = math.cos(a) * radius
+			local y = math.sin(a) * radius * flatten
+			star.Position = UDim2.new(0.5, x, 0.5, y)
+			-- Tip each star as it orbits so they feel like spinning, not sliding.
+			star.Rotation = math.deg(a)
+		end
+	end)
+
+	task.delay(duration, function()
+		spinConnection:Disconnect()
+		if gui.Parent then
+			gui:Destroy()
+		end
 	end)
 end
 

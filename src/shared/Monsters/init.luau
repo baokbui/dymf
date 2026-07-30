@@ -77,7 +77,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		id = "GoblinElite",
 		name = "Goblin Elite",
 		health = 6000,
-		secondsPerGrid = 9.2,
+		secondsPerGrid = 6.2,
 		damage = 8000,
 		attackInterval = 3.5,
 		isBoss = true,
@@ -93,13 +93,18 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Spider = {
 		id = "Spider",
 		name = "Spider",
-		health = 900,
-		secondsPerGrid = 2.9,
+		health = 550,
+		secondsPerGrid = 1.8,
 		damage = 90,
 		attackInterval = 1.4,
 		isBoss = false,
 		abilities = { "SpiderJump" },
 		color = Color3.fromRGB(40, 40, 40),
+		-- Toolbox AnimationId is often permission-locked; use AnimSaves (local)
+		-- or MonsterProceduralGait — never request the pack rbxassetid.
+		walkAnimationId = "",
+		attackAnimationId = "",
+		proceduralWalk = true,
 	},
 
 	Necromancer = {
@@ -148,7 +153,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- Level 20 is the very next boss after Goblin Elite, so it needs to be
 		-- beatable off a still-growing board, not a straight stat-tier jump.
 		health = 10000,
-		secondsPerGrid = 6.0,
+		secondsPerGrid = 4.8,
 		-- Regular chew = a Vampire's cadence (1.1s) with a bit more bite (Vampire = 70).
 		damage = 100,
 		attackInterval = 1.1,
@@ -159,23 +164,28 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		abilities = { "DukeVampireFreeze", "DukeVampireTerrify" },
 		abilityParams = {
 			-- Last stand (DukeVampireFreeze): once, at ≤20% HP, falls over
-			-- (like a regular death-tip, rig intact) for lastStandFallDuration,
-			-- invulnerable the whole time, then rises already healed to
-			-- lastStandHealPercent max HP.
+			-- exactly like a regular monster death (randomized tip, rig
+			-- intact) for lastStandFallDuration, lies on the ground for
+			-- lastStandGroundDuration, invulnerable the whole time, then
+			-- rises already healed to lastStandHealPercent max HP.
 			lastStandTriggerPercent = 20,
 			lastStandHealPercent = 50,
-			lastStandFallDuration = 1.4,
+			lastStandFallDuration = 1.0,
+			lastStandGroundDuration = 3,
 			lastStandRiseDuration = 0.7,
-			-- Terrify (DukeVampireTerrify): no damage — row ±1 Weaken + Stun,
-			-- 10s cooldown.
+			-- Terrify (DukeVampireTerrify): no damage — row ±1, his column plus
+			-- 2 tiles ahead toward the house (west), Weaken + Stun, 10s cooldown.
 			terrifyCooldown = 10,
 			terrifyDamageReduction = 15,
-			terrifyFreezeDuration = 2,
+			terrifyFreezeDuration = 4,
+			terrifyColumnsBehind = 2,
 		},
 		color = Color3.fromRGB(60, 20, 40),
 		-- Dark aura to stand out from a duplicated-Vampire model — see
-		-- `MonsterFeedback.applyAura`.
+		-- `MonsterFeedback.applyAura`. Scaled up so it reads clearly as his
+		-- signature boss "tell" from a distance.
 		auraColor = Color3.fromRGB(90, 15, 40),
+		auraScale = 1.6,
 	},
 }
 

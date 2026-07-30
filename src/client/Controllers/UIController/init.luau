@@ -256,6 +256,7 @@ local function applyLevelState(state: { [string]: any }?)
 		local canSelect = isActive or phase == Constants.PHASE.Countdown
 		PlacementController.setPlacementAllowed(isActive)
 		PlacementController.setSelectionAllowed(canSelect)
+		PlacementController.setWeather(if type(state.weather) == "string" then state.weather else nil)
 
 		if lastLevelPhase ~= phase then
 			if phase == Constants.PHASE.Victory then

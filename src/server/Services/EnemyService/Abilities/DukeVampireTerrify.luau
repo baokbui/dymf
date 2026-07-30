@@ -1,32 +1,73 @@
 --!strict
 --[[
 	Duke Vampire's Terrify: deals NO damage. On a `terrifyCooldown` timer, it
-	afflicts the Brainrot directly in front of him plus the ones in the lane
-	above/below (his row ± 1) with "Weaken" (reduced outgoing damage) and a
-	short attack freeze ("Stun") — independent of `laneSpan`, which stays 1 so
-	his movement/footprint are unaffected. See docs/MONSTERS.md.
+	afflicts Brainrots in a forward cone (his tile plus `terrifyColumnsBehind`
+	tiles toward the house, rows ± 1) with "Weaken" and "Stun". Never fires
+	(no VFX, no status, no full cooldown) unless at least one living Brainrot
+	is actually in that cone. See docs/MONSTERS.md.
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local GridService = require(script.Parent.Parent.Parent.GridService)
+local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 
 local DukeVampireTerrify = {}
 
 local DEFAULT_COOLDOWN = 10
 local DEFAULT_REDUCTION = 15
-local DEFAULT_FREEZE_DURATION = 2
--- Nothing was in range yet (e.g. still marching) — check back sooner than a
--- full cooldown instead of losing a long window waiting for nothing.
+local DEFAULT_FREEZE_DURATION = 4
+local DEFAULT_COLUMNS_BEHIND = 2
+-- Nothing in range yet — poll again soon without burning the full cooldown
+-- or playing the scream VFX.
 local RETRY_DELAY = 1
 
 local function tileAtColumn(column: number): number
 	return math.floor(column + MonsterConfig.TILE_HALF_WIDTH)
 end
 
+local function collectTargets(ctx, columnsAhead: number): { string }
+	local targets: { string } = {}
+	local seen: { [string]: boolean } = {}
+	local frontColumn = tileAtColumn(ctx.column)
+
+	for column = frontColumn - columnsAhead, frontColumn do
+		if column < 1 or column > GridConfig.COLUMNS then
+			continue
+		end
+		for row = ctx.row - 1, ctx.row + 1 do
+			if row < 1 or row > GridConfig.ROWS then
+				continue
+			end
+			local tile = GridService.getTile(ctx.plotModel, { row = row, column = column })
+			if not tile or not tile.occupied or not tile.brainrotInstanceId then
+				continue
+			end
+			local id = tile.brainrotInstanceId
+			if seen[id] then
+				continue
+			end
+			-- Occupancy can briefly lag a destroy — only hit living placements.
+			local placement = BrainrotService.getPlacement(id)
+			if not placement or placement.health <= 0 then
+				continue
+			end
+			seen[id] = true
+			table.insert(targets, id)
+		end
+	end
+	return targets
+end
+
 function DukeVampireTerrify.onTick(ctx, state, dt: number, _callbacks)
+	-- Never scream while last-standing (shared abilityState with DukeVampireFreeze).
+	if state.lastStandPhase and state.lastStandPhase ~= "done" then
+		return
+	end
+
 	local params = ctx.definition.abilityParams
 	local cooldown = if params then params.terrifyCooldown or DEFAULT_COOLDOWN else DEFAULT_COOLDOWN
 	local reduction = if params
@@ -35,26 +76,41 @@ function DukeVampireTerrify.onTick(ctx, state, dt: number, _callbacks)
 	local freezeDuration = if params
 		then params.terrifyFreezeDuration or DEFAULT_FREEZE_DURATION
 		else DEFAULT_FREEZE_DURATION
+	local columnsAhead = if params
+		then params.terrifyColumnsBehind or DEFAULT_COLUMNS_BEHIND
+		else DEFAULT_COLUMNS_BEHIND
 
 	state.terrifyCooldown = (state.terrifyCooldown or cooldown) - dt
 	if state.terrifyCooldown > 0 then
 		return
 	end
 
-	local column = tileAtColumn(ctx.column)
-	local hitAny = false
-	for row = ctx.row - 1, ctx.row + 1 do
-		if row >= 1 and row <= GridConfig.ROWS then
-			local tile = GridService.getTile(ctx.plotModel, { row = row, column = column })
-			if tile and tile.occupied and tile.brainrotInstanceId then
-				CombatService.applyStatusToBrainrot(tile.brainrotInstanceId, "Weaken", freezeDuration, reduction)
-				CombatService.applyStatusToBrainrot(tile.brainrotInstanceId, "Stun", freezeDuration)
-				hitAny = true
-			end
+	-- Still marching in the forest — no lawn Brainrots can be in the cone.
+	if not GridUtil.isOnPlotColumn(ctx.column) then
+		state.terrifyCooldown = RETRY_DELAY
+		return
+	end
+
+	local targets = collectTargets(ctx, columnsAhead)
+	if #targets == 0 then
+		state.terrifyCooldown = RETRY_DELAY
+		return
+	end
+
+	local ownerUserId = ctx.plotModel:GetAttribute("OwnerUserId")
+	for _, brainrotInstanceId in targets do
+		CombatService.applyStatusToBrainrot(brainrotInstanceId, "Weaken", freezeDuration, reduction)
+		CombatService.applyStatusToBrainrot(brainrotInstanceId, "Stun", freezeDuration)
+		if type(ownerUserId) == "number" then
+			CombatService.notifyDizzy(ownerUserId, brainrotInstanceId, freezeDuration)
 		end
 	end
 
-	state.terrifyCooldown = if hitAny then cooldown else RETRY_DELAY
+	if type(ownerUserId) == "number" then
+		CombatService.notifyTerrifyPulse(ownerUserId, ctx.instanceId)
+	end
+
+	state.terrifyCooldown = cooldown
 end
 
 return DukeVampireTerrify

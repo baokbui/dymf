@@ -26,6 +26,7 @@ local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local GridUtil = require(Shared.Utilities.GridUtil)
+local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local CoinMotion = require(script.CoinMotion)
 local GroundCoin = require(script.GroundCoin)
@@ -178,12 +179,24 @@ function CoinService.clearPlot(plotModel: Model)
 end
 
 -- Spawns a collectible ground coin on a specific grid tile (instant land).
+local function weatherForOwner(ownerUserId: number): string?
+	local player = Players:GetPlayerByUserId(ownerUserId)
+	if not player then
+		return nil
+	end
+	local LevelService = require(script.Parent.LevelService)
+	return LevelService.getWeather(player)
+end
+
 function CoinService.dropCoinForOwner(
 	ownerUserId: number,
 	gridPosition: Types.GridPosition,
 	value: number
 )
 	if value <= 0 or not GridUtil.isInBounds(gridPosition) then
+		return
+	end
+	if WeatherUtil.isFogPlotColumn(gridPosition.column, weatherForOwner(ownerUserId)) then
 		return
 	end
 
@@ -204,6 +217,7 @@ end
 	Spawns a coin on a random grid tile.
 	- Without `spitFrom`: passive-style rain from the sky.
 	- With `spitFrom`: producer spit arc from that world position.
+	NightFog days skip fog-blocked east columns (coins land on clear lawn only).
 ]]
 function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, spitFrom: Vector3?)
 	if value <= 0 then
@@ -215,7 +229,8 @@ function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, 
 		return
 	end
 
-	local topCenter = GridService.getRandomWorldPosition(plotModel)
+	local position = WeatherUtil.randomClearPlotPosition(weatherForOwner(ownerUserId))
+	local topCenter = GridService.getWorldPosition(plotModel, position)
 	if not topCenter then
 		return
 	end

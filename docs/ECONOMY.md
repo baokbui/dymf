@@ -38,12 +38,14 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `PRODUCER_SPIT_DURATION` | 0.85 | Seconds for Ballerina spit arc         |
 | `PRODUCER_SPIT_ARC_HEIGHT` | 6  | Peak loft of spit arc (studs)            |
 | `LEVEL_COMPLETION_REWARD`| 50  | Reserved; day purse uses Day 1 / 0 rules |
-| `GROUND_COIN_LIFETIME` | 60    | Seconds an uncollected coin persists     |
+| `GROUND_COIN_LIFETIME` | 15    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
 Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 18s —
 coins are **spat from the unit** and land on a **random grid tile**
 (`GenerateCoins` → `CoinService.dropRandomCoinForOwner(..., origin)`).
+On NightFog days, spit and passive rain land only on **non-fog** columns
+(`WeatherUtil.randomClearPlotPosition` — see `WEATHER.md`).
 
 See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 

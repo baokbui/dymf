@@ -32,7 +32,7 @@ Gameplay SFX on a plot are heard **only by that plot’s owner**:
 | Server remotes | `CombatVisual` / `BrainrotAction` / level audio use `FireClient(owner)` — never `FireAllClients` |
 | Client playback | `AudioController` / `SfxPlayer` parent Sounds under local `SoundService` (2D, non-replicating) |
 | Placement | Plant / shovel SFX run only on the acting client’s `PlacementController` |
-| Chew feedback | `MonsterAttack` only when a Brainrot on the **local** plot loses Health |
+| Chew feedback | `CombatVisual` kind `MonsterAttack` (plot owner only); goblins use club overrides |
 | Asset hygiene | `ModelUtil` strips embedded `Sound` / audio instances from cloned Brainrot & Monster templates so Toolbox audio cannot leak to spectators |
 | Safety net | Client destroys any `Sound` that appears under another player’s plot model |
 
@@ -65,9 +65,11 @@ UI clicks, music, and ambient are still local to each client (not plot-scoped).
 | `Hit` | Generic `CombatVisual` Hit (when no `soundKey`) |
 | `ThrowKnifeHit` | Cappuccino knife impact (`CombatVisual.soundKey`) |
 | `Death` | Generic monster death |
-| `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`) |
-| `MonsterAttack` | Local Brainrot `Health` decreases (chew feedback) |
-| `MeleeBat` | Tung Tung hit via `BrainrotAction` (every connecting hit) |
+| `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`, `Death_Vampire`, `Death_Goblin`) |
+| `MonsterAttack` | Generic monster chew (`CombatVisual` kind `MonsterAttack`) |
+| `MonsterAttack_Goblin` / `_GoblinElite` / `_GoblinKing` | Goblin club swing |
+| `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
+| `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |
 | `FreezeTime` | Lirili Larila freeze when ≥1 enemy is hit |
 | `BubbleTrap` | Tralalero bubble impact via `CombatVisual.soundKey` |
 | `LineBomb` | Bombardino place / bombing run (`BrainrotAction`) |
