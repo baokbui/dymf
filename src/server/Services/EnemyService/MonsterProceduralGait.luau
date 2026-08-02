@@ -78,6 +78,10 @@ end
 
 local function nameLooksLikeLeg(name: string): boolean
 	local n = lower(name)
+	-- QueenSpider / Spider Assets: leftfronttop, rightbackbottom, …
+	if string.match(n, "^(left|right)(front|middle|back)(top|middle|bottom)$") then
+		return true
+	end
 	return string.find(n, "leg", 1, true) ~= nil
 		or string.find(n, "limb", 1, true) ~= nil
 		or string.find(n, "femur", 1, true) ~= nil

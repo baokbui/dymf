@@ -139,7 +139,7 @@ local function playPoison(instanceId: string?, duration: unknown)
 	end
 	local model = findModelByInstanceId(instanceId)
 	if model then
-		VfxUtil.playPoisonAura(model, duration)
+		-- Purple wash is server-replicated on the model; client only pops the word.
 		VfxUtil.playStatusFloater(model, "Poisoned", VfxConfig.STATUS_FLOAT_POISON_COLOR)
 	end
 end

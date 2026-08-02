@@ -80,9 +80,9 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater for the remaining duration (`CombatVisual` `Dizzy`) |
+| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
 | Slow | Reduces movement speed | — |
-| Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** also shows a purple aura + rising **"Poisoned"** floater (`CombatVisual` `Poison`) for the remaining duration |
+| Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
 | Knockback | Pushes column east (+X) | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
@@ -90,8 +90,9 @@ Applied only through `CombatService.applyStatusToMonster` or
 fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
 `"Stun"` for `stunDuration` (2s) and `"Poison"` for `poisonDuration` (4s) at
 `poisonPercent` (3% of the Brainrot's max HP per 1s tick). Cleaves all three
-occupied lanes. Stun/poison VFX (dizzy stars + purple aura) fire automatically
-from `BrainrotService.applyBrainrotStatus`.
+occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
+slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
+Death uses `deathStyle = "SpiderFlat"` (legs fall flat, body drops — not tip-over).
 
 **Spider** ✅ — `SpiderJump` vaults the **first** Brainrot in its lane with a
 visible parabola (`MonsterBehavior` jump state: column lerps west of the plant
@@ -123,7 +124,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Hit flash (Brainrots) | `BrainrotFeedback.flashHit` on server (replicated BasePart colors) |
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
-| Death tip-over + linger + fade | Server `MonsterDeath` (3 random styles); client burst + Thanos ash on fade |
+| Death tip-over / SpiderFlat + linger + fade | Server `MonsterDeath` (default 3 tip styles; Queen Spider `SpiderFlat`); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino flies house→enemy along the row; `entireRow` blasts each tile under the pass (`stagger` matches flight) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
@@ -141,8 +142,9 @@ values remain in `CombatConfig`.
 3. Client plays `Death_<monsterId>` when configured (else `Death`), then a death
    particle burst. After tip-over + linger, a Thanos-style ash disintegrate
    (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.
-4. Server `MonsterDeath` tips the model slowly onto the ground (randomized
-   faceplant / side flop / backfall), leaves the corpse for
+4. Server `MonsterDeath` plays the definition's `deathStyle` (default: tip onto
+   the ground — randomized faceplant / side flop / backfall; Queen Spider:
+   `SpiderFlat` legs-out collapse), leaves the corpse for
    `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
 5. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 

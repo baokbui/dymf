@@ -66,6 +66,9 @@ export type MonsterDefinition = {
 	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld
 	-- leg joints (for Toolbox spiders without a matching uploaded Animation).
 	proceduralWalk: boolean?,
+	-- Death pose style for MonsterDeath.play. Nil / "TipOver" = randomized tip;
+	-- "SpiderFlat" = legs splay horizontal and the body drops flat (Queen Spider).
+	deathStyle: string?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
 	-- Persistent tinted particle + glow around the model (e.g. Duke Vampire's

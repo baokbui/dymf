@@ -1,15 +1,19 @@
 --!strict
 --[[
 	MonsterDeath
-	Server-replicated death pose: slow tip onto the ground (3 randomized styles),
-	linger, then fade. EnemyService destroys the model after totalLifetime().
+	Server-replicated death pose, then linger + fade. EnemyService destroys the
+	model after totalLifetime().
+
+	Styles (MonsterDefinition.deathStyle):
+	- TipOver (default): slow tip onto the ground (3 randomized styles).
+	- SpiderFlat: leg parts splay horizontal and the body drops flat (no tip).
 
 	Ground contact uses ModelUtil visual AABB (same as foot snap) so invisible
 	HumanoidRootPart / hitboxes do not leave corpses floating.
 
-	Before tipping, freezeCorpse anchors every part and clears Motor6D / Animator
-	so walk/attack rigs do not fight the PivotTo tween. Arms are then tucked
-	along the torso so they lie flat instead of sticking out in a T-pose.
+	Before animating, freezeCorpse anchors every part and clears Motor6D /
+	Animator so walk/attack rigs do not fight the tween. TipOver also tucks
+	arms along the torso so they lie flat instead of sticking out in a T-pose.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -57,10 +61,10 @@ local function findTorso(model: Model): BasePart?
 	return findPart(model, { "Torso", "UpperTorso", "Body" })
 end
 
--- Align `arm` so its longest axis follows `along`, centered at `center`.
-local function setPartAlong(arm: BasePart, center: Vector3, along: Vector3, hintRight: Vector3)
+-- Align a part so its longest axis follows `along`, centered at `center`.
+local function cframeAlong(center: Vector3, along: Vector3, hintRight: Vector3, size: Vector3): CFrame
 	local dir = if along.Magnitude > 1e-4 then along.Unit else Vector3.yAxis
-	local sx, sy, sz = arm.Size.X, arm.Size.Y, arm.Size.Z
+	local sx, sy, sz = size.X, size.Y, size.Z
 
 	local right = hintRight
 	if right:Cross(dir).Magnitude < 1e-4 then
@@ -76,7 +80,7 @@ local function setPartAlong(arm: BasePart, center: Vector3, along: Vector3, hint
 			look = look.Unit
 		end
 		right = up:Cross(look).Unit
-		arm.CFrame = CFrame.fromMatrix(center, right, up)
+		return CFrame.fromMatrix(center, right, up)
 	elseif sx >= sz then
 		local r = dir
 		local up = hintRight:Cross(dir)
@@ -87,10 +91,14 @@ local function setPartAlong(arm: BasePart, center: Vector3, along: Vector3, hint
 		end
 		local look = r:Cross(up).Unit
 		up = look:Cross(r).Unit
-		arm.CFrame = CFrame.fromMatrix(center, r, up)
-	else
-		arm.CFrame = CFrame.lookAt(center, center + dir, hintRight)
+		return CFrame.fromMatrix(center, r, up)
 	end
+
+	return CFrame.lookAt(center, center + dir, hintRight)
+end
+
+local function setPartAlong(arm: BasePart, center: Vector3, along: Vector3, hintRight: Vector3)
+	arm.CFrame = cframeAlong(center, along, hintRight, arm.Size)
 end
 
 --[[
@@ -248,7 +256,7 @@ local function freezeCorpse(model: Model)
 		end
 	end
 
-	-- Drop joints after anchoring so foldArms / PivotTo own every part.
+	-- Drop joints after anchoring so foldArms / PivotTo / part tweens own every part.
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("Motor6D") or descendant:IsA("Weld") or descendant:IsA("WeldConstraint") then
 			descendant:Destroy()
@@ -256,18 +264,243 @@ local function freezeCorpse(model: Model)
 	end
 end
 
-function MonsterDeath.play(model: Model)
-	if not model.Parent then
-		return
+local function scheduleLingerAndFade(model: Model)
+	task.delay(CombatConfig.DEATH_CORPSE_LINGER, function()
+		if not model.Parent then
+			return
+		end
+		fadeOut(model, CombatConfig.DEATH_FADE_OUT_DURATION)
+	end)
+end
+
+local LEG_NAME_FRAGMENTS = { "leg", "limb", "femur", "tibia", "foot", "claw", "pedipalp", "arm" }
+local BODY_SKIP_FRAGMENTS = {
+	"root",
+	"humanoidrootpart",
+	"hrp",
+	"torso",
+	"upper torso",
+	"lower torso",
+	"waist",
+	"spine",
+	"neck",
+	"head",
+	"jaw",
+	"eye",
+	"fang",
+	"abdomen",
+	"cephalothorax",
+	"body",
+	"thorax",
+	"pelvis",
+}
+
+-- Segment order from body → tip for Toolbox spiders (leftfronttop, …).
+local SEGMENT_NAMES = { "top", "middle", "bottom" }
+
+local function nameHasFragment(name: string, fragments: { string }): boolean
+	local n = string.lower(name)
+	for _, fragment in fragments do
+		if string.find(n, fragment, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+--[[
+	QueenSpider / Spider Assets parts are named like `leftfrontmiddle` /
+	`rightbackbottom` (no "leg" substring). Returns side, slot, segment.
+]]
+local function parseSpiderLegName(name: string): (string?, string?, string?)
+	local side, slot, segment = string.match(
+		string.lower(name),
+		"^(left|right)(front|middle|back)(top|middle|bottom)$"
+	)
+	return side, slot, segment
+end
+
+local function isSpiderLegPart(part: BasePart, body: BasePart?, root: BasePart?): boolean
+	if part == body or part == root then
+		return false
+	end
+	if nameHasFragment(part.Name, BODY_SKIP_FRAGMENTS) then
+		return false
+	end
+	local side = parseSpiderLegName(part.Name)
+	if side ~= nil then
+		return true
+	end
+	return nameHasFragment(part.Name, LEG_NAME_FRAGMENTS)
+end
+
+type LegChain = {
+	key: string,
+	parts: { BasePart }, -- body → tip (top, middle, bottom)
+	outward: Vector3,
+}
+
+local function buildLegChains(legParts: { BasePart }, body: BasePart): { LegChain }
+	local groups: { [string]: { [string]: BasePart } } = {}
+	local orderKeys: { string } = {}
+
+	for _, part in legParts do
+		local side, slot, segment = parseSpiderLegName(part.Name)
+		if side and slot and segment then
+			local key = side .. slot
+			if groups[key] == nil then
+				groups[key] = {}
+				table.insert(orderKeys, key)
+			end
+			groups[key][segment] = part
+		end
 	end
 
-	model:SetAttribute("Dying", true)
+	local chains: { LegChain } = {}
+	for _, key in orderKeys do
+		local bySeg = groups[key]
+		local parts: { BasePart } = {}
+		for _, segName in SEGMENT_NAMES do
+			local part = bySeg[segName]
+			if part then
+				table.insert(parts, part)
+			end
+		end
+		if #parts == 0 then
+			continue
+		end
 
-	-- Rigged Toolbox monsters keep Motor6D + Animator; freeze the pose so the
-	-- tip tween isn't fighting unanchored limbs / residual animation tracks.
+		-- Average standing offset in XZ for a stable outward ray.
+		local sum = Vector3.zero
+		for _, part in parts do
+			local o = part.Position - body.Position
+			sum += Vector3.new(o.X, 0, o.Z)
+		end
+		local outward: Vector3
+		if sum.Magnitude > 0.08 then
+			outward = sum.Unit
+		elseif string.sub(key, 1, 4) == "left" then
+			outward = -body.CFrame.RightVector
+		else
+			outward = body.CFrame.RightVector
+		end
+
+		table.insert(chains, {
+			key = key,
+			parts = parts,
+			outward = outward,
+		})
+	end
+
+	return chains
+end
+
+--[[
+	Lay each leg chain flat on the lawn plane: segments stay in a line from the
+	body outward (top → middle → bottom).
+]]
+local function flatPosesForChains(chains: { LegChain }, body: BasePart): { [BasePart]: CFrame }
+	local poses: { [BasePart]: CFrame } = {}
+	local bodyPos = body.Position
+	local y = bodyPos.Y - body.Size.Y * 0.12
+
+	for _, chain in chains do
+		local cursor = Vector3.new(bodyPos.X, y, bodyPos.Z)
+			+ chain.outward * math.max(body.Size.X, body.Size.Z) * 0.35
+		for _, part in chain.parts do
+			local length = math.max(part.Size.X, part.Size.Y, part.Size.Z)
+			local center = cursor + chain.outward * (length * 0.5)
+			poses[part] = cframeAlong(center, chain.outward, Vector3.yAxis, part.Size)
+			cursor = center + chain.outward * (length * 0.5)
+		end
+	end
+
+	return poses
+end
+
+--[[
+	Fallback for non-Toolbox names: longest axis on the lawn plane, pointing
+	outward from the body.
+]]
+local function flatLegCFrame(leg: BasePart, body: BasePart): CFrame
+	local bodyPos = body.Position
+	local offset = leg.Position - bodyPos
+	local flat = Vector3.new(offset.X, 0, offset.Z)
+	if flat.Magnitude < 0.08 then
+		flat = Vector3.new(leg.CFrame.LookVector.X, 0, leg.CFrame.LookVector.Z)
+	end
+	if flat.Magnitude < 0.08 then
+		flat = body.CFrame.RightVector
+	end
+	flat = flat.Unit
+
+	local length = math.max(leg.Size.X, leg.Size.Y, leg.Size.Z)
+	local reach = math.max(Vector3.new(offset.X, 0, offset.Z).Magnitude, length * 0.45)
+	local center = Vector3.new(
+		bodyPos.X + flat.X * reach,
+		bodyPos.Y - body.Size.Y * 0.12,
+		bodyPos.Z + flat.Z * reach
+	)
+	return cframeAlong(center, flat, Vector3.yAxis, leg.Size)
+end
+
+--[[
+	Skinned Toolbox spiders: fold Bone transforms toward the ground when there
+	are few separate leg Parts to splay.
+]]
+local function collapseLegBones(model: Model)
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Bone") and (
+			nameHasFragment(descendant.Name, LEG_NAME_FRAGMENTS)
+			or parseSpiderLegName(descendant.Name) ~= nil
+		) then
+			if not nameHasFragment(descendant.Name, BODY_SKIP_FRAGMENTS) then
+				descendant.Transform = CFrame.Angles(math.rad(75), 0, 0)
+			end
+		end
+	end
+end
+
+local function tweenPartCFrames(
+	parts: { BasePart },
+	starts: { CFrame },
+	goals: { CFrame },
+	duration: number,
+	onDone: (() -> ())?
+)
+	local alpha = Instance.new("NumberValue")
+	alpha.Value = 0
+	local conn: RBXScriptConnection
+	conn = alpha.Changed:Connect(function(value)
+		for index, part in parts do
+			if part.Parent then
+				part.CFrame = starts[index]:Lerp(goals[index], value)
+			end
+		end
+	end)
+
+	local tween = TweenService:Create(
+		alpha,
+		TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ Value = 1 }
+	)
+	tween.Completed:Connect(function()
+		conn:Disconnect()
+		alpha:Destroy()
+		for index, part in parts do
+			if part.Parent then
+				part.CFrame = goals[index]
+			end
+		end
+		if onDone then
+			onDone()
+		end
+	end)
+	tween:Play()
+end
+
+local function playTipOver(model: Model)
 	freezeCorpse(model)
-
-	-- Tuck T-pose arms before tipping so they stay flush with the body on landing.
 	foldArmsToSides(model)
 
 	local start = model:GetPivot()
@@ -281,14 +514,118 @@ function MonsterDeath.play(model: Model)
 		end
 		local settled = snapVisualToGround(model, model:GetPivot(), groundY)
 		model:PivotTo(settled)
+		scheduleLingerAndFade(model)
+	end)
+end
 
-		task.delay(CombatConfig.DEATH_CORPSE_LINGER, function()
+--[[
+	Queen-style collapse: legs fall flat outward, body stays upright and sinks
+	onto the lawn (no randomized tip). Bone-only meshes get an upright settle;
+	missing body falls back to tip-over.
+]]
+local function playSpiderFlat(model: Model)
+	local groundY = visualMinY(model)
+	local body = findPart(model, { "Torso", "UpperTorso", "Body", "Abdomen", "Cephalothorax", "Thorax" })
+		or model.PrimaryPart
+	local root = model.PrimaryPart
+
+	local legParts: { BasePart } = {}
+	if body then
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") and isSpiderLegPart(descendant, body, root) then
+				table.insert(legParts, descendant)
+			end
+		end
+	end
+
+	if not body then
+		playTipOver(model)
+		return
+	end
+
+	freezeCorpse(model)
+
+	if #legParts == 0 then
+		collapseLegBones(model)
+		-- Soft upright settle when the mesh is bone-skinned with no leg Parts.
+		local start = model:GetPivot()
+		local drop = math.max(visualHeight(model) * 0.35, 0.6)
+		local lowered = start - Vector3.new(0, drop, 0)
+		local goal = snapVisualToGround(model, lowered, groundY)
+		model:PivotTo(start)
+		tweenPivot(model, start, goal, CombatConfig.DEATH_FALL_DURATION, function()
 			if not model.Parent then
 				return
 			end
-			fadeOut(model, CombatConfig.DEATH_FADE_OUT_DURATION)
+			local settled = snapVisualToGround(model, model:GetPivot(), groundY)
+			model:PivotTo(settled)
+			scheduleLingerAndFade(model)
 		end)
+		return
+	end
+
+	collapseLegBones(model)
+
+	local chains = buildLegChains(legParts, body)
+	local flatPoses = flatPosesForChains(chains, body)
+	-- Any leftover leg parts (non-Toolbox names) get the simple outward flatten.
+	for _, leg in legParts do
+		if flatPoses[leg] == nil then
+			flatPoses[leg] = flatLegCFrame(leg, body)
+		end
+	end
+
+	local starts: { CFrame } = {}
+	local allParts: { BasePart } = {}
+
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			table.insert(allParts, descendant)
+			table.insert(starts, descendant.CFrame)
+		end
+	end
+
+	-- Apply flat legs temporarily to measure how far to sink onto the lawn.
+	for part, cf in flatPoses do
+		part.CFrame = cf
+	end
+	local minYAfter = visualMinY(model)
+	local dropY = minYAfter - groundY + GROUND_SINK
+	local drop = Vector3.new(0, -dropY, 0)
+
+	local goals: { CFrame } = {}
+	for index, part in allParts do
+		local target = flatPoses[part] or starts[index]
+		table.insert(goals, target + drop)
+	end
+
+	for index, part in allParts do
+		part.CFrame = starts[index]
+	end
+
+	tweenPartCFrames(allParts, starts, goals, CombatConfig.DEATH_FALL_DURATION, function()
+		if not model.Parent then
+			return
+		end
+		local settled = snapVisualToGround(model, model:GetPivot(), groundY)
+		model:PivotTo(settled)
+		scheduleLingerAndFade(model)
 	end)
+end
+
+function MonsterDeath.play(model: Model, deathStyle: string?)
+	if not model.Parent then
+		return
+	end
+
+	model:SetAttribute("Dying", true)
+
+	if deathStyle == "SpiderFlat" then
+		playSpiderFlat(model)
+		return
+	end
+
+	playTipOver(model)
 end
 
 --[[

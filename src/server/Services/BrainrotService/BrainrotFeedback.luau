@@ -20,6 +20,7 @@ local pulseTokens: { [Model]: number } = {}
 
 local activeHitFlashTweens: { [Model]: { Tween } } = {}
 local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
+local poisonLooks: { [Model]: { [BasePart]: Color3 } } = {}
 
 local function visibleParts(model: Model): { BasePart }
 	local parts: { BasePart } = {}
@@ -127,9 +128,61 @@ function BrainrotFeedback.flashHit(model: Model, isFatal: boolean?)
 	activeHitFlashTweens[model] = tweens
 end
 
+-- Soft purple wash for the Poison status. Stores original colors on first
+-- apply and restores them when cleared. Hit-flash bases follow the tint so
+-- damage flashes return to purple while poisoned, not the pre-poison look.
+function BrainrotFeedback.setPoisoned(model: Model, poisoned: boolean)
+	local parts = visibleParts(model)
+	if #parts == 0 then
+		return
+	end
+
+	if poisoned then
+		cancelHitFlash(model)
+			if not poisonLooks[model] then
+			local colors: { [BasePart]: Color3 } = {}
+			local flashBases = hitFlashBaseColors[model]
+			for _, part in parts do
+				-- Prefer the pre-flash natural color if we have it.
+				colors[part] = (flashBases and flashBases[part]) or part.Color
+			end
+			poisonLooks[model] = colors
+		end
+
+		local originals = poisonLooks[model]
+		local tint = BrainrotConfig.POISON_TINT_COLOR
+		local blend = BrainrotConfig.POISON_TINT_BLEND
+		local tinted: { [BasePart]: Color3 } = {}
+		for _, part in parts do
+			local base = originals[part] or part.Color
+			local washed = base:Lerp(tint, blend)
+			part.Color = washed
+			tinted[part] = washed
+		end
+		hitFlashBaseColors[model] = tinted
+		model:SetAttribute("Poisoned", true)
+	else
+		local originals = poisonLooks[model]
+		if originals then
+			for part, color in originals do
+				if part.Parent then
+					part.Color = color
+				end
+			end
+			hitFlashBaseColors[model] = originals
+			poisonLooks[model] = nil
+		end
+		model:SetAttribute("Poisoned", false)
+	end
+end
+
 function BrainrotFeedback.cleanup(model: Model)
 	cancelHitFlash(model)
+	if poisonLooks[model] then
+		BrainrotFeedback.setPoisoned(model, false)
+	end
 	hitFlashBaseColors[model] = nil
+	poisonLooks[model] = nil
 
 	local base = baseScales[model]
 	if base and model.Parent then

@@ -74,7 +74,7 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 	if silent then
 		runtime.model:Destroy()
 	else
-		MonsterDeath.play(runtime.model)
+		MonsterDeath.play(runtime.model, runtime.definition.deathStyle)
 		task.delay(MonsterDeath.totalLifetime(), function()
 			if runtime.model.Parent then
 				runtime.model:Destroy()

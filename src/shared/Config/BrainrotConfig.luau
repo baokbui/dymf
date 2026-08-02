@@ -38,6 +38,10 @@ local BrainrotConfig = {
 	HIT_FLASH_COLOR = Color3.fromRGB(255, 90, 90),
 	HIT_FLASH_DURATION = 0.14,
 
+	-- Slight purple wash while Poison is active (server-replicated part Color).
+	POISON_TINT_COLOR = Color3.fromRGB(175, 70, 255),
+	POISON_TINT_BLEND = 0.65, -- 0 = original, 1 = full purple
+
 	-- Bombardino line-bomb fly-over (house → enemy along the planted row).
 	LINE_BOMB_FLIGHT_DURATION = 1.0,
 	LINE_BOMB_FLY_HEIGHT = 20,

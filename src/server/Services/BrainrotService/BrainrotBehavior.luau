@@ -35,6 +35,7 @@ export type RuntimePlacement = {
 	poisonUntil: number,
 	poisonHitsPerTick: number,
 	poisonNextTick: number,
+	poisonTintActive: boolean,
 	burnUntil: number,
 	burnHitsPerTick: number,
 	burnNextTick: number,
@@ -130,6 +131,7 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.poisonUntil = 0
 	placement.poisonHitsPerTick = 0
 	placement.poisonNextTick = 0
+	placement.poisonTintActive = false
 	placement.burnUntil = 0
 	placement.burnHitsPerTick = 0
 	placement.burnNextTick = 0
@@ -172,6 +174,13 @@ function BrainrotBehavior.tick(dt: number)
 			CombatService.damageBrainrot(placement.instanceId, placement.burnHitsPerTick)
 			placement.burnNextTick = now + combatConfig.BURN_TICK_INTERVAL
 		end
+
+		-- Clear the purple wash when poison expires (refreshes keep it on via applyStatus).
+		if placement.poisonTintActive and placement.poisonUntil <= now then
+			placement.poisonTintActive = false
+			BrainrotFeedback.setPoisoned(placement.model, false)
+		end
+
 		if placement.health <= 0 then
 			continue
 		end

@@ -104,17 +104,14 @@ local VfxConfig = {
 	DIZZY_ORBIT_FLATTEN = 0.45, -- vertical squash for an elliptical "halo" orbit
 	DIZZY_SPIN_SECONDS = 1.2,
 
-	-- Purple poison aura around a Brainrot (Queen Spider chew, …).
-	POISON_AURA_COLOR = Color3.fromRGB(160, 60, 220),
-	POISON_AURA_RATE = 28,
-	POISON_AURA_LIGHT_BRIGHTNESS = 2.8,
-	POISON_AURA_LIGHT_RANGE = 12,
-
 	-- Floating status words ("Poisoned" / "Stunned") that rise and fade.
+	-- When several hit the same Brainrot at once they queue: the lead word
+	-- uses the faster duration, then the next plays after it finishes.
 	STATUS_FLOAT_SIZE = UDim2.fromOffset(160, 40),
 	STATUS_FLOAT_START_OFFSET = Vector3.new(0, 3.2, 0),
 	STATUS_FLOAT_RISE_STUDS = 2.4,
-	STATUS_FLOAT_DURATION = 1.15,
+	STATUS_FLOAT_DURATION = 1.15, -- solo / last-in-queue
+	STATUS_FLOAT_DURATION_LEAD = 0.65, -- faster when another word is waiting
 	STATUS_FLOAT_POISON_COLOR = Color3.fromRGB(200, 110, 255),
 	STATUS_FLOAT_STUN_COLOR = Color3.fromRGB(255, 225, 70),
 

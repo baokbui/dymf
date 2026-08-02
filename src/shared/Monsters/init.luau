@@ -165,6 +165,8 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		walkAnimationId = "",
 		attackAnimationId = "",
 		proceduralWalk = true,
+		-- Legs splay flat + body drops (not the usual tip-over corpse).
+		deathStyle = "SpiderFlat",
 	},
 
 	DukeVampire = {

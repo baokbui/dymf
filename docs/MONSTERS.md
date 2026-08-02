@@ -140,7 +140,7 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
 | Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
-| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
+| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump; `deathStyle = SpiderFlat` ✅ |
 | Duke Vampire | 10000  | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 
 
@@ -152,8 +152,10 @@ Milestone 14 tuning rationale: `docs/BALANCE.md`.
 
 - `EnemyService` (server) ✅ M6 — spawning, grid movement, per-instance state,
 death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
-On death, `MonsterDeath` tips the model (3 random styles), lingers 2s, fades,
-then destroys. Driven by `LevelService` in M8. Public: `spawn`, `clearPlot`.
+On death, `MonsterDeath` plays the unit's `deathStyle` (default: tip-over, 3
+random styles), lingers 2s, fades, then destroys. `QueenSpider` uses
+`deathStyle = "SpiderFlat"` (legs splay horizontal, body drops flat). Driven by
+`LevelService` in M8. Public: `spawn`, `clearPlot`.
 `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
 spawns (set `ENABLED = true` in config for isolated monster testing).
 - `CombatService` (server) ✅ M7 — routes Brainrot damage to monsters and
@@ -202,8 +204,11 @@ walks west of the standoff while chewing (so a melee bat one tile behind still
 reaches the monster).
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
-- On death, `MonsterDeath` freezes the Motor6D pose, tips (forward / side / back),
-lingers, fades — so authored animated models do not glitch upright.
+- On death, `MonsterDeath` freezes the Motor6D pose, then plays
+`deathStyle`: default tip (forward / side / back), or `SpiderFlat` for Queen
+Spider (Toolbox leg parts `leftfronttop`…`rightbackbottom` splay flat in
+top→middle→bottom chains; body sinks onto the lawn). Then lingers and fades —
+so authored animated models do not glitch upright.
 
 Boss skill stubs (Goblin King speed buff) are registered and will be completed
 in a later milestone. Duke Vampire's two skills are fully implemented:

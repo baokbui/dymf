@@ -213,6 +213,7 @@ local function createPlacement(
 		poisonUntil = 0,
 		poisonHitsPerTick = 0,
 		poisonNextTick = 0,
+		poisonTintActive = false,
 		burnUntil = 0,
 		burnHitsPerTick = 0,
 		burnNextTick = 0,
@@ -554,6 +555,8 @@ local function applyBrainrotStatus(
 			placement.poisonUntil = math.max(placement.poisonUntil, now + duration)
 			placement.poisonHitsPerTick = hitsPerTick
 			placement.poisonNextTick = now + CombatConfig.POISON_TICK_INTERVAL
+			placement.poisonTintActive = true
+			BrainrotFeedback.setPoisoned(placement.model, true)
 			local remain = placement.poisonUntil - now
 			if remain > 0 then
 				CombatService.notifyPoison(placement.ownerUserId, instanceId, remain)
