@@ -103,6 +103,7 @@ Levels.count()             -- number of authored levels
 | `startDelay`   | number?  | Seconds before this group (after the previous)   |
 | `spawnInterval`| number?  | Seconds between monsters within the group        |
 | `isBigWave`    | boolean? | Marks the big final wave (flag) on the progress bar |
+| `row`          | number?  | Fixed anchor row (lowest occupied row). Omit for `randomRowForSpan` (e.g. Queen Spider `laneSpan` 3 → random among anchors that fit). |
 
 Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 `DEFAULT_GROUP_DELAY`.
@@ -160,11 +161,18 @@ Introduction cadence:
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`).
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`).
+- The first time a player **reaches** an intro day, `LevelService` shows a
+  **MonsterIntroPopup** (portrait + stats + ability blurb) driven by
+  `ProgressConfig.MONSTER_INTRO_SCHEDULE` / `introducedMonsterId` — same idea
+  as Brainrot unlock popups, but keyed to day arrival rather than day clear.
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
-  in later levels (not always the big-wave finale) instead of only ever
-  appearing once — e.g. `GoblinElite` / `DukeVampire` recur through the fog stretch.
+  in later levels — placed in the **beginning or middle** of the day, not as
+  the big-wave closer. Only decade boss days (10 / 20 / 30 / …) keep the boss
+  as the finale. Regular days that mix in `GoblinElite` / `DukeVampire` use a
+  grunt big wave after the elite spike (e.g. Day 13 Elite mid → Zombie flag;
+  Day 14 Elite opens the day; Day 24 Duke mid → Goblin flag).
 
 ### Difficulty ramp (early campaign)
 

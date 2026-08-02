@@ -73,6 +73,16 @@ local MonsterConfig = {
 	PROCEDURAL_WALK_PITCH = 0.38, -- radians
 	PROCEDURAL_WALK_ROLL = 0.22,
 
+	-- Spider-style jump-over (first Brainrot). Defaults; per-monster overrides
+	-- live in `abilityParams` (jumpDuration / jumpPeakHeight / jumpLandOffset /
+	-- jumpTriggerReach). Leap starts when the monster is this many columns
+	-- east of the plant center (must be > MELEE_CLOSE_REACH so it leaps
+	-- before chewing).
+	JUMP_DURATION = 0.55,
+	JUMP_PEAK_HEIGHT = 5.5,
+	JUMP_LAND_OFFSET = 0.8, -- columns west of plant center to land
+	JUMP_TRIGGER_REACH = 0.95,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

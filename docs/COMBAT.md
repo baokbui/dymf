@@ -80,14 +80,24 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`) |
+| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater for the remaining duration (`CombatVisual` `Dizzy`) |
 | Slow | Reduces movement speed | — |
-| Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick |
+| Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** also shows a purple aura + rising **"Poisoned"** floater (`CombatVisual` `Poison`) for the remaining duration |
 | Knockback | Pushes column east (+X) | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
-**Queen Spider** ✅ — stuns brainrots on attack; poisons for `% max HP` per tick
-(data in `abilityParams`).
+**Queen Spider** ✅ — **laneSpan 3** (random valid placement among anchors that
+fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
+`"Stun"` for `stunDuration` (2s) and `"Poison"` for `poisonDuration` (4s) at
+`poisonPercent` (3% of the Brainrot's max HP per 1s tick). Cleaves all three
+occupied lanes. Stun/poison VFX (dizzy stars + purple aura) fire automatically
+from `BrainrotService.applyBrainrotStatus`.
+
+**Spider** ✅ — `SpiderJump` vaults the **first** Brainrot in its lane with a
+visible parabola (`MonsterBehavior` jump state: column lerps west of the plant
+while `floatY` peaks). The plant takes no damage; later Brainrots are chewed
+normally. Tunables: `jumpDuration` / `jumpPeakHeight` / `jumpLandOffset` /
+`jumpTriggerReach` on `abilityParams` (defaults in `MonsterConfig.JUMP_*`).
 
 **Duke Vampire** ✅ — `DukeVampireFreeze` is a **once-only** last stand: at
 ≤20% HP he falls over (`MonsterDeath.playDowned`, rig intact —

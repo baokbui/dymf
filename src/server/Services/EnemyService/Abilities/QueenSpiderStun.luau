@@ -4,7 +4,7 @@ local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local QueenSpiderStun = {}
 
 function QueenSpiderStun.onBrainrotAttacked(ctx, _state, brainrotInstanceId: string)
-	local duration = 4
+	local duration = 2
 	if ctx.definition.abilityParams then
 		duration = ctx.definition.abilityParams.stunDuration or duration
 	end

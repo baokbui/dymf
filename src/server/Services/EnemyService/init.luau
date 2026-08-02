@@ -114,15 +114,9 @@ local function computeBrainrotHits(runtime: MonsterRuntime, brainrotInstanceId: 
 end
 
 local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: string)
-	if runtime.definition.damage > 0 then
-		local hits = computeBrainrotHits(runtime, brainrotInstanceId)
-		CombatService.damageBrainrot(brainrotInstanceId, hits)
-		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
-		if type(ownerUserId) == "number" then
-			CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
-		end
-	end
-
+	-- Status hooks first so Stun/Poison VFX land while the Brainrot still
+	-- exists — a killing chew would otherwise destroy the placement before
+	-- `applyStatusToBrainrot` could fire `notifyDizzy` / `notifyPoison`.
 	local ctx = {
 		instanceId = runtime.instanceId,
 		definition = runtime.definition,
@@ -135,6 +129,15 @@ local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: strin
 	for _, handler in Abilities.iterate(runtime.definition) do
 		if handler.onBrainrotAttacked then
 			handler.onBrainrotAttacked(ctx, runtime.abilityState, brainrotInstanceId)
+		end
+	end
+
+	if runtime.definition.damage > 0 then
+		local hits = computeBrainrotHits(runtime, brainrotInstanceId)
+		CombatService.damageBrainrot(brainrotInstanceId, hits)
+		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" then
+			CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
 		end
 	end
 end
@@ -196,6 +199,11 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		invulnerableUntil = 0,
 		downedUntil = 0,
 		preFallCFrame = nil,
+		jumpingUntil = 0,
+		jumpStartColumn = 0,
+		jumpEndColumn = 0,
+		jumpPeakHeight = 0,
+		jumpDuration = 0,
 	}
 	for key, value in MonsterStatus.createFields() do
 		(runtime :: any)[key] = value

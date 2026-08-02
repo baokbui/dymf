@@ -101,9 +101,7 @@ function DukeVampireTerrify.onTick(ctx, state, dt: number, _callbacks)
 	for _, brainrotInstanceId in targets do
 		CombatService.applyStatusToBrainrot(brainrotInstanceId, "Weaken", freezeDuration, reduction)
 		CombatService.applyStatusToBrainrot(brainrotInstanceId, "Stun", freezeDuration)
-		if type(ownerUserId) == "number" then
-			CombatService.notifyDizzy(ownerUserId, brainrotInstanceId, freezeDuration)
-		end
+		-- Dizzy stars are fired from BrainrotService.applyBrainrotStatus on Stun.
 	end
 
 	if type(ownerUserId) == "number" then

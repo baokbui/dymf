@@ -27,6 +27,7 @@ local Settings = require(script.Settings)
 local Inventory = require(script.Inventory)
 local RewardPopup = require(script.RewardPopup)
 local UnlockPopup = require(script.UnlockPopup)
+local MonsterIntroPopup = require(script.MonsterIntroPopup)
 local PlantToast = require(script.PlantToast)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
@@ -46,6 +47,7 @@ local settingsPanel: Settings.SettingsPanel? = nil
 local inventoryPanel: Inventory.InventoryPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
 local unlockPopup: UnlockPopup.UnlockPopupHud? = nil
+local monsterIntroPopup: MonsterIntroPopup.MonsterIntroPopupHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
@@ -158,6 +160,10 @@ local function buildUnlockPopup(): UnlockPopup.UnlockPopupHud
 	return UnlockPopup.new(buildMain():WaitForChild("UnlockPopup") :: Frame)
 end
 
+local function buildMonsterIntroPopup(): MonsterIntroPopup.MonsterIntroPopupHud
+	return MonsterIntroPopup.new(buildMain():WaitForChild("MonsterIntroPopup") :: Frame)
+end
+
 local function buildSettings(): Settings.SettingsPanel
 	return Settings.new(buildMain():WaitForChild("Settings") :: Frame)
 end
@@ -250,6 +256,17 @@ local function applyLevelState(state: { [string]: any }?)
 		rewardPopup:hide()
 	end
 
+	if type(state.introducedMonsterId) == "string" and monsterIntroPopup then
+		local introId = state.introducedMonsterId
+		-- Let a Brainrot unlock popup finish first if it's already up.
+		local delaySec = if unlockPopup and unlockPopup.frame.Visible then 2.5 else 0.35
+		task.delay(delaySec, function()
+			if monsterIntroPopup then
+				monsterIntroPopup:show(introId)
+			end
+		end)
+	end
+
 	local phase = state.phase
 	if type(phase) == "string" then
 		local isActive = phase == Constants.PHASE.Active
@@ -299,6 +316,7 @@ function UIController.init()
 	inventoryPanel = buildInventory()
 	rewardPopup = buildRewardPopup()
 	unlockPopup = buildUnlockPopup()
+	monsterIntroPopup = buildMonsterIntroPopup()
 	settingsPanel = buildSettings()
 	buildHudEntries()
 end

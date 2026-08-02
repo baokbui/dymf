@@ -31,6 +31,7 @@ UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
 UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
 UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold
 UITheme.PANEL_BG_UNLOCK = Color3.fromRGB(200, 130, 255) -- purple
+UITheme.PANEL_BG_MONSTER_INTRO = Color3.fromRGB(255, 140, 90) -- fiery orange
 
 -- Accents
 UITheme.OUTLINE = Color3.fromRGB(15, 15, 20)

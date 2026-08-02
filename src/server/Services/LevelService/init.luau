@@ -19,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
+local GridConfig = require(Shared.Config.GridConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Levels = require(Shared.Levels)
 local Monsters = require(Shared.Monsters)
@@ -49,6 +50,9 @@ type PlayerState = {
 	activeRun: LevelRun.LevelRun?,
 	countdownEnd: number,
 	bigWaveWarning: boolean,
+	-- One-shot: consumed into LevelStateChanged.introducedMonsterId on the
+	-- next broadcast (Monster intro popup).
+	pendingMonsterIntroId: string?,
 }
 
 local states: { [number]: PlayerState } = {}
@@ -94,6 +98,11 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		end
 	end
 
+	if state.pendingMonsterIntroId then
+		payload.introducedMonsterId = state.pendingMonsterIntroId
+		state.pendingMonsterIntroId = nil
+	end
+
 	return payload
 end
 
@@ -123,6 +132,11 @@ end
 local function beginPreparation(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.bigWaveWarning = false
+	state.pendingMonsterIntroId = ProgressService.consumeMonsterIntroForDay(player, state.currentLevel)
+	if state.pendingMonsterIntroId then
+		local SaveService = require(script.Parent.SaveService)
+		SaveService.saveNow(player, "monster_intro")
+	end
 	applyWeatherRules(player, state)
 	setPhase(player, state, PHASE.Preparation)
 end
@@ -252,7 +266,10 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 		if group then
 			local monsterDef = Monsters.get(group.monsterId)
 			local span = if monsterDef and monsterDef.laneSpan then monsterDef.laneSpan else 1
-			EnemyService.spawn(plotModel, group.monsterId, LevelRun.randomRowForSpan(span))
+			local row = if type(group.row) == "number"
+				then math.clamp(math.floor(group.row), 1, GridConfig.ROWS - span + 1)
+				else LevelRun.randomRowForSpan(span)
+			EnemyService.spawn(plotModel, group.monsterId, row)
 		end
 	end
 
@@ -381,6 +398,7 @@ local function initPlayer(player: Player)
 		activeRun = nil,
 		countdownEnd = 0,
 		bigWaveWarning = false,
+		pendingMonsterIntroId = nil,
 	}
 	task.defer(function()
 		broadcast(player)
@@ -442,6 +460,8 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
 	state.phase = PHASE.Preparation
+	local introId = ProgressService.consumeMonsterIntroForDay(player, sanitizedCurrent)
+	state.pendingMonsterIntroId = introId
 
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
@@ -449,6 +469,11 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	end
 
 	broadcast(player)
+
+	if introId then
+		local SaveService = require(script.Parent.SaveService)
+		SaveService.saveNow(player, "monster_intro")
+	end
 end
 
 -- Placement and coin income are only allowed while a level is in progress.

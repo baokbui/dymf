@@ -99,6 +99,13 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 1.4,
 		isBoss = false,
 		abilities = { "SpiderJump" },
+		abilityParams = {
+			-- Leap over the first Brainrot (visual arc; plant is not damaged).
+			jumpDuration = 0.55,
+			jumpPeakHeight = 5.5,
+			jumpLandOffset = 0.8,
+			jumpTriggerReach = 0.95,
+		},
 		color = Color3.fromRGB(40, 40, 40),
 		-- Toolbox AnimationId is often permission-locked; use AnimSaves (local)
 		-- or MonsterProceduralGait — never request the pack rbxassetid.
@@ -141,9 +148,23 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		damage = 140,
 		attackInterval = 1.5,
 		isBoss = true,
+		-- Occupies three lawn rows (anchor + 2). On a 5-row lawn that means
+		-- valid anchors 1–3 (covers 1–3, 2–4, or 3–5) — LevelService uses
+		-- `randomRowForSpan`, never edge-only single-lane placement. Does NOT
+		-- jump — she chews and applies stun + poison on every bite.
+		laneSpan = 3,
 		abilities = { "QueenSpiderStun", "QueenSpiderPoison" },
-		abilityParams = { stunDuration = 3.5, poisonPercent = 2, poisonDuration = 5 },
+		abilityParams = {
+			stunDuration = 2,
+			-- % of Brainrot maxHealth per poison tick (1s interval).
+			poisonPercent = 3,
+			poisonDuration = 4,
+		},
 		color = Color3.fromRGB(30, 30, 30),
+		-- Duplicated Spider Toolbox model — same procedural crawl gait.
+		walkAnimationId = "",
+		attackAnimationId = "",
+		proceduralWalk = true,
 	},
 
 	DukeVampire = {

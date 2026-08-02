@@ -129,6 +129,18 @@ local function playDizzy(instanceId: string?, duration: unknown)
 	local model = findModelByInstanceId(instanceId)
 	if model then
 		VfxUtil.playDizzy(model, duration)
+		VfxUtil.playStatusFloater(model, "Stunned", VfxConfig.STATUS_FLOAT_STUN_COLOR)
+	end
+end
+
+local function playPoison(instanceId: string?, duration: unknown)
+	if not instanceId or type(duration) ~= "number" then
+		return
+	end
+	local model = findModelByInstanceId(instanceId)
+	if model then
+		VfxUtil.playPoisonAura(model, duration)
+		VfxUtil.playStatusFloater(model, "Poisoned", VfxConfig.STATUS_FLOAT_POISON_COLOR)
 	end
 end
 
@@ -260,6 +272,8 @@ local function onCombatVisual(payload: unknown)
 		playTerrifyPulse(data.instanceId)
 	elseif kind == "Dizzy" then
 		playDizzy(data.instanceId, data.duration)
+	elseif kind == "Poison" then
+		playPoison(data.instanceId, data.duration)
 	elseif kind == "MonsterAttack" then
 		playMonsterAttackSound(data.monsterId)
 	end

@@ -108,6 +108,13 @@
             "Visible": false,
             "BackgroundTransparency": 1
           }
+        },
+        "MonsterIntroPopup": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
         }
       }
     },

@@ -40,7 +40,7 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number (`SAVE_VERSION` = 2)|
+| `version`      | number (`SAVE_VERSION` = 3)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
@@ -51,6 +51,7 @@ Not saved (transient / runtime):
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
+| `introducedMonsters` | `{ string }` (monster intro popups already shown) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
@@ -59,7 +60,7 @@ Not saved (transient / runtime):
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 2` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 3` — bump when the schema changes; migrate older payloads.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).

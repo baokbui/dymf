@@ -164,15 +164,17 @@ local definitions: { [string]: Types.LevelDefinition } = {
 
 	-- Goblin Elite starts recurring as a mixed-in miniboss (not always the
 	-- finale) so it stays a recognizable threat rather than a one-off boss.
+	-- Decade boss days (10/20/30) keep the boss as the big-wave closer;
+	-- every other day may place elites/recurring bosses early or mid.
 	Level13 = {
 		id = "Level13",
 		number = 13,
 		name = "Elite Vanguard",
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.6 },
-			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.4 },
-			{ monsterId = "Zombie", count = 4, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 5, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -181,9 +183,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 14,
 		name = "Elite Pressure",
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
-			{ monsterId = "Goblin", count = 6, startDelay = 14, spawnInterval = 2.2 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
+			{ monsterId = "Zombie", count = 5, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.2 },
 			{ monsterId = "Zombie", count = 5, startDelay = 11, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
@@ -220,9 +222,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Crimson Vanguard",
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Vampire", count = 4, startDelay = 10, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.0 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 9, spawnInterval = 2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -243,9 +245,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 19,
 		name = "Final Bloodline",
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.0 },
-			{ monsterId = "Vampire", count = 5, startDelay = 9, spawnInterval = 2.0 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 11, spawnInterval = 2 },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
+			{ monsterId = "Zombie", count = 5, startDelay = 9, spawnInterval = 2.0 },
+			{ monsterId = "Vampire", count = 5, startDelay = 10, spawnInterval = 2.0 },
 			{ monsterId = "Vampire", count = 6, startDelay = 11, spawnInterval = 1.8, isBigWave = true },
 		},
 	},
@@ -288,9 +290,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "Night",
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.8 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 16, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 12, spawnInterval = 2.6, isBigWave = true },
 		},
 	},
 
@@ -314,9 +316,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "Night",
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Vampire", count = 4, startDelay = 10, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 5, startDelay = 11, spawnInterval = 2.0 },
-			{ monsterId = "DukeVampire", count = 1, startDelay = 16, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 9, spawnInterval = 2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -341,9 +343,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFog",
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Spider", count = 3, startDelay = 11, spawnInterval = 2.8 },
-			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.6 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 14, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 9, spawnInterval = 2 },
+			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.8 },
+			{ monsterId = "Vampire", count = 4, startDelay = 12, spawnInterval = 2.4, isBigWave = true },
 		},
 	},
 
@@ -368,8 +370,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "Spider", count = 3, startDelay = 10, spawnInterval = 2.6 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4 },
-			{ monsterId = "DukeVampire", count = 1, startDelay = 15, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 11, spawnInterval = 2 },
+			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -379,10 +381,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Closing Webs",
 		weather = "NightFog",
 		groups = {
-			{ monsterId = "Goblin", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Spider", count = 4, startDelay = 10, spawnInterval = 2.4 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "GoblinElite", count = 1, startDelay = 13, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
+			{ monsterId = "Goblin", count = 5, startDelay = 10, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 

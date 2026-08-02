@@ -102,6 +102,15 @@ function CombatService.notifyDizzy(ownerUserId: number, brainrotInstanceId: stri
 	})
 end
 
+-- Purple poison aura over a Brainrot for `duration` seconds (Queen Spider, …).
+function CombatService.notifyPoison(ownerUserId: number, brainrotInstanceId: string, duration: number)
+	fireCombatVisual(ownerUserId, {
+		kind = "Poison",
+		instanceId = brainrotInstanceId,
+		duration = duration,
+	})
+end
+
 -- Monster chew / club swing SFX on the owning client (`MonsterAttack_<id>` or
 -- generic `MonsterAttack`).
 function CombatService.notifyMonsterAttack(ownerUserId: number, monsterId: string)

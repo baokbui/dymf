@@ -84,6 +84,9 @@ export type SpawnGroup = {
 	startDelay: number?, -- seconds before this group begins (after the previous one)
 	spawnInterval: number?, -- seconds between each monster within this group
 	isBigWave: boolean?, -- marks the big final wave on the level progress bar
+	-- Optional fixed anchor row (lowest occupied row for multi-lane units).
+	-- When omitted, LevelService picks `GridUtil.randomRowForSpan(laneSpan)`.
+	row: number?,
 }
 
 -- A single authored campaign level. Levels are data-driven entries in the
@@ -134,6 +137,8 @@ export type SaveData = {
 	equipped: { string }, -- ordered loadout shown in the placement shop
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
+	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).
+	introducedMonsters: { string }?,
 	-- 🔜 Milestone 25 — collected boss trophies displayed in the house
 	collectedBosses: { CollectedBoss }?,
 }

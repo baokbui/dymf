@@ -29,28 +29,28 @@ local WeatherConfig = {
 	NIGHT_OUTDOOR_AMBIENT = Color3.fromRGB(130, 140, 180),
 	NIGHT_COLOR_SHIFT_TOP = Color3.fromRGB(70, 85, 130),
 	NIGHT_COLOR_SHIFT_BOTTOM = Color3.fromRGB(50, 55, 90),
-	NIGHT_FOG_START = 120,
-	NIGHT_FOG_END = 520,
+	NIGHT_FOG_START = 80,
+	NIGHT_FOG_END = 420,
 	NIGHT_FOG_COLOR = Color3.fromRGB(150, 165, 200),
-	NIGHT_ATMOSPHERE_DENSITY = 0.22,
-	NIGHT_ATMOSPHERE_HAZE = 0.9,
+	NIGHT_ATMOSPHERE_DENSITY = 0.32,
+	NIGHT_ATMOSPHERE_HAZE = 1.35,
 	NIGHT_ATMOSPHERE_GLARE = 0.05,
 	NIGHT_ATMOSPHERE_OFFSET = 0.12,
 
 	-- Cheap fog: invisible emission volumes + soft particle mist only
 	-- (no translucent Part "glass box"). Heavier deep in the forest, lighter
 	-- on the plot's fog columns so density falls off toward the lawn.
-	FOG_LAWN_PARTICLE_RATE = 8,
-	FOG_FOREST_NEAR_PARTICLE_RATE = 18,
-	FOG_FOREST_DEEP_PARTICLE_RATE = 36,
+	FOG_LAWN_PARTICLE_RATE = 20,
+	FOG_FOREST_NEAR_PARTICLE_RATE = 38,
+	FOG_FOREST_DEEP_PARTICLE_RATE = 60,
 	-- Fraction of forest depth (from the lawn edge) that uses the lighter
 	-- "near" band before the heavy deep-forest mist.
 	FOG_FOREST_NEAR_DEPTH_FRACTION = 0.35,
-	FOG_PARTICLE_SIZE = 20,
-	FOG_PARTICLE_LIFETIME = 5.5,
+	FOG_PARTICLE_SIZE = 28,
+	FOG_PARTICLE_LIFETIME = 7.5,
 	FOG_PARTICLE_COLOR = Color3.fromRGB(210, 220, 235),
-	FOG_PARTICLE_LIGHT_EMISSION = 0.3,
-	FOG_PARTICLE_LIGHT_INFLUENCE = 0.15,
+	FOG_PARTICLE_LIGHT_EMISSION = 0.18,
+	FOG_PARTICLE_LIGHT_INFLUENCE = 0.12,
 }
 
 -- First lawn column index that is fog-blocked (inclusive).

@@ -28,23 +28,23 @@ Monsters.getAll()    -- { [id]: MonsterDefinition }  (do not mutate)
 From `Shared.Types.MonsterDefinition`:
 
 
-| Field                     | Type                    | Meaning                                                             |
-| ------------------------- | ----------------------- | ------------------------------------------------------------------- |
-| `id`                      | string                  | Unique key                                                          |
-| `name`                    | string                  | Display name                                                        |
-| `health`                  | number                  | Starting HP                                                         |
-| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)         |
-| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                  |
-| `attackInterval`          | number                  | Seconds between attacks while chewing a tile                        |
-| `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                      |
-| `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                      |
-| `abilityParams`           | `{ [string]: number }?` | Per-ability tuning                                                  |
-| `color`                   | Color3?                 | Placeholder / fallback tint                                         |
-| `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)               |
-| `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                 |
-| `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                  |
-| `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                     |
-| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2) |
+| Field                     | Type                    | Meaning                                                                        |
+| ------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `id`                      | string                  | Unique key                                                                     |
+| `name`                    | string                  | Display name                                                                   |
+| `health`                  | number                  | Starting HP                                                                    |
+| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)                    |
+| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                             |
+| `attackInterval`          | number                  | Seconds between attacks while chewing a tile                                   |
+| `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                                 |
+| `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                                 |
+| `abilityParams`           | `{ [string]: number }?` | Per-ability tuning                                                             |
+| `color`                   | Color3?                 | Placeholder / fallback tint                                                    |
+| `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)                          |
+| `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                            |
+| `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                             |
+| `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                                |
+| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)            |
 | `auraColor`               | Color3?                 | Persistent tinted particle + glow (`MonsterFeedback.applyAura`); omit for none |
 
 
@@ -111,6 +111,7 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | `Vampire`     | `Vampire`              |
 | `DukeVampire` | `DukeVampire`          |
 | `Spider`      | `Spider`               |
+| `QueenSpider` | `QueenSpider`          |
 
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
@@ -128,18 +129,18 @@ models (at least Zombie, Goblin, Goblin Elite).
 ## Roster ✅ (Milestone 6)
 
 
-| Name         | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                    |
-| ------------ | ------ | -------- | ------ | ------------ | ---- | ---------------------------------------------------------- |
-| Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                          |
-| Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                          |
-| Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                          |
-| Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                          |
-| Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                          |
-| Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2** |
-| Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first brainrot                                   |
-| Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)         |
-| Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                             |
-| Queen Spider | 10000  | 6.3      | 140    | 1.5s         | Y    | Stun + poison brainrot on attack ✅                         |
+| Name         | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                                                                                                 |
+| ------------ | ------ | -------- | ------ | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
+| Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
+| Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                                                                                                       |
+| Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                                                                                                       |
+| Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
+| Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
+| Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
+| Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
+| Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
+| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
 | Duke Vampire | 10000  | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 
 
@@ -187,7 +188,12 @@ MonsterBehavior (movement + attack tick)
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
 - Monsters **phase through each other** on the same row (no blocking — all parts
 `CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
-They only stop for Brainrots (or the house).
+They only stop for Brainrots (or the house). **Spider** is the exception for
+the *first* Brainrot: instead of chewing (or walking through at ground level),
+`SpiderJump` vaults it with a visible parabola (`MonsterBehavior` jump arc —
+column lerps west of the plant while `floatY` peaks at `jumpPeakHeight`), then
+chews later plants normally. Jump timing/height are data-driven via
+`abilityParams` / `MonsterConfig.JUMP_*`.
 - When a tile holds a Brainrot (any type — wall, producer, attacker, …), the
 monster walks **onto that tile** and chews at a **standoff** east of the plant
 center (`MonsterConfig.MELEE_CLOSE_REACH`) so models don't overlap. It attacks
@@ -202,55 +208,55 @@ lingers, fades — so authored animated models do not glitch upright.
 Boss skill stubs (Goblin King speed buff) are registered and will be completed
 in a later milestone. Duke Vampire's two skills are fully implemented:
 
-- **`DukeVampireFreeze`** (last stand) — a small `onTick` state machine that
-  does nothing until his HP first drops to/below `lastStandTriggerPercent`
-  (20%). It then triggers exactly **once** (`state.lastStandUsed` guard) and
-  runs two phases, both covered by a single `setInvulnerable` call
-  (`MonsterRuntime.invulnerableUntil`, checked in
-  `EnemyService.damageMonster` — every monster damage path, including DoT,
-  routes through it) sized to the full sequence so Brainrots can't finish him
-  off mid-animation:
+- `DukeVampireFreeze` (last stand) — a small `onTick` state machine that
+does nothing until his HP first drops to/below `lastStandTriggerPercent`
+(20%). It then triggers exactly **once** (`state.lastStandUsed` guard) and
+runs two phases, both covered by a single `setInvulnerable` call
+(`MonsterRuntime.invulnerableUntil`, checked in
+`EnemyService.damageMonster` — every monster damage path, including DoT,
+routes through it) sized to the full sequence so Brainrots can't finish him
+off mid-animation:
   - **Falling** (`lastStandFallDuration`, 1.0s — same speed as a regular
-    death) — `beginFall` reuses `MonsterDeath.playDowned`, which shares the
-    same randomized 3-style tip-over pose picker as a real death
-    (`randomTipGoal`) so it falls exactly like any other monster, but leaves
-    the rig intact (no `freezeCorpse` / fade). `MonsterBehavior.tick` skips
-    movement/attack/transform-sync entirely while `runtime.downedUntil` is in
-    the future so the tween isn't fought every frame.
+  death) — `beginFall` reuses `MonsterDeath.playDowned`, which shares the
+  same randomized 3-style tip-over pose picker as a real death
+  (`randomTipGoal`) so it falls exactly like any other monster, but leaves
+  the rig intact (no `freezeCorpse` / fade). `MonsterBehavior.tick` skips
+  movement/attack/transform-sync entirely while `runtime.downedUntil` is in
+  the future so the tween isn't fought every frame.
   - **Grounded** (`lastStandGroundDuration`, 3s) — lies motionless on the
-    ground; `holdDowned` extends `runtime.downedUntil` without playing a new
-    tween (no separate visual, just a hold before rising).
+  ground; `holdDowned` extends `runtime.downedUntil` without playing a new
+  tween (no separate visual, just a hold before rising).
   - **Rising** (`lastStandRiseDuration`, 0.7s) — `beginRise` tweens back to
-    the pre-fall pivot (`MonsterDeath.riseUp`) while queuing enough heal via
-    the shared `pendingHeal` mechanism (`MonsterBehavior.applyPendingHeal`,
-    also used by Goblin King's regen) to reach `lastStandHealPercent` (50%)
-    of max HP by the time he's back on his feet.
+  the pre-fall pivot (`MonsterDeath.riseUp`) while queuing enough heal via
+  the shared `pendingHeal` mechanism (`MonsterBehavior.applyPendingHeal`,
+  also used by Goblin King's regen) to reach `lastStandHealPercent` (50%)
+  of max HP by the time he's back on his feet.
   Fatal overkill that would skip the ≤20% check between behavior ticks is
   rescued by `DukeVampireFreeze.onWouldDie` (wired from
   `EnemyService.damageMonster`) so a single big hit can't delete him before
   last stand starts.
-- **`DukeVampireTerrify`** — deals **no damage**. On a `terrifyCooldown` timer
-  (10s), it afflicts the Brainrot directly in front of him, the
-  `terrifyColumnsBehind` (2) tiles ahead of that one (west, toward the
-  house), plus the lanes above/below at each of those columns (his row ± 1,
-  independent of `laneSpan` which stays 1) with a `"Weaken"` status
-  (`Types.StatusEffectKind` — scales the Brainrot's own outgoing damage down
-  by `terrifyDamageReduction`%, implemented as a non-mutating
-  `__index`-fallback override of `damage` on the ability context's
-  `definition` in `BrainrotBehavior.effectiveDefinition`, so every existing
-  Brainrot ability respects it for free) plus a `"Stun"` (freezes its attacks)
-  for `terrifyFreezeDuration` (4s). Visible feedback (no gameplay effect):
-  a row of red curved comic-book soundwave lines (`CombatVisual` kind
-  `"Terrify"` → `VfxUtil.playTerrifySoundwave`) fans out from him along the
-  terrify cone (forward / toward the house — matching his column −
-  `terrifyColumnsBehind` AoE) whenever he actually hits something, and each
-  afflicted Brainrot gets three yellow ★ stars orbiting in a dizzy halo over
-  its head (kind `"Dizzy"` → `VfxUtil.playDizzy`) for the freeze duration.
-  The scream **never** fires while he's still in the forest, while
-  last-standing, or when the cone has zero living Brainrots (short retry
-  poll instead of burning the full cooldown / playing VFX).
+- `DukeVampireTerrify` — deals **no damage**. On a `terrifyCooldown` timer
+(10s), it afflicts the Brainrot directly in front of him, the
+`terrifyColumnsBehind` (2) tiles ahead of that one (west, toward the
+house), plus the lanes above/below at each of those columns (his row ± 1,
+independent of `laneSpan` which stays 1) with a `"Weaken"` status
+(`Types.StatusEffectKind` — scales the Brainrot's own outgoing damage down
+by `terrifyDamageReduction`%, implemented as a non-mutating
+`__index`-fallback override of `damage` on the ability context's
+`definition` in `BrainrotBehavior.effectiveDefinition`, so every existing
+Brainrot ability respects it for free) plus a `"Stun"` (freezes its attacks)
+for `terrifyFreezeDuration` (4s). Visible feedback (no gameplay effect):
+a row of red curved comic-book soundwave lines (`CombatVisual` kind
+`"Terrify"` → `VfxUtil.playTerrifySoundwave`) fans out from him along the
+terrify cone (forward / toward the house — matching his column −
+`terrifyColumnsBehind` AoE) whenever he actually hits something, and each
+afflicted Brainrot gets three yellow ★ stars orbiting in a dizzy halo over
+its head (kind `"Dizzy"` → `VfxUtil.playDizzy`) for the freeze duration.
+The scream **never** fires while he's still in the forest, while
+last-standing, or when the cone has zero living Brainrots (short retry
+poll instead of burning the full cooldown / playing VFX).
 - His **regular chew** (`damage` / `attackInterval` on the definition, no
-  ability) matches a Vampire's pace (1.1s) with a bit more bite (100 vs. 70).
+ability) matches a Vampire's pace (1.1s) with a bit more bite (100 vs. 70).
 
 He also carries a persistent dark `auraColor` (`MonsterFeedback.applyAura`) —
 a data-driven, per-definition dual-layer particle (tight wisps + a larger
@@ -280,27 +286,29 @@ The roster is introduced **one monster at a time** through campaign levels
 - Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps for a growing defense.
 - **Level 10:** first boss — `GoblinElite` / Goblin Elite (heavy melee counterpart to the Goblin line).
 - Levels 11–12: still `Zombie` + `Goblin` only — counts/pacing keep ramping to
-  recover from the Level 10 boss dip before Goblin Elite starts recurring.
+recover from the Level 10 boss dip before Goblin Elite starts recurring.
 - **Levels 13–14, 17–19:** `GoblinElite` recurs as a mixed-in miniboss (not
-  always the big-wave finale) alongside the existing roster — a recognizable
-  recurring threat, not a one-off boss fight.
+always the big-wave finale) alongside the existing roster — a recognizable
+recurring threat, not a one-off boss fight.
 - **Level 15:** next new non-boss — `Vampire` (fast, high-HP grunt), introduced
-  gently (low count, generous `spawnInterval`) the same way Goblin was at
-  Level 5.
+gently (low count, generous `spawnInterval`) the same way Goblin was at
+Level 5.
 - Levels 16–19: `Vampire` count/pacing ramps steadily alongside `Zombie` /
-  `Goblin` / recurring `GoblinElite`.
+`Goblin` / recurring `GoblinElite`.
 - **Level 20:** next boss — `DukeVampire` / Duke Vampire, tuned as the softest
-  of the Milestone-10 boss roster (below Goblin King / Queen Spider) since
-  it's the very next boss after Goblin Elite.
+of the Milestone-10 boss roster (below Goblin King / Queen Spider) since
+it's the very next boss after Goblin Elite.
 - **Levels 21–24:** Night weather (`WEATHER.md`); mix of prior roster
-  (`Zombie` / `Goblin` / `GoblinElite` / `Vampire` / `DukeVampire`) with
-  alternating easier/harder pacing.
-- **Level 25:** next new non-boss — `Spider` (jump over first Brainrot), gentle
-  intro counts as NightFog begins.
+(`Zombie` / `Goblin` / `GoblinElite` / `Vampire` / `DukeVampire`) with
+alternating easier/harder pacing.
+- **Level 25:** next new non-boss — `Spider` (visible jump over first Brainrot),
+gentle intro counts as NightFog begins.
 - **Levels 26–29:** Spider mixes with the fog roster; Elite / Duke recur as
-  pressure spikes.
-- **Level 30:** next boss — `QueenSpider` / Queen Spider (stun + poison) as the
-  NightFog finale.
+early/mid pressure spikes (not the big-wave closer — only decade boss days
+end on the boss).
+- **Level 30:** next boss — `QueenSpider` / Queen Spider (**laneSpan 3**,
+  random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
+  chew; does **not** jump) as the NightFog finale.
 
 Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:
 registry data plus ability handlers, never duplicated base AI.

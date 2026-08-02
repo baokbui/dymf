@@ -477,6 +477,185 @@ function VfxUtil.playDizzy(model: Model, duration: number)
 	end)
 end
 
+--[[
+	Cartoon status word that pops above a Brainrot, rises, and fades out
+	(e.g. purple "Poisoned", yellow "Stunned").
+]]
+function VfxUtil.playStatusFloater(model: Model, text: string, color: Color3)
+	local anchor = model.PrimaryPart
+		or model:FindFirstChild("Body", true)
+		or model:FindFirstChild("HumanoidRootPart", true)
+		or model:FindFirstChildWhichIsA("BasePart", true)
+	if not (anchor and anchor:IsA("BasePart")) then
+		return
+	end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "StatusFloater"
+	gui.Adornee = anchor
+	gui.Size = VfxConfig.STATUS_FLOAT_SIZE
+	gui.StudsOffset = VfxConfig.STATUS_FLOAT_START_OFFSET
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 120
+	gui.Parent = effectsFolder()
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Word"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.FredokaOne
+	label.Text = text
+	label.TextScaled = true
+	label.TextColor3 = color
+	label.TextStrokeColor3 = Color3.fromRGB(20, 15, 30)
+	label.TextStrokeTransparency = 0
+	label.Parent = gui
+
+	local duration = VfxConfig.STATUS_FLOAT_DURATION
+	local rise = VfxConfig.STATUS_FLOAT_RISE_STUDS
+	local startOffset = VfxConfig.STATUS_FLOAT_START_OFFSET
+	local goalOffset = startOffset + Vector3.new(0, rise, 0)
+
+	local offsetValue = Instance.new("Vector3Value")
+	offsetValue.Value = startOffset
+	offsetValue.Parent = gui
+	offsetValue.Changed:Connect(function(value)
+		if gui.Parent then
+			gui.StudsOffset = value
+		end
+	end)
+
+	TweenService:Create(
+		offsetValue,
+		TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Value = goalOffset }
+	):Play()
+	TweenService:Create(
+		label,
+		TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	):Play()
+
+	task.delay(duration, function()
+		if gui.Parent then
+			gui:Destroy()
+		end
+	end)
+end
+
+--[[
+	Purple poison aura clinging to a Brainrot for `duration` seconds. Replaces
+	any prior PoisonVfx so refreshes don't stack emitters. Uses a Highlight +
+	dense mist so it reads clearly even on busy NightFog lawns.
+]]
+function VfxUtil.playPoisonAura(model: Model, duration: number)
+	local existing = model:FindFirstChild("PoisonVfx")
+	if existing then
+		existing:Destroy()
+	end
+
+	local anchor = model.PrimaryPart
+		or model:FindFirstChild("Body", true)
+		or model:FindFirstChild("HumanoidRootPart", true)
+		or model:FindFirstChildWhichIsA("BasePart", true)
+	if not (anchor and anchor:IsA("BasePart")) then
+		return
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = "PoisonVfx"
+	folder.Parent = model
+
+	-- Strong silhouette read — particles alone are easy to miss in fog.
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "PoisonHighlight"
+	highlight.FillColor = VfxConfig.POISON_AURA_COLOR
+	highlight.FillTransparency = 0.55
+	highlight.OutlineColor = Color3.fromRGB(220, 140, 255)
+	highlight.OutlineTransparency = 0.15
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.Parent = folder
+
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "PoisonEmit"
+	-- Lift off the root so mist wraps the body, not the feet / HRP.
+	attachment.Position = Vector3.new(0, 1.6, 0)
+	attachment.Parent = anchor
+
+	local mist = Instance.new("ParticleEmitter")
+	mist.Name = "PoisonMist"
+	mist.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	mist.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(210, 120, 255)),
+		ColorSequenceKeypoint.new(1, VfxConfig.POISON_AURA_COLOR),
+	})
+	mist.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.2),
+		NumberSequenceKeypoint.new(0.45, 2.8),
+		NumberSequenceKeypoint.new(1, 0.4),
+	})
+	mist.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.55, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	mist.Lifetime = NumberRange.new(0.9, 1.5)
+	mist.Speed = NumberRange.new(0.8, 2.2)
+	mist.SpreadAngle = Vector2.new(180, 180)
+	mist.Rate = VfxConfig.POISON_AURA_RATE
+	mist.LightEmission = 0.7
+	mist.LightInfluence = 0
+	mist.LockedToPart = false
+	mist.Enabled = true
+	mist.Parent = attachment
+
+	local wisps = Instance.new("ParticleEmitter")
+	wisps.Name = "PoisonWisps"
+	wisps.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	wisps.Color = ColorSequence.new(Color3.fromRGB(180, 80, 255))
+	wisps.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0.5, 0.9),
+		NumberSequenceKeypoint.new(1, 0.15),
+	})
+	wisps.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.05),
+		NumberSequenceKeypoint.new(0.7, 0.4),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	wisps.Lifetime = NumberRange.new(0.5, 0.9)
+	wisps.Speed = NumberRange.new(1.5, 3.5)
+	wisps.Acceleration = Vector3.new(0, 2.5, 0)
+	wisps.SpreadAngle = Vector2.new(60, 60)
+	wisps.Rate = math.max(10, math.floor(VfxConfig.POISON_AURA_RATE * 0.75))
+	wisps.LightEmission = 0.85
+	wisps.LightInfluence = 0
+	wisps.LockedToPart = false
+	wisps.Parent = attachment
+
+	local glow = Instance.new("PointLight")
+	glow.Name = "PoisonGlow"
+	glow.Color = VfxConfig.POISON_AURA_COLOR
+	glow.Brightness = VfxConfig.POISON_AURA_LIGHT_BRIGHTNESS
+	glow.Range = VfxConfig.POISON_AURA_LIGHT_RANGE
+	glow.Shadows = false
+	glow.Parent = attachment
+
+	-- Immediate pop so the aura is obvious on the first frame (Rate alone
+	-- takes a beat to fill the volume).
+	mist:Emit(18)
+	wisps:Emit(12)
+
+	task.delay(duration, function()
+		if folder.Parent then
+			folder:Destroy()
+		end
+		if attachment.Parent then
+			attachment:Destroy()
+		end
+	end)
+end
+
 function VfxUtil.decorateProjectile(part: BasePart)
 	if part:GetAttribute("VfxDecorated") == true then
 		return

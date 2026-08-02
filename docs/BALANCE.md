@@ -100,7 +100,7 @@ were raised so early boards need real DPS:
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
 | `DukeVampire` | Boss (L20; recurs L24/28) | 10000 | 6.0 | 100 / 1.1s; nerfed vs. Goblin King / Queen Spider |
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
-| `QueenSpider` | Boss (L30) | 13000 | 6.3 | 140 / 1.5s; stun + poison |
+| `QueenSpider` | Boss (L30) | 13000 | 6.3 | 140 / 1.5s; laneSpan 3; stun 2s + poison 3%/4s; no jump |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
 ~16s Goblin, ~15s Vampire).

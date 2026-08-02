@@ -43,6 +43,14 @@ export type MonsterRuntime = {
 	-- play uninterrupted. `preFallCFrame` is the pivot to rise back to.
 	downedUntil: number,
 	preFallCFrame: CFrame?,
+	-- Jump-over arc (e.g. Spider vaulting the first Brainrot). While
+	-- `jumpingUntil` is in the future, the tick drives column + floatY along
+	-- a parabola from jumpStartColumn → jumpEndColumn instead of walking.
+	jumpingUntil: number,
+	jumpStartColumn: number,
+	jumpEndColumn: number,
+	jumpPeakHeight: number,
+	jumpDuration: number,
 } & MonsterStatus.StatusFields
 
 export type BehaviorCallbacks = {
@@ -188,14 +196,68 @@ local function shouldSkipBrainrot(runtime: MonsterRuntime, brainrotInstanceId: s
 	end
 	for _, handler in Abilities.iterate(runtime.definition) do
 		if handler.shouldSkipBrainrot then
-			local state = runtime.abilityState
-			if handler.shouldSkipBrainrot(abilityContext(runtime), state, brainrotInstanceId) then
-				runtime.skippedBrainrots[brainrotInstanceId] = true
+			if handler.shouldSkipBrainrot(abilityContext(runtime), runtime.abilityState, brainrotInstanceId) then
 				return true
 			end
 		end
 	end
 	return false
+end
+
+local function jumpParam(runtime: MonsterRuntime, key: string, fallback: number): number
+	local params = runtime.definition.abilityParams
+	if params then
+		local value = params[key]
+		if typeof(value) == "number" then
+			return value
+		end
+	end
+	return fallback
+end
+
+local function closeEnoughToJump(monsterColumn: number, brainrotColumn: number, triggerReach: number): boolean
+	return monsterColumn <= brainrotColumn + triggerReach
+end
+
+local function beginJumpOver(runtime: MonsterRuntime, brainrotInstanceId: string, brainrotColumn: number)
+	local duration = jumpParam(runtime, "jumpDuration", MonsterConfig.JUMP_DURATION)
+	local peak = jumpParam(runtime, "jumpPeakHeight", MonsterConfig.JUMP_PEAK_HEIGHT)
+	local landOffset = jumpParam(runtime, "jumpLandOffset", MonsterConfig.JUMP_LAND_OFFSET)
+
+	runtime.jumpDuration = math.max(0.1, duration)
+	runtime.jumpPeakHeight = math.max(0.5, peak)
+	runtime.jumpStartColumn = runtime.column
+	runtime.jumpEndColumn = brainrotColumn - landOffset
+	if runtime.jumpEndColumn >= runtime.jumpStartColumn then
+		runtime.jumpEndColumn = runtime.jumpStartColumn - landOffset
+	end
+	runtime.jumpingUntil = os.clock() + runtime.jumpDuration
+
+	runtime.skippedBrainrots[brainrotInstanceId] = true
+	runtime.abilityState.jumped = true
+	runtime.isAttacking = false
+	MonsterAnimation.setAttacking(runtime.model, false)
+	MonsterAnimation.setLocomotionPaused(runtime.model, true)
+end
+
+local function updateJump(runtime: MonsterRuntime, now: number)
+	local duration = runtime.jumpDuration
+	if duration <= 0 then
+		runtime.jumpingUntil = 0
+		return
+	end
+
+	local t = 1 - ((runtime.jumpingUntil - now) / duration)
+	t = math.clamp(t, 0, 1)
+	-- Smoothstep so the leap eases out of and into the march.
+	local s = t * t * (3 - 2 * t)
+	runtime.column = runtime.jumpStartColumn + (runtime.jumpEndColumn - runtime.jumpStartColumn) * s
+	local height = 4 * runtime.jumpPeakHeight * t * (1 - t)
+	syncTransform(runtime, height)
+
+	if t >= 1 then
+		MonsterAnimation.setLocomotionPaused(runtime.model, false)
+	end
 end
 
 local function applyPendingHeal(runtime: MonsterRuntime)
@@ -264,6 +326,13 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			continue
 		end
 
+		-- Jump-over arc (Spider): drive column + height along the parabola;
+		-- ignore Brainrots/house until the leap lands.
+		if now < runtime.jumpingUntil then
+			updateJump(runtime, now)
+			continue
+		end
+
 		if now < runtime.frozenUntil then
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			if runtime.freezeVisual == "Bubble" then
@@ -286,9 +355,31 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		MonsterAnimation.setLocomotionPaused(runtime.model, false)
 
 		-- Movement / attack never considers other monsters — units phase through
-		-- each other and only stop for Brainrots (or the house).
+		-- each other and only stop for Brainrots (or the house). Jumpers vault
+		-- the first plant (once) with a visible arc instead of walking through.
 		local brainrotId, brainrotColumn = nearestBrainrotWest(runtime)
-		if brainrotId and shouldSkipBrainrot(runtime, brainrotId) then
+		if brainrotId and brainrotColumn and shouldSkipBrainrot(runtime, brainrotId) then
+			if not runtime.skippedBrainrots[brainrotId] then
+				-- First vaultable plant: approach until jump range, then leap.
+				local triggerReach = jumpParam(runtime, "jumpTriggerReach", MonsterConfig.JUMP_TRIGGER_REACH)
+				if closeEnoughToJump(runtime.column, brainrotColumn, triggerReach) then
+					beginJumpOver(runtime, brainrotId, brainrotColumn)
+					updateJump(runtime, now)
+					continue
+				end
+				-- Still east of the plant — walk in, but never chew it.
+				setAttacking(runtime, false)
+				local speed = runtime.definition.secondsPerGrid
+				if speed > 0 then
+					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
+					local minColumn = brainrotColumn + triggerReach
+					local nextColumn = runtime.column - (dt / speed) * speedMult
+					runtime.column = math.max(nextColumn, minColumn)
+				end
+				syncTransform(runtime)
+				continue
+			end
+			-- Already vaulted this plant — treat it as transparent.
 			brainrotId = nil
 			brainrotColumn = nil
 		end

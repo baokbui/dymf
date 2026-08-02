@@ -113,8 +113,8 @@ local function addLightMist(part: BasePart, rate: number, densityScale: number)
 		NumberSequenceKeypoint.new(1, particleSize * 1.35),
 	})
 	-- Higher densityScale → denser (less transparent) mist.
-	local startT = math.clamp(0.55 - 0.2 * densityScale, 0.2, 0.7)
-	local midT = math.clamp(0.72 - 0.18 * densityScale, 0.35, 0.85)
+	local startT = math.clamp(0.42 - 0.22 * densityScale, 0.08, 0.55)
+	local midT = math.clamp(0.58 - 0.2 * densityScale, 0.2, 0.75)
 	emitter.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, startT),
 		NumberSequenceKeypoint.new(0.5, midT),
@@ -190,7 +190,7 @@ local function buildFogVolumes(plotModel: Model)
 			size,
 			folder,
 			WeatherConfig.FOG_LAWN_PARTICLE_RATE,
-			0.45
+			0.8
 		)
 	end
 
@@ -212,7 +212,7 @@ local function buildFogVolumes(plotModel: Model)
 			Vector3.new(nearDepth, bankHeight, stripZ),
 			folder,
 			WeatherConfig.FOG_FOREST_NEAR_PARTICLE_RATE,
-			0.85
+			1.2
 		)
 		makeFogBank(
 			"ForestFogDeep",
@@ -220,7 +220,7 @@ local function buildFogVolumes(plotModel: Model)
 			Vector3.new(deepDepth, bankHeight * 1.1, stripZ),
 			folder,
 			WeatherConfig.FOG_FOREST_DEEP_PARTICLE_RATE,
-			1.25
+			1.6
 		)
 	end
 end

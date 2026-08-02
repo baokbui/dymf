@@ -42,6 +42,19 @@ local ProgressConfig = {
 		{ day = 9, brainrotId = "BombardinoCrocodilo" },
 	},
 
+	-- Monster / boss intro cadence: the first time the player *reaches* `day`
+	-- (Preparation / Day Select / rejoin), LevelService shows a MonsterIntro
+	-- popup with portrait + stats + ability blurb. Idempotent via saved
+	-- `introducedMonsters`. Aligns with the campaign species ramp in LEVELS.md.
+	MONSTER_INTRO_SCHEDULE = {
+		{ day = 5, monsterId = "Goblin" },
+		{ day = 10, monsterId = "GoblinElite" },
+		{ day = 15, monsterId = "Vampire" },
+		{ day = 20, monsterId = "DukeVampire" },
+		{ day = 25, monsterId = "Spider" },
+		{ day = 30, monsterId = "QueenSpider" },
+	},
+
 	-- Brains granted on victory = level number * this multiplier (level 1 → 1).
 	BRAINS_PER_LEVEL_NUMBER = 1,
 

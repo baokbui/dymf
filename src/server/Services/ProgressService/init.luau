@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
+local Monsters = require(Shared.Monsters)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -31,6 +32,7 @@ type Profile = {
 	unlocks: { string },
 	equipped: { string },
 	statistics: { [string]: number },
+	introducedMonsters: { string },
 	sessionStartedAt: number,
 	hydrated: boolean, -- false until SaveService.applySaveSlice (or reset)
 }
@@ -80,6 +82,19 @@ local function sanitizeIdList(raw: { string }, requireUnlocked: { [string]: bool
 	return result
 end
 
+local function sanitizeMonsterIdList(raw: { string }): { string }
+	local seen: { [string]: boolean } = {}
+	local result: { string } = {}
+	for _, id in raw do
+		if type(id) ~= "string" or seen[id] or not Monsters.exists(id) then
+			continue
+		end
+		seen[id] = true
+		table.insert(result, id)
+	end
+	return result
+end
+
 local function unlockSet(unlocks: { string }): { [string]: boolean }
 	local set: { [string]: boolean } = {}
 	for _, id in unlocks do
@@ -98,6 +113,7 @@ local function ensureProfile(player: Player): Profile
 		unlocks = defaultUnlocks(),
 		equipped = defaultEquipped(),
 		statistics = {},
+		introducedMonsters = {},
 		sessionStartedAt = os.clock(),
 		hydrated = false,
 	}
@@ -164,6 +180,7 @@ function ProgressService.getSaveSlice(player: Player): {
 	unlocks: { string },
 	equipped: { string },
 	statistics: { [string]: number },
+	introducedMonsters: { string },
 }?
 	local profile = profiles[player.UserId]
 	if not profile or not profile.hydrated then
@@ -176,6 +193,7 @@ function ProgressService.getSaveSlice(player: Player): {
 		unlocks = copyList(profile.unlocks),
 		equipped = copyList(profile.equipped),
 		statistics = copyStats(profile.statistics),
+		introducedMonsters = copyList(profile.introducedMonsters),
 	}
 end
 
@@ -184,6 +202,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	unlocks: { string }?,
 	equipped: { string }?,
 	statistics: { [string]: number }?,
+	introducedMonsters: { string }?,
 })
 	local profile = ensureProfile(player)
 	if type(slice.brains) == "number" then
@@ -208,6 +227,11 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	else
 		profile.statistics = {}
 	end
+	if type(slice.introducedMonsters) == "table" then
+		profile.introducedMonsters = sanitizeMonsterIdList(slice.introducedMonsters :: { string })
+	else
+		profile.introducedMonsters = {}
+	end
 	profile.sessionStartedAt = os.clock()
 	profile.hydrated = true
 	broadcast(player)
@@ -219,6 +243,7 @@ function ProgressService.reset(player: Player)
 		unlocks = defaultUnlocks(),
 		equipped = defaultEquipped(),
 		statistics = {},
+		introducedMonsters = {},
 		sessionStartedAt = os.clock(),
 		hydrated = true,
 	}
@@ -299,6 +324,34 @@ function ProgressService.grantUnlockForLevel(player: Player, clearedLevelNumber:
 	if #profile.equipped < ProgressConfig.MAX_EQUIPPED then
 		table.insert(profile.equipped, scheduled)
 	end
+	return scheduled
+end
+
+-- Monster / boss intro cadence (ProgressConfig.MONSTER_INTRO_SCHEDULE). Idempotent:
+-- returns the monster id the first time the player *reaches* `dayNumber`, nil
+-- on replay. Persisted via SaveData.introducedMonsters.
+function ProgressService.consumeMonsterIntroForDay(player: Player, dayNumber: number): string?
+	local scheduled: string? = nil
+	for _, entry in ProgressConfig.MONSTER_INTRO_SCHEDULE do
+		if entry.day == dayNumber then
+			scheduled = entry.monsterId
+			break
+		end
+	end
+	if not scheduled or not Monsters.exists(scheduled) then
+		return nil
+	end
+
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return nil
+	end
+	for _, id in profile.introducedMonsters do
+		if id == scheduled then
+			return nil
+		end
+	end
+	table.insert(profile.introducedMonsters, scheduled)
 	return scheduled
 end
 

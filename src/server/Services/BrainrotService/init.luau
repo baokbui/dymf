@@ -527,6 +527,12 @@ local function applyBrainrotStatus(
 	local now = os.clock()
 	if kind == "Stun" or kind == "Freeze" then
 		placement.frozenUntil = math.max(placement.frozenUntil, now + duration)
+		-- Cartoon dizzy stars for the remaining stun/freeze window (Queen Spider,
+		-- Duke Vampire Terrify, …).
+		local remain = placement.frozenUntil - now
+		if remain > 0 then
+			CombatService.notifyDizzy(placement.ownerUserId, instanceId, remain)
+		end
 		return
 	end
 
@@ -548,6 +554,10 @@ local function applyBrainrotStatus(
 			placement.poisonUntil = math.max(placement.poisonUntil, now + duration)
 			placement.poisonHitsPerTick = hitsPerTick
 			placement.poisonNextTick = now + CombatConfig.POISON_TICK_INTERVAL
+			local remain = placement.poisonUntil - now
+			if remain > 0 then
+				CombatService.notifyPoison(placement.ownerUserId, instanceId, remain)
+			end
 		else
 			placement.burnUntil = math.max(placement.burnUntil, now + duration)
 			placement.burnHitsPerTick = hitsPerTick

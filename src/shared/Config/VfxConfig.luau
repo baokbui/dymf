@@ -93,7 +93,7 @@ local VfxConfig = {
 	TERRIFY_WAVE_SEGMENTS = 16,
 	TERRIFY_WAVE_LIFETIME = 0.75,
 
-	-- Dizzy stars orbiting over a Brainrot afflicted by Terrify (classic
+	-- Dizzy stars orbiting over a Brainrot afflicted by Stun / Terrify (classic
 	-- cartoon "dizzy" halo).
 	DIZZY_COLOR = Color3.fromRGB(255, 225, 90),
 	DIZZY_SIZE = UDim2.fromOffset(90, 90),
@@ -103,6 +103,20 @@ local VfxConfig = {
 	DIZZY_ORBIT_RADIUS = 22, -- pixels, in the billboard's 2D plane
 	DIZZY_ORBIT_FLATTEN = 0.45, -- vertical squash for an elliptical "halo" orbit
 	DIZZY_SPIN_SECONDS = 1.2,
+
+	-- Purple poison aura around a Brainrot (Queen Spider chew, …).
+	POISON_AURA_COLOR = Color3.fromRGB(160, 60, 220),
+	POISON_AURA_RATE = 28,
+	POISON_AURA_LIGHT_BRIGHTNESS = 2.8,
+	POISON_AURA_LIGHT_RANGE = 12,
+
+	-- Floating status words ("Poisoned" / "Stunned") that rise and fade.
+	STATUS_FLOAT_SIZE = UDim2.fromOffset(160, 40),
+	STATUS_FLOAT_START_OFFSET = Vector3.new(0, 3.2, 0),
+	STATUS_FLOAT_RISE_STUDS = 2.4,
+	STATUS_FLOAT_DURATION = 1.15,
+	STATUS_FLOAT_POISON_COLOR = Color3.fromRGB(200, 110, 255),
+	STATUS_FLOAT_STUN_COLOR = Color3.fromRGB(255, 225, 70),
 
 	-- Cappuccino spinning shuriken trail.
 	SHURIKEN_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(255, 230, 140),

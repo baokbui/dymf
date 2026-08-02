@@ -92,6 +92,7 @@ local function defaultSaveData(): Types.SaveData
 		equipped = deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED),
 		upgrades = {},
 		statistics = {},
+		introducedMonsters = {},
 	}
 end
 
@@ -173,6 +174,16 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
+	local introducedMonsters = payload.introducedMonsters
+	if type(introducedMonsters) == "table" then
+		save.introducedMonsters = {}
+		for _, value in introducedMonsters do
+			if type(value) == "string" then
+				table.insert(save.introducedMonsters :: { string }, value)
+			end
+		end
+	end
+
 	local brainrots = payload.brainrots
 	if type(brainrots) == "table" then
 		save.brainrots = {}
@@ -226,6 +237,11 @@ local function collectSnapshot(player: Player): Types.SaveData
 		statistics = if progress
 			then progress.statistics
 			elseif fallback then deepCopyNumberMap(fallback.statistics)
+			else {},
+		introducedMonsters = if progress
+			then progress.introducedMonsters
+			elseif fallback and fallback.introducedMonsters
+			then deepCopyStringList(fallback.introducedMonsters)
 			else {},
 	}
 end
@@ -315,6 +331,7 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		unlocks = saveData.unlocks,
 		equipped = saveData.equipped,
 		statistics = saveData.statistics,
+		introducedMonsters = saveData.introducedMonsters,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
 	CoinService.applyDayPurse(player, saveData.currentLevel)
