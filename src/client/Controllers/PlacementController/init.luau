@@ -123,6 +123,7 @@ local function ensureGhostFor(definition: Types.BrainrotDefinition)
 			ghostTransparency = GHOST_TRANSPARENCY,
 			tintColor = VALID_COLOR,
 			orientationDegrees = definition.modelOrientationDegrees,
+			idleArmDropDegrees = definition.idleArmDropDegrees,
 		})
 		model.Name = "PlacementGhost"
 		model.Parent = Workspace
