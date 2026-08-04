@@ -91,8 +91,8 @@ function CoinMotion.spitFromOrigin(part: BasePart, fromPosition: Vector3, landPo
 	local arc = EconomyConfig.PRODUCER_SPIT_ARC_HEIGHT
 	tweenAlpha(
 		EconomyConfig.PRODUCER_SPIT_DURATION,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out,
+		Enum.EasingStyle.Sine,
+		Enum.EasingDirection.InOut,
 		function(t)
 			if not part.Parent then
 				return

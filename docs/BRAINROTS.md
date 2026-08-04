@@ -55,8 +55,9 @@ From `Shared.Types.BrainrotDefinition`:
 | `previewFocusOffset` | Vector3?            | Shop/inventory preview look-at nudge after visual center           |
 | `animated`        | boolean?               | Keep Motor6D + Animator; play idle/attack tracks                   |
 | `idleAnimationId` | string?                | Idle loop asset; nil → IdleAnimation child / AnimSaves             |
-| `attackAnimationId` | string?              | Melee swing asset; nil → AttackAnimation child                     |
-| `attackHitDelay`  | number?                | Seconds after swing anim starts before melee damage                |
+| `attackAnimationId` | string?              | Action clip (swing / spit); nil → AttackAnimation child            |
+| `hitAnimationId`  | string?                | Flinch when damaged; nil → HitAnimation child                      |
+| `attackHitDelay`  | number?                | Seconds after action anim starts before melee hit / coin drop      |
 
 
 Range is measured in **grid tiles** along the lane toward the enemy (+X), not
@@ -106,8 +107,9 @@ Set on the registry definition (never branch on names):
 | ----- | ---- |
 | `animated = true` | Keep Motor6Ds + Animator; `BrainrotAnimation` binds tracks |
 | `idleAnimationId` | Optional; else `IdleAnimation` / `WalkAnimation` child, then idle-named `AnimSaves` |
-| `attackAnimationId` | Optional; else `AttackAnimation` child |
-| `attackHitDelay` | Melee only — seconds after swing starts before damage (`MeleeBat`) |
+| `attackAnimationId` | Action clip (melee swing, coin spit, …); else `AttackAnimation` child |
+| `hitAnimationId` | Flinch when damaged; else `HitAnimation` child |
+| `attackHitDelay`  | Seconds after action anim starts before hit / coin drop               |
 | `modelOrientationDegrees` / `modelYOffset` / `previewFocusOffset` | Placement + shop framing |
 
 **Clip resolve order (idle):** embedded `IdleAnimation` → `WalkAnimation` →
@@ -117,14 +119,19 @@ named idle/walk/stand (never attack/bat/swing).
 **Clip resolve order (attack):** embedded `AttackAnimation` →
 `definition.attackAnimationId`.
 
+**Clip resolve order (hit):** embedded `HitAnimation` →
+`definition.hitAnimationId`. Played on damage via `BrainrotAnimation.playHit`
+(e.g. Chimpanzini when chewed).
+
 **Playback:** server `BrainrotAnimation` (replicates). `pulseAttack` plays the
 swing for animated units and skips the old ScaleTo body pulse. Client
 `BrainrotController` still plays hit SFX; it also skips ScaleTo when
 `definition.animated`.
 
-**Melee windup:** `attackHitDelay` starts the anim immediately, spends the
-cooldown, then re-acquires the nearest in-range monster before damage. If the
-target left range during the windup, the swing misses (no refund).
+**Melee / producer windup:** `attackHitDelay` starts the action anim
+immediately, spends the cooldown, then applies damage (`MeleeBat`) or drops
+coins (`GenerateCoins`). If a melee target left range during the windup, the
+swing misses (no refund).
 
 Shop/inventory `BrainrotPreview` preserves the rig + orientation but does **not**
 play idle in the ViewportFrame (static framed pose; tune with

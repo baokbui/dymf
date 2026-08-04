@@ -755,7 +755,8 @@ and evolutions/mutations (M20).
 
 ## Prerequisites
 
-- Plot houses + empty `BossSlot_*` pedestals (`HouseBuilder` / `HouseConfig`) ✅
+- Plot houses + authored Cottage pedestals (`HouseBuilder` / `HouseConfig`) ✅
+  (runtime no longer spawns `BossDisplay` cylinders)
 - Brains currency + ProgressService ✅ (M13)
 - Boss monsters authored in levels (`isBoss`) ✅
 
@@ -772,7 +773,8 @@ and evolutions/mutations (M20).
 - New **`HouseService`** owns display placement + income ticks; grants brains
   through `ProgressService` (never invent balances on the client)
 - Only `SaveService` persists collected bosses
-- Pedestal markers already exist under `PlotN.House.BossDisplay`
+- Pedestal markers live in the authored Cottage; `CollectedBosses` folder is
+  created at runtime for future trophies.
 - Full design: **`docs/HOUSE.md`**
 
 ## Complete When

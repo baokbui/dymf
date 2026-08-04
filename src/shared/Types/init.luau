@@ -52,8 +52,9 @@ export type BrainrotDefinition = {
 	-- Keep Motor6D + Animator and play idle/attack tracks (Tung Tung, …).
 	animated: boolean?,
 	idleAnimationId: string?, -- rbxassetid://… idle loop; nil → IdleAnimation child / AnimSaves
-	attackAnimationId: string?, -- rbxassetid://… melee swing; nil → AttackAnimation child only
-	-- Seconds after attack anim starts before melee damage (windup → hit).
+	attackAnimationId: string?, -- rbxassetid://… action clip (swing / spit); nil → AttackAnimation child only
+	hitAnimationId: string?, -- rbxassetid://… flinch when damaged; nil → HitAnimation child only
+	-- Seconds after action anim starts before melee damage / coin spit.
 	attackHitDelay: number?,
 }
 

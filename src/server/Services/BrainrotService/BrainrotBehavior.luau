@@ -10,15 +10,17 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
+local EconomyConfig = require(ReplicatedStorage.Shared.Config.EconomyConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 
 local Abilities = require(script.Parent.Abilities)
 local BrainrotAnimation = require(script.Parent.BrainrotAnimation)
 local BrainrotFeedback = require(script.Parent.BrainrotFeedback)
 local CoinService = require(script.Parent.Parent.CoinService)
 local CombatService = require(script.Parent.Parent.CombatService)
-local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 
 local log = Logger.new("BrainrotBehavior")
 
@@ -79,12 +81,13 @@ end
 local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCallbacks
 	return {
 		dropCoinsOnGrid = function(amount: number)
-			local origin = placement.model:GetPivot().Position + Vector3.new(0, 2, 0)
-			local body = placement.model.PrimaryPart
-				or placement.model:FindFirstChild("Body", true)
-			if body and body:IsA("BasePart") then
-				origin = body.Position + Vector3.new(0, body.Size.Y * 0.35, 0)
-			end
+			-- Spit from above the visible mesh top (not RootPart / pivot).
+			local size, center = ModelUtil.getVisualSizeAndCenter(placement.model)
+			local origin = Vector3.new(
+				center.X,
+				center.Y + size.Y * 0.5 + EconomyConfig.PRODUCER_SPIT_ORIGIN_CLEARANCE,
+				center.Z
+			)
 			CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount, origin)
 		end,
 		destroySelf = function()

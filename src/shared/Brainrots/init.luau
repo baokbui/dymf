@@ -34,6 +34,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 4.7,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		animated = true,
+		attackAnimationId = "rbxassetid://135103987361576",
+		attackHitDelay = 0.5,
 	},
 
 	TungTungSahur = {
@@ -150,6 +153,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 2,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		animated = true,
+		hitAnimationId = "rbxassetid://113108515716026",
 	},
 }
 

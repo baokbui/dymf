@@ -17,9 +17,10 @@ local EconomyConfig = {
 	PASSIVE_RAIN_DURATION = 2.2,
 	PASSIVE_RAIN_DRIFT = 3, -- random horizontal offset at spawn (studs)
 
-	-- Producer spit (Ballerina): arc from the unit toward a random tile.
-	PRODUCER_SPIT_DURATION = 0.85,
-	PRODUCER_SPIT_ARC_HEIGHT = 6,
+	-- Producer spit (Ballerina): arc from above the unit's visual head toward a tile.
+	PRODUCER_SPIT_DURATION = 1.45,
+	PRODUCER_SPIT_ARC_HEIGHT = 7.5,
+	PRODUCER_SPIT_ORIGIN_CLEARANCE = -0.8, -- studs relative to visual AABB top (− = into head)
 
 	-- Reserved: future bonus reward amount. Day purse: Day 1 = STARTING_COINS,
 	-- later days = 0 after each day ends (see CoinService.applyDayPurse).

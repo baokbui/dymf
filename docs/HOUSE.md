@@ -1,8 +1,9 @@
 # BVM Houses
 
 Each player plot has a **walkable cottage** in the `HOUSE_ZONE` (west of the
-lawn, behind the spawn). The shell and interior pedestals ship now; boss
-collection and passive brains income are **Milestone 21**.
+lawn, behind the spawn). The shell ships with **authored** interior pedestals
+in the Cottage asset; boss collection and passive brains income are
+**Milestone 21**.
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -26,10 +27,19 @@ Within a lane (see `PlotConfig`):
   door facing +X (tune `MODEL_ORIENTATION_DEGREES` if needed). Collision kept.
   On clone: strips Toolbox **Lock Base** UI/pads; the **Empty Base** sign is
   rewritten to `{DisplayName}'s Base` when the plot is assigned.
+- **Roof mascot** ✅ — optional Model named `HouseConfig.MASCOT_NAME`
+  (default `Tung Mascot`), found anywhere under the cottage (e.g.
+  `Cottage → Second Floor → Tung Mascot`). Excluded from house fit, then
+  scaled by `MASCOT_SCALE`, legs stripped when names match
+  (`MASCOT_STRIP_LEGS`), re-seated on the roof, non-colliding (`HouseMascot`).
+- **Owner sign** ✅ — TextLabel/TextButton under a `Sign` ancestor (e.g.
+  `Second Floor → Sign`) or with Empty Base / `'s Base` text; rewritten to
+  `{DisplayName}'s Base` on plot assign.
 - **Fallback:** procedural cottage if the asset is missing (dev-safe).
 - `HouseAnchor` attachment remains on the plot base for legacy markers.
-- Interior: `BossDisplay/BossSlot_1..N` pedestals with `BossStand` attachments
-  and an empty `CollectedBosses` folder for future models.
+- Interior: authored pedestals live in the Cottage asset. Runtime only adds an
+  empty `CollectedBosses` folder for future trophy models (M25) — no spawned
+  `BossDisplay` cylinders.
 
 ### Studio: insert from Toolbox
 
@@ -39,8 +49,11 @@ Within a lane (see `PlotConfig`):
 4. Set a `PrimaryPart`, strip Tools/Scripts if any.
 5. Prefer the doorway facing the mesh forward; default yaw is **180°**
    (`MODEL_ORIENTATION_DEGREES`). If still wrong, try `0` or `±90`.
+6. Optional roof props under a **`Second Floor`** (or any) child Model:
+   - **`Tung Mascot`** — scaled/seated by `HouseMascot`
+   - **`Sign`** — owner label TextLabel(s) updated by `HouseSanitize`
 
-Tune size / pedestal count in `HouseConfig` — never inline.
+Tune size / pedestal count / mascot in `HouseConfig` — never inline.
 
 ---
 

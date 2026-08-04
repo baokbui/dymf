@@ -1,10 +1,11 @@
 --!strict
 --[[
 	BrainrotAnimation
-	Plays idle / attack AnimationTracks on authored Brainrot models that keep an
-	AnimationController (or Humanoid) + Animator. IDs come from model children
-	(IdleAnimation / AttackAnimation), the BrainrotDefinition, or AnimSaves
-	KeyframeSequences registered via AnimationClipProvider.
+	Plays idle / attack / hit AnimationTracks on authored Brainrot models that
+	keep an AnimationController (or Humanoid) + Animator. IDs come from model
+	children (IdleAnimation / AttackAnimation / HitAnimation), the
+	BrainrotDefinition, or AnimSaves KeyframeSequences registered via
+	AnimationClipProvider.
 ]]
 
 local AnimationClipProvider = game:GetService("AnimationClipProvider")
@@ -21,6 +22,7 @@ type AnimState = {
 	animator: Animator,
 	idle: AnimationTrack?,
 	attack: AnimationTrack?,
+	hit: AnimationTrack?,
 }
 
 local states: { [Model]: AnimState } = {}
@@ -116,6 +118,20 @@ local function resolveAttackId(model: Model, definition: Types.BrainrotDefinitio
 	return nil
 end
 
+local function resolveHitId(model: Model, definition: Types.BrainrotDefinition): string?
+	local embedded = findChildAnimation(model, "HitAnimation")
+	if embedded then
+		return embedded.AnimationId
+	end
+	if definition.hitAnimationId ~= nil then
+		if definition.hitAnimationId == "" then
+			return nil
+		end
+		return definition.hitAnimationId
+	end
+	return nil
+end
+
 local function loadTrack(
 	animator: Animator,
 	animationId: string?,
@@ -166,11 +182,18 @@ function BrainrotAnimation.bind(model: Model, definition: Types.BrainrotDefiniti
 		false,
 		Enum.AnimationPriority.Action
 	)
+	local hit = loadTrack(
+		animator,
+		resolveHitId(model, definition),
+		false,
+		Enum.AnimationPriority.Action2
+	)
 
 	states[model] = {
 		animator = animator,
 		idle = idle,
 		attack = attack,
+		hit = hit,
 	}
 
 	if idle then
@@ -189,6 +212,17 @@ function BrainrotAnimation.playAttack(model: Model)
 	state.attack:Play(0.05)
 end
 
+function BrainrotAnimation.playHit(model: Model)
+	local state = states[model]
+	if not state or not state.hit then
+		return
+	end
+	if state.hit.IsPlaying then
+		state.hit:Stop(0)
+	end
+	state.hit:Play(0.05)
+end
+
 function BrainrotAnimation.unbind(model: Model)
 	local state = states[model]
 	if not state then
@@ -201,6 +235,10 @@ function BrainrotAnimation.unbind(model: Model)
 	if state.attack then
 		state.attack:Stop(0)
 		state.attack:Destroy()
+	end
+	if state.hit then
+		state.hit:Stop(0)
+		state.hit:Destroy()
 	end
 	states[model] = nil
 end

@@ -35,8 +35,9 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `PASSIVE_RAIN_HEIGHT`  | 42    | Studs above the tile for passive rain    |
 | `PASSIVE_RAIN_DURATION`| 2.2   | Seconds for passive rain fall            |
 | `PASSIVE_RAIN_DRIFT`   | 3     | Random horizontal spawn drift (studs)    |
-| `PRODUCER_SPIT_DURATION` | 0.85 | Seconds for Ballerina spit arc         |
-| `PRODUCER_SPIT_ARC_HEIGHT` | 6  | Peak loft of spit arc (studs)            |
+| `PRODUCER_SPIT_DURATION` | 1.45 | Seconds for Ballerina spit arc         |
+| `PRODUCER_SPIT_ARC_HEIGHT` | 7.5 | Peak loft of spit arc (studs)            |
+| `PRODUCER_SPIT_ORIGIN_CLEARANCE` | −0.8 | Studs vs visual mesh top for spit origin (− = lower / into head) |
 | `LEVEL_COMPLETION_REWARD`| 50  | Reserved; day purse uses Day 1 / 0 rules |
 | `GROUND_COIN_LIFETIME` | 15    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |

@@ -74,7 +74,21 @@ function HouseSanitize.setOwnerLabel(house: Model, ownerName: string?)
 			continue
 		end
 		local lower = string.lower(inst.Text)
+		local underSign = false
+		local walk: Instance? = inst.Parent
+		while walk and walk ~= house do
+			local parentName = string.lower(walk.Name)
+			if parentName == "sign"
+				or string.find(parentName, "owner sign", 1, true) ~= nil
+				or string.find(parentName, "ownersign", 1, true) ~= nil
+			then
+				underSign = true
+				break
+			end
+			walk = walk.Parent
+		end
 		local isSign = inst:GetAttribute("IsOwnerSign") == true
+			or underSign
 			or string.find(lower, "empty base", 1, true) ~= nil
 			or string.find(lower, "'s base", 1, true) ~= nil
 		if isSign then
