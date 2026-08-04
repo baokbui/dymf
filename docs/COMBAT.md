@@ -35,7 +35,9 @@ for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead
 **Melee bat** uses tile-based `rangeTiles` (Tung Tung = 1): hits monsters on the
 Brainrot's own tile **or** one tile ahead. Friendly Brainrots do **not** block —
 a bat behind Ballerina, Lirili, Chimpanzini, etc. can still hit a monster chewing
-that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.)
+that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.) Optional
+`attackHitDelay` starts the swing anim first, then re-acquires the target before
+damage — if nothing is still in range, the swing misses (cooldown already spent).
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
@@ -123,7 +125,8 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Hit flash (monsters) | `MonsterFeedback.flashHit` on server (replicated body color) |
 | Hit flash (Brainrots) | `BrainrotFeedback.flashHit` on server (replicated BasePart colors) |
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
-| Melee bat SFX + pulse | `BrainrotAction` (`MeleeBat`) — client pulse + sound together |
+| Melee bat SFX | `BrainrotAction` (`MeleeBat`) after `attackHitDelay` — sound only for animated units; ScaleTo pulse only if not `animated` |
+| Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over / SpiderFlat + linger + fade | Server `MonsterDeath` (default 3 tip styles; Queen Spider `SpiderFlat`); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino flies house→enemy along the row; `entireRow` blasts each tile under the pass (`stagger` matches flight) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |

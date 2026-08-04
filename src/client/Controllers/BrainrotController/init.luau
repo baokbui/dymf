@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
+local Brainrots = require(Shared.Brainrots)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -78,6 +79,14 @@ local function onBrainrotAction(payload: unknown)
 	AudioController.play(action)
 
 	if PULSE_ACTIONS[action] and type(data.instanceId) == "string" then
+		-- Animated units (Tung Tung) use their swing clip; skip the ScaleTo pulse.
+		local brainrotId = data.brainrotId
+		if type(brainrotId) == "string" then
+			local definition = Brainrots.get(brainrotId)
+			if definition and definition.animated then
+				return
+			end
+		end
 		local model = findBrainrotModel(data.instanceId)
 		if model then
 			pulseAttack(model)

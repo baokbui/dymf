@@ -45,6 +45,16 @@ export type BrainrotDefinition = {
 	modelOrientationDegrees: Vector3?,
 	-- Multiplier on tile footprint when cloning Assets templates (default 1).
 	modelScale: number?,
+	-- Extra studs up (+) / down (−) after feet-snap to the tile top.
+	modelYOffset: number?,
+	-- Shop/inventory ViewportFrame look-at nudge (studs in world space after center).
+	previewFocusOffset: Vector3?,
+	-- Keep Motor6D + Animator and play idle/attack tracks (Tung Tung, …).
+	animated: boolean?,
+	idleAnimationId: string?, -- rbxassetid://… idle loop; nil → IdleAnimation child / AnimSaves
+	attackAnimationId: string?, -- rbxassetid://… melee swing; nil → AttackAnimation child only
+	-- Seconds after attack anim starts before melee damage (windup → hit).
+	attackHitDelay: number?,
 }
 
 -- Data-driven definition for a Monster type (zombie, vampire, boss, ...).

@@ -41,6 +41,11 @@ local GHOST_TRANSPARENCY = 0.45
 local VALID_COLOR = Color3.fromRGB(120, 220, 120)
 local BLOCKED_COLOR = Color3.fromRGB(220, 110, 110)
 
+-- Only parts tagged at ghost clone time (visual meshes, not rig roots).
+local function isGhostSilhouettePart(part: BasePart): boolean
+	return part:GetAttribute("GhostSilhouette") == true
+end
+
 local selectedId: string? = nil
 local balance = 0
 -- brainrotId → readyAt (Workspace:GetServerTimeNow); mirrored from server.
@@ -81,7 +86,7 @@ end
 local function hideGhost()
 	if ghostModel then
 		for _, descendant in ghostModel:GetDescendants() do
-			if descendant:IsA("BasePart") then
+			if descendant:IsA("BasePart") and isGhostSilhouettePart(descendant) then
 				descendant.Transparency = 1
 			end
 		end
@@ -95,7 +100,7 @@ local function tintGhost(placeable: boolean)
 	local color = if placeable then VALID_COLOR else BLOCKED_COLOR
 	if ghostModel then
 		for _, descendant in ghostModel:GetDescendants() do
-			if descendant:IsA("BasePart") then
+			if descendant:IsA("BasePart") and isGhostSilhouettePart(descendant) then
 				descendant.Color = color
 				descendant.Transparency = GHOST_TRANSPARENCY
 				descendant.Material = Enum.Material.ForceField
@@ -117,13 +122,15 @@ local function ensureGhostFor(definition: Types.BrainrotDefinition)
 	local modelId = definition.modelId or definition.id
 	local template = ModelUtil.findBrainrotTemplate(modelId)
 	if template then
+		local animated = definition.animated == true
 		local model = ModelUtil.cloneBrainrotTemplate(template, {
 			targetFootprint = footprintFor(definition),
 			ghost = true,
 			ghostTransparency = GHOST_TRANSPARENCY,
 			tintColor = VALID_COLOR,
 			orientationDegrees = definition.modelOrientationDegrees,
-			idleArmDropDegrees = definition.idleArmDropDegrees,
+			preserveAnimationRig = animated,
+			skipBodyAlias = animated,
 		})
 		model.Name = "PlacementGhost"
 		model.Parent = Workspace
@@ -178,7 +185,7 @@ local function updateGhost(tile: BasePart?)
 	local placeable = placementAllowed and not occupied and not fogBlocked and canAfford()
 
 	if ghostModel then
-		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees)
+		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees, nil, definition.modelYOffset)
 	elseif ghostPart then
 		local footprint = footprintFor(definition)
 		local height = if definition.ability == "Wall" then 10 else GHOST_HEIGHT

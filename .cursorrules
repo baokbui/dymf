@@ -112,9 +112,14 @@ The client owns:
 - UI
 - Camera
 - Input
-- Animations
 - Visual Effects
 - Sound Playback
+- Cosmetic ghosts / ViewportFrame previews
+
+Unit Animator tracks (Brainrot / Monster idle, attack, walk) are driven on the
+**server** so Motor6D poses replicate (`BrainrotAnimation` / `MonsterAnimation`).
+Combat math stays server-authoritative either way — never trust the client for
+damage or targeting.
 
 Never trust RemoteEvents.
 

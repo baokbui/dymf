@@ -82,7 +82,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         PlotService/      (init + Plot + PlotBuilder)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
-        BrainrotService/  (init + BrainrotModel, BrainrotBehavior, Abilities, BrainrotFeedback)
+        BrainrotService/  (init + BrainrotModel, BrainrotBehavior, BrainrotAnimation, Abilities, BrainrotFeedback)
         EnemyService/     (init + MonsterModel, MonsterBehavior, Abilities, MonsterFeedback)
         CombatService/
         LevelService/
@@ -96,7 +96,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary intent signal)
-        BrainrotController/ (BrainrotAction SFX + client attack pulse — M5/M12)
+        BrainrotController/ (BrainrotAction SFX; ScaleTo pulse only if not animated)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
         WeatherController/ (night Lighting + fog volumes / monster hide)
@@ -168,9 +168,10 @@ to call, e.g. `PlotService.getPlot(player)`.
 
 | Server owns                                   | Client owns                       |
 | --------------------------------------------- | --------------------------------- |
-| Coins, damage, health, levels, spawning       | UI                                |
-| Brainrot placement, saving, rewards           | Camera, input, animations         |
-| Plot assignment & ownership                   | Visual effects, sound playback    |
+| Coins, damage, health, levels, spawning       | UI, camera, input                 |
+| Brainrot placement, saving, rewards           | SFX, particles, UI juice          |
+| Unit Animator tracks (idle / attack / walk)   | Placement ghost / shop previews   |
+| Plot assignment & ownership                   |                                   |
 
 The client sends **intent**; the server **decides**. UI only displays state.
 
@@ -311,9 +312,13 @@ Full details in `BRAINROTS.md`. Summary:
 - **`BrainrotBehavior`** — server tick loop for cooldowns; calls `tryAct` /
   `onPlaced`; routes combat through `CombatService`, coins through
   `CoinService.dropCoinForOwner`.
-- **`BrainrotFeedback`** — replicated attack pulse tween on the model body.
+- **`BrainrotAnimation`** — server idle/attack Animator tracks for
+  `definition.animated` units (replicates Motor6D poses; same idea as
+  `MonsterAnimation`).
+- **`BrainrotFeedback`** — ScaleTo attack pulse (skipped when `animated`) +
+  replicated hit flash on damage.
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
-  pushes (gameplay stays server-side).
+  pushes; ScaleTo pulse only for non-animated melee (gameplay stays server-side).
 - **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
   Full combat: projectiles, target acquisition, status effects (M7).
 

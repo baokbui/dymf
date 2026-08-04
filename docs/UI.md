@@ -80,7 +80,9 @@ hardcode a second palette in new UI.
   only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
-  stroke on the viewport) so the row stays readable. After planting, the card
+  stroke on the viewport) so the row stays readable. Framing uses visual AABB
+  + optional `previewFocusOffset`; animated rigs stay posed (no idle playback
+  in the ViewportFrame). After planting, the card
   shows a **recharge overlay** (`PlantCooldownsUpdated`; cheaper units recharge
   faster — see `BrainrotConfig.plantCooldownFor`).
 - **Plant toasts** ✅ — stacked messages just under Shop when a plant fails

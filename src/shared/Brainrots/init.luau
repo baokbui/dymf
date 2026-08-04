@@ -29,8 +29,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "GenerateCoins",
 		coinGeneration = 25,
 		color = Color3.fromRGB(255, 182, 193),
+		previewFocusOffset = Vector3.new(0, -0.8, 0),
 		modelId = "Ballerina Cappuccina",
-		modelOrientationDegrees = Vector3.new(90, 0, 0),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 4.7,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
@@ -45,10 +47,18 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		rangeTiles = 1,
 		ability = "MeleeBat",
 		color = Color3.fromRGB(139, 90, 43),
+		previewFocusOffset = Vector3.new(0, -0.8, 0),
 		modelId = "Tung Tung Tung Sahur",
 		-- Toolbox mesh orientation verified in-game (pitch / yaw / roll degrees).
-		modelOrientationDegrees = Vector3.new(90, 0, 180),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		-- Raise (+) / lower (−) after feet-snap; tune until soles sit on the tile.
+		modelYOffset = 5,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		-- AnimationController + Animator on the Assets template.
+		animated = true,
+		attackAnimationId = "rbxassetid://128065031620598",
+		-- Windup before damage so the bat swing lands on the hit frame.
+		attackHitDelay = 0.5,
 	},
 
 	TralaleroTralala = {
@@ -63,8 +73,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "BubbleTrap",
 		abilityParams = { trapDuration = 0.5 },
 		color = Color3.fromRGB(100, 200, 255),
+		previewFocusOffset = Vector3.new(0, -0.5, 0),
 		modelId = "Tralalero Tralala",
-		modelOrientationDegrees = Vector3.new(-90, 180, -90),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 1,
 	},
 
 	BombardinoCrocodilo = {
@@ -79,8 +91,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "LineBomb",
 		triggersOnPlace = true,
 		color = Color3.fromRGB(60, 140, 70),
+		previewFocusOffset = Vector3.new(0, -0.5, 0),
 		modelId = "Bombardiro Crocodilo",
-		modelOrientationDegrees = Vector3.new(90, 0, 0),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 5,
 	},
 
 	LiriliLarila = {
@@ -95,8 +109,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "FreezeTime",
 		abilityParams = { freezeDuration = 0.7 },
 		color = Color3.fromRGB(180, 220, 255),
+		previewFocusOffset = Vector3.new(0, -0.6, 0),
 		modelId = "Lirilì Larilà",
-		modelOrientationDegrees = Vector3.new(-90, 180, 0),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 3,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
@@ -111,8 +127,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		rangeTiles = FULL_LINE,
 		ability = "ThrowKnife",
 		color = Color3.fromRGB(80, 50, 35),
+		previewFocusOffset = Vector3.new(0, -0.7, 0),
 		modelId = "Cappuccino Assassino",
-		modelOrientationDegrees = Vector3.new(-90, 180, 0),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 3,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
@@ -127,9 +145,10 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		rangeTiles = 0,
 		ability = "Wall",
 		color = Color3.fromRGB(255, 220, 80),
+		previewFocusOffset = Vector3.new(0, -0.2, 0),
 		modelId = "Chimpanzini Bananini",
-		-- Toolbox mesh orientation verified in-game.
-		modelOrientationDegrees = Vector3.new(-90, 180, 90),
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 2,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 }

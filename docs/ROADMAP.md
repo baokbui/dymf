@@ -546,26 +546,29 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
 ## Goal
 
 Add authored animations for Brainrots (and monsters where ready) on top of the
-M15–M16 model pipelines. Playback is **client-owned**; the server never drives
-Animator for gameplay authority (`.cursorrules`).
+M15–M16 model pipelines. **Combat outcomes stay server-authoritative.** Unit
+Animator tracks (idle / attack / walk) are driven on the **server** so Motor6D
+poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
+`BrainrotAnimation` ✅). Client still owns SFX, particles, and UI juice
+(`.cursorrules` presentation layer).
 
 ## Add
 
 - Animation assets / ids per unit (idle, attack, death — extend as needed)
-- Data-driven mapping on definitions (`animationIds` / registry field — no
-  per-name branching)
-- Client controller(s) play clips from gameplay intents already replicated
-  (`BrainrotAction`, combat visuals, placement) — display-only
-- Brainrot idle + attack loops for the launch seven; wall / one-shot units
-  use idle (and place/fly clips where applicable)
-- Monster walk / attack / death when models support it (optional same milestone
-  if assets exist; otherwise Brainrots first)
+- Data-driven mapping on definitions (`animated`, `idleAnimationId`,
+  `attackAnimationId`, `attackHitDelay` — no per-name branching) ✅ Tung Tung
+- Server modules play clips when behavior fires (`BrainrotAnimation` /
+  `MonsterAnimation`) — display-only relative to combat math
+- Brainrot idle + attack for the launch seven; wall / one-shot units use idle
+  (and place/fly clips where applicable) — 🔜 remaining six after Tung Tung
+- Monster walk / attack / death when models support it (partial ✅)
 
 ## Complete When
 
 - Launch Brainrots animate idle and attack in-game instead of static poses /
-  ScaleTo-only feedback alone.
-- Animation playback stays client-side; combat outcomes remain server-authoritative.
+  ScaleTo-only feedback alone. (Tung Tung ✅; others 🔜)
+- Combat damage / targeting remain server-authoritative; Animator playback does
+  not grant client authority over hits.
 
 ---
 

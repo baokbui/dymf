@@ -94,7 +94,7 @@ ids stay silent.
 
 | Event | Path |
 | ----- | ---- |
-| Melee bat hit (incl. kill) | `MeleeBat` ability → `BrainrotAction` → `AudioController.play("MeleeBat")` + client pulse |
+| Melee bat hit (incl. kill) | `MeleeBat` ability → (optional `attackHitDelay`) → `BrainrotAction` → `AudioController.play("MeleeBat")`; client ScaleTo pulse skipped when `animated` |
 | Knife impact | `CombatVisual` Hit with `soundKey = "ThrowKnifeHit"` |
 | Bubble projectile impact | `CombatVisual` Hit with `soundKey = "BubbleTrap"` (after travel) |
 | Generic hit particles | `CombatVisual` Hit (`muteSound` skips SFX when bat already played) |

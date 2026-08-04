@@ -130,8 +130,9 @@ end
 local function destroyInvisibleParts(root: Instance)
 	for _, descendant in root:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant.Transparency >= INVISIBLE_TRANSPARENCY then
-			-- Keep rig roots so Motor6D chains stay intact (R6/R15 Toolbox monsters).
-			if descendant.Name == "HumanoidRootPart" then
+			-- Keep rig roots so Motor6D chains stay intact (R6/R15 / custom RootPart).
+			local name = descendant.Name
+			if name == "HumanoidRootPart" or name == "RootPart" or name == "FakeRootPart" then
 				continue
 			end
 			descendant:Destroy()
@@ -190,7 +191,11 @@ function ModelUtil.getVisualSizeAndCenter(model: Model): (Vector3, Vector3)
 end
 
 local function pickPrimaryPart(model: Model): BasePart?
-	-- Prefer rig root even when invisible so PivotTo moves the whole Motor6D tree.
+	-- Prefer custom RootPart (Tung Tung) then HRP so PivotTo moves the Motor6D tree.
+	local root = model:FindFirstChild("RootPart", true)
+	if root and root:IsA("BasePart") then
+		return root
+	end
 	local hrp = model:FindFirstChild("HumanoidRootPart", true)
 	if hrp and hrp:IsA("BasePart") then
 		return hrp
@@ -220,6 +225,32 @@ local function ensureBodyAlias(model: Model, primary: BasePart)
 		end
 		return
 	end
+
+	local function isRigRootName(name: string): boolean
+		return name == "HumanoidRootPart" or name == "RootPart" or name == "FakeRootPart"
+	end
+
+	-- Never rename invisible rig roots to Body — ghost tint / feet-snap treat them
+	-- as non-visual; renaming to Body made PlacementController silhouette them.
+	if isRigRootName(primary.Name) or not isVisualPart(primary) then
+		local best: BasePart? = nil
+		local bestVolume = 0
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") and isVisualPart(descendant) and not isRigRootName(descendant.Name) then
+				local volume = descendant.Size.X * descendant.Size.Y * descendant.Size.Z
+				if volume > bestVolume then
+					bestVolume = volume
+					best = descendant
+				end
+			end
+		end
+		if best then
+			best.Name = "Body"
+		end
+		model.PrimaryPart = primary
+		return
+	end
+
 	primary.Name = "Body"
 end
 
@@ -388,7 +419,8 @@ function ModelUtil.pivotToTileTop(
 	model: Model,
 	topCenter: Vector3,
 	orientationDegrees: Vector3?,
-	faceDirection: Vector3?
+	faceDirection: Vector3?,
+	yOffset: number?
 )
 	local pos = model:GetPivot().Position
 	model:PivotTo(CFrame.new(pos))
@@ -398,7 +430,8 @@ function ModelUtil.pivotToTileTop(
 
 	local minV, maxV = getVisualWorldAABB(model)
 	local center = (minV + maxV) * 0.5
-	local delta = Vector3.new(topCenter.X - center.X, topCenter.Y - minV.Y, topCenter.Z - center.Z)
+	local lift = yOffset or 0
+	local delta = Vector3.new(topCenter.X - center.X, topCenter.Y + lift - minV.Y, topCenter.Z - center.Z)
 	model:PivotTo(model:GetPivot() + delta)
 end
 
@@ -511,10 +544,13 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 		local transparency = options.ghostTransparency or 0.45
 		local tint = options.tintColor
 		for _, descendant in model:GetDescendants() do
-			if descendant:IsA("BasePart") then
+			-- Only silhouette authored meshes — keep invisible rig roots out of
+			-- feet-snap AABB so ghost Y matches the placed model.
+			if descendant:IsA("BasePart") and isVisualPart(descendant) then
 				descendant.Material = Enum.Material.ForceField
 				descendant.Transparency = transparency
 				descendant.CastShadow = false
+				descendant:SetAttribute("GhostSilhouette", true)
 				if tint then
 					descendant.Color = tint
 				end

@@ -51,6 +51,12 @@ From `Shared.Types.BrainrotDefinition`:
 | `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing (+X)                                      |
 | `modelScale`      | number?                | Footprint multiplier (default 1; compact units use `COMPACT_MODEL_SCALE`) |
+| `modelYOffset`    | number?                | Extra studs up (+) / down (−) after feet-snap to tile top          |
+| `previewFocusOffset` | Vector3?            | Shop/inventory preview look-at nudge after visual center           |
+| `animated`        | boolean?               | Keep Motor6D + Animator; play idle/attack tracks                   |
+| `idleAnimationId` | string?                | Idle loop asset; nil → IdleAnimation child / AnimSaves             |
+| `attackAnimationId` | string?              | Melee swing asset; nil → AttackAnimation child                     |
+| `attackHitDelay`  | number?                | Seconds after swing anim starts before melee damage                |
 
 
 Range is measured in **grid tiles** along the lane toward the enemy (+X), not
@@ -88,14 +94,41 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 | `CappuccinoAssassino` | `Cappuccino Assassino` |
 | `ChimpanziniBananini` | `Chimpanzini Bananini` |
 
-For each Model: set `PrimaryPart` (feet/base), strip leftover Tools/Scripts/
-Sounds (clones also strip audio in `ModelUtil` so plant SFX stay plot-owner-only),
-face enemy (+X) if the Toolbox facing is wrong. Placement ghost clones the same
-template. Compact units use `modelScale = BrainrotConfig.COMPACT_MODEL_SCALE`
-(0.7); Tralalero and Bombardino stay at full footprint. Shop cards show a
-**ViewportFrame model preview** from the same `Assets.Brainrots` template
-(`client/Utilities/BrainrotPreview`); color swatch is the fallback if a
-template is missing.
+For each Model: set `PrimaryPart` (prefer `RootPart` / `HumanoidRootPart` —
+`ModelUtil.pickPrimaryPart` does this on clone), strip leftover Tools/Scripts/
+Sounds (clones also strip those in `ModelUtil`).
+
+### Animated Brainrots ✅ (Tung Tung) / 🔜 (others)
+
+Set on the registry definition (never branch on names):
+
+| Field | Role |
+| ----- | ---- |
+| `animated = true` | Keep Motor6Ds + Animator; `BrainrotAnimation` binds tracks |
+| `idleAnimationId` | Optional; else `IdleAnimation` / `WalkAnimation` child, then idle-named `AnimSaves` |
+| `attackAnimationId` | Optional; else `AttackAnimation` child |
+| `attackHitDelay` | Melee only — seconds after swing starts before damage (`MeleeBat`) |
+| `modelOrientationDegrees` / `modelYOffset` / `previewFocusOffset` | Placement + shop framing |
+
+**Clip resolve order (idle):** embedded `IdleAnimation` → `WalkAnimation` →
+`Animation` child → `definition.idleAnimationId` → `AnimSaves` KeyframeSequence
+named idle/walk/stand (never attack/bat/swing).
+
+**Clip resolve order (attack):** embedded `AttackAnimation` →
+`definition.attackAnimationId`.
+
+**Playback:** server `BrainrotAnimation` (replicates). `pulseAttack` plays the
+swing for animated units and skips the old ScaleTo body pulse. Client
+`BrainrotController` still plays hit SFX; it also skips ScaleTo when
+`definition.animated`.
+
+**Melee windup:** `attackHitDelay` starts the anim immediately, spends the
+cooldown, then re-acquires the nearest in-range monster before damage. If the
+target left range during the windup, the swing misses (no refund).
+
+Shop/inventory `BrainrotPreview` preserves the rig + orientation but does **not**
+play idle in the ViewportFrame (static framed pose; tune with
+`previewFocusOffset`).
 
 M15 **Complete When** (all seven real models in-game) ✅ — templates under
 `Assets.Brainrots` with `modelId` mapping in `Shared.Brainrots`.
@@ -180,8 +213,9 @@ BrainrotBehavior (cooldown tick)
        ▼
 Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
        │                 └──►  CoinService (coin drops)
-       └──►  BrainrotFeedback (server attack pulse + hit flash when damaged)
-       └──►  BrainrotAction remote → client SFX (+ client pulse for MeleeBat)
+       └──►  BrainrotAnimation (server idle / attack tracks when animated)
+       └──►  BrainrotFeedback (ScaleTo pulse if not animated; hit flash on damage)
+       └──►  BrainrotAction remote → client SFX (ScaleTo pulse only if not animated)
 ```
 
 - `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
@@ -191,7 +225,8 @@ detaches from the tile, deals row damage, flies house → enemy along the row
 while tile blasts track under it, then despawns.
 - Attackers only reset their cooldown when `tryAct` returns true (e.g. no
 monsters in range). **Coin producers** and **Lirili** always consume their
-cycle when they fire.
+cycle when they fire. **Melee bat** with `attackHitDelay` returns true when
+the swing starts; damage applies after the delay (may miss if the target left).
 
 ### Plant recharge (shop) ✅
 

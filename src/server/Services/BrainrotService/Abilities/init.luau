@@ -21,6 +21,7 @@ export type AbilityContext = {
 	definition: any,
 	ownerUserId: number,
 	plotModel: Model,
+	model: Model,
 	position: any,
 	row: number,
 	column: number,

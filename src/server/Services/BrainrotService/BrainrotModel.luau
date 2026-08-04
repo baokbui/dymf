@@ -108,12 +108,16 @@ function BrainrotModel.create(
 		return createPlaceholder(instanceId, definition, ownerUserId, position, topCenter, parent)
 	end
 
+	local animated = definition.animated == true
 	local model = ModelUtil.cloneBrainrotTemplate(template, {
 		targetFootprint = footprintFor(definition),
 		orientationDegrees = definition.modelOrientationDegrees,
+		preserveAnimationRig = animated,
+		-- Keep RootPart name for Motor6D chains; feedback uses PrimaryPart / Body.
+		skipBodyAlias = animated,
 	})
 	model.Name = string.format("%s_%s", definition.id, instanceId)
-	ModelUtil.pivotToTileTop(model, topCenter, definition.modelOrientationDegrees)
+	ModelUtil.pivotToTileTop(model, topCenter, definition.modelOrientationDegrees, nil, definition.modelYOffset)
 	applyIdentity(model, instanceId, definition, ownerUserId, position)
 	model.Parent = parent
 	return model

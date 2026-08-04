@@ -19,14 +19,17 @@ local PREVIEW_FOOTPRINT = 2.2
 -- Same upright facing as battlefield placement; camera looks at the front.
 local PREVIEW_FACE = BrainrotConfig.MODEL_FACE_DIRECTION
 
+-- Center on visible meshes only (ignore invisible RootPart / FakeRootPart).
 local function centerAtOrigin(model: Model)
-	local cf = model:GetBoundingBox()
-	-- Keep clone orientation (face + authored degrees); only translate.
-	model:PivotTo(model:GetPivot() - cf.Position)
+	local _, center = ModelUtil.getVisualSizeAndCenter(model)
+	model:PivotTo(model:GetPivot() - center)
 end
 
-local function frameModel(camera: Camera, model: Model)
-	local cf, size = model:GetBoundingBox()
+local function frameModel(camera: Camera, model: Model, focusOffset: Vector3?)
+	local size, center = ModelUtil.getVisualSizeAndCenter(model)
+	if focusOffset then
+		center = center + focusOffset
+	end
 	local extent = math.max(size.X, size.Y, size.Z)
 	-- Pull back so models sit inside the card with padding (not edge-to-edge).
 	local distance = math.max(extent * 2.05, 3.4)
@@ -45,12 +48,12 @@ local function frameModel(camera: Camera, model: Model)
 	end
 
 	-- 3/4 front view: along face (+X toward enemy), slight side + elevated.
-	local lookFrom = cf.Position
+	local lookFrom = center
 		+ face * (distance * 0.95)
 		+ right * (distance * 0.32)
 		+ Vector3.yAxis * (distance * 0.38)
 	camera.FieldOfView = 28
-	camera.CFrame = CFrame.lookAt(lookFrom, cf.Position)
+	camera.CFrame = CFrame.lookAt(lookFrom, center)
 end
 
 --[[
@@ -102,16 +105,19 @@ function BrainrotPreview.mount(
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
 
+	local animated = definition.animated == true
 	local model = ModelUtil.cloneBrainrotTemplate(template, {
 		targetFootprint = PREVIEW_FOOTPRINT * (definition.modelScale or 1),
 		faceDirection = PREVIEW_FACE,
 		orientationDegrees = definition.modelOrientationDegrees,
+		preserveAnimationRig = animated,
+		skipBodyAlias = animated,
 	})
 	model.Name = "PreviewModel"
 	centerAtOrigin(model)
 	model.Parent = world
 
-	frameModel(camera, model)
+	frameModel(camera, model, definition.previewFocusOffset)
 	return viewport
 end
 

@@ -14,6 +14,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local Abilities = require(script.Parent.Abilities)
+local BrainrotAnimation = require(script.Parent.BrainrotAnimation)
 local BrainrotFeedback = require(script.Parent.BrainrotFeedback)
 local CoinService = require(script.Parent.Parent.CoinService)
 local CombatService = require(script.Parent.Parent.CombatService)
@@ -68,6 +69,7 @@ local function buildContext(placement: RuntimePlacement)
 		definition = effectiveDefinition(placement),
 		ownerUserId = placement.ownerUserId,
 		plotModel = placement.plotModel,
+		model = placement.model,
 		position = placement.position,
 		row = placement.position.row,
 		column = placement.position.column,
@@ -78,7 +80,8 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 	return {
 		dropCoinsOnGrid = function(amount: number)
 			local origin = placement.model:GetPivot().Position + Vector3.new(0, 2, 0)
-			local body = placement.model:FindFirstChild("Body", true)
+			local body = placement.model.PrimaryPart
+				or placement.model:FindFirstChild("Body", true)
 			if body and body:IsA("BasePart") then
 				origin = body.Position + Vector3.new(0, body.Size.Y * 0.35, 0)
 			end
@@ -99,7 +102,12 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			placement.frozenUntil = os.clock() + duration
 		end,
 		pulseAttack = function()
-			BrainrotFeedback.pulseAttack(placement.model)
+			-- Authored swing clips replace the old ScaleTo attack pulse.
+			if placement.definition.animated then
+				BrainrotAnimation.playAttack(placement.model)
+			else
+				BrainrotFeedback.pulseAttack(placement.model)
+			end
 		end,
 		playSound = function(soundKey: string)
 			local player = Players:GetPlayerByUserId(placement.ownerUserId)
@@ -138,6 +146,7 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.weakenUntil = 0
 	placement.weakenFactor = 0
 	active[placement.instanceId] = placement
+	BrainrotAnimation.bind(placement.model, placement.definition)
 
 	if placement.definition.triggersOnPlace then
 		local handler = Abilities.get(placement.definition.ability)
@@ -155,6 +164,7 @@ end
 
 function BrainrotBehavior.unregister(placement: RuntimePlacement)
 	active[placement.instanceId] = nil
+	BrainrotAnimation.unbind(placement.model)
 	BrainrotFeedback.cleanup(placement.model)
 end
 
