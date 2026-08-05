@@ -29,6 +29,7 @@ column). When a Brainrot attacks a row:
 | First in row | `attackFirstInRow` / `launchProjectile` | Damages the monster with the **lowest column** in range (closest to the house — PvZ peashooter style). Used by Cappuccino knives and Tralalero bubbles. |
 | All in range | `attackInRow` | Damages every monster in range (instant splash) |
 | Entire row | `dealEntireRowDamage` | Damages **every** monster on the row (Bombardino line bomb) |
+| Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row (Lirili freeze — ahead and behind) |
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
 for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead.

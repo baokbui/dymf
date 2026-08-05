@@ -20,9 +20,9 @@ local BrainrotConfig = {
 	-- shorter cooldown. Linear map from COST_MIN→COOLDOWN_MIN to COST_MAX→COOLDOWN_MAX.
 	-- Optional definition.plantCooldown overrides the formula.
 	PLANT_COOLDOWN_MIN = 7.5, -- Ballerina (50 coins)
-	PLANT_COOLDOWN_MAX = 42, -- Bombardino (375 coins)
+	PLANT_COOLDOWN_MAX = 30, -- Bombardino (325 coins / plantCooldown override)
 	PLANT_COOLDOWN_COST_MIN = 50,
-	PLANT_COOLDOWN_COST_MAX = 375,
+	PLANT_COOLDOWN_COST_MAX = 325,
 
 	-- Server behavior tick rate (seconds). Cooldowns count down on this step.
 	BEHAVIOR_TICK = 0.1,

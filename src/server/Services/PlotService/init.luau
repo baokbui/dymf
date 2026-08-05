@@ -47,6 +47,36 @@ local function applyCharacterMovement(character: Model)
 	end
 end
 
+-- CharacterAutoLoads is off (so join doesn't spawn before a plot exists). After
+-- Reset Character / death, Roblox will not auto-respawn — we must LoadCharacter.
+local function hookRespawn(player: Player, character: Model)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+		or character:WaitForChild("Humanoid", 5)
+	if not humanoid or not humanoid:IsA("Humanoid") then
+		return
+	end
+	humanoid.Died:Once(function()
+		local delaySec = math.max(0, Players.RespawnTime)
+		task.delay(delaySec, function()
+			if not player.Parent then
+				return
+			end
+			if not plotsByUserId[player.UserId] then
+				return
+			end
+			-- Still dead / no character — respawn on the plot SpawnLocation.
+			if player.Character == character or player.Character == nil then
+				player:LoadCharacter()
+			end
+		end)
+	end)
+end
+
+local function onCharacterAdded(player: Player, character: Model)
+	applyCharacterMovement(character)
+	hookRespawn(player, character)
+end
+
 local function findFreePlot(): Plot.Plot?
 	for _, plot in plots do
 		if not plot:isOccupied() then
@@ -86,7 +116,9 @@ local function assignPlot(player: Player)
 	if existingConnection then
 		existingConnection:Disconnect()
 	end
-	characterAddedConnections[player.UserId] = player.CharacterAdded:Connect(applyCharacterMovement)
+	characterAddedConnections[player.UserId] = player.CharacterAdded:Connect(function(character)
+		onCharacterAdded(player, character)
+	end)
 	player:LoadCharacter()
 end
 

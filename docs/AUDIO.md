@@ -70,7 +70,8 @@ UI clicks, music, and ambient are still local to each client (not plot-scoped).
 | `MonsterAttack_Goblin` / `_GoblinElite` / `_GoblinKing` | Goblin club swing |
 | `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
 | `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |
-| `FreezeTime` | Lirili Larila freeze when ≥1 enemy is hit |
+| `FreezeTime` | Lirili Larila cast on place (with attack anim) |
+| `FreezeTimeEnd` | Lirili Larila thaw when the 7s lane freeze ends |
 | `BubbleTrap` | Tralalero bubble impact via `CombatVisual.soundKey` |
 | `LineBomb` | Bombardino place / bombing run (`BrainrotAction`) |
 | Other ability keys | `BrainrotAction.action` when the ability calls `playSound` |

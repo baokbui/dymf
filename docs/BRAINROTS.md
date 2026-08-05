@@ -177,8 +177,8 @@ already-cleared day (Day Select) does not re-grant or re-show the popup
 | Ballerina Cappucina  | 50   | 500 (5)       | 0      | 18s      | —        | Spits coins onto random tiles | 25    |
 | Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
-| Bombardino Crocodilo | 375  | — (1)         | 1000   | —        | Full row | Line bomb on place  | —     |
-| Lirili Larila        | 150  | 500 (5)       | 0      | 6.0s     | 2 tiles  | Freeze enemies 0.7s | —     |
+| Bombardino Crocodilo | 325  | — (1)         | 1000   | —        | Full row | Line bomb on place  | 30s   |
+| Lirili Larila        | 75   | — (1)         | 0      | —        | Full row | Lane freeze 7s on place | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 75   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
 
@@ -227,18 +227,21 @@ Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
 
 - `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
 counts down `attackInterval`, and calls the ability's `tryAct` when ready.
-- `triggersOnPlace` abilities (Bombardino) call `onPlaced` once. Bombardino
-detaches, **flies** house → enemy in `(COLUMNS - 1) * LINE_BOMB_DROP_STAGGER`
+- `triggersOnPlace` abilities (Bombardino, Lirili) call `onPlaced` once.
+Bombardino detaches, **flies** house → enemy in `(COLUMNS - 1) * LINE_BOMB_DROP_STAGGER`
 seconds (so he lines up with each drop), and releases one
 `Assets.Projectiles.Bomb` per tile as he passes. Bombs fall nose-down; on
 impact they despawn into a tile explosion + column damage. Tune
 `LINE_BOMB_DROP_STAGGER` (fly + drop cadence), `LINE_BOMB_FALL_DURATION`,
 `LINE_BOMB_FLY_HEIGHT`, `LINE_BOMB_DROP_HEIGHT`,
-`LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`.
+`LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`. Lirili stays on its
+tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to **every**
+monster on the row (ahead and behind) for `abilityParams.freezeDuration` (7s).
+When that duration ends it plays thaw SFX and despawns (tile frees).
 - Attackers only reset their cooldown when `tryAct` returns true (e.g. no
-monsters in range). **Coin producers** and **Lirili** always consume their
-cycle when they fire. **Melee bat** with `attackHitDelay` returns true when
-the swing starts; damage applies after the delay (may miss if the target left).
+monsters in range). **Coin producers** always consume their cycle when they
+fire. **Melee bat** with `attackHitDelay` returns true when the swing starts;
+damage applies after the delay (may miss if the target left).
 
 ### Plant recharge (shop) ✅
 
@@ -250,10 +253,10 @@ planted again (PvZ seed packet). Duration scales with **cost** via
 | ---- | ------- | -------- |
 | 50 | Ballerina | ~7.5s |
 | 75 | Tung Tung / Chimpanzini | ~10s |
+| 75 | Lirili | 20s (`plantCooldown` override) |
 | 100 | Cappuccino | ~13s |
-| 150 | Lirili | ~18s |
 | 175 | Tralalero | ~21s |
-| 375 | Bombardino | ~42s |
+| 325 | Bombardino | 30s |
 
 Server enforces the lock; shop cards show a countdown overlay. Recharges reset
 on **Start Day**. Optional `definition.plantCooldown` overrides the formula.

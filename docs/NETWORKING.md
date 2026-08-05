@@ -67,9 +67,11 @@ using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClie
 
 Plot assignment is fully server-side and needs no remotes: on `PlayerAdded`,
 `PlotService` assigns a free plot, points the player's `RespawnLocation` at that
-plot's `SpawnLocation`, and spawns the character there. The camera uses Roblox's
-default third-person behavior, so no client handshake is required. Clients
-cannot choose, move, or learn about other players' plots.
+plot's `SpawnLocation`, and spawns the character there (`CharacterAutoLoads`
+is off so join doesn't spawn before a plot exists). On Reset Character / death,
+`PlotService` calls `LoadCharacter` again after `Players.RespawnTime`. The
+camera uses Roblox's default third-person behavior, so no client handshake is
+required. Clients cannot choose, move, or learn about other players' plots.
 
 ---
 

@@ -1,55 +1,50 @@
 --!strict
+--[[
+	FreezeTime (Lirili Larila)
+	One-shot on place: play attack anim + cast SFX, Freeze the entire row
+	(ahead and behind) for freezeDuration while the plant stays on its tile,
+	then despawn with thaw SFX.
+]]
+
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local FreezeTime = {}
 
-function FreezeTime.tryAct(ctx, callbacks)
-	local freezeDuration = 1.5
+local DEFAULT_FREEZE_DURATION = 7
+
+function FreezeTime.onPlaced(ctx, callbacks)
+	local freezeDuration = DEFAULT_FREEZE_DURATION
 	if ctx.definition.abilityParams then
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
 	end
 
-	local targets = CombatService.getMonstersInRow(
-		ctx.plotModel,
-		ctx.position.row,
-		ctx.position.column,
-		ctx.definition.rangeTiles
-	)
-	if #targets == 0 then
-		return false
+	local hitDelay = 0
+	if type(ctx.definition.attackHitDelay) == "number" and ctx.definition.attackHitDelay > 0 then
+		hitDelay = ctx.definition.attackHitDelay
 	end
 
 	callbacks.pulseAttack()
+	callbacks.playSound("FreezeTime")
 
-	local hitDelay = ctx.definition.attackHitDelay
 	local plotModel = ctx.plotModel
 	local row = ctx.position.row
-	local column = ctx.position.column
-	local rangeTiles = ctx.definition.rangeTiles
+	local plantModel = ctx.model
 
-	local function applyFreeze()
-		local live = CombatService.getMonstersInRow(plotModel, row, column, rangeTiles)
-		if #live == 0 then
+	task.delay(hitDelay, function()
+		if not plotModel.Parent or not plantModel.Parent then
 			return
 		end
-		for _, monsterId in live do
-			CombatService.applyStatusToMonster(monsterId, "Freeze", freezeDuration, nil, "Ice")
-		end
-		callbacks.playSound("FreezeTime")
-	end
 
-	if type(hitDelay) == "number" and hitDelay > 0 then
-		local model = ctx.model
-		task.delay(hitDelay, function()
-			if model.Parent then
-				applyFreeze()
+		CombatService.applyEntireRowStatus(plotModel, row, "Freeze", freezeDuration, nil, "Ice")
+
+		task.delay(freezeDuration, function()
+			if not plantModel.Parent then
+				return
 			end
+			callbacks.playSound("FreezeTimeEnd")
+			callbacks.destroySelf()
 		end)
-	else
-		applyFreeze()
-	end
-
-	return true
+	end)
 end
 
 return FreezeTime

@@ -49,6 +49,7 @@ local brainrotSfxEnabled = true
 local BRAINROT_SFX: { [string]: boolean } = {
 	MeleeBat = true,
 	FreezeTime = true,
+	FreezeTimeEnd = true,
 	BubbleTrap = true,
 	LineBomb = true,
 	PlaceBrainrot = true,

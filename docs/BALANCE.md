@@ -60,8 +60,8 @@ can be planted. Lower **cost** → shorter cooldown (linear map):
 | Knob | Value |
 | ---- | ----- |
 | `PLANT_COOLDOWN_MIN` | 7.5s at cost 50 |
-| `PLANT_COOLDOWN_MAX` | 42s at cost 375 |
-| Override | optional `definition.plantCooldown` |
+| `PLANT_COOLDOWN_MAX` | 30s at cost 325 (Bombardino also sets `plantCooldown = 30`) |
+| `Override` | optional `definition.plantCooldown` |
 
 Resets on **Start Day**. Not saved.
 
@@ -77,13 +77,14 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Ballerina | 50 | 5 | Economy (25 / 18s) |
 | Chimpanzini | 75 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
+| Lirili | 75 | 1 | One-shot lane freeze (7s); plant cooldown 20s |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
-| Lirili | 150 | 5 | Freeze support (0.7s / 6.0s; range 2) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
-| Bombardino | 375 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
+| Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
 
 Intent: Cappuccino is reliable lane DPS; Tung Tung rewards the front line;
-Lirili/Tralalero are support; Bombardino is panic clear, not a boss delete.
+Lirili is a panic freeze (Bombardino-style one-shot); Tralalero is bubble
+support; Bombardino is panic clear, not a boss delete.
 
 ---
 

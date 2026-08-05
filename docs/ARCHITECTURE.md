@@ -216,8 +216,9 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 - **PlotService** builds a fixed pool of `MAX_PLOTS` lanes at startup, tiled in
   a columns × rows grid centered on the baseplate. It assigns a unique free plot
   per player and spawns them on it: auto-spawn is disabled
-  and each plot has a `SpawnLocation` that the player's `RespawnLocation` is
-  pointed at, so spawns/respawns land on the plot (no teleport race). Plots are
+  (`CharacterAutoLoads = false`) and each plot has a `SpawnLocation` that the
+  player's `RespawnLocation` is pointed at. Join and post-death respawns both
+  call `LoadCharacter` so Reset Character works (no teleport race). Plots are
   released/cleaned on leave.
 - **CameraController** intentionally leaves the default Roblox third-person
   camera in place (scroll to first person).

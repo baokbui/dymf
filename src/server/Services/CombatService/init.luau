@@ -388,6 +388,22 @@ function CombatService.applyRowStatus(
 	return #targets > 0
 end
 
+-- Status on every monster on the row (ahead and behind the caster).
+function CombatService.applyEntireRowStatus(
+	plotModel: Model,
+	row: number,
+	kind: Types.StatusEffectKind,
+	duration: number,
+	magnitude: number?,
+	visual: string?
+): boolean
+	local targets = CombatService.getAllMonstersInRow(plotModel, row)
+	for _, monsterId in targets do
+		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
+	end
+	return #targets > 0
+end
+
 function CombatService.getFirstMonsterInRow(
 	plotModel: Model,
 	row: number,

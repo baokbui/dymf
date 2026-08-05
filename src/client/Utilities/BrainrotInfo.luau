@@ -36,7 +36,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	FreezeTime = {
 		label = "Freeze",
-		description = "Freezes nearby monsters in place for a short time.",
+		description = "Freezes the entire lane once on plant, then disappears.",
 	},
 	ThrowKnife = {
 		label = "Throw Shuriken",

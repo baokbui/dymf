@@ -49,6 +49,7 @@ local AudioConfig = {
 		"MonsterAttack_GoblinKing",
 		"Terrify",
 		"FreezeTime",
+		"FreezeTimeEnd",
 		"BubbleTrap",
 		"CoinCollect",
 		"PlaceBrainrot",
@@ -244,7 +245,11 @@ local AudioConfig = {
 			Volume = 0.75,
 		},
 		FreezeTime = {
-			SoundId = "rbxassetid://127777354835900",
+			SoundId = "rbxassetid://139589191046133",
+			Volume = 0.75,
+		},
+		FreezeTimeEnd = {
+			SoundId = "rbxassetid://127329791266618",
 			Volume = 0.75,
 		},
 		ThrowKnifeHit = {
