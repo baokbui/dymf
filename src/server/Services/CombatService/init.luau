@@ -296,6 +296,37 @@ function CombatService.fireRowExplosion(
 	})
 end
 
+function CombatService.fireTileExplosion(
+	ownerUserId: number,
+	row: number,
+	column: number,
+	muteSound: boolean?
+)
+	fireCombatVisual(ownerUserId, {
+		kind = "Explosion",
+		row = row,
+		column = column,
+		muteSound = muteSound == true,
+	})
+end
+
+function CombatService.dealColumnDamage(
+	plotModel: Model,
+	row: number,
+	column: number,
+	damage: number,
+	ownerUserId: number
+)
+	local targets = CombatService.getAllMonstersInRow(plotModel, row)
+	for _, monsterId in targets do
+		local monsterColumn = if monsterHandlers then monsterHandlers.getMonsterColumn(monsterId) else nil
+		if type(monsterColumn) == "number" and math.abs(monsterColumn - column) < 0.55 then
+			CombatService.damageMonster(monsterId, damage)
+			fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
+		end
+	end
+end
+
 function CombatService.dealEntireRowDamage(
 	plotModel: Model,
 	row: number,

@@ -22,6 +22,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local EconomyConfig = require(Shared.Config.EconomyConfig)
+local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
@@ -164,6 +165,17 @@ end
 function CoinService.applyDayPurse(player: Player, levelNumber: number)
 	local amount = if levelNumber <= 1 then EconomyConfig.STARTING_COINS else 0
 	CoinService.setBalance(player, amount)
+	if DevConfig.isActive() then
+		CoinService.setBalance(player, DevConfig.COINS)
+	end
+end
+
+-- TEMP Studio cheat: force the playtest purse (see DevConfig).
+function CoinService.applyDevPurse(player: Player)
+	if not DevConfig.isActive() then
+		return
+	end
+	CoinService.setBalance(player, DevConfig.COINS)
 end
 
 function CoinService.clearPlot(plotModel: Model)

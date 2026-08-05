@@ -11,8 +11,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local Projectile = {}
+
+local log = Logger.new("Projectile")
+local missingShurikenLogged = false
 
 export type ImpactSpec = {
 	soundKey: string?,
@@ -56,6 +61,12 @@ type SetPositionCallback = (part: BasePart, plotModel: Model, row: number, colum
 local active: { [string]: ActiveProjectile } = {}
 local nextId = 0
 
+local SCRIPT_CLASSES: { [string]: boolean } = {
+	Script = true,
+	LocalScript = true,
+	ModuleScript = true,
+}
+
 local function projectilesFolder(plotModel: Model): Folder
 	local folder = plotModel:FindFirstChild("Projectiles")
 	if not folder then
@@ -88,12 +99,83 @@ local function weldAccessory(root: BasePart, part: BasePart)
 	weld.Parent = root
 end
 
+local function stripScripts(root: Instance)
+	for _, descendant in root:GetDescendants() do
+		if SCRIPT_CLASSES[descendant.ClassName] or descendant:IsA("Tool") or descendant:IsA("Sound") then
+			descendant:Destroy()
+		end
+	end
+end
+
+local function pickPrimary(model: Model): BasePart?
+	if model.PrimaryPart then
+		return model.PrimaryPart
+	end
+	local best: BasePart? = nil
+	local bestVolume = 0
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant.Transparency < 0.95 then
+			local volume = descendant.Size.X * descendant.Size.Y * descendant.Size.Z
+			if volume > bestVolume then
+				bestVolume = volume
+				best = descendant
+			end
+		end
+	end
+	return best
+end
+
+local function prepareAuthoredShuriken(model: Model): BasePart?
+	stripScripts(model)
+	local primary = pickPrimary(model)
+	if not primary then
+		return nil
+	end
+	model.PrimaryPart = primary
+
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			if descendant == primary then
+				hardenRoot(descendant)
+			else
+				weldAccessory(primary, descendant)
+			end
+		end
+	end
+
+	local size = select(1, ModelUtil.getVisualSizeAndCenter(model))
+	local extent = math.max(size.X, size.Z)
+	local target = CombatConfig.SHURIKEN_TARGET_EXTENT
+	if extent > 0.01 and target > 0.01 then
+		local scale = math.clamp(target / extent, 0.05, 20)
+		model:ScaleTo(model:GetScale() * scale)
+		-- ScaleTo can leave weld/anchor inconsistent — re-harden.
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				if descendant == model.PrimaryPart then
+					hardenRoot(descendant)
+				else
+					descendant.Anchored = false
+					descendant.CanCollide = false
+					descendant.CanTouch = false
+					descendant.CanQuery = false
+					descendant.Massless = true
+				end
+			end
+		end
+	end
+
+	model.Name = "ShurikenProjectile"
+	model:SetAttribute("ProjectileKind", "Shuriken")
+	primary:SetAttribute("ProjectileKind", "Shuriken")
+	return primary
+end
+
 --[[
 	Procedural shuriken: a flat 4-point star (thin disc + wedge blades) built
-	flat in the world XZ plane. In flight we spin it around world +Y so it
-	stays horizontal and reads as a real thrown shuriken spinning flat.
+	flat in the world XZ plane. Fallback when Assets.Projectiles is missing.
 ]]
-local function createShurikenModel(): (Model, BasePart)
+local function createProceduralShuriken(): (Model, BasePart)
 	local model = Instance.new("Model")
 	model.Name = "ShurikenProjectile"
 
@@ -111,7 +193,6 @@ local function createShurikenModel(): (Model, BasePart)
 	local bladeThickness = CombatConfig.SHURIKEN_BLADE_SIZE.Y
 	local bladeWidth = CombatConfig.SHURIKEN_BLADE_SIZE.Z
 
-	-- Four wedge blades pointing outward at 90° increments in the XZ plane.
 	for i = 0, 3 do
 		local angle = math.rad(90 * i)
 		local blade = Instance.new("WedgePart")
@@ -130,6 +211,26 @@ local function createShurikenModel(): (Model, BasePart)
 	model:SetAttribute("ProjectileKind", "Shuriken")
 	hub:SetAttribute("ProjectileKind", "Shuriken")
 	return model, hub
+end
+
+local function createShurikenModel(): (Model, BasePart)
+	local template = ModelUtil.findProjectileTemplate(CombatConfig.SHURIKEN_MODEL_ID)
+	if template then
+		local model = template:Clone()
+		local primary = prepareAuthoredShuriken(model)
+		if primary then
+			return model, primary
+		end
+		model:Destroy()
+		log:warn("Assets.Projectiles." .. CombatConfig.SHURIKEN_MODEL_ID .. " has no BasePart — using procedural")
+	elseif not missingShurikenLogged then
+		missingShurikenLogged = true
+		log:warn(string.format(
+			"missing Assets.Projectiles.%s — using procedural shuriken (move your model there in Studio)",
+			CombatConfig.SHURIKEN_MODEL_ID
+		))
+	end
+	return createProceduralShuriken()
 end
 
 local function createBoltPart(): BasePart
@@ -166,6 +267,12 @@ local function destroyProjectile(projectile: ActiveProjectile)
 	end
 end
 
+local function shurikenFlightCFrame(position: Vector3, spinRadians: number): CFrame
+	local o = CombatConfig.SHURIKEN_MODEL_ORIENTATION_DEGREES
+	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
+	return CFrame.new(position) * CFrame.fromAxisAngle(Vector3.yAxis, spinRadians) * orient
+end
+
 function Projectile.launch(
 	spec: LaunchSpec,
 	worldY: number,
@@ -193,6 +300,9 @@ function Projectile.launch(
 	end
 
 	setWorldPosition(part, spec.plotModel, spec.row, spec.startColumn, worldY)
+	if model then
+		part.CFrame = shurikenFlightCFrame(part.Position, 0)
+	end
 
 	active[id] = {
 		id = id,
@@ -231,10 +341,7 @@ function Projectile.tick(
 
 		if projectile.model then
 			projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
-			-- Flat disc: spin around world +Y so it stays horizontal and reads
-			-- as a real thrown shuriken spinning flat while it flies.
-			local pos = projectile.part.Position
-			projectile.part.CFrame = CFrame.new(pos) * CFrame.fromAxisAngle(Vector3.yAxis, projectile.spinRadians)
+			projectile.part.CFrame = shurikenFlightCFrame(projectile.part.Position, projectile.spinRadians)
 		end
 
 		if projectile.column >= liveColumn then

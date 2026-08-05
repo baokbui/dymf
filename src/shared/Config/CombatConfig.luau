@@ -16,8 +16,13 @@ local CombatConfig = {
 	PROJECTILE_SIZE = Vector3.new(0.35, 0.35, 1.4),
 	PROJECTILE_COLOR = Color3.fromRGB(220, 220, 230),
 
-	-- Cappuccino spinning shuriken (procedural Model; flat disc spun face-on toward enemy).
-	SHURIKEN_BLADE_SIZE = Vector3.new(2.2, 0.14, 2.2), -- span (X/Z) x thickness (Y)
+	-- Cappuccino spinning shuriken. Prefer Assets.Projectiles[SHURIKEN_MODEL_ID];
+	-- procedural star is the fallback if the template is missing.
+	SHURIKEN_MODEL_ID = "Shuriken",
+	SHURIKEN_TARGET_EXTENT = 2.2, -- max horizontal size after clone ScaleTo
+	-- Local Euler applied each frame before +Y spin (tune if the mesh faces wrong).
+	SHURIKEN_MODEL_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
+	SHURIKEN_BLADE_SIZE = Vector3.new(2.2, 0.14, 2.2), -- procedural fallback span × thickness
 	SHURIKEN_HUB_SIZE = Vector3.new(0.55, 0.18, 0.55),
 	SHURIKEN_BLADE_COLOR = Color3.fromRGB(210, 215, 225),
 	SHURIKEN_HUB_COLOR = Color3.fromRGB(60, 60, 68),

@@ -80,6 +80,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelId = "Tralalero Tralala",
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 1,
+		animated = true,
+		attackAnimationId = "rbxassetid://138181249321727",
+		attackHitDelay = 0.25,
 	},
 
 	BombardinoCrocodilo = {
@@ -117,6 +120,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 3,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		animated = true,
+		attackAnimationId = "rbxassetid://124921779580222",
+		attackHitDelay = 0.5,
 	},
 
 	CappuccinoAssassino = {
@@ -135,6 +141,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 3,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		animated = true,
+		attackAnimationId = "rbxassetid://99069565346809",
+		attackHitDelay = 0.5,
 	},
 
 	ChimpanziniBananini = {

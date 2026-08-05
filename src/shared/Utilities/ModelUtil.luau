@@ -87,6 +87,10 @@ function ModelUtil.getHouseTemplatesFolder(): Folder?
 	return templatesFolder("Houses")
 end
 
+function ModelUtil.getProjectileTemplatesFolder(): Folder?
+	return templatesFolder("Projectiles")
+end
+
 -- Target horizontal size (studs) for a Brainrot clone / placement ghost.
 function ModelUtil.brainrotFootprintStuds(definition: Types.BrainrotDefinition): number
 	local footprint = PlotConfig.TILE_SIZE * PlotConfig.BRAINROT_FOOTPRINT_RATIO
@@ -117,6 +121,10 @@ end
 
 function ModelUtil.findHouseTemplate(modelId: string): Model?
 	return findTemplate(ModelUtil.getHouseTemplatesFolder(), modelId)
+end
+
+function ModelUtil.findProjectileTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getProjectileTemplatesFolder(), modelId)
 end
 
 local function destroyByClass(root: Instance, classSet: { [string]: boolean })

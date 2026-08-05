@@ -19,6 +19,7 @@ local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
 local Monsters = require(Shared.Monsters)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
@@ -278,6 +279,25 @@ end
 
 function ProgressService.canPlace(player: Player, brainrotId: string): boolean
 	return ProgressService.isUnlocked(player, brainrotId) and ProgressService.isEquipped(player, brainrotId)
+end
+
+-- TEMP Studio cheat: unlock + equip every registry Brainrot (see DevConfig).
+function ProgressService.applyDevRoster(player: Player)
+	if not DevConfig.isActive() or not DevConfig.UNLOCK_ALL_BRAINROTS then
+		return
+	end
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	local allIds: { string } = {}
+	for id in pairs(Brainrots.getAll()) do
+		table.insert(allIds, id)
+	end
+	table.sort(allIds)
+	profile.unlocks = sanitizeIdList(allIds)
+	profile.equipped = sanitizeIdList(allIds, unlockSet(profile.unlocks))
+	broadcast(player)
 end
 
 function ProgressService.addBrains(player: Player, amount: number)

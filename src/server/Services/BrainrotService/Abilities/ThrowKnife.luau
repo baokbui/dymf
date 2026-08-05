@@ -4,21 +4,44 @@ local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local ThrowKnife = {}
 
 function ThrowKnife.tryAct(ctx, callbacks)
-	local acted = CombatService.launchProjectile(
+	local targetId = CombatService.getFirstMonsterInRow(
 		ctx.plotModel,
-		ctx.position,
-		ctx.definition.rangeTiles,
-		ctx.definition.damage,
-		ctx.ownerUserId,
-		{
-			kind = "Shuriken",
-			soundKey = "ThrowKnifeHit",
-		}
+		ctx.position.row,
+		ctx.position.column,
+		ctx.definition.rangeTiles
 	)
-	if acted then
-		callbacks.pulseAttack()
+	if not targetId then
+		return false
 	end
-	return acted
+
+	callbacks.pulseAttack()
+
+	local hitDelay = ctx.definition.attackHitDelay
+	local function launch()
+		CombatService.launchProjectile(
+			ctx.plotModel,
+			ctx.position,
+			ctx.definition.rangeTiles,
+			ctx.definition.damage,
+			ctx.ownerUserId,
+			{
+				kind = "Shuriken",
+				soundKey = "ThrowKnifeHit",
+			}
+		)
+	end
+
+	if type(hitDelay) == "number" and hitDelay > 0 then
+		local model = ctx.model
+		task.delay(hitDelay, function()
+			if model.Parent then
+				launch()
+			end
+		end)
+	else
+		launch()
+	end
+	return true
 end
 
 return ThrowKnife

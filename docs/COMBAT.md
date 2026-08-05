@@ -66,12 +66,22 @@ Brainrots in either of its two lanes in the same swing.
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Shuriken` (flat 4-blade disc; spins horizontally around +Y) | Damage + `ThrowKnifeHit` |
+| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit` |
 | Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
-Tuning: `CombatConfig` (speed, shuriken/bubble size, `SHURIKEN_SPIN_RADIANS_PER_SECOND`)
-+ `MonsterConfig.BUBBLE_COLOR`. Client trail/glow branches on the `ProjectileKind`
+Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
+`SHURIKEN_MODEL_ORIENTATION_DEGREES`, speed, spin, bubble size) +
+`MonsterConfig.BUBBLE_COLOR`. Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`).
+
+### Studio: Cappuccino shuriken model
+
+1. Rojo-sync so `ReplicatedStorage.Assets.Projectiles` exists.
+2. Move your shuriken **Model** from Workspace into that folder.
+3. Rename it to **`Shuriken`** (or set `CombatConfig.SHURIKEN_MODEL_ID`).
+4. Set a `PrimaryPart` if possible; strip Tools/Scripts.
+5. If it flies edge-on, tweak `SHURIKEN_MODEL_ORIENTATION_DEGREES` (often
+   `Vector3.new(90, 0, 0)` or similar).
 
 ---
 
@@ -128,7 +138,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat SFX | `BrainrotAction` (`MeleeBat`) after `attackHitDelay` — sound only for animated units; ScaleTo pulse only if not `animated` |
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over / SpiderFlat + linger + fade | Server `MonsterDeath` (default 3 tip styles; Queen Spider `SpiderFlat`); client burst + Thanos ash on fade |
-| Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino flies house→enemy along the row; `entireRow` blasts each tile under the pass (`stagger` matches flight) |
+| Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
 

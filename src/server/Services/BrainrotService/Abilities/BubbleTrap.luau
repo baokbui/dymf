@@ -15,24 +15,48 @@ function BubbleTrap.tryAct(ctx, callbacks)
 		trapDuration = ctx.definition.abilityParams.trapDuration or trapDuration
 	end
 
-	local acted = CombatService.launchProjectile(
+	-- Preview whether a target exists before spending the swing anim.
+	local targetId = CombatService.getFirstMonsterInRow(
 		ctx.plotModel,
-		ctx.position,
-		ctx.definition.rangeTiles,
-		ctx.definition.damage,
-		ctx.ownerUserId,
-		{
-			kind = "Bubble",
-			soundKey = "BubbleTrap",
-			statusKind = "Freeze",
-			statusDuration = trapDuration,
-			statusVisual = "Bubble",
-		}
+		ctx.position.row,
+		ctx.position.column,
+		ctx.definition.rangeTiles
 	)
-	if acted then
-		callbacks.pulseAttack()
+	if not targetId then
+		return false
 	end
-	return acted
+
+	callbacks.pulseAttack()
+
+	local hitDelay = ctx.definition.attackHitDelay
+	local function launch()
+		CombatService.launchProjectile(
+			ctx.plotModel,
+			ctx.position,
+			ctx.definition.rangeTiles,
+			ctx.definition.damage,
+			ctx.ownerUserId,
+			{
+				kind = "Bubble",
+				soundKey = "BubbleTrap",
+				statusKind = "Freeze",
+				statusDuration = trapDuration,
+				statusVisual = "Bubble",
+			}
+		)
+	end
+
+	if type(hitDelay) == "number" and hitDelay > 0 then
+		local model = ctx.model
+		task.delay(hitDelay, function()
+			if model.Parent then
+				launch()
+			end
+		end)
+	else
+		launch()
+	end
+	return true
 end
 
 return BubbleTrap

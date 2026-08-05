@@ -21,6 +21,10 @@
         "Houses": {
           "$className": "Folder",
           "$ignoreUnknownInstances": true
+        },
+        "Projectiles": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
         }
       }
     },

@@ -42,9 +42,16 @@ local BrainrotConfig = {
 	POISON_TINT_COLOR = Color3.fromRGB(175, 70, 255),
 	POISON_TINT_BLEND = 0.65, -- 0 = original, 1 = full purple
 
-	-- Bombardino line-bomb fly-over (house → enemy along the planted row).
-	LINE_BOMB_FLIGHT_DURATION = 1.0,
-	LINE_BOMB_FLY_HEIGHT = 20,
+	-- Bombardino: fly the plant across the row while dropping one Bomb per tile.
+	-- Fly time is derived from DROP_STAGGER so the croc stays synced with drops.
+	LINE_BOMB_MODEL_ID = "Bomb",
+	LINE_BOMB_TARGET_EXTENT = 5, -- max size after clone ScaleTo
+	LINE_BOMB_FLY_HEIGHT = 20, -- studs above tile for the croc pass
+	LINE_BOMB_DROP_HEIGHT = 18, -- studs above tile when a bomb appears
+	LINE_BOMB_FALL_DURATION = 0.4, -- seconds for a bomb to hit the tile
+	LINE_BOMB_DROP_STAGGER = 0.12, -- seconds between tiles (also drives fly speed)
+	-- Nose toward −Y so the bomb points down while falling.
+	LINE_BOMB_DROP_ORIENTATION_DEGREES = Vector3.new(0, 0, -90),
 
 	-- Multiplier on PlotConfig.BRAINROT_FOOTPRINT_RATIO when a definition sets
 	-- modelScale (Tralalero / Bombardino omit it and stay at full size).

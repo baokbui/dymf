@@ -335,6 +335,8 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
 	CoinService.applyDayPurse(player, saveData.currentLevel)
+	ProgressService.applyDevRoster(player)
+	CoinService.applyDevPurse(player)
 end
 
 local function restoreLawn(player: Player, saveData: Types.SaveData)

@@ -228,8 +228,13 @@ Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
 - `BrainrotBehavior` steps every `BrainrotConfig.BEHAVIOR_TICK` seconds,
 counts down `attackInterval`, and calls the ability's `tryAct` when ready.
 - `triggersOnPlace` abilities (Bombardino) call `onPlaced` once. Bombardino
-detaches from the tile, deals row damage, flies house → enemy along the row
-while tile blasts track under it, then despawns.
+detaches, **flies** house → enemy in `(COLUMNS - 1) * LINE_BOMB_DROP_STAGGER`
+seconds (so he lines up with each drop), and releases one
+`Assets.Projectiles.Bomb` per tile as he passes. Bombs fall nose-down; on
+impact they despawn into a tile explosion + column damage. Tune
+`LINE_BOMB_DROP_STAGGER` (fly + drop cadence), `LINE_BOMB_FALL_DURATION`,
+`LINE_BOMB_FLY_HEIGHT`, `LINE_BOMB_DROP_HEIGHT`,
+`LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`.
 - Attackers only reset their cooldown when `tryAct` returns true (e.g. no
 monsters in range). **Coin producers** and **Lirili** always consume their
 cycle when they fire. **Melee bat** with `attackHitDelay` returns true when
