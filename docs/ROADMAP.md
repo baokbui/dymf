@@ -274,7 +274,8 @@ Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 - Victory / Defeat detection
 - Rewards
 - Linear progression (unlock next level)
-- Lawn carry-over on victory (plants stay, coins reset); wipe on defeat / day select
+- Lawn carry-over on victory (plants stay, coins reset); defeat restores
+  checkpoint on same day (Rewind); wipe on day select
 
 
 ## Complete When
@@ -346,7 +347,8 @@ Persist player progress.
 - **One** boss every 10 levels (Level 10 = Goblin Elite; 20 = Duke Vampire;
   30 = Queen Spider).
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
-- Days 21–24: Night weather; Days 25–30: NightFog (`docs/WEATHER.md`) +
+- Days 21–24: Night weather; Days 25–34: NightFog; Days 35–40: NightFogReceded
+  (`docs/WEATHER.md`) +
   Spider / Queen Spider intros.
 
 

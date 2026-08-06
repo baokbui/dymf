@@ -169,7 +169,7 @@ local function buildFogVolumes(plotModel: Model)
 	fogFolder = folder
 
 	local tileSize = PlotConfig.TILE_SIZE
-	local startCol = WeatherConfig.fogStartColumn()
+	local startCol = WeatherConfig.fogStartColumn(currentWeather)
 	local height = WeatherConfig.FOG_HEIGHT_STUDS
 	local centerHeight = WeatherConfig.FOG_CENTER_HEIGHT_STUDS
 

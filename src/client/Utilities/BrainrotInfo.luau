@@ -36,7 +36,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	FreezeTime = {
 		label = "Freeze",
-		description = "Freezes the entire lane once on plant, then disappears.",
+		description = "Freezes the entire lane for 7s on plant, then disappears. Can't be eaten.",
 	},
 	ThrowKnife = {
 		label = "Throw Shuriken",
@@ -81,7 +81,11 @@ function BrainrotInfo.statRows(definition: Types.BrainrotDefinition): { StatRow 
 	local rows: { StatRow } = {}
 
 	table.insert(rows, { label = "Cost", value = string.format("%d coins", definition.cost) })
-	table.insert(rows, { label = "Health", value = string.format("%d hits", definition.health) })
+	if definition.ignoreMonsterChew or definition.health <= 0 then
+		table.insert(rows, { label = "Health", value = "—" })
+	else
+		table.insert(rows, { label = "Health", value = string.format("%d hits", definition.health) })
+	end
 
 	if definition.damage > 0 then
 		table.insert(rows, { label = "Damage", value = tostring(definition.damage) })

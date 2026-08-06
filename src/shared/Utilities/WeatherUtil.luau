@@ -12,26 +12,29 @@ local GridUtil = require(script.Parent.GridUtil)
 
 local WeatherUtil = {}
 
--- Night lighting (Night or NightFog).
+-- Night lighting (Night, NightFog, or NightFogReceded).
 function WeatherUtil.isNight(weather: string?): boolean
-	return weather == WeatherConfig.NIGHT or weather == WeatherConfig.NIGHT_FOG
+	return weather == WeatherConfig.NIGHT
+		or weather == WeatherConfig.NIGHT_FOG
+		or weather == WeatherConfig.NIGHT_FOG_RECEDED
 end
 
--- Night + plant-blocking fog zone (NightFog only). Fog is cosmetic for
--- visibility — monsters are not hidden; only planting / coin tiles are gated.
+-- Night + plant-blocking fog zone. Fog is cosmetic for visibility — monsters
+-- are not hidden; only planting / coin tiles are gated. Includes both full
+-- NightFog (3 columns) and NightFogReceded (2 columns).
 function WeatherUtil.isNightFog(weather: string?): boolean
-	return weather == WeatherConfig.NIGHT_FOG
+	return weather == WeatherConfig.NIGHT_FOG or weather == WeatherConfig.NIGHT_FOG_RECEDED
 end
 
--- True when a lawn column is inside the NightFog plant-blocked zone.
+-- True when a lawn column is inside the fog plant-blocked zone for `weather`.
 function WeatherUtil.isFogPlotColumn(column: number, weather: string?): boolean
 	if not WeatherUtil.isNightFog(weather) then
 		return false
 	end
-	return column >= WeatherConfig.fogStartColumn() and column <= GridConfig.COLUMNS
+	return column >= WeatherConfig.fogStartColumn(weather) and column <= GridConfig.COLUMNS
 end
 
--- Every NightFog lawn tile (plant-blocked east columns × all rows).
+-- Every fog-blocked lawn tile (east columns × all rows) for `weather`.
 function WeatherUtil.fogPlotPositions(weather: string?): { Types.GridPosition }
 	local result: { Types.GridPosition } = {}
 	if not WeatherUtil.isNightFog(weather) then
@@ -46,7 +49,7 @@ function WeatherUtil.fogPlotPositions(weather: string?): { Types.GridPosition }
 end
 
 -- Random lawn tile that can receive ground coins / plants under the current
--- weather (excludes NightFog east columns). Falls back to any tile if somehow
+-- weather (excludes fog east columns). Falls back to any tile if somehow
 -- every column is fogged.
 function WeatherUtil.randomClearPlotPosition(weather: string?): Types.GridPosition
 	if not WeatherUtil.isNightFog(weather) then

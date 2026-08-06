@@ -116,7 +116,8 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 
 	local coins = payload.coins
 	if type(coins) == "number" then
-		-- Legacy: ignore persisted match coins; sessions always start at STARTING_COINS.
+		-- Legacy: match coins are not authoritative in DataStore; join purse
+		-- comes from applyDayPurse(currentLevel), not this field.
 		save.coins = EconomyConfig.STARTING_COINS
 	end
 
@@ -334,7 +335,8 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		introducedMonsters = saveData.introducedMonsters,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
-	CoinService.applyDayPurse(player, saveData.currentLevel)
+	local forcedDay = LevelService.applyDevDay(player)
+	CoinService.applyDayPurse(player, forcedDay or saveData.currentLevel)
 	ProgressService.applyDevRoster(player)
 	CoinService.applyDevPurse(player)
 end
@@ -406,9 +408,20 @@ function SaveService.commitLawn(player: Player)
 	committedBrainrots[player.UserId] = deepCopyPlanted(BrainrotService.getSavePlacements(plotModel))
 end
 
--- Empty the committed lawn (defeat / day select / reset).
+-- Empty the committed lawn (day select / reset). Defeat keeps the checkpoint.
 function SaveService.clearCommittedLawn(player: Player)
 	committedBrainrots[player.UserId] = {}
+end
+
+-- Rebuild the live plot from the last victory / wipe checkpoint (defeat rewind).
+function SaveService.restoreCommittedLawn(player: Player)
+	local plotModel = PlotService.getPlotModel(player)
+	if not plotModel then
+		return
+	end
+	BrainrotService.clearPlot(plotModel)
+	local planted = committedBrainrots[player.UserId] or {}
+	BrainrotService.restorePlacements(player, planted)
 end
 
 -- Explicit flush for milestones that advance progression (victory, reset).

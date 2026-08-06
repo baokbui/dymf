@@ -181,7 +181,9 @@ local function updateGhost(tile: BasePart?)
 	local topCenter = tile.Position + Vector3.new(0, tile.Size.Y / 2, 0)
 	local occupied = tile:GetAttribute("Occupied") == true
 	local column = tile:GetAttribute("Column")
-	local fogBlocked = type(column) == "number" and WeatherUtil.isFogPlotColumn(column, currentWeather)
+	local fogBlocked = type(column) == "number"
+		and WeatherUtil.isFogPlotColumn(column, currentWeather)
+		and definition.triggersOnPlace ~= true
 	local placeable = placementAllowed and not occupied and not fogBlocked and canAfford()
 
 	if ghostModel then
@@ -216,6 +218,8 @@ local function ensureShovelCursor(): Frame
 	cursor.BackgroundTransparency = 1
 	cursor.Visible = false
 	cursor.ZIndex = 1000
+	-- Never steal clicks from Shop cancel / other HUD.
+	cursor.Active = false
 	cursor.Parent = playerGui:WaitForChild("MainUI")
 
 	local handle = Instance.new("Frame")
@@ -225,6 +229,7 @@ local function ensureShovelCursor(): Frame
 	handle.Size = UDim2.fromOffset(6, 14)
 	handle.BackgroundColor3 = Color3.fromRGB(120, 80, 40)
 	handle.BorderSizePixel = 0
+	handle.Active = false
 	handle.Parent = cursor
 	local handleCorner = Instance.new("UICorner")
 	handleCorner.CornerRadius = UDim.new(0, 2)
@@ -237,6 +242,7 @@ local function ensureShovelCursor(): Frame
 	blade.Size = UDim2.fromOffset(18, 10)
 	blade.BackgroundColor3 = Color3.fromRGB(180, 180, 190)
 	blade.BorderSizePixel = 0
+	blade.Active = false
 	blade.Parent = cursor
 	local bladeCorner = Instance.new("UICorner")
 	bladeCorner.CornerRadius = UDim.new(0, 3)
@@ -404,7 +410,10 @@ local function onPrimaryAction(position: Vector2)
 		return
 	end
 	local column = tile:GetAttribute("Column")
-	if type(column) == "number" and WeatherUtil.isFogPlotColumn(column, currentWeather) then
+	if type(column) == "number"
+		and WeatherUtil.isFogPlotColumn(column, currentWeather)
+		and definition.triggersOnPlace ~= true
+	then
 		UIEvents.firePlantFailed("Unable to plant — that tile is covered in fog")
 		return
 	end

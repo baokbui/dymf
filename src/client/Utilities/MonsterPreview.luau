@@ -94,7 +94,13 @@ function MonsterPreview.mount(
 	viewport.CurrentCamera = camera
 
 	local span = math.max(1, math.floor(definition.laneSpan or 1))
-	local footprint = PREVIEW_FOOTPRINT * (if span > 1 then 1.35 else if definition.isBoss then 1.15 else 1)
+	local scale = definition.modelScale
+	if type(scale) ~= "number" or scale <= 0 then
+		scale = 1
+	end
+	local footprint = PREVIEW_FOOTPRINT
+		* (if span > 1 then 1.35 else if definition.isBoss then 1.15 else 1)
+		* scale
 	local model = ModelUtil.cloneTemplate(template, {
 		targetFootprint = footprint,
 		faceDirection = PREVIEW_FACE,

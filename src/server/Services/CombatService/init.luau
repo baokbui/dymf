@@ -15,6 +15,7 @@ local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 
 local Projectile = require(script.Projectile)
@@ -320,7 +321,9 @@ function CombatService.dealColumnDamage(
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	for _, monsterId in targets do
 		local monsterColumn = if monsterHandlers then monsterHandlers.getMonsterColumn(monsterId) else nil
-		if type(monsterColumn) == "number" and math.abs(monsterColumn - column) < 0.55 then
+		-- Match by lawn tile (not a tight fractional window) so chewing
+		-- monsters at MELEE_CLOSE_REACH standoff still take the bomb.
+		if type(monsterColumn) == "number" and GridUtil.tileAtColumn(monsterColumn) == column then
 			CombatService.damageMonster(monsterId, damage)
 			fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 		end

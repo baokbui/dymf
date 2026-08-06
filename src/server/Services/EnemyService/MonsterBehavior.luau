@@ -22,6 +22,13 @@ local GridService = require(script.Parent.Parent.GridService)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
+local function ignoresMonsterChew(brainrotInstanceId: string): boolean
+	-- Lazy require avoids EnemyService ↔ BrainrotService init cycles.
+	local BrainrotService = require(script.Parent.Parent.BrainrotService)
+	local placement = BrainrotService.getPlacement(brainrotInstanceId)
+	return placement ~= nil and placement.definition.ignoreMonsterChew == true
+end
+
 export type MonsterRuntime = {
 	instanceId: string,
 	monsterId: string,
@@ -85,6 +92,11 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 		end,
 		beginFall = function(duration: number)
 			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			-- Last stand / tip pose owns the body — drop any active freeze.
+			runtime.frozenUntil = 0
+			runtime.freezeVisual = nil
+			MonsterFeedback.setFrozen(runtime.model, false)
+			MonsterFeedback.setBubbled(runtime.model, false)
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
 		end,
@@ -141,8 +153,9 @@ local function occupiedRows(runtime: MonsterRuntime): { number }
 	return rows
 end
 
--- First occupied tile at/west of the monster, checking every row it spans
--- (multi-lane units chew whichever lane's Brainrot they reach first).
+-- First occupied chewable tile at/west of the monster, checking every row it
+-- spans (multi-lane units chew whichever lane's Brainrot they reach first).
+-- Plants with ignoreMonsterChew (e.g. Lirili) are transparent to pathing.
 local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	local plotModel = runtime.plotModel
 	local rows = occupiedRows(runtime)
@@ -151,7 +164,9 @@ local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	for _, row in rows do
 		local standing = GridService.getTile(plotModel, { row = row, column = currentTile })
 		if standing and standing.occupied and standing.brainrotInstanceId then
-			return standing.brainrotInstanceId, currentTile
+			if not ignoresMonsterChew(standing.brainrotInstanceId) then
+				return standing.brainrotInstanceId, currentTile
+			end
 		end
 	end
 
@@ -159,7 +174,9 @@ local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 		for _, row in rows do
 			local tile = GridService.getTile(plotModel, { row = row, column = col })
 			if tile and tile.occupied and tile.brainrotInstanceId then
-				return tile.brainrotInstanceId, col
+				if not ignoresMonsterChew(tile.brainrotInstanceId) then
+					return tile.brainrotInstanceId, col
+				end
 			end
 		end
 	end
@@ -167,7 +184,7 @@ local function nearestBrainrotWest(runtime: MonsterRuntime): (string?, number?)
 	return nil, nil
 end
 
--- Every Brainrot standing on the given column across all rows a (possibly
+-- Every chewable Brainrot on the given column across all rows a (possibly
 -- multi-lane) monster occupies — lets wide units cleave every lane at once
 -- instead of only ever hitting their anchor row.
 local function brainrotsAtColumn(runtime: MonsterRuntime, column: number): { string }
@@ -176,7 +193,9 @@ local function brainrotsAtColumn(runtime: MonsterRuntime, column: number): { str
 	for _, row in occupiedRows(runtime) do
 		local tile = GridService.getTile(plotModel, { row = row, column = column })
 		if tile and tile.occupied and tile.brainrotInstanceId then
-			table.insert(hits, tile.brainrotInstanceId)
+			if not ignoresMonsterChew(tile.brainrotInstanceId) then
+				table.insert(hits, tile.brainrotInstanceId)
+			end
 		end
 	end
 	return hits
@@ -322,6 +341,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 
 		-- Downed (falling/rising): skip movement, attack, and grid-transform
 		-- sync entirely so the manual tip/rise tween isn't fought every frame.
+		-- Freeze does not apply / refresh while downed (see applyStatusToMonster).
 		if now < runtime.downedUntil then
 			continue
 		end

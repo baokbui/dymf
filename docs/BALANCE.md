@@ -34,8 +34,9 @@ fair: no day-one full roster against a Zombie-only opener.
 **House hearts:** 5 (one lost per breach). **Match coins:** Day 1 opens with
 `STARTING_COINS` (125); after later days end the purse resets to **0** (earn
 in-match via producers / passive). **Planted Brainrots** carry across
-**victories** and **rejoin** (DataStore); the lawn is wiped on defeat, day
-select, and reset progress. Brainrots only act while the day is **Active**.
+**victories** and **rejoin** (DataStore); defeat restores that checkpoint on the
+same day (Rewind); the lawn is wiped on day select / Reset Progress.
+Brainrots only act while the day is **Active**.
 Campaign spawn counts assume that growing board — see `Shared.Levels` /
 `LEVELS.md`.
 
@@ -75,9 +76,9 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Unit | Cost | Hits | Combat role |
 | ---- | ---- | ---- | ----------- |
 | Ballerina | 50 | 5 | Economy (25 / 18s) |
-| Chimpanzini | 75 | 20 | Wall (~30s vs one Zombie) |
+| Chimpanzini | 50 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
-| Lirili | 75 | 1 | One-shot lane freeze (7s); plant cooldown 20s |
+| Lirili | 75 | — | One-shot lane freeze (7s); uneatable; plant cooldown 20s |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
 | Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
@@ -99,12 +100,13 @@ were raised so early boards need real DPS:
 | `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 110 / 1.0s |
 | `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 6.2 | 8000 + one-shot; **laneSpan 2** |
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
-| `DukeVampire` | Boss (L20; recurs L24/28) | 10000 | 6.0 | 100 / 1.1s; nerfed vs. Goblin King / Queen Spider |
+| `DukeVampire` | Boss (L20; recurs L24/28/38; dual finale L40) | 8000 | 4.8 | 100 / 1.1s; last stand + Terrify |
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
-| `QueenSpider` | Boss (L30) | 13000 | 6.3 | 140 / 1.5s; laneSpan 3; stun 2s + poison 3%/4s; no jump |
+| `QueenSpider` | Boss (L30; recurs L32/37; dual finale L40) | 13000 | 6.3 | 140 / 1.5s; laneSpan 3; stun 2s + poison 3%/4s; no jump |
+| `Werewolf` | Fast heavy grunt (L35+) | 1400 | 2.0 | 60 / 1.5s; lifesteal 5% max HP / chew; authored walk/attack clips |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
-~16s Goblin, ~15s Vampire).
+~16s Goblin, ~15s Vampire, ~12s Werewolf).
 
 Chew standoff: monsters stop `MELEE_CLOSE_REACH` (0.42 columns ≈ 7.5 studs)
 east of the plant center so models don't overlap.
@@ -126,10 +128,13 @@ east of the plant center so models don't overlap.
   species eats a full group slot) so a kept defense still feels challenged.
 - **Days 21–24 (Night):** moonlit night, full lawn plantable — same roster mix,
   quieter/harder alternation.
-- **Days 25–30 (NightFog):** easternmost 3 lawn columns are unplantable, so
-  effective depth shrinks — keep totals in the ~12–15 range and alternate
-  quieter days (27) with spikes (28 Duke, 29 Elite, 30 Queen). Fog is a
-  visible cosmetic bank; monsters stay fully visible.
+- **Days 25–34 (NightFog):** easternmost **3** lawn columns are unplantable, so
+  effective depth shrinks — keep totals in the ~12–16 range; Queen / Duke recur
+  mid-day on 32–33 after the L30 Queen finale.
+- **Days 35–40 (NightFogReceded):** fog bank loses **one** column (only 2
+  blocked) so players regain a plantable tile; Level 35 introduces `Werewolf`
+  (2.0s/tile + 5% max-HP lifesteal per chew) with gentle counts, then
+  packs/spiders/vampires ramp into a Queen + Duke dual closer at 40.
 
 ---
 

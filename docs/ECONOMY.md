@@ -17,8 +17,9 @@ From `GAME_DESIGN.md`:
 - Passive drops (every ~25 seconds) ✅
 - Coin-producing Brainrots (e.g. **Ballerina Cappucina** — see `BRAINROTS.md`) ✅
 - Completing a level ✅ Milestone 8 — after Day 1, purse resets to **0**;
-  Day 1 (and defeat → Day 1) gets `STARTING_COINS` (125). Plants may stay on
-  victory; coin purse does not carry.
+  Day 1 gets `STARTING_COINS` (125). Defeat applies the same day-purse rules
+  for the failed day (not a forced Day 1 reset). Victory keeps plants;
+  coin purse does not carry between days.
 - Future achievements / events
 
 ---
@@ -56,8 +57,10 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 
 `CoinService` (server) is the **sole authority** over currency:
 
-- Holds each player's authoritative coin balance (`applyDayPurse`: Day 1 →
-  `STARTING_COINS`, later days → 0).
+- Holds each player's authoritative coin balance (`applyDayPurse` on join /
+  day end: Day 1 → `STARTING_COINS`, later days → 0). `CoinService` does **not**
+  default joiners to 125 — that raced save hydrate and wrongly granted Day 1
+  coins on rejoin.
 - Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
   coins** (one per active player per interval, **only while the level is
   `Active`**), each worth `PASSIVE_DROP_AMOUNT`. Passive coins **rain slowly

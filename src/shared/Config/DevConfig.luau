@@ -10,9 +10,11 @@ local RunService = game:GetService("RunService")
 
 local DevConfig = {
 	-- Flip to false to restore normal economy / unlock cadence.
-	ENABLED = true,
-	COINS = 10000,
-	UNLOCK_ALL_BRAINROTS = true,
+	ENABLED = false,
+	COINS = 125,
+	UNLOCK_ALL_BRAINROTS = false,
+	-- When set (and ENABLED), Studio join forces current day + unlock through this day.
+	FORCE_DAY = nil :: number?,
 }
 
 function DevConfig.isActive(): boolean

@@ -116,11 +116,13 @@ function LevelRun.advance(self: LevelRun, now: number): { spawn: boolean, bigWav
 		self.bigWaveWarningActive = false
 		self.spawnedInGroup = 0
 		self.nextActionTime = now
-		result.bigWaveWarningEnd = true
-		return self:advance(now)
+		-- Merge flags: recursive spawn must not drop bigWaveWarningEnd.
+		local nested = self:advance(now)
+		nested.bigWaveWarningEnd = true
+		return nested
 	end
 
-	-- spawning
+	-- spawning — at most one monster per advance call
 	if self.spawnedInGroup < group.count then
 		self.spawnedInGroup += 1
 		self.totalSpawned += 1
@@ -133,6 +135,8 @@ function LevelRun.advance(self: LevelRun, now: number): { spawn: boolean, bigWav
 		return result
 	end
 
+	-- Group already filled (shouldn't happen); advance to the next group.
+	self:_finishGroup(now)
 	return result
 end
 

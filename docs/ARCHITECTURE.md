@@ -358,10 +358,12 @@ Full details in `LEVELS.md`. Summary:
 
 - **`LevelService`** — preparation → Start Day → Active (monsters stage in the
   forest, then enter the plot); spawn groups via `LevelRun` scheduler;
-  victory keeps planted Brainrots and resets coins; defeat / day select wipe
-  the lawn; `LevelStateChanged` remote.
+  victory keeps planted Brainrots and resets coins via day purse; defeat
+  restores the victory checkpoint on the same day (Game Over → Rewind); day
+  select wipes the lawn + checkpoint; `LevelStateChanged` remote.
 - **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
-- **`UIController/Level.luau`** — bottom-right level title, Start / Restart button, progress bar, big-wave banner.
+- **`UIController/Level.luau`** — bottom-right day title, Start Day button, progress bar, big-wave banner.
+- **`UIController/GameOverPopup.luau`** — defeat overlay + Rewind Day N.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
 - **`MonsterConfig.DEV_SPAWN.ENABLED = false`** — campaign spawns replace dev waves.
 
@@ -374,7 +376,8 @@ Full details in `SAVE_SYSTEM.md`. Summary:
 - Player progression (`currentLevel`, `highestLevel`, `brains`, `playerHealth`,
   committed lawn Brainrots, unlocks, loadout, statistics) persists on leave,
   autosave, and victory/defeat.
-- Lawn is a **victory checkpoint** (`commitLawn` / `clearCommittedLawn`); mid-day
+- Lawn is a **victory checkpoint** (`commitLawn` / `clearCommittedLawn` /
+  `restoreCommittedLawn`); mid-day
   plants are not written until the day is won. Concurrent saves queue a resave.
 - Match coins always reset via `applyDayPurse` on join (not stored as balance).
 - Restore flow: `LevelService.applySaveProgress`, `CoinService.applyDayPurse`,

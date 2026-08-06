@@ -134,6 +134,7 @@ server, and highlighting is a local visual.
 - One Brainrot per tile.
 - Cannot plant outside the grid.
 - Cannot plant without enough coins.
-- Cannot plant on NightFog fog columns (easternmost 3; server + client —
-  `WEATHER.md`).
+- Cannot plant on NightFog / NightFogReceded fog columns (easternmost 3 or 2),
+  except one-shot `triggersOnPlace` Brainrots (Lirili / Bombardino) — see
+  `WEATHER.md`.
 - The server validates every placement (via `GridService` + cost checks).

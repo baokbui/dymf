@@ -15,7 +15,7 @@
 local DukeVampireFreeze = {}
 
 local DEFAULT_TRIGGER_PERCENT = 20
-local DEFAULT_HEAL_TO_PERCENT = 50
+local DEFAULT_HEAL_TO_PERCENT = 25
 -- Matches a regular monster death's tip-over speed (CombatConfig.DEATH_FALL_DURATION).
 local DEFAULT_FALL_DURATION = 1.0
 local DEFAULT_GROUND_DURATION = 3

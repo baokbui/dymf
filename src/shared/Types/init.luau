@@ -38,6 +38,8 @@ export type BrainrotDefinition = {
 	coinGeneration: number?, -- coins per cycle for producers
 	abilityParams: { [string]: number }?, -- per-ability tuning (trap/freeze duration, …)
 	triggersOnPlace: boolean?, -- true = ability fires once on placement (e.g. line bomb)
+	-- When true, monsters phase through and never deal chew damage (one-shot casters).
+	ignoreMonsterChew: boolean?,
 	plantCooldown: number?, -- seconds before re-plant; nil = BrainrotConfig.plantCooldownFor(cost)
 	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
@@ -72,13 +74,14 @@ export type MonsterDefinition = {
 	color: Color3?,
 	modelId: string?, -- Assets.Monsters child name; defaults to `id`
 	modelOrientationDegrees: Vector3?, -- local Euler after facing house (−X)
+	-- Multiplier on BODY_HEIGHT / footprint when cloning Assets templates (default 1).
+	modelScale: number?,
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
 	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld
 	-- leg joints (for Toolbox spiders without a matching uploaded Animation).
 	proceduralWalk: boolean?,
-	-- Death pose style for MonsterDeath.play. Nil / "TipOver" = randomized tip;
-	-- "SpiderFlat" = legs splay horizontal and the body drops flat (Queen Spider).
+	-- Death pose style for MonsterDeath.play. Nil / "TipOver" = randomized tip.
 	deathStyle: string?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,

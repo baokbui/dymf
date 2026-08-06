@@ -40,6 +40,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Terrify",
 		description = "Weakens and freezes Brainrots in its lane and the lanes beside it.",
 	},
+	WerewolfLifesteal = {
+		label = "Lifesteal",
+		description = "Heals 5% of its max HP every time it chews a Brainrot.",
+	},
 	NecromancerSummon = {
 		label = "Raise Dead",
 		description = "Summons lesser undead onto the lawn.",

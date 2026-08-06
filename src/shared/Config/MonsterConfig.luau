@@ -44,9 +44,12 @@ local MonsterConfig = {
 	HIT_FLASH_COLOR = Color3.fromRGB(255, 90, 90),
 	HIT_FLASH_DURATION = 0.14,
 
-	-- Freeze / stun tint (Lirili Larila).
-	FREEZE_COLOR = Color3.fromRGB(160, 220, 255),
+	-- Freeze / stun tint (Lirili Larila). Bright ice so authored meshes read
+	-- clearly even under a soft Highlight wash.
+	FREEZE_COLOR = Color3.fromRGB(140, 210, 255),
 	FREEZE_MATERIAL = Enum.Material.Ice,
+	FREEZE_HIGHLIGHT_FILL = 0.35,
+	FREEZE_HIGHLIGHT_OUTLINE = 0.15,
 
 	-- Bubble trap (Tralalero) — float in a translucent sphere until it pops.
 	BUBBLE_COLOR = Color3.fromRGB(170, 230, 255),

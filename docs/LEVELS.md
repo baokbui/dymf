@@ -22,7 +22,8 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
   final group is the **big wave** (the PvZ "flag"), preceded by a warning.
 - Clearing every group (no monsters left alive) → **Victory** → brains reward +
 unlock next day. A monster reaching the house → **−1 heart**; at **0 hearts** →
-**Defeat** → reset to **Day 1** (lawn cleared; `highestUnlocked` kept for Day Select).
+**Defeat** → Game Over → **Rewind** stays on the failed day with the last
+victory lawn restored (`highestUnlocked` kept for Day Select).
 
 This keeps the moment-to-moment PvZ pacing (rising intensity into a final rush)
 while making overall progress a finite, designed campaign rather than infinite
@@ -40,8 +41,9 @@ Start Day ─► Active (plant + fight; monsters march from forest)
    │                              │
    └──── Reward + unlock next ◄── Victory
          (keep planted Brainrots;     │
-          reset coins to STARTING)    │
-              Defeat (0 hearts) ─► clear lawn + coins → Day 1
+          reset coins via day purse)  │
+              Defeat (0 hearts) ─► Game Over → Rewind same day
+                                   (restore victory checkpoint lawn)
 ```
 
 During `Preparation`, planting and ground-coin drops are blocked. Both unlock
@@ -53,8 +55,11 @@ the lawn edge is ~20–30s depending on species speed.
 
 **Lawn carry-over:** after **Victory**, planted Brainrots (and their remaining
 HP) stay on the plot. Coin purse: **Day 1 → `STARTING_COINS` (125)**; after any
-later day ends → **0**. After **Defeat**, the lawn is cleared and `currentLevel`
-resets to **Day 1** with 125 coins (`highestUnlocked` kept for Day Select).
+later day ends → **0**. After **Defeat**, the player stays on the failed day;
+mid-day plants are cleared and the **last victory checkpoint** lawn is restored;
+hearts refill; coins use `applyDayPurse` (Day 1 → 125, later → 0). Phase stays
+**`Defeat`** until **Rewind Day N** (`RewindDay` remote) returns them to
+`Preparation` on that day.
 **Day Select** clears the lawn and applies the purse for the selected day.
 **Rejoin restores** the **committed** lawn (plants from the last victory /
 wipe — not mid-day placements on an unfinished day). Brainrots only attack /
@@ -146,10 +151,22 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 28    | Duke's Night      | NightFog · DukeVampire finale · **13** |
 | 29    | Closing Webs      | NightFog · Spider pressure + Elite · **14** |
 | 30    | Queen Spider      | NightFog · **QueenSpider** boss finale · **13** |
+| 31    | After the Queen   | NightFog · post-boss mix · **16** |
+| 32    | Royal Remnant     | NightFog · Queen mid · **14** |
+| 33    | Duke Returns      | NightFog · Duke mid · **15** |
+| 34    | Thickening Dark   | NightFog · Elite open · **15** |
+| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · **14** |
+| 36    | Pack Pressure     | NightFogReceded · Werewolf mix · **15** |
+| 37    | Silk and Fang     | NightFogReceded · Queen mid · **14** |
+| 38    | Blood Pack        | NightFogReceded · Duke mid · **14** |
+| 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **14** |
+| 40    | Throne of Silk    | NightFogReceded · **QueenSpider + DukeVampire** dual finale · **14** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
-Days **25–30** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
-easternmost 3 columns unplantable; monsters stay visible — see `WEATHER.md`).
+Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
+easternmost **3** columns unplantable; monsters stay visible — see `WEATHER.md`).
+Days **35–40** use `weather = "NightFogReceded"` (same night fog look, but only
+easternmost **2** columns blocked — one more plantable column).
 Fog days keep moderate totals and alternate easier/harder pacing.
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
@@ -158,9 +175,10 @@ bundle of types in a single level.
 Introduction cadence:
 
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
-  `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`).
+  `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
-  `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`).
+  `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
+  dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave).
 - The first time a player **reaches** an intro day, `LevelService` shows a
   **MonsterIntroPopup** (portrait + stats + ability blurb) driven by
   `ProgressConfig.MONSTER_INTRO_SCHEDULE` / `introducedMonsterId` — same idea
@@ -169,10 +187,10 @@ Introduction cadence:
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
   in later levels — placed in the **beginning or middle** of the day, not as
-  the big-wave closer. Only decade boss days (10 / 20 / 30 / …) keep the boss
-  as the finale. Regular days that mix in `GoblinElite` / `DukeVampire` use a
-  grunt big wave after the elite spike (e.g. Day 13 Elite mid → Zombie flag;
-  Day 14 Elite opens the day; Day 24 Duke mid → Goblin flag).
+  the big-wave closer. Only decade boss days (10 / 20 / 30 / 40 / …) keep the boss
+  as the finale. Regular days that mix in `GoblinElite` / `DukeVampire` /
+  `QueenSpider` use a grunt big wave after the elite spike (e.g. Day 13 Elite mid
+  → Zombie flag; Day 32 Queen mid → Vampire flag; Day 38 Duke mid → Goblin flag).
 
 ### Difficulty ramp (early campaign)
 
@@ -229,10 +247,12 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
 - On **Victory**: clear monsters / projectiles / ground coins; **keep planted
   Brainrots** (current HP); set coin purse via `applyDayPurse` (Day 1 → 125,
   later days → 0); then unlock/advance to the next level.
-- On **Defeat**: clear Brainrots, monsters, ground coins; set `currentLevel` to
-  **1**; hearts refill; purse → 125 (`highestUnlockedLevel` unchanged). Phase
-  stays **`Defeat`** until the player presses **Start Day 1**. Passive and
-  ability coin drops are blocked outside `Active`.
+- On **Defeat**: clear mid-day Brainrots / monsters / ground coins; **keep**
+  `currentLevel` on the failed day; **restore** the last victory checkpoint lawn
+  (`SaveService.restoreCommittedLawn` — do not wipe the checkpoint); hearts
+  refill; purse via `applyDayPurse`. Phase stays **`Defeat`** until the player
+  presses **Rewind Day N** (`RewindDay` → `Preparation`). Then **Start Day** as
+  usual. Passive and ability coin drops are blocked outside `Active`.
 - On **Day Select**: full lawn wipe; purse via `applyDayPurse` for the selected day.
 - Broadcasting phase / level number / progress / `weather` via `LevelStateChanged`
   (see `NETWORKING.md`). Applying NightFog plant rules on prep / lawn restore
@@ -249,13 +269,14 @@ later as its own mode).
 
 - The **current level**, **highest unlocked level**, and **hearts** are persisted.
 - Hearts are **progressive** across days (not refilled on victory / Start Day /
-  day select). Full refill on **defeat** (and Reset Progress). Defeat also
-  sets the current day back to **1**.
+  day select). Full refill on **defeat** (and Reset Progress). Defeat keeps the
+  failed day; Rewind returns to Preparation on that day.
 - **Coins** — Day 1 → `STARTING_COINS` (125); later days → **0** after each day
   ends (`CoinService.applyDayPurse`). Not DataStore-persisted.
 - Planted Brainrots are **persisted as a victory checkpoint** (id, tile, HP) and
-  restored on rejoin. Defeat / Day Select clear the lawn (and the committed
-  checkpoint). Mid-day plants on an unfinished day are **not** saved.
+  restored on rejoin **and on defeat** (retry the same day with the prior clear's
+  lawn). Day Select clears the lawn (and the committed checkpoint). Mid-day
+  plants on an unfinished day are **not** saved.
 - Monsters, projectiles, and level timers are never persisted.
 - If a player leaves mid-day or before Start Day: save progression + committed
   lawn only; clear combat runtimes. The unfinished day resets to Preparation.

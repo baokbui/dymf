@@ -25,6 +25,7 @@ StarterGui/
         RewardPopup  (Frame)   ✅ M13
         UnlockPopup  (Frame)   ✅ M13
         MonsterIntroPopup (Frame) ✅
+        GameOverPopup (Frame) ✅
 ```
 
 `UIController` builds each panel at runtime (except scaffolding frames).
@@ -41,7 +42,8 @@ All HUD panels share a **cartoon thick-outline** look from
   so the screen doesn't read as one wall of blue: Day/Start Day panel and Shop
   dock stay cool blue (the reference look), Coins is gold, Brains is purple,
   Hearts is rosy red, Inventory is leafy green, Settings is orange,
-  RewardPopup is gold, UnlockPopup is purple, MonsterIntroPopup is orange.
+  RewardPopup is gold, UnlockPopup is purple, MonsterIntroPopup is orange,
+  GameOverPopup is dark defeat crimson.
 - Black `UIStroke` borders (thick on panels, slightly thinner on cards)
 - Bold white/accent titles with black `TextStroke`
 - Flat saturated accents (gold coins, red hearts/danger, green start)
@@ -112,10 +114,16 @@ hardcode a second palette in new UI.
   display-only).
 - **MonsterIntroPopup** ✅ — same cartoon modal pattern for new monsters /
   bosses the first time the player **reaches** an intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`:
-  Goblin 5, Goblin Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30).
+  Goblin 5, Goblin Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
+  Werewolf 35).
   Driven by `introducedMonsterId` on `LevelStateChanged`; portrait via
   `MonsterPreview`, stats/abilities via `MonsterInfo`. Persisted in
   `SaveData.introducedMonsters` so it only fires once.
+- **GameOverPopup** ✅ — full-screen defeat overlay when hearts hit 0: slow
+  **GAME OVER** reveal, “You have failed to protect Triple T and his house.”,
+  and **Rewind Day N**. Clicking Rewind plays a translucent clock spin, fades
+  the overlay, and fires `RewindDay` (server → Preparation on the failed day
+  with the victory-checkpoint lawn already restored).
 - **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
   day (`LevelStateChanged.reward`).
 

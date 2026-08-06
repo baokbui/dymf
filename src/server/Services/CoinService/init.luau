@@ -288,8 +288,14 @@ local function onCollectCoin(player: Player, coinId: unknown)
 end
 
 local function onPlayerAdded(player: Player)
-	balances[player.UserId] = EconomyConfig.STARTING_COINS
-	fireBalance(player)
+	-- SaveService.hydrateProgression owns the match purse via applyDayPurse
+	-- (Day 1 → STARTING_COINS, later days → 0). Never default to STARTING_COINS
+	-- here — service start / PlayerAdded order is not guaranteed, so this
+	-- handler can run *after* hydrate and incorrectly grant 125 on rejoin.
+	if balances[player.UserId] == nil then
+		balances[player.UserId] = 0
+		fireBalance(player)
+	end
 end
 
 local function onPlayerRemoving(player: Player)

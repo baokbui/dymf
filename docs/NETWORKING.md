@@ -44,9 +44,10 @@ Remotes module. That is the only required step.
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
 | `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / Terrify / Dizzy / MonsterAttack VFX + SFX (**plot owner only**) |
-| `StartLevel`       | client → server | ✅ M8  | Player presses Start Level               |
+| `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
+| `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats |
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated)     |
@@ -137,9 +138,13 @@ The campaign loop is server-authoritative, owned by `LevelService` (see
 `LEVELS.md`).
 
 **Start** — the client sends `StartLevel()` with no arguments when the player
-presses the button (only enabled during `Preparation` or `Defeat`). The server
+presses the button (only enabled during `Preparation`). The server
 validates phase, clears stray monsters, and enters `Active` immediately.
 Monsters spawn in the forest and walk toward the plot (setup time).
+
+**`RewindDay`** — client fires from the Game Over overlay while phase is
+`Defeat`. Server validates phase, enters `Preparation` on the same failed day
+(lawn already restored from the victory checkpoint on defeat).
 
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
 whenever phase, progress, or big-wave warning changes. The client
@@ -149,10 +154,11 @@ optional `weather` (e.g. `"Night"` / `"NightFog"`) from the current
 presentation and fog-tile rules (`WEATHER.md`). Initial join state includes
 `level` inside the `RequestState` pull (`{ coins, level }`).
 
-**Defeat** — when a monster breaches the house during `Active`, `LevelService`
-clears the plot (Brainrots, monsters, ground coins), resets coins to the
-starting balance, and sets phase to `Defeat`. The client shows a red **Restart
-Level** button; pressing it fires the same `StartLevel` remote. **Victory** —
+**Defeat** — when hearts reach 0 during `Active`, `LevelService` clears mid-day
+plants / monsters / ground coins, **restores the last victory checkpoint lawn**,
+keeps `currentLevel` on the failed day, refills hearts, applies the day purse
+(Day 1 → 125; later → 0), and sets phase to `Defeat`. The client shows
+**GameOverPopup** (slow GAME OVER + Rewind Day N). **Victory** —
 when all spawn groups are finished and no monsters remain, the server grants
 coins and unlocks the next level. The Victory payload's `reward` table may
 include `unlockedBrainrotId` when clearing that day grants a starter-roster

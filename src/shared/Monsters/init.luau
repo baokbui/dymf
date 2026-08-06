@@ -41,11 +41,22 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		id = "Werewolf",
 		name = "Werewolf",
 		health = 1400,
-		secondsPerGrid = 2.9,
-		damage = 130,
-		attackInterval = 1.1,
+		secondsPerGrid = 2.0,
+		damage = 60,
+		attackInterval = 1.5,
 		isBoss = false,
+		abilities = { "WerewolfLifesteal" },
+		abilityParams = {
+			-- Heal this % of max HP on every chew hit against a Brainrot.
+			lifestealPercent = 5,
+		},
 		color = Color3.fromRGB(110, 90, 70),
+		-- Template currently lives under Assets.Brainrots (Studio); ModelUtil
+		-- falls back there when Assets.Monsters has no match.
+		modelId = "Werewolf",
+		modelScale = 1.45,
+		walkAnimationId = "rbxassetid://98391463724574",
+		attackAnimationId = "rbxassetid://124598361208208",
 	},
 
 	Skeleton = {
@@ -107,6 +118,8 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			jumpTriggerReach = 0.95,
 		},
 		color = Color3.fromRGB(40, 40, 40),
+		-- Toolbox mesh faces +X; yaw 180 so eyes look house-ward (−X).
+		modelOrientationDegrees = Vector3.new(0, 90, 0),
 		-- Toolbox AnimationId is often permission-locked; use AnimSaves (local)
 		-- or MonsterProceduralGait — never request the pack rbxassetid.
 		walkAnimationId = "",
@@ -162,11 +175,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		},
 		color = Color3.fromRGB(30, 30, 30),
 		-- Duplicated Spider Toolbox model — same procedural crawl gait.
+		modelOrientationDegrees = Vector3.new(0, 90, 0),
 		walkAnimationId = "",
 		attackAnimationId = "",
 		proceduralWalk = true,
-		-- Legs splay flat + body drops (not the usual tip-over corpse).
-		deathStyle = "SpiderFlat",
 	},
 
 	DukeVampire = {
@@ -175,7 +187,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- Nerfed vs. the other Milestone-10 bosses (Goblin King / Queen Spider):
 		-- Level 20 is the very next boss after Goblin Elite, so it needs to be
 		-- beatable off a still-growing board, not a straight stat-tier jump.
-		health = 10000,
+		health = 8000,
 		secondsPerGrid = 4.8,
 		-- Regular chew = a Vampire's cadence (1.1s) with a bit more bite (Vampire = 70).
 		damage = 100,
@@ -192,7 +204,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			-- lastStandGroundDuration, invulnerable the whole time, then
 			-- rises already healed to lastStandHealPercent max HP.
 			lastStandTriggerPercent = 20,
-			lastStandHealPercent = 50,
+			lastStandHealPercent = 25,
 			lastStandFallDuration = 1.0,
 			lastStandGroundDuration = 3,
 			lastStandRiseDuration = 0.7,

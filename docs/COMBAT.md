@@ -93,7 +93,7 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — icy tint + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
+| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
 | Slow | Reduces movement speed | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
 | Knockback | Pushes column east (+X) | — |
@@ -105,7 +105,7 @@ fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
 `poisonPercent` (3% of the Brainrot's max HP per 1s tick). Cleaves all three
 occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
-Death uses `deathStyle = "SpiderFlat"` (legs fall flat, body drops — not tip-over).
+Uses the default tip-over death like other monsters.
 
 **Spider** ✅ — `SpiderJump` vaults the **first** Brainrot in its lane with a
 visible parabola (`MonsterBehavior` jump state: column lerps west of the plant
@@ -113,12 +113,23 @@ while `floatY` peaks). The plant takes no damage; later Brainrots are chewed
 normally. Tunables: `jumpDuration` / `jumpPeakHeight` / `jumpLandOffset` /
 `jumpTriggerReach` on `abilityParams` (defaults in `MonsterConfig.JUMP_*`).
 
+**Werewolf** ✅ — `WerewolfLifesteal`: each chew against a Brainrot
+(`onBrainrotAttacked`) queues a heal of `lifestealPercent` (default **5**) of
+its max HP via `abilityState.pendingHeal` (applied next `MonsterBehavior`
+tick, capped at max HP). Fast march (`secondsPerGrid` 2.0).
+
+**Lirili / Bombardino** — entire-row status (`applyEntireRowStatus`) only
+targets monsters **on the lawn** (`isOnPlotColumn`). Bombardino column hits
+match by **tile index** so chewing units at melee standoff still take damage.
+Freeze/Stun are rejected while a monster is **downed**, and starting a tip-over
+(last stand) clears any active freeze.
+
 **Duke Vampire** ✅ — `DukeVampireFreeze` is a **once-only** last stand: at
 ≤20% HP he falls over (`MonsterDeath.playDowned`, rig intact —
 `MonsterBehavior` suspends movement/attack/sync via `runtime.downedUntil`)
 for 1.4s while invulnerable (`MonsterRuntime.invulnerableUntil`, checked in
 `EnemyService.damageMonster`), then rises (`MonsterDeath.riseUp`) already
-healed to 50% max HP. `DukeVampireTerrify`
+healed to 25% max HP. `DukeVampireTerrify`
 deals **no damage**; on a 10s cooldown it applies `Weaken` + `Stun` to his row
 ± 1 (independent of `laneSpan`, which stays 1). His regular chew is a plain
 stat-driven attack (no ability) at Vampire pace with more damage. Goblin
@@ -138,7 +149,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Hit / death / explosion SFX | `AudioController` via `CombatVisual` (M12) |
 | Melee bat SFX | `BrainrotAction` (`MeleeBat`) after `attackHitDelay` — sound only for animated units; ScaleTo pulse only if not `animated` |
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
-| Death tip-over / SpiderFlat + linger + fade | Server `MonsterDeath` (default 3 tip styles; Queen Spider `SpiderFlat`); client burst + Thanos ash on fade |
+| Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
 | Coin pickup sparkle | `CoinController` when a collected coin despawns |
@@ -157,8 +168,7 @@ values remain in `CombatConfig`.
    particle burst. After tip-over + linger, a Thanos-style ash disintegrate
    (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.
 4. Server `MonsterDeath` plays the definition's `deathStyle` (default: tip onto
-   the ground — randomized faceplant / side flop / backfall; Queen Spider:
-   `SpiderFlat` legs-out collapse), leaves the corpse for
+   the ground — randomized faceplant / side flop / backfall), leaves the corpse for
    `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
 5. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 

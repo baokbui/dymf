@@ -31,8 +31,9 @@ local CARD_STROKE = 2
 local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
 local PANEL_CORNER_RADIUS = UITheme.CORNER_PANEL
 
-local TOOL_COLUMN_WIDTH = 40
+local TOOL_COLUMN_WIDTH = 44
 local TOOL_GAP = 6
+local CANCEL_SIZE = 56
 local TOOL_BUTTON_HEIGHT = math.floor((CARD_HEIGHT - TOOL_GAP) / 2)
 
 type Card = {
@@ -135,7 +136,8 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	local shovelButton = self:buildShovelButton(tools)
 	self.shovelButton = shovelButton
 
-	local cancelButton = self:buildCancelButton(tools)
+	-- Large cancel sits left of the dock so it's easy to hit (not a tiny half-cell).
+	local cancelButton = self:buildCancelButton(frame)
 	self.cancelButton = cancelButton
 
 	local list = Instance.new("Frame")
@@ -172,6 +174,7 @@ function Shop.buildShovelButton(self: Shop, parent: Instance): TextButton
 	handle.Size = UDim2.fromOffset(5, 12)
 	handle.BackgroundColor3 = Color3.fromRGB(120, 80, 40)
 	handle.BorderSizePixel = 0
+	handle.Active = false
 	handle.Parent = button
 	UITheme.styleCorner(handle, 2)
 	UITheme.applyStroke(handle, 2)
@@ -182,6 +185,7 @@ function Shop.buildShovelButton(self: Shop, parent: Instance): TextButton
 	blade.Size = UDim2.fromOffset(16, 8)
 	blade.BackgroundColor3 = Color3.fromRGB(220, 225, 235)
 	blade.BorderSizePixel = 0
+	blade.Active = false
 	blade.Parent = button
 	UITheme.styleCorner(blade, 2)
 	UITheme.applyStroke(blade, 2)
@@ -196,16 +200,18 @@ end
 function Shop.buildCancelButton(self: Shop, parent: Instance): TextButton
 	local button = Instance.new("TextButton")
 	button.Name = "Cancel"
-	button.AutoButtonColor = false
-	button.AnchorPoint = Vector2.new(0, 1)
-	button.Position = UDim2.new(0, 0, 1, 0)
-	button.Size = UDim2.new(1, 0, 0, TOOL_BUTTON_HEIGHT)
-	button.TextSize = 18
+	button.AutoButtonColor = true
+	button.AnchorPoint = Vector2.new(1, 0)
+	button.Position = UDim2.new(0, -PANEL_PADDING_X, 0, PANEL_PADDING_Y + (CARD_HEIGHT - CANCEL_SIZE) / 2)
+	button.Size = UDim2.fromOffset(CANCEL_SIZE, CANCEL_SIZE)
+	button.TextSize = 28
 	button.Text = "X"
 	button.Visible = false
+	button.ZIndex = 20
 	button.Parent = parent
 	UITheme.applyButtonLook(button, UITheme.CANCEL)
 	UITheme.applyOutlinedTitle(button)
+	button.TextSize = 28
 
 	button.Activated:Connect(function()
 		self.callbacks.onCancelClicked()

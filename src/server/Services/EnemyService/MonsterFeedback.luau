@@ -24,11 +24,49 @@ local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
 type FrozenLook = {
 	colors: { [BasePart]: Color3 },
 	materials: { [BasePart]: Enum.Material },
+	-- Toolbox MeshParts often use SurfaceAppearance / TextureID which ignore
+	-- BasePart.Color — stash and clear them so Ice material + color show.
+	surfaceAppearanceParents: { [SurfaceAppearance]: Instance },
+	meshTextures: { [MeshPart]: string },
+	specialMeshTextures: { [SpecialMesh]: string },
 }
 
 local frozenLooks: { [Model]: FrozenLook } = {}
 local bubbledModels: { [Model]: boolean } = {}
 local poppingBubbles: { [Model]: boolean } = {}
+
+local FREEZE_HIGHLIGHT_NAME = "FreezeHighlight"
+
+local function ensureFreezeHighlight(model: Model)
+	local existing = model:FindFirstChild(FREEZE_HIGHLIGHT_NAME)
+	if existing and existing:IsA("Highlight") then
+		existing.Enabled = true
+		existing.FillColor = MonsterConfig.FREEZE_COLOR
+		existing.OutlineColor = Color3.fromRGB(220, 245, 255)
+		existing.FillTransparency = MonsterConfig.FREEZE_HIGHLIGHT_FILL
+		existing.OutlineTransparency = MonsterConfig.FREEZE_HIGHLIGHT_OUTLINE
+		return
+	end
+	if existing then
+		existing:Destroy()
+	end
+	local highlight = Instance.new("Highlight")
+	highlight.Name = FREEZE_HIGHLIGHT_NAME
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.FillColor = MonsterConfig.FREEZE_COLOR
+	highlight.OutlineColor = Color3.fromRGB(220, 245, 255)
+	highlight.FillTransparency = MonsterConfig.FREEZE_HIGHLIGHT_FILL
+	highlight.OutlineTransparency = MonsterConfig.FREEZE_HIGHLIGHT_OUTLINE
+	highlight.Adornee = model
+	highlight.Parent = model
+end
+
+local function clearFreezeHighlight(model: Model)
+	local existing = model:FindFirstChild(FREEZE_HIGHLIGHT_NAME)
+	if existing then
+		existing:Destroy()
+	end
+end
 
 local function visibleParts(model: Model): { BasePart }
 	local parts: { BasePart } = {}
@@ -261,21 +299,55 @@ end
 function MonsterFeedback.setFrozen(model: Model, frozen: boolean)
 	local parts = visibleParts(model)
 	local body = resolveBody(model)
-	if #parts == 0 or not body then
+	if #parts == 0 then
 		return
 	end
+	-- Boss / R15 templates may lack a "Body" part — still tint meshes and
+	-- parent freeze VFX to PrimaryPart / first visible part.
+	local vfxParent = body or parts[1]
 
 	if frozen then
 		cancelHitFlash(model)
 		if not frozenLooks[model] then
 			local colors: { [BasePart]: Color3 } = {}
 			local materials: { [BasePart]: Enum.Material } = {}
+			local surfaceAppearanceParents: { [SurfaceAppearance]: Instance } = {}
+			local meshTextures: { [MeshPart]: string } = {}
+			local specialMeshTextures: { [SpecialMesh]: string } = {}
+
 			for _, part in parts do
 				colors[part] = part.Color
 				materials[part] = part.Material
+				if part:IsA("MeshPart") and part.TextureID ~= "" then
+					meshTextures[part] = part.TextureID
+					part.TextureID = ""
+				end
+				for _, child in part:GetChildren() do
+					if child:IsA("SurfaceAppearance") and child.Parent then
+						surfaceAppearanceParents[child] = child.Parent
+						child.Parent = nil
+					elseif child:IsA("SpecialMesh") and child.TextureId ~= "" then
+						specialMeshTextures[child] = child.TextureId
+						child.TextureId = ""
+					end
+				end
 			end
-			frozenLooks[model] = { colors = colors, materials = materials }
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("SurfaceAppearance") and descendant.Parent and surfaceAppearanceParents[descendant] == nil then
+					surfaceAppearanceParents[descendant] = descendant.Parent
+					descendant.Parent = nil
+				end
+			end
+
+			frozenLooks[model] = {
+				colors = colors,
+				materials = materials,
+				surfaceAppearanceParents = surfaceAppearanceParents,
+				meshTextures = meshTextures,
+				specialMeshTextures = specialMeshTextures,
+			}
 		end
+
 		local ice = MonsterConfig.FREEZE_COLOR
 		for _, part in parts do
 			part.Color = ice
@@ -290,7 +362,8 @@ function MonsterFeedback.setFrozen(model: Model, frozen: boolean)
 			bases[part] = ice
 		end
 		model:SetAttribute("Frozen", true)
-		ensureFreezeVfx(body)
+		ensureFreezeVfx(vfxParent)
+		ensureFreezeHighlight(model)
 	else
 		local look = frozenLooks[model]
 		if look then
@@ -300,11 +373,27 @@ function MonsterFeedback.setFrozen(model: Model, frozen: boolean)
 					part.Material = look.materials[part] or Enum.Material.SmoothPlastic
 				end
 			end
+			for appearance, parent in look.surfaceAppearanceParents do
+				if parent.Parent and appearance.Parent == nil then
+					appearance.Parent = parent
+				end
+			end
+			for mesh, textureId in look.meshTextures do
+				if mesh.Parent then
+					mesh.TextureID = textureId
+				end
+			end
+			for mesh, textureId in look.specialMeshTextures do
+				if mesh.Parent then
+					mesh.TextureId = textureId
+				end
+			end
 			hitFlashBaseColors[model] = look.colors
 			frozenLooks[model] = nil
 		end
 		model:SetAttribute("Frozen", false)
-		clearFreezeVfx(body)
+		clearFreezeVfx(vfxParent)
+		clearFreezeHighlight(model)
 	end
 end
 
@@ -423,6 +512,7 @@ function MonsterFeedback.cleanup(model: Model)
 	frozenLooks[model] = nil
 	bubbledModels[model] = nil
 	poppingBubbles[model] = nil
+	clearFreezeHighlight(model)
 
 	local body = resolveBody(model)
 	if body then

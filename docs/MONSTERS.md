@@ -112,6 +112,12 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | `DukeVampire` | `DukeVampire`          |
 | `Spider`      | `Spider`               |
 | `QueenSpider` | `QueenSpider`          |
+| `Werewolf`    | `Werewolf` (currently under `Assets.Brainrots`; `ModelUtil` falls back) |
+
+Spider / Queen Spider Toolbox meshes face the wrong way relative to
+`MODEL_FACE_DIRECTION` (−X); both set `modelOrientationDegrees`.
+Boss spawns refuse a second living copy of the same `monsterId` on a plot
+(guards Studio soft-reload double-bootstrap).
 
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
@@ -133,15 +139,15 @@ models (at least Zombie, Goblin, Goblin Elite).
 | ------------ | ------ | -------- | ------ | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
 | Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
-| Werewolf     | 1400   | 2.9      | 130    | 1.1s         |      | —                                                                                                                                       |
+| Werewolf     | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
 | Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                                                                                                       |
 | Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
 | Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
 | Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
 | Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
-| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump; `deathStyle = SpiderFlat` ✅ |
-| Duke Vampire | 10000  | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
+| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
+| Duke Vampire | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -153,8 +159,7 @@ Milestone 14 tuning rationale: `docs/BALANCE.md`.
 - `EnemyService` (server) ✅ M6 — spawning, grid movement, per-instance state,
 death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
 On death, `MonsterDeath` plays the unit's `deathStyle` (default: tip-over, 3
-random styles), lingers 2s, fades, then destroys. `QueenSpider` uses
-`deathStyle = "SpiderFlat"` (legs splay horizontal, body drops flat). Driven by
+random styles), lingers 2s, fades, then destroys. Driven by
 `LevelService` in M8. Public: `spawn`, `clearPlot`.
 `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
 spawns (set `ENABLED = true` in config for isolated monster testing).
@@ -201,17 +206,18 @@ monster walks **onto that tile** and chews at a **standoff** east of the plant
 center (`MonsterConfig.MELEE_CLOSE_REACH`) so models don't overlap. It attacks
 on `attackInterval` and only advances once the Brainrot is destroyed. It never
 walks west of the standoff while chewing (so a melee bat one tile behind still
-reaches the monster).
+reaches the monster). Exception: `definition.ignoreMonsterChew` (Lirili) —
+monsters phase through and never deal chew damage.
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
 - On death, `MonsterDeath` freezes the Motor6D pose, then plays
-`deathStyle`: default tip (forward / side / back), or `SpiderFlat` for Queen
-Spider (Toolbox leg parts `leftfronttop`…`rightbackbottom` splay flat in
-top→middle→bottom chains; body sinks onto the lawn). Then lingers and fades —
+`deathStyle` (default tip forward / side / back), then lingers and fades —
 so authored animated models do not glitch upright.
 
 Boss skill stubs (Goblin King speed buff) are registered and will be completed
-in a later milestone. Duke Vampire's two skills are fully implemented:
+in a later milestone. **Werewolf** `WerewolfLifesteal` heals
+`lifestealPercent` (5) of max HP on every chew via `pendingHeal`. Duke Vampire's
+two skills are fully implemented:
 
 - `DukeVampireFreeze` (last stand) — a small `onTick` state machine that
 does nothing until his HP first drops to/below `lastStandTriggerPercent`
@@ -234,7 +240,7 @@ off mid-animation:
   - **Rising** (`lastStandRiseDuration`, 0.7s) — `beginRise` tweens back to
   the pre-fall pivot (`MonsterDeath.riseUp`) while queuing enough heal via
   the shared `pendingHeal` mechanism (`MonsterBehavior.applyPendingHeal`,
-  also used by Goblin King's regen) to reach `lastStandHealPercent` (50%)
+  also used by Goblin King's regen) to reach `lastStandHealPercent` (25%)
   of max HP by the time he's back on his feet.
   Fatal overkill that would skip the ≤20% check between behavior ticks is
   rescued by `DukeVampireFreeze.onWouldDie` (wired from
@@ -313,7 +319,16 @@ early/mid pressure spikes (not the big-wave closer — only decade boss days
 end on the boss).
 - **Level 30:** next boss — `QueenSpider` / Queen Spider (**laneSpan 3**,
   random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
-  chew; does **not** jump) as the NightFog finale.
+  chew; does **not** jump) as the NightFog decade finale.
+- **Levels 31–34:** still NightFog (3 blocked columns); Queen / Duke recur mid-day;
+  counts inch up toward the Werewolf band.
+- **Level 35:** next new non-boss — `Werewolf` (fast march ~2s/tile; authored
+  walk/attack clips; **lifesteal** 5% max HP per chew; template under
+  `Assets.Brainrots` until moved). Weather switches to `NightFogReceded`
+  (2 blocked columns).
+- **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
+- **Level 40:** decade closer — `QueenSpider` + `DukeVampire` dual big-wave
+  finale under receded fog (Queen flags the wave; Duke spawns immediately after).
 
 Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:
 registry data plus ability handlers, never duplicated base AI.

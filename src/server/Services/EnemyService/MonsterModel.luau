@@ -30,30 +30,39 @@ local function laneSpanFor(definition: Types.MonsterDefinition): number
 	return math.max(1, math.floor(span))
 end
 
+local function modelScaleFor(definition: Types.MonsterDefinition): number
+	local scale = definition.modelScale
+	if type(scale) ~= "number" or scale <= 0 then
+		return 1
+	end
+	return scale
+end
+
 local function bodyHeightFor(definition: Types.MonsterDefinition): number
 	local height = MonsterConfig.BODY_HEIGHT
 	local span = laneSpanFor(definition)
 	if span >= 2 then
 		-- Tall enough to match the wide multi-lane footprint without looking squat.
-		return height * 2.15
+		height *= 2.15
+	elseif definition.isBoss then
+		height *= 1.25
 	end
-	if definition.isBoss then
-		return height * 1.25
-	end
-	return height
+	return height * modelScaleFor(definition)
 end
 
 local function footprintFor(definition: Types.MonsterDefinition): number
 	local span = laneSpanFor(definition)
+	local footprint: number
 	if span > 1 then
 		-- Cover ~span tiles across the lawn (Z).
-		return PlotConfig.TILE_SIZE * span * MonsterConfig.LANE_SPAN_FOOTPRINT_RATIO
+		footprint = PlotConfig.TILE_SIZE * span * MonsterConfig.LANE_SPAN_FOOTPRINT_RATIO
+	else
+		footprint = PlotConfig.TILE_SIZE * MonsterConfig.FOOTPRINT_RATIO
+		if definition.isBoss then
+			footprint *= 1.15
+		end
 	end
-	local footprint = PlotConfig.TILE_SIZE * MonsterConfig.FOOTPRINT_RATIO
-	if definition.isBoss then
-		return footprint * 1.15
-	end
-	return footprint
+	return footprint * modelScaleFor(definition)
 end
 
 local function applyIdentity(

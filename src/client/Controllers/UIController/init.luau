@@ -28,6 +28,7 @@ local Inventory = require(script.Inventory)
 local RewardPopup = require(script.RewardPopup)
 local UnlockPopup = require(script.UnlockPopup)
 local MonsterIntroPopup = require(script.MonsterIntroPopup)
+local GameOverPopup = require(script.GameOverPopup)
 local PlantToast = require(script.PlantToast)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
@@ -48,6 +49,7 @@ local inventoryPanel: Inventory.InventoryPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
 local unlockPopup: UnlockPopup.UnlockPopupHud? = nil
 local monsterIntroPopup: MonsterIntroPopup.MonsterIntroPopupHud? = nil
+local gameOverPopup: GameOverPopup.GameOverPopupHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
@@ -162,6 +164,10 @@ end
 
 local function buildMonsterIntroPopup(): MonsterIntroPopup.MonsterIntroPopupHud
 	return MonsterIntroPopup.new(buildMain():WaitForChild("MonsterIntroPopup") :: Frame)
+end
+
+local function buildGameOverPopup(): GameOverPopup.GameOverPopupHud
+	return GameOverPopup.new(buildMain():WaitForChild("GameOverPopup") :: Frame)
 end
 
 local function buildSettings(): Settings.SettingsPanel
@@ -282,8 +288,18 @@ local function applyLevelState(state: { [string]: any }?)
 			elseif phase == Constants.PHASE.Defeat then
 				AudioController.play("Defeat")
 				AudioController.setBossMusic(false)
+				if gameOverPopup then
+					local day = if type(state.levelNumber) == "number" then state.levelNumber else 1
+					gameOverPopup:show(day)
+				end
 			elseif phase == Constants.PHASE.Preparation or phase == Constants.PHASE.Countdown then
 				AudioController.setBossMusic(false)
+				if gameOverPopup and lastLevelPhase == Constants.PHASE.Defeat then
+					-- Rewind finished server-side; hide if client FX already done.
+					if not gameOverPopup.rewinding then
+						gameOverPopup:hide()
+					end
+				end
 			end
 			lastLevelPhase = phase
 		end
@@ -317,6 +333,7 @@ function UIController.init()
 	rewardPopup = buildRewardPopup()
 	unlockPopup = buildUnlockPopup()
 	monsterIntroPopup = buildMonsterIntroPopup()
+	gameOverPopup = buildGameOverPopup()
 	settingsPanel = buildSettings()
 	buildHudEntries()
 end

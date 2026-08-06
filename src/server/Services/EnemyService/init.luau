@@ -53,6 +53,27 @@ local function monstersFolder(plotModel: Model): Folder
 	return folder :: Folder
 end
 
+-- Boss stages must never stack two of the same boss (Studio soft-reload can
+-- leave a second LevelService/EnemyService tick that also spawns into the plot).
+local function plotHasLivingMonsterId(plotModel: Model, monsterId: string): boolean
+	local folder = plotModel:FindFirstChild(MONSTERS_FOLDER)
+	if not folder then
+		return false
+	end
+	for _, child in folder:GetChildren() do
+		if child:IsA("Model")
+			and child:GetAttribute("MonsterId") == monsterId
+			and child:GetAttribute("Dying") ~= true
+		then
+			local health = child:GetAttribute("Health")
+			if type(health) ~= "number" or health > 0 then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local houseBreachHandler: ((plotModel: Model, row: number) -> ())?
 
 local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
@@ -158,6 +179,9 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 	if not GridUtil.isInBounds({ row = gridRow, column = 1 }) then
 		return nil
 	end
+	if definition.isBoss and plotHasLivingMonsterId(plotModel, monsterId) then
+		return nil
+	end
 
 	nextInstanceId += 1
 	local instanceId = string.format("Monster_%d", nextInstanceId)
@@ -251,7 +275,11 @@ end
 function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { string }
 	local result: { string } = {}
 	for _, runtime in monsters do
-		if runtime.plotModel == plotModel and occupiesRow(runtime, row) and GridUtil.isOnPlotColumn(runtime.column) then
+		if runtime.plotModel == plotModel
+			and runtime.health > 0
+			and occupiesRow(runtime, row)
+			and GridUtil.isOnPlotColumn(runtime.column)
+		then
 			table.insert(result, runtime.instanceId)
 		end
 	end
@@ -386,6 +414,10 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 			end,
 			beginFall = function(duration: number)
 				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				runtime.frozenUntil = 0
+				runtime.freezeVisual = nil
+				MonsterFeedback.setFrozen(runtime.model, false)
+				MonsterFeedback.setBubbled(runtime.model, false)
 				MonsterAnimation.setLocomotionPaused(runtime.model, true)
 				runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
 			end,
@@ -424,6 +456,11 @@ function EnemyService.applyStatusToMonster(
 )
 	local runtime = monsters[instanceId]
 	if not runtime then
+		return
+	end
+	-- Last-stand / downed bosses (e.g. Duke Vampire) ignore Freeze — the tip
+	-- pose owns the body until they rise.
+	if (kind == "Freeze" or kind == "Stun") and os.clock() < runtime.downedUntil then
 		return
 	end
 	MonsterStatus.apply(runtime, kind, duration, magnitude)
@@ -489,6 +526,11 @@ function EnemyService.init()
 end
 
 function EnemyService.start()
+	if (EnemyService :: any)._started then
+		return
+	end
+	(EnemyService :: any)._started = true
+
 	-- Strip Toolbox Scripts / Tools / Sounds from Assets.Monsters in-place;
 	-- keep Motor6D + AnimationController for walk/attack tracks. Humanoid is
 	-- kept but neutralized (Shirt/Pants + layered clothing need one to render).

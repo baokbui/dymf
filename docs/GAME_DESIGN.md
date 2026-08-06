@@ -312,8 +312,9 @@ When the player rejoins:
 
 Within a session, **victory keeps planted Brainrots** and commits them for
 rejoin; coin purse is **125 on Day 1** and **0 after later days**; **defeat**
-clears the lawn and sets Day 1 (with 125); **day select** clears the lawn.
-Brainrots idle outside **Active**. See `LEVELS.md` / `SAVE_SYSTEM.md`.
+restores the last victory lawn on the **same day** (Game Over → Rewind);
+**day select** clears the lawn. Brainrots idle outside **Active**. See
+`LEVELS.md` / `SAVE_SYSTEM.md`.
 
 ---
 

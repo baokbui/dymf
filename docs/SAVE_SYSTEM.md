@@ -75,9 +75,10 @@ Relevant constants (`Shared.Constants`):
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
 - Migrate older `version` payloads forward.
 - Persist on leave, periodic autosave, day victory, and defeat (`saveNow`).
-- Own a **committed lawn** checkpoint (`commitLawn` / `clearCommittedLawn`):
-  only victory / wipe / load update it; leave and autosave write that checkpoint,
-  not mid-day live plants.
+- Own a **committed lawn** checkpoint (`commitLawn` / `clearCommittedLawn` /
+  `restoreCommittedLawn`): only victory / day-select wipe / load / reset update
+  the checkpoint list; leave and autosave write that checkpoint, not mid-day
+  live plants. Defeat **restores** the checkpoint onto the plot (does not empty it).
 - Leave-save is connected in `init()` so it runs **before** `PlotService` /
   `BrainrotService` clear the lawn on `PlayerRemoving`. Snapshot is captured
   synchronously; if a save is already in flight, the leave payload is queued
@@ -98,8 +99,10 @@ Relevant constants (`Shared.Constants`):
 
 The DataStore lawn is a **checkpoint**, not a live mirror of the plot:
 
-- **Updated** on Victory (`SaveService.commitLawn` → current plants + HP),
-  Defeat / Day Select / Reset (`clearCommittedLawn` → empty).
+- **Updated** on Victory (`SaveService.commitLawn` → current plants + HP);
+  Day Select / Reset (`clearCommittedLawn` → empty). Defeat does **not** empty
+  the checkpoint — it calls `restoreCommittedLawn` so the player retries the
+  same day with the prior clear's plants.
 - **Used** by leave, autosave, and shutdown (`collectSnapshot` reads the
   checkpoint — never mid-day live placements).
 
@@ -135,7 +138,8 @@ On rejoin:
 | Event | Live Brainrots | Committed / DataStore lawn | Coins | Monsters / ground coins |
 | ----- | -------------- | -------------------------- | ----- | ----------------------- |
 | Victory → next day | **Keep** (current HP) | **Commit** then save | Day 1 → 125; else **0** | Cleared |
-| Defeat | Cleared; **current day → 1** | **Empty** then save | **125** | Cleared |
+| Defeat | Mid-day cleared; **restore checkpoint**; **same day** | **Unchanged** (restored to plot) | Day purse (Day 1 → 125; else **0**) | Cleared |
+| Rewind (`RewindDay`) | Checkpoint already on plot | Unchanged | Unchanged | — |
 | Day Select | Cleared | **Empty** then save | Day 1 → 125; else **0** | Cleared |
 | Leave / Rejoin | Cleared on leave | **Checkpoint** restored | Day purse (not saved) | Cleared |
 | Mid-day place / damage | Live only | Unchanged until victory | Session purse | — |

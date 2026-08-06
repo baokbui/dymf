@@ -119,6 +119,13 @@
             "Visible": false,
             "BackgroundTransparency": 1
           }
+        },
+        "GameOverPopup": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
         }
       }
     },

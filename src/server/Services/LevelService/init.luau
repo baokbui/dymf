@@ -9,7 +9,8 @@
 	Victory keeps planted Brainrots on the plot and commits them for rejoin.
 	Leave / autosave persist that checkpoint only — mid-day plants are discarded.
 	Coin purse is STARTING_COINS on Day 1 only; after later days end the purse
-	resets to 0. Defeat / Day Select wipe the lawn (and the committed checkpoint).
+	resets to 0. Defeat restores the last victory checkpoint on the same day
+	(Game Over → Rewind). Day Select wipes the lawn and the committed checkpoint.
 
 	Milestone 8.
 ]]
@@ -21,6 +22,7 @@ local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local GridConfig = require(Shared.Config.GridConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local DevConfig = require(Shared.Config.DevConfig)
 local Levels = require(Shared.Levels)
 local Monsters = require(Shared.Monsters)
 local Remotes = require(Shared.Remotes)
@@ -77,7 +79,7 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		playerHealth = state.playerHealth,
 		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
 		bigWaveWarning = state.bigWaveWarning,
-		canStart = state.phase == PHASE.Preparation or state.phase == PHASE.Defeat,
+		canStart = state.phase == PHASE.Preparation,
 		progress = 0,
 		weather = if definition then definition.weather else nil,
 	}
@@ -227,16 +229,27 @@ local function onDefeat(player: Player, state: PlayerState)
 	local failedLevel = state.currentLevel
 	state.activeRun = nil
 	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
-	-- Full campaign soft-reset: back to Day 1 (keep highestUnlocked for Day Select).
-	state.currentLevel = 1
+	-- Stay on the failed day; restore last victory lawn (do not wipe checkpoint).
 	clearLawn(player)
-	CoinService.applyDayPurse(player, 1)
-	setPhase(player, state, PHASE.Defeat)
-	log:info(string.format("%s defeated on level %d — reset to day 1", player.Name, failedLevel))
-
 	local SaveService = require(script.Parent.SaveService)
-	SaveService.clearCommittedLawn(player)
+	SaveService.restoreCommittedLawn(player)
+	CoinService.applyDayPurse(player, failedLevel)
+	applyWeatherRules(player, state)
+	setPhase(player, state, PHASE.Defeat)
+	log:info(string.format("%s defeated on day %d — awaiting rewind", player.Name, failedLevel))
 	SaveService.saveNow(player, "defeat")
+end
+
+-- Game Over → Rewind: same day, Preparation (lawn already restored on defeat).
+local function onRewindDay(player: Player)
+	local state = states[player.UserId]
+	if not state or state.phase ~= PHASE.Defeat then
+		return
+	end
+	beginPreparation(player, state)
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.saveNow(player, "rewind")
+	log:info(string.format("%s rewound day %d", player.Name, state.currentLevel))
 end
 
 local function tickActivePlayer(player: Player, state: PlayerState)
@@ -319,7 +332,8 @@ local function onStartLevel(player: Player)
 	if not state then
 		return
 	end
-	if state.phase ~= PHASE.Preparation and state.phase ~= PHASE.Defeat then
+	-- Defeat uses RewindDay → Preparation; StartLevel only from prep.
+	if state.phase ~= PHASE.Preparation then
 		return
 	end
 
@@ -357,7 +371,8 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 	if not state then
 		return
 	end
-	if state.phase ~= PHASE.Preparation and state.phase ~= PHASE.Defeat then
+	-- Day Select from Preparation only (Defeat must Rewind first).
+	if state.phase ~= PHASE.Preparation then
 		return
 	end
 	if type(rawLevel) ~= "number" then
@@ -476,6 +491,42 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	end
 end
 
+-- TEMP Studio cheat: jump current + unlocked day (see DevConfig.FORCE_DAY).
+function LevelService.applyDevDay(player: Player): number?
+	if not DevConfig.isActive() then
+		return nil
+	end
+	local forceDay = DevConfig.FORCE_DAY
+	if type(forceDay) ~= "number" or forceDay < 1 then
+		return nil
+	end
+
+	local state = states[player.UserId]
+	if not state then
+		return nil
+	end
+
+	local maxLevel = math.max(1, Levels.count())
+	local target = math.clamp(math.floor(forceDay), 1, maxLevel)
+	state.currentLevel = target
+	state.highestUnlockedLevel = math.max(state.highestUnlockedLevel, target)
+	state.activeRun = nil
+	state.countdownEnd = 0
+	state.bigWaveWarning = false
+	state.phase = PHASE.Preparation
+
+	local introId = ProgressService.consumeMonsterIntroForDay(player, target)
+	state.pendingMonsterIntroId = introId
+	broadcast(player)
+
+	if introId then
+		local SaveService = require(script.Parent.SaveService)
+		SaveService.saveNow(player, "monster_intro")
+	end
+
+	return target
+end
+
 -- Placement and coin income are only allowed while a level is in progress.
 function LevelService.isLevelActive(player: Player): boolean
 	local state = states[player.UserId]
@@ -483,15 +534,26 @@ function LevelService.isLevelActive(player: Player): boolean
 end
 
 function LevelService.init()
+	if (LevelService :: any)._remotesConnected then
+		return
+	end
+	(LevelService :: any)._remotesConnected = true
+
 	EnemyService.setHouseBreachHandler(onHouseBreach)
 
 	Remotes.getEvent("StartLevel").OnServerEvent:Connect(function(player: Player)
 		onStartLevel(player)
 	end)
 	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(onSelectLevel)
+	Remotes.getEvent("RewindDay").OnServerEvent:Connect(onRewindDay)
 end
 
 function LevelService.start()
+	if (LevelService :: any)._started then
+		return
+	end
+	(LevelService :: any)._started = true
+
 	Remotes.getFunction("RequestState").OnServerInvoke = function(player: Player)
 		return {
 			coins = CoinService.getBalance(player),

@@ -18,6 +18,14 @@ local Logger = require(Shared.Utilities.Logger)
 
 local log = Logger.new("ServerBootstrap")
 
+-- Studio soft-reload can re-run this Script while old tick loops still live.
+-- Bail so we don't double-connect remotes / double-spawn bosses.
+if _G.__BVM_SERVER_BOOTSTRAPPED then
+	log:warn("duplicate server bootstrap ignored (soft-reload?)")
+	return
+end
+_G.__BVM_SERVER_BOOTSTRAPPED = true
+
 -- Create all network remotes before any client can request them.
 Remotes.initServer()
 

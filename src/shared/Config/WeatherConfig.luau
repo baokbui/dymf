@@ -11,11 +11,16 @@ local PlotConfig = require(script.Parent.PlotConfig)
 local WeatherConfig = {
 	-- LevelDefinition.weather values (never branch on day numbers in services).
 	NIGHT = "Night", -- moonlit night, no fog (Days 21–24)
-	NIGHT_FOG = "NightFog", -- night + forest/east-lawn fog (Days 25–30)
+	NIGHT_FOG = "NightFog", -- night + 3 east lawn fog columns (Days 25–34)
+	-- Night + thinner fog bank: only 2 east lawn columns blocked (Days 35+).
+	NIGHT_FOG_RECEDED = "NightFogReceded",
 
-	-- Easternmost lawn columns covered by fog (unable to hold Brainrots).
+	-- Default / NightFog blocked lawn depth (easternmost columns).
 	-- With COLUMNS = 9 → columns 7, 8, 9.
 	FOG_PLOT_COLUMNS = 3,
+	-- NightFogReceded blocked depth (one column restored to planting).
+	-- With COLUMNS = 9 → columns 8, 9.
+	FOG_PLOT_COLUMNS_RECEDED = 2,
 
 	-- Forest fog covers the player's lane strip through the full enemy-column
 	-- forest (see `forestFogDepthFromLawnEdge`).
@@ -53,9 +58,25 @@ local WeatherConfig = {
 	FOG_PARTICLE_LIGHT_INFLUENCE = 0.12,
 }
 
--- First lawn column index that is fog-blocked (inclusive).
-function WeatherConfig.fogStartColumn(): number
-	return GridConfig.COLUMNS - WeatherConfig.FOG_PLOT_COLUMNS + 1
+-- How many eastern lawn columns are plant-blocked for this weather (0 = none).
+function WeatherConfig.fogPlotColumns(weather: string?): number
+	if weather == WeatherConfig.NIGHT_FOG_RECEDED then
+		return WeatherConfig.FOG_PLOT_COLUMNS_RECEDED
+	end
+	if weather == WeatherConfig.NIGHT_FOG then
+		return WeatherConfig.FOG_PLOT_COLUMNS
+	end
+	return 0
+end
+
+-- First lawn column index that is fog-blocked (inclusive). When there is no
+-- fog weather, returns COLUMNS + 1 so no column is in range.
+function WeatherConfig.fogStartColumn(weather: string?): number
+	local blocked = WeatherConfig.fogPlotColumns(weather)
+	if blocked <= 0 then
+		return GridConfig.COLUMNS + 1
+	end
+	return GridConfig.COLUMNS - blocked + 1
 end
 
 -- Studs from the lawn's east edge through the player's margin + the full

@@ -181,7 +181,12 @@ local function createPlacement(
 		return nil
 	end
 
-	local clampedHealth = math.clamp(math.floor(health), 1, definition.health)
+	local clampedHealth: number
+	if definition.ignoreMonsterChew then
+		clampedHealth = 0
+	else
+		clampedHealth = math.clamp(math.floor(health), 1, definition.health)
+	end
 	local model = BrainrotModel.create(
 		instanceId,
 		definition,
@@ -192,7 +197,11 @@ local function createPlacement(
 	)
 
 	model:SetAttribute("HitsRemaining", clampedHealth)
-	model:SetAttribute("Health", math.floor(definition.maxHealth * clampedHealth / definition.health))
+	local displayHealth = 0
+	if definition.health > 0 then
+		displayHealth = math.floor(definition.maxHealth * clampedHealth / definition.health)
+	end
+	model:SetAttribute("Health", displayHealth)
 
 	local placement: Placement = {
 		instanceId = instanceId,
@@ -250,6 +259,9 @@ end
 local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 	local placement = placements[instanceId]
 	if not placement then
+		return false
+	end
+	if placement.definition.ignoreMonsterChew then
 		return false
 	end
 
@@ -311,7 +323,9 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	end
 
 	local weather = LevelService.getWeather(player)
-	if WeatherUtil.isFogPlotColumn(position.column, weather) then
+	-- Permanent plants can't sit in fog; one-shot casters (Lirili / Bombardino)
+	-- may still be placed there to hit monsters in the mist.
+	if WeatherUtil.isFogPlotColumn(position.column, weather) and definition.triggersOnPlace ~= true then
 		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
 		return
 	end
@@ -506,6 +520,8 @@ function BrainrotService.clearFogBlockedPlacements(player: Player, weather: stri
 	for _, placement in placements do
 		if placement.plotModel == plot.model
 			and WeatherUtil.isFogPlotColumn(placement.position.column, weather)
+			-- One-shot fog casts may still be mid-ability when weather rules run.
+			and placement.definition.triggersOnPlace ~= true
 		then
 			table.insert(toRemove, placement)
 		end
@@ -523,6 +539,9 @@ local function applyBrainrotStatus(
 )
 	local placement = placements[instanceId]
 	if not placement then
+		return
+	end
+	if placement.definition.ignoreMonsterChew then
 		return
 	end
 

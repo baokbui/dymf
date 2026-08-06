@@ -267,9 +267,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		},
 	},
 
-	-- Days 21–24: Night only. Days 25–30: NightFog (forest/east-lawn fog;
-	-- easternmost 3 columns unplantable; monsters hidden until they exit).
-	-- Day 25 intro Spider, Day 30 Queen Spider.
+	-- Days 21–24: Night only. Days 25–34: NightFog (3 east lawn columns).
+	-- Days 35–40: NightFogReceded (2 east lawn columns; Werewolf intro on 35).
 	Level21 = {
 		id = "Level21",
 		number = 21,
@@ -399,6 +398,143 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			{ monsterId = "Spider", count = 4, startDelay = 11, spawnInterval = 2.6 },
 			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.4 },
 			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
+		},
+	},
+
+	-- Days 31–34: still NightFog (3 blocked columns). Difficulty inches up;
+	-- Queen / Duke recur as mid-day minibosses (never the big-wave closer).
+	Level31 = {
+		id = "Level31",
+		number = 31,
+		name = "After the Queen",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Spider", count = 3, startDelay = 11, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level32 = {
+		id = "Level32",
+		number = 32,
+		name = "Royal Remnant",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Goblin", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level33 = {
+		id = "Level33",
+		number = 33,
+		name = "Duke Returns",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 11, spawnInterval = 2 },
+			{ monsterId = "Spider", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level34 = {
+		id = "Level34",
+		number = 34,
+		name = "Thickening Dark",
+		weather = "NightFog",
+		groups = {
+			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
+			{ monsterId = "Spider", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	-- Days 35–40: NightFogReceded — one fog column clears (2 blocked instead of
+	-- 3). Day 35 introduces Werewolf; difficulty ramps through 40.
+	Level35 = {
+		id = "Level35",
+		number = 35,
+		name = "Howl in the Mist",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "Werewolf", count = 2, startDelay = 13, spawnInterval = 3.2 },
+			{ monsterId = "Werewolf", count = 3, startDelay = 12, spawnInterval = 2.8, isBigWave = true },
+		},
+	},
+
+	Level36 = {
+		id = "Level36",
+		number = 36,
+		name = "Pack Pressure",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "Spider", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "Werewolf", count = 3, startDelay = 11, spawnInterval = 2.8 },
+			{ monsterId = "Vampire", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level37 = {
+		id = "Level37",
+		number = 37,
+		name = "Silk and Fang",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Werewolf", count = 3, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level38 = {
+		id = "Level38",
+		number = 38,
+		name = "Blood Pack",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "Werewolf", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 10, spawnInterval = 2 },
+			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	Level39 = {
+		id = "Level39",
+		number = 39,
+		name = "Moonlit March",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
+			{ monsterId = "Werewolf", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 5, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	Level40 = {
+		id = "Level40",
+		number = 40,
+		name = "Throne of Silk",
+		weather = "NightFogReceded",
+		groups = {
+			{ monsterId = "Werewolf", count = 4, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.2 },
+			-- Dual-boss finale: Queen flags the big wave; Duke follows immediately
+			-- (startDelay 0) so both are on the lawn together without a second warning.
+			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
+			{ monsterId = "DukeVampire", count = 1, startDelay = 0, spawnInterval = 2 },
 		},
 	},
 }

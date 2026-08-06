@@ -116,7 +116,13 @@ function ModelUtil.findBrainrotTemplate(modelId: string): Model?
 end
 
 function ModelUtil.findMonsterTemplate(modelId: string): Model?
-	return findTemplate(ModelUtil.getMonsterTemplatesFolder(), modelId)
+	local fromMonsters = findTemplate(ModelUtil.getMonsterTemplatesFolder(), modelId)
+	if fromMonsters then
+		return fromMonsters
+	end
+	-- Fallback: some monster meshes (e.g. Werewolf) currently sit under
+	-- Assets.Brainrots in Studio until moved into Assets.Monsters.
+	return findTemplate(ModelUtil.getBrainrotTemplatesFolder(), modelId)
 end
 
 function ModelUtil.findHouseTemplate(modelId: string): Model?
