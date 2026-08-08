@@ -58,6 +58,8 @@ export type MonsterRuntime = {
 	jumpEndColumn: number,
 	jumpPeakHeight: number,
 	jumpDuration: number,
+	-- Rest-pose pivot.Y − visual bottom (stable feet while limbs animate).
+	footSnapOffset: number?,
 } & MonsterStatus.StatusFields
 
 export type BehaviorCallbacks = {
@@ -121,7 +123,9 @@ local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 		return
 	end
 	-- Preserve facing; snap feet to the lane center (no lateral stagger).
-	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY)
+	-- Prefer the rest-pose foot cache so procedural / animated limbs don't
+	-- rewrite minY every tick (spiders were sinking underground mid-gait).
+	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY, runtime.footSnapOffset)
 	MonsterModel.setColumn(runtime.model, runtime.column)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 end
@@ -296,6 +300,10 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 		end
 	end
 	MonsterAnimation.bind(runtime.model, runtime.definition)
+	-- Measure feet at rest (procedural gait off) so walk bob doesn't bury the body.
+	MonsterAnimation.setLocomotionPaused(runtime.model, true)
+	runtime.footSnapOffset = ModelUtil.getPivotToVisualBottom(runtime.model)
+	MonsterAnimation.setLocomotionPaused(runtime.model, false)
 	syncTransform(runtime)
 end
 

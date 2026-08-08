@@ -22,6 +22,7 @@ local Constants = require(Shared.Constants)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local PlayerConfig = require(Shared.Config.PlayerConfig)
 local Logger = require(Shared.Utilities.Logger)
+local CollisionUtil = require(Shared.Utilities.CollisionUtil)
 
 local Plot = require(script.Plot)
 local PlotBuilder = require(script.PlotBuilder)
@@ -45,6 +46,7 @@ local function applyCharacterMovement(character: Model)
 	if humanoid then
 		humanoid.WalkSpeed = PlayerConfig.WALK_SPEED
 	end
+	CollisionUtil.applyCharacter(character)
 end
 
 -- CharacterAutoLoads is off (so join doesn't spawn before a plot exists). After
@@ -144,6 +146,8 @@ local function releasePlot(player: Player)
 end
 
 function PlotService.init()
+	CollisionUtil.init()
+
 	-- We spawn players explicitly (after a plot is assigned), so disable the
 	-- default auto-spawn to prevent appearing before/away from the plot.
 	Players.CharacterAutoLoads = false

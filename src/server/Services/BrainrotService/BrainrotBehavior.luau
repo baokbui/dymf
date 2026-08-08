@@ -112,6 +112,9 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 				BrainrotFeedback.pulseAttack(placement.model)
 			end
 		end,
+		getAttackLength = function()
+			return BrainrotAnimation.getAttackLength(placement.model)
+		end,
 		playSound = function(soundKey: string)
 			local player = Players:GetPlayerByUserId(placement.ownerUserId)
 			if not player then

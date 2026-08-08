@@ -212,6 +212,19 @@ function BrainrotAnimation.playAttack(model: Model)
 	state.attack:Play(0.05)
 end
 
+-- Length of the loaded attack clip in seconds (nil if missing / not ready).
+function BrainrotAnimation.getAttackLength(model: Model): number?
+	local state = states[model]
+	if not state or not state.attack then
+		return nil
+	end
+	local length = state.attack.Length
+	if typeof(length) ~= "number" or length <= 0 then
+		return nil
+	end
+	return length
+end
+
 function BrainrotAnimation.playHit(model: Model)
 	local state = states[model]
 	if not state or not state.hit then

@@ -19,6 +19,7 @@ local PlotConfig = require(Shared.Config.PlotConfig)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
+local CollisionUtil = require(Shared.Utilities.CollisionUtil)
 
 local MonsterModel = {}
 
@@ -114,6 +115,7 @@ local function createPlaceholder(
 	body.CFrame = CFrame.lookAt(body.Position, body.Position + MonsterConfig.MODEL_FACE_DIRECTION)
 
 	applyIdentity(model, instanceId, definition, plotModel, row)
+	CollisionUtil.applyMonster(model)
 	model.Parent = parent
 	return model
 end
@@ -162,7 +164,7 @@ function MonsterModel.create(
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
 	applyIdentity(model, instanceId, definition, plotModel, row)
-	-- Never block other monsters; keep only the root anchored so Motor6Ds animate.
+	-- Never block players or other monsters; keep only the root anchored so Motor6Ds animate.
 	local root = model.PrimaryPart
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
@@ -172,6 +174,7 @@ function MonsterModel.create(
 			descendant.Anchored = descendant == root
 		end
 	end
+	CollisionUtil.applyMonster(model)
 	model.Parent = parent
 	return model
 end

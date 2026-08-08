@@ -18,6 +18,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+local CollisionUtil = require(ReplicatedStorage.Shared.Utilities.CollisionUtil)
 
 local Abilities = require(script.Abilities)
 local MonsterAnimation = require(script.MonsterAnimation)
@@ -228,6 +229,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		jumpEndColumn = 0,
 		jumpPeakHeight = 0,
 		jumpDuration = 0,
+		footSnapOffset = nil,
 	}
 	for key, value in MonsterStatus.createFields() do
 		(runtime :: any)[key] = value
@@ -530,6 +532,8 @@ function EnemyService.start()
 		return
 	end
 	(EnemyService :: any)._started = true
+
+	CollisionUtil.init()
 
 	-- Strip Toolbox Scripts / Tools / Sounds from Assets.Monsters in-place;
 	-- keep Motor6D + AnimationController for walk/attack tracks. Humanoid is

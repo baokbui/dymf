@@ -32,6 +32,12 @@ Constants.TAGS = {
 	Coin = "Coin",
 }
 
+-- PhysicsService collision groups (players phase through monsters).
+Constants.COLLISION_GROUPS = {
+	Players = "BvmPlayers",
+	Monsters = "BvmMonsters",
+}
+
 -- Per-level phase identifiers used by LevelService (PvZ-style campaign).
 Constants.PHASE = {
 	Preparation = "Preparation", -- waiting to start the level (no planting yet)

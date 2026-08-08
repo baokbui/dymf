@@ -10,11 +10,13 @@ local RunService = game:GetService("RunService")
 
 local DevConfig = {
 	-- Flip to false to restore normal economy / unlock cadence.
-	ENABLED = false,
-	COINS = 125,
-	UNLOCK_ALL_BRAINROTS = false,
+	ENABLED = true,
+	COINS = 10000,
+	UNLOCK_ALL_BRAINROTS = true,
+	-- Skip PvZ seed-packet recharge after planting (server + shop overlay).
+	ZERO_PLANT_COOLDOWNS = true,
 	-- When set (and ENABLED), Studio join forces current day + unlock through this day.
-	FORCE_DAY = nil :: number?,
+	FORCE_DAY = 35,
 }
 
 function DevConfig.isActive(): boolean

@@ -13,6 +13,8 @@ export type AbilityCallbacks = {
 	detachSelf: () -> Model?,
 	freezeSelf: (duration: number) -> (),
 	pulseAttack: () -> (),
+	-- Loaded attack AnimationTrack.Length when animated; nil otherwise.
+	getAttackLength: (() -> number?)?,
 	playSound: (soundKey: string) -> (),
 }
 

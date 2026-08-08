@@ -5,6 +5,8 @@
 	registry; ability-specific defaults that are not per-unit belong here.
 ]]
 
+local DevConfig = require(script.Parent.DevConfig)
+
 local BrainrotConfig = {
 	-- rangeTiles value that means "entire row toward the enemy" (+X).
 	FULL_LINE_RANGE = -1,
@@ -60,6 +62,9 @@ local BrainrotConfig = {
 
 -- Seconds before the same Brainrot id can be planted again (cost-scaled).
 function BrainrotConfig.plantCooldownFor(definition: { cost: number, plantCooldown: number? }): number
+	if DevConfig.isActive() and DevConfig.ZERO_PLANT_COOLDOWNS then
+		return 0
+	end
 	local override = definition.plantCooldown
 	if type(override) == "number" and override >= 0 then
 		return override

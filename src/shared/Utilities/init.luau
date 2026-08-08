@@ -10,6 +10,7 @@ local Utilities = {
 	GridUtil = require(script.GridUtil),
 	ModelUtil = require(script.ModelUtil),
 	WeatherUtil = require(script.WeatherUtil),
+	CollisionUtil = require(script.CollisionUtil),
 }
 
 table.freeze(Utilities)

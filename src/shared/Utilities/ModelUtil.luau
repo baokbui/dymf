@@ -450,12 +450,28 @@ function ModelUtil.pivotToTileTop(
 end
 
 -- Translate only: keep current rotation, put visible feet on tile (+ optional float).
-function ModelUtil.snapFeetToTileTop(model: Model, topCenter: Vector3, floatY: number?)
+-- When `pivotToBottom` is provided (rest-pose cache), XZ/Y use the model pivot
+-- instead of the live visual AABB — animated limbs (procedural spider legs)
+-- must not change minY every frame or the body sinks underground.
+function ModelUtil.snapFeetToTileTop(model: Model, topCenter: Vector3, floatY: number?, pivotToBottom: number?)
+	local lift = floatY or 0
+	if type(pivotToBottom) == "number" then
+		local pivot = model:GetPivot()
+		local targetY = topCenter.Y + lift + pivotToBottom
+		model:PivotTo(CFrame.new(topCenter.X, targetY, topCenter.Z) * (pivot - pivot.Position))
+		return
+	end
+
 	local minV, maxV = getVisualWorldAABB(model)
 	local center = (minV + maxV) * 0.5
-	local lift = floatY or 0
 	local delta = Vector3.new(topCenter.X - center.X, topCenter.Y + lift - minV.Y, topCenter.Z - center.Z)
 	model:PivotTo(model:GetPivot() + delta)
+end
+
+-- Pivot.Y − visual AABB minY at rest (cache once; reuse with snapFeetToTileTop).
+function ModelUtil.getPivotToVisualBottom(model: Model): number
+	local minV = getVisualWorldAABB(model)
+	return model:GetPivot().Position.Y - minV.Y
 end
 
 --[[

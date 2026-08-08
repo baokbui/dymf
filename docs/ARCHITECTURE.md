@@ -211,6 +211,8 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 - See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
 - Gameplay isolation is **server-validated**, not physical: plant / shovel /
   coin collect only succeed on the acting player's own plot (and own coins).
+  Players **phase through monsters** (`CollisionUtil` / `BvmPlayers` ×
+  `BvmMonsters`); monster parts also stay `CanCollide = false`.
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
   clears dynamic folders; plots are reused, never destroyed).
 - **PlotService** builds a fixed pool of `MAX_PLOTS` lanes at startup, tiled in

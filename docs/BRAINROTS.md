@@ -179,7 +179,7 @@ already-cleared day (Day Select) does not re-grant or re-show the popup
 | Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 325  | — (1)         | 1000   | —        | Full row | Line bomb on place  | 30s   |
-| Lirili Larila        | 75   | —             | 0      | —        | Entire row | Lane freeze 7s on place | 20s |
+| Lirili Larila        | 75   | —             | 0      | —        | Entire row | Lane freeze 7s on place; despawn after cast anim | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 50   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
 
@@ -238,8 +238,9 @@ impact they despawn into a tile explosion + column damage. Tune
 `LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`. Lirili stays on its
 tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to **every**
 monster on the row (ahead and behind) for `abilityParams.freezeDuration` (7s).
-`ignoreMonsterChew` means monsters walk through and never chew it. When the
-freeze ends it plays thaw SFX and despawns (tile frees).
+`ignoreMonsterChew` means monsters walk through and never chew it. The plant
+**despawns when the cast animation ends** (not when freeze expires); thaw SFX
+plays when the freeze duration ends.
 - Attackers only reset their cooldown when `tryAct` returns true (e.g. no
 monsters in range). **Coin producers** always consume their cycle when they
 fire. **Melee bat** with `attackHitDelay` returns true when the swing starts;

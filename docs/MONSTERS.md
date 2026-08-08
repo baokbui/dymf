@@ -194,7 +194,13 @@ MonsterBehavior (movement + attack tick)
 (forest march).
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
 - Monsters **phase through each other** on the same row (no blocking — all parts
-`CanCollide = false`). They walk the **lane center** (no lateral Z stagger).
+`CanCollide = false`). Player characters also **phase through monsters** via
+`CollisionUtil` (`BvmPlayers` / `BvmMonsters` collision groups). They walk the
+**lane center** (no lateral Z stagger).
+- Foot placement uses a **rest-pose** pivot→bottom cache (`footSnapOffset`) so
+procedural / animated limbs (esp. Spider crawl) do not rewrite visual minY
+every tick and bury the body. `MonsterFeedback.pulseAttack` skips `ScaleTo` on
+Motor6D/Bone rigs (ScaleTo was breaking spider visibility).
 They only stop for Brainrots (or the house). **Spider** is the exception for
 the *first* Brainrot: instead of chewing (or walking through at ground level),
 `SpiderJump` vaults it with a visible parabola (`MonsterBehavior` jump arc —

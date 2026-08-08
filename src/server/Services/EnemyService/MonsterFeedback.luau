@@ -222,6 +222,11 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: 
 end
 
 function MonsterFeedback.pulseAttack(model: Model)
+	-- ScaleTo breaks Motor6D / Bone crawl rigs (spiders go invisible or explode).
+	if model:FindFirstChildWhichIsA("Motor6D", true) or model:FindFirstChildWhichIsA("Bone", true) then
+		return
+	end
+
 	local token = (pulseTokens[model] or 0) + 1
 	pulseTokens[model] = token
 
