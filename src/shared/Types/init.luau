@@ -68,6 +68,9 @@ export type MonsterDefinition = {
 	secondsPerGrid: number, -- seconds to move one tile toward the house (higher = slower)
 	damage: number, -- damage per attack (0 when abilities handle all damage)
 	attackInterval: number, -- seconds between attacks while chewing a tile
+	-- Seconds after melee anim starts before chew damage / onAttack hooks.
+	-- Nil / 0 = hit on the same tick as the swing (legacy).
+	attackHitDelay: number?,
 	isBoss: boolean?,
 	abilities: { string }?, -- ability handler ids (EnemyService/Abilities)
 	abilityParams: { [string]: number }?,

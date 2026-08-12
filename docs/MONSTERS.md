@@ -44,6 +44,7 @@ From `Shared.Types.MonsterDefinition`:
 | `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                            |
 | `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                             |
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                                |
+| `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick)         |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)            |
 | `auraColor`               | Color3?                 | Persistent tinted particle + glow (`MonsterFeedback.applyAura`); omit for none |
 
@@ -80,6 +81,10 @@ Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 2. `definition.walkAnimationId` / `attackAnimationId` (`""` disables that track)
 3. `MonsterConfig.DEFAULT_WALK_ANIMATION_ID` / `DEFAULT_ATTACK_ANIMATION_ID`
   when the definition omits the field (`nil`)
+
+**Zombie** uses authored walk / attack clips (`walkAnimationId` /
+`attackAnimationId` on the definition). Tune `attackHitDelay` so chew damage
+lands on the impact frame of the swing.
 
 **Goblin** disables walk (`walkAnimationId = ""`) — catalog R15 walk looked
 buggy against grid snap — and plays a one-shot club swing (`ToolSlash`) each

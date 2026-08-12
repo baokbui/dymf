@@ -24,6 +24,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 1.5,
 		isBoss = false,
 		color = Color3.fromRGB(90, 140, 90),
+		walkAnimationId = "rbxassetid://101706062723839",
+		attackAnimationId = "rbxassetid://116092305201046",
+		-- Seconds after attack anim starts before chew damage lands.
+		attackHitDelay = 0.4,
 	},
 
 	Vampire = {

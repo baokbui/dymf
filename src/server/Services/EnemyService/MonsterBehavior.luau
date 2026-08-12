@@ -72,6 +72,14 @@ local MonsterBehavior = {}
 
 local TILE_HALF = MonsterConfig.TILE_HALF_WIDTH
 
+local function resolveAttackHitDelay(definition: Types.MonsterDefinition): number
+	local delay = definition.attackHitDelay
+	if type(delay) ~= "number" then
+		return 0
+	end
+	return math.max(0, delay)
+end
+
 local function abilityContext(runtime: MonsterRuntime): Abilities.AbilityContext
 	return {
 		instanceId = runtime.instanceId,
@@ -432,15 +440,31 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 
 				runtime.attackCooldown -= dt
 				if runtime.attackCooldown <= 0 then
-					-- Multi-lane units cleave every occupied row on this tile, not
-					-- just the Brainrot that first drew them in (e.g. Goblin Elite
-					-- one-shots Brainrots in both of its lanes).
-					for _, targetId in brainrotsAtColumn(runtime, brainrotColumn) do
-						callbacks.attackBrainrot(runtime, targetId)
-					end
+					-- Start swing immediately; optional attackHitDelay defers
+					-- chew damage so the impact frame can match the clip.
 					MonsterAnimation.playMelee(runtime.model)
 					MonsterFeedback.pulseAttack(runtime.model)
 					runtime.attackCooldown = runtime.definition.attackInterval
+
+					-- Multi-lane units cleave every occupied row on this tile, not
+					-- just the Brainrot that first drew them in (e.g. Goblin Elite
+					-- one-shots Brainrots in both of its lanes).
+					local targets = brainrotsAtColumn(runtime, brainrotColumn)
+					local hitDelay = resolveAttackHitDelay(runtime.definition)
+					local instanceId = runtime.instanceId
+					local applyHits = function()
+						if runtimes[instanceId] ~= runtime or runtime.health <= 0 then
+							return
+						end
+						for _, targetId in targets do
+							callbacks.attackBrainrot(runtime, targetId)
+						end
+					end
+					if hitDelay <= 0 then
+						applyHits()
+					else
+						task.delay(hitDelay, applyHits)
+					end
 				end
 			else
 				setAttacking(runtime, false)
