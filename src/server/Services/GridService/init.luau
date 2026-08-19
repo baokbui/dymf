@@ -41,6 +41,12 @@ type TileRecord = {
 -- plotModel -> (tileKey -> record). Keyed by the plot Model (stable; reused).
 local grids: { [Model]: { [string]: TileRecord } } = {}
 
+local function paintGrass(part: BasePart, position: Types.GridPosition)
+	local isLight = (position.row + position.column) % 2 == 0
+	part.Material = GridConfig.TILE_MATERIAL
+	part.Color = if isLight then GridConfig.TILE_COLOR_A else GridConfig.TILE_COLOR_B
+end
+
 local function createTile(position: Types.GridPosition, center: Vector3, parent: Instance): BasePart
 	local inset = PlotConfig.TILE_SIZE - GridConfig.TILE_GAP
 	local tile = Instance.new("Part")
@@ -55,9 +61,7 @@ local function createTile(position: Types.GridPosition, center: Vector3, parent:
 	tile.BottomSurface = Enum.SurfaceType.Smooth
 	tile.Material = GridConfig.TILE_MATERIAL
 	tile.Transparency = GridConfig.TILE_TRANSPARENCY
-
-	local isLight = (position.row + position.column) % 2 == 0
-	tile.Color = if isLight then GridConfig.TILE_COLOR_A else GridConfig.TILE_COLOR_B
+	paintGrass(tile, position)
 
 	tile:SetAttribute("Row", position.row)
 	tile:SetAttribute("Column", position.column)
@@ -130,6 +134,11 @@ function GridService.start()
 		for _, child in plotsFolder:GetChildren() do
 			if child:IsA("Model") then
 				buildGrid(child)
+				local gridFolder = child:FindFirstChild("Grid")
+				local leftover = gridFolder and gridFolder:FindFirstChild("DesertSandBed")
+				if leftover then
+					leftover:Destroy()
+				end
 				built += 1
 			end
 		end
@@ -189,6 +198,22 @@ function GridService.getWorldPositionAtColumn(plotModel: Model, row: number, col
 	return Vector3.new(x, tileY, z)
 end
 
+-- Inverse of getWorldPositionAtColumn's X mapping (fractional column).
+function GridService.worldXToColumn(plotModel: Model, worldX: number): number?
+	local base = plotModel.PrimaryPart
+	local anchor = base and base:FindFirstChild("GridCenter")
+	if not anchor or not anchor:IsA("Attachment") then
+		return nil
+	end
+	local dims = GridUtil.dimensions()
+	local cornerX = anchor.WorldPosition.X - dims.X / 2
+	local size = PlotConfig.TILE_SIZE
+	if size <= 0 then
+		return nil
+	end
+	return (worldX - cornerX) / size + 0.5
+end
+
 -- Top-center of a random grid tile on the plot (for passive coin drops).
 function GridService.getRandomWorldPosition(plotModel: Model): Vector3?
 	local position = GridUtil.randomPosition()
@@ -197,7 +222,9 @@ end
 
 -- Reserves a tile. Returns false if the tile is unknown, out of bounds, or
 -- already occupied. Server-authoritative gate used by placement (Milestone 4).
-function GridService.tryOccupy(plotModel: Model, position: Types.GridPosition, brainrotInstanceId: string): boolean
+-- Reserves a tile. `brainrotInstanceId` nil = blocking prop (grave): plants
+-- cannot place, but monsters do not chew (nearestBrainrotWest requires an id).
+function GridService.tryOccupy(plotModel: Model, position: Types.GridPosition, brainrotInstanceId: string?): boolean
 	if not GridUtil.isInBounds(position) then
 		return false
 	end
@@ -232,6 +259,12 @@ function GridService.resetPlot(plotModel: Model)
 		record.occupied = false
 		record.brainrotInstanceId = nil
 		record.part:SetAttribute("Occupied", false)
+		paintGrass(record.part, record.position)
+	end
+	local leftover = plotModel:FindFirstChild("Grid")
+	local bed = leftover and leftover:FindFirstChild("DesertSandBed")
+	if bed then
+		bed:Destroy()
 	end
 end
 

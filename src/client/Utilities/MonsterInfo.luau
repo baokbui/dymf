@@ -40,6 +40,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Terrify",
 		description = "Weakens and freezes Brainrots in its lane and the lanes beside it.",
 	},
+	SkeletonArrow = {
+		label = "Bone Arrow",
+		description = "Stops 3 tiles east of a Brainrot and shoots arrows. Does not chew.",
+	},
 	WerewolfLifesteal = {
 		label = "Lifesteal",
 		description = "Heals 5% of its max HP every time it chews a Brainrot.",
@@ -59,6 +63,14 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	GoblinKingSpeedBuff = {
 		label = "War Cry",
 		description = "Speeds up nearby monsters (stub).",
+	},
+	PharaohSummon = {
+		label = "Raise the Guard",
+		description = "Summons a Small Mummy in every lane (20s cooldown).",
+	},
+	PharaohSteal = {
+		label = "Royal Tribute",
+		description = "Steals one Brainrot from each of 3 random lanes (15s cooldown).",
 	},
 }
 
@@ -111,6 +123,9 @@ function MonsterInfo.statRows(definition: Types.MonsterDefinition): { StatRow }
 			rows,
 			{ label = "Attack", value = string.format("%.1fs", definition.attackInterval) }
 		)
+	end
+	if type(definition.rangedTiles) == "number" and definition.rangedTiles > 0 then
+		table.insert(rows, { label = "Range", value = string.format("%d tiles", definition.rangedTiles) })
 	end
 	local span = definition.laneSpan or 1
 	if span > 1 then

@@ -88,6 +88,8 @@ export type MonsterDefinition = {
 	deathStyle: string?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
+	-- When set, stop this many tiles east of a Brainrot and shoot instead of chewing.
+	rangedTiles: number?,
 	-- Persistent tinted particle + glow around the model (e.g. Duke Vampire's
 	-- dark aura) — omit for no aura. See `MonsterFeedback.applyAura`.
 	auraColor: Color3?,
@@ -120,6 +122,8 @@ export type LevelDefinition = {
 	reward: number?, -- coins on completion (defaults to EconomyConfig base)
 	-- Optional weather id (e.g. WeatherConfig.NIGHT / NIGHT_FOG). Nil = clear day.
 	weather: string?,
+	-- Fog-tile graves for this day (NightFog / NightFogReceded). Nil = none.
+	graves: boolean?,
 }
 
 -- Runtime tile state tracked by the grid (server-authoritative).

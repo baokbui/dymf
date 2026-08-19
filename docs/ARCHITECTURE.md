@@ -85,6 +85,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         BrainrotService/  (init + BrainrotModel, BrainrotBehavior, BrainrotAnimation, Abilities, BrainrotFeedback)
         EnemyService/     (init + MonsterModel, MonsterBehavior, Abilities, MonsterFeedback)
         CombatService/
+        GraveService/     (fog graves → Zombie/Skeleton emerge)
         LevelService/
         SaveService/
 
@@ -99,7 +100,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         BrainrotController/ (BrainrotAction SFX; ScaleTo pulse only if not animated)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
-        WeatherController/ (night Lighting + fog volumes / monster hide)
+        WeatherController/ (night/fog + desert pyramids)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)
@@ -207,7 +208,8 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   east-column `EnemyLane` (`EnemySpawn` attachment at its west edge).
 - **ForestBuilder** fills the east column with `Workspace.Maps.DarkForest` —
   dark grass floor + procedural trees (non-colliding). A clear strip near the
-  plot boundary keeps monster entry / spawn readable.
+  plot boundary keeps monster entry / spawn readable. **Desert** days hide that
+  forest on the local client and spawn pyramids instead (`WEATHER.md`).
 - See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
 - Gameplay isolation is **server-validated**, not physical: plant / shovel /
   coin collect only succeed on the acting player's own plot (and own coins).

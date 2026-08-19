@@ -25,6 +25,14 @@
         "Projectiles": {
           "$className": "Folder",
           "$ignoreUnknownInstances": true
+        },
+        "Graves": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
+        },
+        "Decor": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
         }
       }
     },

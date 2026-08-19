@@ -64,6 +64,7 @@ export type MonsterRuntime = {
 
 export type BehaviorCallbacks = {
 	attackBrainrot: (runtime: MonsterRuntime, brainrotInstanceId: string) -> (),
+	shootBrainrot: (runtime: MonsterRuntime, brainrotInstanceId: string) -> (),
 	onHouseBreach: (runtime: MonsterRuntime) -> (),
 	spawnMinion: (plotModel: Model, monsterId: string, row: number) -> (),
 }
@@ -421,6 +422,46 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		end
 
 		if brainrotId and brainrotColumn then
+			local rangedTiles = runtime.definition.rangedTiles
+			if type(rangedTiles) == "number" and rangedTiles > 0 then
+				local stopAt = brainrotColumn + rangedTiles
+				if runtime.column > stopAt then
+					setAttacking(runtime, false)
+					local speed = runtime.definition.secondsPerGrid
+					if speed > 0 then
+						local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
+						local nextColumn = runtime.column - (dt / speed) * speedMult
+						runtime.column = math.max(nextColumn, stopAt)
+					end
+					syncTransform(runtime)
+					continue
+				end
+
+				setAttacking(runtime, true)
+				syncTransform(runtime)
+				runtime.attackCooldown -= dt
+				if runtime.attackCooldown <= 0 then
+					MonsterAnimation.playMelee(runtime.model)
+					MonsterFeedback.pulseAttack(runtime.model)
+					runtime.attackCooldown = runtime.definition.attackInterval
+					local hitDelay = resolveAttackHitDelay(runtime.definition)
+					local instanceId = runtime.instanceId
+					local targetId = brainrotId
+					local fire = function()
+						if runtimes[instanceId] ~= runtime or runtime.health <= 0 then
+							return
+						end
+						callbacks.shootBrainrot(runtime, targetId)
+					end
+					if hitDelay > 0 then
+						task.delay(hitDelay, fire)
+					else
+						fire()
+					end
+				end
+				continue
+			end
+
 			clampToPlantCenter(runtime, brainrotColumn)
 
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then

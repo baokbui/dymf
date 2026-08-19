@@ -104,9 +104,12 @@ were raised so early boards need real DPS:
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
 | `QueenSpider` | Boss (L30; recurs L32/37; dual finale L40) | 13000 | 6.3 | 140 / 1.5s; laneSpan 3; stun 2s + poison 3%/4s; no jump |
 | `Werewolf` | Fast heavy grunt (L35+) | 1400 | 2.0 | 60 / 1.5s; lifesteal 5% max HP / chew; authored walk/attack clips |
+| `Skeleton` | Ranged grunt (L31+) | 200 | 4.0 | 100 / 1.5s; stops 3 tiles east and shoots arrows; does not chew |
+| `SmallMummy` | Fast grunt (L41+) | 1000 | 2.0 | 150 / 1.5s |
+| `PharaohMummy` | Boss (L50) | 15000 | 5.0 | 200 / 1.0s; summon SmallMummy ×5 lanes / 20s; steal 1 plant from 3 random lanes / 15s |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
-~16s Goblin, ~15s Vampire, ~12s Werewolf).
+~16s Goblin, ~15s Vampire, ~12s Werewolf, ~24s Skeleton).
 
 Chew standoff: monsters stop `MELEE_CLOSE_REACH` (0.42 columns ≈ 7.5 studs)
 east of the plant center so models don't overlap.
@@ -129,12 +132,14 @@ east of the plant center so models don't overlap.
 - **Days 21–24 (Night):** moonlit night, full lawn plantable — same roster mix,
   quieter/harder alternation.
 - **Days 25–34 (NightFog):** easternmost **3** lawn columns are unplantable, so
-  effective depth shrinks — keep totals in the ~12–16 range; Queen / Duke recur
-  mid-day on 32–33 after the L30 Queen finale.
+  effective depth shrinks — keep totals in the ~12–16 range; Level 31 introduces
+  `Skeleton` + fog **graves**; Queen / Duke recur mid-day on 32–33 after the L30
+  Queen finale.
 - **Days 35–40 (NightFogReceded):** fog bank loses **one** column (only 2
-  blocked) so players regain a plantable tile; Level 35 introduces `Werewolf`
-  (2.0s/tile + 5% max-HP lifesteal per chew) with gentle counts, then
-  packs/spiders/vampires ramp into a Queen + Duke dual closer at 40.
+  blocked) so players regain a plantable tile; Level 35 introduces `Werewolf`.
+- **Days 41–50 (Desert):** sand lawn, no fog; forest replaced by pyramids;
+  authored waves are `SmallMummy` only until later desert units are added;
+  Level 50 is `PharaohMummy`. No graves.
 
 ---
 

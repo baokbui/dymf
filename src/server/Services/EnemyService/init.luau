@@ -164,6 +164,58 @@ local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: strin
 	end
 end
 
+local ARROW_MUZZLE_ATTACHMENTS = { "Middle", "Muzzle", "Top" }
+local LEFT_ARM_NAMES = { "LArm", "LeftArm", "Left Arm", "LeftUpperArm" }
+
+local function findArrowMuzzle(model: Model): Vector3?
+	local bow = model:FindFirstChild("Bow", true)
+	if bow then
+		for _, name in ARROW_MUZZLE_ATTACHMENTS do
+			local attachment = bow:FindFirstChild(name, true)
+			if attachment and attachment:IsA("Attachment") then
+				return attachment.WorldPosition
+			end
+		end
+		if bow:IsA("BasePart") then
+			return bow.Position
+		end
+		if bow:IsA("Model") then
+			local part = bow.PrimaryPart or bow:FindFirstChildWhichIsA("BasePart", true)
+			if part then
+				return part.Position
+			end
+		end
+	end
+	for _, name in LEFT_ARM_NAMES do
+		local arm = model:FindFirstChild(name, true)
+		if arm and arm:IsA("BasePart") then
+			return arm.Position
+		end
+	end
+	return nil
+end
+
+local function shootBrainrot(runtime: MonsterRuntime, brainrotInstanceId: string)
+	local hits = computeBrainrotHits(runtime, brainrotInstanceId)
+	local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+	if type(ownerUserId) ~= "number" then
+		return
+	end
+	CombatService.launchTowardBrainrot(
+		runtime.plotModel,
+		runtime.row,
+		runtime.column,
+		brainrotInstanceId,
+		hits,
+		ownerUserId,
+		{
+			kind = "Arrow",
+			originWorld = findArrowMuzzle(runtime.model),
+		}
+	)
+	CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
+end
+
 local function onHouseBreach(runtime: MonsterRuntime)
 	log:info(string.format("%s breached house on %s row %d", runtime.monsterId, runtime.plotModel.Name, runtime.row))
 	if houseBreachHandler then
@@ -172,7 +224,7 @@ local function onHouseBreach(runtime: MonsterRuntime)
 	destroyMonster(runtime, true)
 end
 
-local function spawnInternal(plotModel: Model, monsterId: string, gridRow: number): MonsterRuntime?
+local function spawnInternal(plotModel: Model, monsterId: string, gridRow: number, spawnColumn: number?): MonsterRuntime?
 	local definition = Monsters.get(monsterId)
 	if not definition then
 		return nil
@@ -186,12 +238,12 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 
 	nextInstanceId += 1
 	local instanceId = string.format("Monster_%d", nextInstanceId)
-	local spawnColumn = GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET
+	local column = spawnColumn or (GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET)
 
 	-- gridRow is the anchor (lowest) row for multi-lane units; visual
 	-- placement centers on the midpoint of the occupied span.
 	local centerRow = GridUtil.laneCenterRow(gridRow, definition.laneSpan or 1)
-	local worldPos = GridService.getWorldPositionAtColumn(plotModel, centerRow, spawnColumn)
+	local worldPos = GridService.getWorldPositionAtColumn(plotModel, centerRow, column)
 	if not worldPos then
 		return nil
 	end
@@ -212,7 +264,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		definition = definition,
 		plotModel = plotModel,
 		row = gridRow,
-		column = spawnColumn,
+		column = column,
 		model = model,
 		health = definition.health,
 		maxHealth = definition.health,
@@ -243,6 +295,7 @@ end
 
 local behaviorCallbacks: MonsterBehavior.BehaviorCallbacks = {
 	attackBrainrot = attackBrainrot,
+	shootBrainrot = shootBrainrot,
 	onHouseBreach = onHouseBreach,
 	spawnMinion = function(plotModel, monsterId, row)
 		spawnInternal(plotModel, monsterId, row)
@@ -254,6 +307,35 @@ local behaviorCallbacks: MonsterBehavior.BehaviorCallbacks = {
 function EnemyService.spawn(plotModel: Model, monsterId: string, gridRow: number): string?
 	local runtime = spawnInternal(plotModel, monsterId, gridRow)
 	return if runtime then runtime.instanceId else nil
+end
+
+function EnemyService.spawnAt(plotModel: Model, monsterId: string, gridRow: number, column: number): string?
+	local runtime = spawnInternal(plotModel, monsterId, gridRow, column)
+	return if runtime then runtime.instanceId else nil
+end
+
+function EnemyService.getModel(instanceId: string): Model?
+	local runtime = monsters[instanceId]
+	return if runtime then runtime.model else nil
+end
+
+-- Pause walk/attack/transform-sync so a PivotTo tween isn't fought (grave rise).
+function EnemyService.suspendLocomotion(instanceId: string, duration: number)
+	local runtime = monsters[instanceId]
+	if not runtime or duration <= 0 then
+		return
+	end
+	runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+	MonsterAnimation.setLocomotionPaused(runtime.model, true)
+end
+
+function EnemyService.resumeLocomotion(instanceId: string)
+	local runtime = monsters[instanceId]
+	if not runtime then
+		return
+	end
+	runtime.downedUntil = 0
+	MonsterAnimation.setLocomotionPaused(runtime.model, false)
 end
 
 function EnemyService.countOnPlot(plotModel: Model): number

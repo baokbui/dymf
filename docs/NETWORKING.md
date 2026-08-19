@@ -149,7 +149,7 @@ Monsters spawn in the forest and walk toward the plot (setup time).
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
 whenever phase, progress, or big-wave warning changes. The client
 `UIController/Level.luau` panel only displays this payload. Payload includes
-optional `weather` (e.g. `"Night"` / `"NightFog"`) from the current
+optional `weather` (e.g. `"Night"` / `"NightFog"` / `"Desert"`) from the current
 `LevelDefinition` — `WeatherController` / placement use it for night/fog
 presentation and fog-tile rules (`WEATHER.md`). Initial join state includes
 `level` inside the `RequestState` pull (`{ coins, level }`).

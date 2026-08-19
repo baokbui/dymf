@@ -27,6 +27,7 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
@@ -423,6 +424,50 @@ end
 
 function BrainrotService.getPlacement(instanceId: string): Placement?
 	return placements[instanceId]
+end
+
+-- Removes a living Brainrot from the lawn (Pharaoh steal). Optional yank toward
+-- `destination` then destroy the model.
+function BrainrotService.stealPlacement(instanceId: string, destination: Vector3?): boolean
+	local placement = placements[instanceId]
+	if not placement or placement.health <= 0 then
+		return false
+	end
+
+	local model = detachPlacement(placement)
+	if not model then
+		return false
+	end
+
+	if not destination then
+		model:Destroy()
+		return true
+	end
+
+	local startPivot = model:GetPivot()
+	local goal = CFrame.new(destination) * (startPivot - startPivot.Position)
+	local alpha = Instance.new("NumberValue")
+	alpha.Value = 0
+	local conn: RBXScriptConnection
+	conn = alpha.Changed:Connect(function(value)
+		if model.Parent then
+			model:PivotTo(startPivot:Lerp(goal, value))
+		end
+	end)
+	local tween = TweenService:Create(
+		alpha,
+		TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ Value = 1 }
+	)
+	tween.Completed:Connect(function()
+		conn:Disconnect()
+		alpha:Destroy()
+		if model.Parent then
+			model:Destroy()
+		end
+	end)
+	tween:Play()
+	return true
 end
 
 function BrainrotService.getSavePlacements(plotModel: Model): { Types.PlantedBrainrot }

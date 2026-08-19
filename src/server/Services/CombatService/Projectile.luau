@@ -34,9 +34,15 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
-	-- "Knife" (legacy bolt), "Shuriken" (Cappuccino), or "Bubble"
+	-- "Knife" (legacy bolt), "Shuriken" (Cappuccino), "Bubble", or "Arrow"
 	kind: string?,
 	impact: ImpactSpec?,
+	-- Default "Monster". "Brainrot" = westbound shots (Skeleton arrows).
+	targetKind: string?,
+	-- Grid travel: +1 toward the forest, −1 toward the house.
+	columnDirection: number?,
+	-- Keep this Z for the whole flight (bow / arm spawn). Nil = lane-center Z.
+	worldZ: number?,
 }
 
 export type ActiveProjectile = {
@@ -47,15 +53,17 @@ export type ActiveProjectile = {
 	model: Model?,
 	spinRadians: number,
 	worldY: number,
+	worldZ: number?,
 }
 
 type ImpactCallback = (
 	instanceId: string,
 	damage: number,
 	ownerUserId: number,
-	impact: ImpactSpec?
+	impact: ImpactSpec?,
+	targetKind: string?
 ) -> boolean
-type GetColumnCallback = (instanceId: string) -> number?
+type GetColumnCallback = (instanceId: string, targetKind: string?) -> number?
 type SetPositionCallback = (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> ()
 
 local active: { [string]: ActiveProjectile } = {}
@@ -233,6 +241,92 @@ local function createShurikenModel(): (Model, BasePart)
 	return createProceduralShuriken()
 end
 
+local function createProceduralArrow(): (Model, BasePart)
+	local model = Instance.new("Model")
+	model.Name = "ArrowProjectile"
+
+	local shaft = Instance.new("Part")
+	shaft.Name = "Shaft"
+	shaft.Size = CombatConfig.ARROW_FALLBACK_SIZE
+	shaft.Material = Enum.Material.Wood
+	shaft.Color = CombatConfig.ARROW_FALLBACK_COLOR
+	shaft.Parent = model
+	hardenRoot(shaft)
+	model.PrimaryPart = shaft
+	model:SetAttribute("ProjectileKind", "Arrow")
+	shaft:SetAttribute("ProjectileKind", "Arrow")
+	return model, shaft
+end
+
+local missingArrowLogged = false
+
+local function prepareAuthoredArrow(model: Model): BasePart?
+	stripScripts(model)
+	local primary = pickPrimary(model)
+	if not primary then
+		return nil
+	end
+	model.PrimaryPart = primary
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			if descendant == primary then
+				hardenRoot(descendant)
+			else
+				weldAccessory(primary, descendant)
+			end
+		end
+	end
+	model.Name = "ArrowProjectile"
+	model:SetAttribute("ProjectileKind", "Arrow")
+	primary:SetAttribute("ProjectileKind", "Arrow")
+	return primary
+end
+
+local function createArrowModel(): (Model, BasePart)
+	local folder = ModelUtil.getProjectileTemplatesFolder()
+	local child = if folder then folder:FindFirstChild(CombatConfig.ARROW_MODEL_ID) else nil
+
+	if child and child:IsA("Model") then
+		local model = child:Clone()
+		local primary = prepareAuthoredArrow(model)
+		if primary then
+			return model, primary
+		end
+		model:Destroy()
+		log:warn("Assets.Projectiles." .. CombatConfig.ARROW_MODEL_ID .. " has no BasePart — using procedural")
+	elseif child and child:IsA("BasePart") then
+		local model = Instance.new("Model")
+		model.Name = "ArrowProjectile"
+		local part = child:Clone()
+		part.Name = "Arrow"
+		part.Parent = model
+		model.PrimaryPart = part
+		local primary = prepareAuthoredArrow(model)
+		if primary then
+			return model, primary
+		end
+		model:Destroy()
+		log:warn("Assets.Projectiles." .. CombatConfig.ARROW_MODEL_ID .. " clone failed — using procedural")
+	elseif not missingArrowLogged then
+		missingArrowLogged = true
+		log:warn(string.format(
+			"missing Assets.Projectiles.%s — using procedural arrow",
+			CombatConfig.ARROW_MODEL_ID
+		))
+	end
+	return createProceduralArrow()
+end
+
+local function arrowFlightCFrame(position: Vector3, columnDirection: number): CFrame
+	local o = CombatConfig.ARROW_MODEL_ORIENTATION_DEGREES
+	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
+	local look = Vector3.new(columnDirection, 0, 0)
+	if look.Magnitude < 0.01 then
+		look = Vector3.new(-1, 0, 0)
+	end
+	return CFrame.lookAt(position, position + look) * orient
+end
+
 local function createBoltPart(): BasePart
 	local part = Instance.new("Part")
 	part.Name = "Projectile"
@@ -273,6 +367,14 @@ local function shurikenFlightCFrame(position: Vector3, spinRadians: number): CFr
 	return CFrame.new(position) * CFrame.fromAxisAngle(Vector3.yAxis, spinRadians) * orient
 end
 
+local function applyHeldZ(part: BasePart, worldY: number, worldZ: number?): Vector3
+	local pos = part.Position
+	if worldZ == nil then
+		return Vector3.new(pos.X, worldY, pos.Z)
+	end
+	return Vector3.new(pos.X, worldY, worldZ)
+end
+
 function Projectile.launch(
 	spec: LaunchSpec,
 	worldY: number,
@@ -291,6 +393,11 @@ function Projectile.launch(
 		model = shurikenModel
 		part = hub
 		shurikenModel.Parent = folder
+	elseif kind == "Arrow" then
+		local arrowModel, hub = createArrowModel()
+		model = arrowModel
+		part = hub
+		arrowModel.Parent = folder
 	elseif kind == "Bubble" then
 		part = createBubblePart()
 		part.Parent = folder
@@ -300,8 +407,16 @@ function Projectile.launch(
 	end
 
 	setWorldPosition(part, spec.plotModel, spec.row, spec.startColumn, worldY)
+	local held = applyHeldZ(part, worldY, spec.worldZ)
 	if model then
-		part.CFrame = shurikenFlightCFrame(part.Position, 0)
+		local dir = spec.columnDirection or 1
+		if kind == "Arrow" then
+			part.CFrame = arrowFlightCFrame(held, dir)
+		else
+			part.CFrame = shurikenFlightCFrame(held, 0)
+		end
+	elseif spec.worldZ ~= nil then
+		part.CFrame = CFrame.new(held)
 	end
 
 	active[id] = {
@@ -312,6 +427,7 @@ function Projectile.launch(
 		model = model,
 		spinRadians = 0,
 		worldY = worldY,
+		worldZ = spec.worldZ,
 	}
 	return id
 end
@@ -323,14 +439,15 @@ function Projectile.tick(
 	onImpact: ImpactCallback
 )
 	for id, projectile in active do
-		local liveColumn = getColumn(projectile.spec.targetInstanceId)
+		local liveColumn = getColumn(projectile.spec.targetInstanceId, projectile.spec.targetKind)
 		if not liveColumn then
 			destroyProjectile(projectile)
 			active[id] = nil
 			continue
 		end
 
-		projectile.column += CombatConfig.PROJECTILE_COLUMNS_PER_SECOND * dt
+		local dir = projectile.spec.columnDirection or 1
+		projectile.column += CombatConfig.PROJECTILE_COLUMNS_PER_SECOND * dt * dir
 		setWorldPosition(
 			projectile.part,
 			projectile.spec.plotModel,
@@ -339,17 +456,29 @@ function Projectile.tick(
 			projectile.worldY
 		)
 
+		local held = applyHeldZ(projectile.part, projectile.worldY, projectile.worldZ)
+		local kind = projectile.spec.kind or "Knife"
 		if projectile.model then
-			projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
-			projectile.part.CFrame = shurikenFlightCFrame(projectile.part.Position, projectile.spinRadians)
+			if kind == "Arrow" then
+				projectile.part.CFrame = arrowFlightCFrame(held, dir)
+			else
+				projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
+				projectile.part.CFrame = shurikenFlightCFrame(held, projectile.spinRadians)
+			end
+		elseif projectile.worldZ ~= nil then
+			projectile.part.CFrame = CFrame.new(held)
 		end
 
-		if projectile.column >= liveColumn then
+		local reached = if dir < 0
+			then projectile.column <= liveColumn
+			else projectile.column >= liveColumn
+		if reached then
 			onImpact(
 				projectile.spec.targetInstanceId,
 				projectile.spec.damage,
 				projectile.spec.ownerUserId,
-				projectile.spec.impact
+				projectile.spec.impact,
+				projectile.spec.targetKind
 			)
 			destroyProjectile(projectile)
 			active[id] = nil

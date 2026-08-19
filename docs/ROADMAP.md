@@ -347,9 +347,8 @@ Persist player progress.
 - **One** boss every 10 levels (Level 10 = Goblin Elite; 20 = Duke Vampire;
   30 = Queen Spider).
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
-- Days 21–24: Night weather; Days 25–34: NightFog; Days 35–40: NightFogReceded
-  (`docs/WEATHER.md`) +
-  Spider / Queen Spider intros.
+- Days 21–24: Night weather; Days 25–34: NightFog; Days 35–40: NightFogReceded;
+  Days 41–50: Desert (`docs/WEATHER.md`) + Spider / Queen Spider intros.
 
 
 

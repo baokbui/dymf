@@ -97,6 +97,7 @@ Levels.count()             -- number of authored levels
 | `name`    | string           | Display name                                  |
 | `groups`  | `{ SpawnGroup }` | Ordered internal waves to spawn               |
 | `weather` | string?          | Optional weather id (`Night`, `NightFog`, …); see `WEATHER.md` |
+| `graves`  | boolean?         | If true, place 1–5 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
 | `reward`  | number?          | Completion coins (defaults to economy base)   |
 
 ### `SpawnGroup` (`Shared.Types`)
@@ -151,22 +152,34 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 28    | Duke's Night      | NightFog · DukeVampire finale · **13** |
 | 29    | Closing Webs      | NightFog · Spider pressure + Elite · **14** |
 | 30    | Queen Spider      | NightFog · **QueenSpider** boss finale · **13** |
-| 31    | After the Queen   | NightFog · post-boss mix · **16** |
-| 32    | Royal Remnant     | NightFog · Queen mid · **14** |
-| 33    | Duke Returns      | NightFog · Duke mid · **15** |
-| 34    | Thickening Dark   | NightFog · Elite open · **15** |
-| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · **14** |
+| 31    | Rattling Fog      | NightFog · **Skeleton** intro + graves · **15** |
+| 32    | Royal Remnant     | NightFog · Queen mid · graves · **13** |
+| 33    | Duke Returns      | NightFog · Duke mid · graves · **15** |
+| 34    | Thickening Dark   | NightFog · Elite open · graves · **15** |
+| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · graves · **14** |
 | 36    | Pack Pressure     | NightFogReceded · Werewolf mix · **15** |
 | 37    | Silk and Fang     | NightFogReceded · Queen mid · **14** |
 | 38    | Blood Pack        | NightFogReceded · Duke mid · **14** |
 | 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **14** |
 | 40    | Throne of Silk    | NightFogReceded · **QueenSpider + DukeVampire** dual finale · **14** |
+| 41    | First Wrappings   | Desert · **SmallMummy** only · **12** |
+| 42    | Linen March       | Desert · mummy packs · **14** |
+| 43    | Silk and Sand     | Desert · mummy packs · **16** |
+| 44    | Dust and Fang     | Desert · mummy packs · **17** |
+| 45    | Tomb Pressure     | Desert · mummy packs · **19** |
+| 46    | Bandage Pack      | Desert · mummy packs · **20** |
+| 47    | Royal Dust        | Desert · mummy packs · **21** |
+| 48    | Blood Linen       | Desert · mummy packs · **23** |
+| 49    | Before the Tomb   | Desert · mummy packs · **24** |
+| 50    | Pharaoh Mummy     | Desert · mummy packs + **PharaohMummy** finale · **13** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
 Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
 easternmost **3** columns unplantable; monsters stay visible — see `WEATHER.md`).
 Days **35–40** use `weather = "NightFogReceded"` (same night fog look, but only
 easternmost **2** columns blocked — one more plantable column).
+Days **41–50** use `weather = "Desert"` (sand lawn, no fog, pyramids instead of
+the dark forest; full lawn plantable).
 Fog days keep moderate totals and alternate easier/harder pacing.
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
@@ -176,9 +189,14 @@ Introduction cadence:
 
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
+  **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**.
+  **Exception:** Level 41 introduces `SmallMummy` at the start of the 41–50 band.
+  Days **41–50** authored waves are **SmallMummy** only (plus `PharaohMummy` on
+  50) until later desert species are added. **No graves** on desert days.
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
-  dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave).
+  dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave;
+  Level 50 = `PharaohMummy`).
 - The first time a player **reaches** an intro day, `LevelService` shows a
   **MonsterIntroPopup** (portrait + stats + ability blurb) driven by
   `ProgressConfig.MONSTER_INTRO_SCHEDULE` / `introducedMonsterId` — same idea
@@ -242,8 +260,9 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
 - Playing the current level's `groups` in order: driving `EnemyService` to spawn
   (it decides *what* and *when*; `EnemyService` handles *how* monsters
   move/fight), and announcing the big wave.
-- Tracking progress and detecting **Victory** (all groups spawned and cleared)
-  vs. **Defeat** (a monster reaches the house).
+- Tracking progress and detecting **Victory** (all groups spawned **and** no
+  living monsters) vs. **Defeat** (a monster reaches the house). Graves stop
+  producing when spawn groups finish so the lawn can clear.
 - On **Victory**: clear monsters / projectiles / ground coins; **keep planted
   Brainrots** (current HP); set coin purse via `applyDayPurse` (Day 1 → 125,
   later days → 0); then unlock/advance to the next level.

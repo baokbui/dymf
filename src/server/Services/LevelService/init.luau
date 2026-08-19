@@ -33,6 +33,7 @@ local LevelRun = require(script.LevelRun)
 local BrainrotService = require(script.Parent.BrainrotService)
 local CoinService = require(script.Parent.CoinService)
 local EnemyService = require(script.Parent.EnemyService)
+local GraveService = require(script.Parent.GraveService)
 local PlotService = require(script.Parent.PlotService)
 local ProgressService = require(script.Parent.ProgressService)
 
@@ -118,8 +119,7 @@ local function setPhase(player: Player, state: PlayerState, phase: string)
 	broadcast(player)
 end
 
--- NightFog days: strip Brainrots from fog-blocked east columns and refresh the
--- committed lawn so rejoin doesn't restore plants into the fog.
+-- NightFog plant stripping. Lawn sand is client-only (DesertVisuals).
 local function applyWeatherRules(player: Player, state: PlayerState)
 	local definition = getDefinition(state.currentLevel)
 	local weather = if definition then definition.weather else nil
@@ -149,6 +149,7 @@ local function clearTransientCombat(player: Player)
 	if plotModel then
 		EnemyService.clearPlot(plotModel)
 		CoinService.clearPlot(plotModel)
+		GraveService.clearPlot(plotModel)
 	end
 end
 
@@ -159,6 +160,7 @@ local function clearLawn(player: Player)
 		BrainrotService.clearPlot(plotModel)
 		EnemyService.clearPlot(plotModel)
 		CoinService.clearPlot(plotModel)
+		GraveService.clearPlot(plotModel)
 	end
 end
 
@@ -286,9 +288,12 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 		end
 	end
 
-	if run:isDoneSpawning() and EnemyService.countOnPlot(plotModel) == 0 then
-		onVictory(player, state)
-		return
+	if run:isDoneSpawning() then
+		GraveService.notifyWavesComplete(plotModel)
+		if EnemyService.countOnPlot(plotModel) == 0 and not GraveService.hasPending(plotModel) then
+			onVictory(player, state)
+			return
+		end
 	end
 
 	broadcast(player)
@@ -299,6 +304,7 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
 		EnemyService.clearPlot(plotModel)
+		GraveService.clearPlot(plotModel)
 	end
 
 	state.countdownEnd = 0
@@ -307,6 +313,10 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 
 	-- Fresh seed-packet recharges each Start Day (PvZ-style).
 	BrainrotService.clearPlantCooldowns(player)
+
+	if plotModel then
+		GraveService.spawnForDay(plotModel, definition)
+	end
 end
 
 local function tickCountdown(player: Player, state: PlayerState)
@@ -481,6 +491,7 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
 		EnemyService.clearPlot(plotModel)
+		GraveService.clearPlot(plotModel)
 	end
 
 	broadcast(player)

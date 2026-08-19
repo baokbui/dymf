@@ -49,6 +49,13 @@ local CombatConfig = {
 
 	-- Height above the lane surface for projectile travel.
 	PROJECTILE_HEIGHT_OFFSET = 3.5,
+
+	-- Skeleton westbound arrow. Prefer Assets.Projectiles[ARROW_MODEL_ID].
+	ARROW_MODEL_ID = "Arrow",
+	ARROW_MODEL_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
+	ARROW_PROJECTILE_HEIGHT_OFFSET = 3.2,
+	ARROW_FALLBACK_SIZE = Vector3.new(0.18, 0.18, 1.6),
+	ARROW_FALLBACK_COLOR = Color3.fromRGB(210, 190, 140),
 }
 
 table.freeze(CombatConfig)

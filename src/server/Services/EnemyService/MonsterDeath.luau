@@ -613,6 +613,16 @@ local function playSpiderFlat(model: Model)
 	end)
 end
 
+-- Fade in place (no tip-over). Graves reuse this so they dust away like a corpse.
+function MonsterDeath.playFadeInPlace(model: Model)
+	if not model.Parent then
+		return
+	end
+	model:SetAttribute("Dying", true)
+	freezeCorpse(model)
+	scheduleLingerAndFade(model)
+end
+
 function MonsterDeath.play(model: Model, deathStyle: string?)
 	if not model.Parent then
 		return

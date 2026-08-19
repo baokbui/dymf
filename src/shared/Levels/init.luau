@@ -401,17 +401,18 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		},
 	},
 
-	-- Days 31–34: still NightFog (3 blocked columns). Difficulty inches up;
-	-- Queen / Duke recur as mid-day minibosses (never the big-wave closer).
+	-- Days 31–34: still NightFog (3 blocked columns). Day 31 introduces Skeleton
+	-- (ranged 3-tile arrows) plus fog graves; Queen / Duke recur as mid-day minibosses.
 	Level31 = {
 		id = "Level31",
 		number = 31,
-		name = "After the Queen",
+		name = "Rattling Fog",
 		weather = "NightFog",
+		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Spider", count = 3, startDelay = 11, spawnInterval = 2.6 },
-			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Skeleton", count = 3, startDelay = 11, spawnInterval = 2.8 },
+			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.6 },
 			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
@@ -421,10 +422,11 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 32,
 		name = "Royal Remnant",
 		weather = "NightFog",
+		graves = true,
 		groups = {
-			{ monsterId = "Goblin", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Goblin", count = 4, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
-			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "Skeleton", count = 3, startDelay = 12, spawnInterval = 2.6 },
 			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
@@ -434,11 +436,13 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 33,
 		name = "Duke Returns",
 		weather = "NightFog",
+		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Vampire", count = 3, startDelay = 11, spawnInterval = 2.4 },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 11, spawnInterval = 2 },
-			{ monsterId = "Spider", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Skeleton", count = 3, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -447,21 +451,23 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 34,
 		name = "Thickening Dark",
 		weather = "NightFog",
+		graves = true,
 		groups = {
 			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
-			{ monsterId = "Spider", count = 4, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Skeleton", count = 4, startDelay = 10, spawnInterval = 2.6 },
 			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
 			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
 	-- Days 35–40: NightFogReceded — one fog column clears (2 blocked instead of
-	-- 3). Day 35 introduces Werewolf; difficulty ramps through 40.
+	-- 3). Day 35 introduces Werewolf; graves continue on remaining fog tiles.
 	Level35 = {
 		id = "Level35",
 		number = 35,
 		name = "Howl in the Mist",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
 			{ monsterId = "Goblin", count = 4, startDelay = 11, spawnInterval = 2.4 },
@@ -475,6 +481,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 36,
 		name = "Pack Pressure",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "Spider", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
 			{ monsterId = "Werewolf", count = 3, startDelay = 11, spawnInterval = 2.8 },
@@ -488,6 +495,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 37,
 		name = "Silk and Fang",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
@@ -501,6 +509,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 38,
 		name = "Blood Pack",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "Werewolf", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 10, spawnInterval = 2 },
@@ -514,6 +523,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 39,
 		name = "Moonlit March",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
 			{ monsterId = "Werewolf", count = 4, startDelay = 10, spawnInterval = 2.4 },
@@ -527,6 +537,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		number = 40,
 		name = "Throne of Silk",
 		weather = "NightFogReceded",
+		graves = true,
 		groups = {
 			{ monsterId = "Werewolf", count = 4, startDelay = 1.5, spawnInterval = 2.4 },
 			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
@@ -535,6 +546,128 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			-- (startDelay 0) so both are on the lawn together without a second warning.
 			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 0, spawnInterval = 2 },
+		},
+	},
+
+	-- Days 41–50: Desert. Authored waves are Small Mummy only until later
+	-- desert species are added; Day 50 is Pharaoh Mummy (decade boss).
+	Level41 = {
+		id = "Level41",
+		number = 41,
+		name = "First Wrappings",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 3, startDelay = 1.5, spawnInterval = 2.8 },
+			{ monsterId = "SmallMummy", count = 4, startDelay = 14, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 14, spawnInterval = 2.4, isBigWave = true },
+		},
+	},
+
+	Level42 = {
+		id = "Level42",
+		number = 42,
+		name = "Linen March",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 4, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 13, spawnInterval = 2.5 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 13, spawnInterval = 2.3, isBigWave = true },
+		},
+	},
+
+	Level43 = {
+		id = "Level43",
+		number = 43,
+		name = "Silk and Sand",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.5 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level44 = {
+		id = "Level44",
+		number = 44,
+		name = "Dust and Fang",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
+		},
+	},
+
+	Level45 = {
+		id = "Level45",
+		number = 45,
+		name = "Tomb Pressure",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.1, isBigWave = true },
+		},
+	},
+
+	Level46 = {
+		id = "Level46",
+		number = 46,
+		name = "Bandage Pack",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	Level47 = {
+		id = "Level47",
+		number = 47,
+		name = "Royal Dust",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.1 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+		},
+	},
+
+	Level48 = {
+		id = "Level48",
+		number = 48,
+		name = "Blood Linen",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 11, spawnInterval = 2.0 },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 12, spawnInterval = 1.9, isBigWave = true },
+		},
+	},
+
+	Level49 = {
+		id = "Level49",
+		number = 49,
+		name = "Before the Tomb",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 8, startDelay = 1.5, spawnInterval = 2.1 },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 11, spawnInterval = 2.0 },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 12, spawnInterval = 1.8, isBigWave = true },
+		},
+	},
+
+	Level50 = {
+		id = "Level50",
+		number = 50,
+		name = "Pharaoh Mummy",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "PharaohMummy", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},
 }

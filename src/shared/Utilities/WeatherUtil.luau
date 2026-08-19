@@ -26,6 +26,10 @@ function WeatherUtil.isNightFog(weather: string?): boolean
 	return weather == WeatherConfig.NIGHT_FOG or weather == WeatherConfig.NIGHT_FOG_RECEDED
 end
 
+function WeatherUtil.isDesert(weather: string?): boolean
+	return weather == WeatherConfig.DESERT
+end
+
 -- True when a lawn column is inside the fog plant-blocked zone for `weather`.
 function WeatherUtil.isFogPlotColumn(column: number, weather: string?): boolean
 	if not WeatherUtil.isNightFog(weather) then
@@ -66,6 +70,26 @@ function WeatherUtil.randomClearPlotPosition(weather: string?): Types.GridPositi
 		return GridUtil.randomPosition()
 	end
 	return clear[math.random(1, #clear)]
+end
+
+-- Tiles graves may occupy. Fog weathers use unplantable fog columns; desert
+-- uses the easternmost DESERT_GRAVE_COLUMNS (lawn stays plantable otherwise).
+function WeatherUtil.graveCandidatePositions(weather: string?): { Types.GridPosition }
+	if WeatherUtil.isNightFog(weather) then
+		return WeatherUtil.fogPlotPositions(weather)
+	end
+	if not WeatherUtil.isDesert(weather) then
+		return {}
+	end
+
+	local startColumn = GridConfig.COLUMNS - WeatherConfig.DESERT_GRAVE_COLUMNS + 1
+	local result: { Types.GridPosition } = {}
+	for _, position in GridUtil.positions() do
+		if position.column >= startColumn then
+			table.insert(result, position)
+		end
+	end
+	return result
 end
 
 return WeatherUtil

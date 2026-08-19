@@ -133,6 +133,7 @@ local function releasePlot(player: Player)
 		require(script.Parent.BrainrotService).clearPlot(plot.model)
 		require(script.Parent.EnemyService).clearPlot(plot.model)
 		require(script.Parent.CoinService).clearPlot(plot.model)
+		require(script.Parent.GraveService).clearPlot(plot.model)
 		plot:release()
 		GridService.resetPlot(plot.model)
 		plotsByUserId[player.UserId] = nil

@@ -66,12 +66,19 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 	Skeleton = {
 		id = "Skeleton",
 		name = "Skeleton",
-		health = 950,
+		health = 200,
 		secondsPerGrid = 4.0,
-		damage = 95,
+		damage = 100,
 		attackInterval = 1.5,
 		isBoss = false,
+		abilities = { "SkeletonArrow" },
+		rangedTiles = 3,
 		color = Color3.fromRGB(200, 200, 190),
+		modelId = "Skeleton",
+		walkAnimationId = "rbxassetid://121181303544612",
+		attackAnimationId = "rbxassetid://125064505468611",
+		-- Seconds after attack anim starts before the arrow launches.
+		attackHitDelay = 0.4,
 	},
 
 	Goblin = {
@@ -225,6 +232,41 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- signature boss "tell" from a distance.
 		auraColor = Color3.fromRGB(90, 15, 40),
 		auraScale = 1.6,
+	},
+
+	SmallMummy = {
+		id = "SmallMummy",
+		name = "Small Mummy",
+		health = 1000,
+		secondsPerGrid = 2.0,
+		damage = 150,
+		attackInterval = 1.5,
+		isBoss = false,
+		color = Color3.fromRGB(210, 190, 140),
+		modelId = "SmallMummy",
+		walkAnimationId = "rbxassetid://136444900181135",
+	},
+
+	PharaohMummy = {
+		id = "PharaohMummy",
+		name = "Pharaoh Mummy",
+		health = 15000,
+		secondsPerGrid = 5.0,
+		damage = 200,
+		attackInterval = 1.0,
+		isBoss = true,
+		abilities = { "PharaohSummon", "PharaohSteal" },
+		abilityParams = {
+			summonCooldown = 20,
+			stealCooldown = 15,
+			stealLaneCount = 3,
+		},
+		color = Color3.fromRGB(220, 170, 70),
+		modelId = "PharaohMummy",
+		walkAnimationId = "rbxassetid://136444900181135",
+		modelScale = 1.5,
+		auraColor = Color3.fromRGB(230, 190, 80),
+		auraScale = 1.5,
 	},
 }
 

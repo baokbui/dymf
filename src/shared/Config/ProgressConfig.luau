@@ -53,7 +53,10 @@ local ProgressConfig = {
 		{ day = 20, monsterId = "DukeVampire" },
 		{ day = 25, monsterId = "Spider" },
 		{ day = 30, monsterId = "QueenSpider" },
+		{ day = 31, monsterId = "Skeleton" },
 		{ day = 35, monsterId = "Werewolf" },
+		{ day = 41, monsterId = "SmallMummy" },
+		{ day = 50, monsterId = "PharaohMummy" },
 	},
 
 	-- Brains granted on victory = level number * this multiplier (level 1 → 1).

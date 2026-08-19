@@ -145,7 +145,7 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
 | Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
 | Werewolf     | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
-| Skeleton     | 950    | 4.0      | 95     | 1.5s         |      | —                                                                                                                                       |
+| Skeleton     | 200    | 4.0      | 100     | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅ |
 | Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
 | Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
 | Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
@@ -153,6 +153,8 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
 | Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
 | Duke Vampire | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
+| Small Mummy  | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+) |
+| Pharaoh Mummy| 15000  | 5.0      | 200    | 1.0s         | Y    | Summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅ |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -165,7 +167,7 @@ Milestone 14 tuning rationale: `docs/BALANCE.md`.
 death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
 On death, `MonsterDeath` plays the unit's `deathStyle` (default: tip-over, 3
 random styles), lingers 2s, fades, then destroys. Driven by
-`LevelService` in M8. Public: `spawn`, `clearPlot`.
+`LevelService` in M8. Public: `spawn`, `spawnAt`, `clearPlot`.
 `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
 spawns (set `ENABLED = true` in config for isolated monster testing).
 - `CombatService` (server) ✅ M7 — routes Brainrot damage to monsters and
@@ -196,7 +198,20 @@ MonsterBehavior (movement + attack tick)
 ```
 
 - Monsters spawn at column `COLUMNS + SPAWN_COLUMN_OFFSET` on a chosen grid row
-(forest march).
+(forest march). `EnemyService.spawnAt` places a unit on a lawn column (grave emerge).
+
+### Graves (Day 31+)
+
+`GraveService` + `GraveConfig` + optional `LevelDefinition.graves`. At
+Start Day, **1–5** graves occupy random **fog** tiles (`occupied`, no Brainrot id —
+plants blocked, monsters phase through) and **rise from under the tile**
+(`GraveConfig.RISE_DURATION`). While the day is Active **and authored waves
+are still running**, each grave repeatedly spawns a **Zombie** or **Skeleton**
+at random intervals (`EMERGE_*` first, then `RESPAWN_*`). Units rise from
+under the stone (`MONSTER_RISE_DURATION`). The grave **stays** on the tile
+(still blocking plants; monsters phase through) until the plot is cleared.
+Grave production **stops** when spawn groups finish so victory can fire. Authored model:
+`Assets.Graves.Grave` (Model or MeshPart; procedural tombstone fallback). Graves are not saved.
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
 - Monsters **phase through each other** on the same row (no blocking — all parts
 `CanCollide = false`). Player characters also **phase through monsters** via
@@ -206,8 +221,9 @@ MonsterBehavior (movement + attack tick)
 procedural / animated limbs (esp. Spider crawl) do not rewrite visual minY
 every tick and bury the body. `MonsterFeedback.pulseAttack` skips `ScaleTo` on
 Motor6D/Bone rigs (ScaleTo was breaking spider visibility).
-They only stop for Brainrots (or the house). **Spider** is the exception for
-the *first* Brainrot: instead of chewing (or walking through at ground level),
+They only stop for Brainrots (or the house), except **Skeleton** (`rangedTiles`):
+it stops `rangedTiles` east of the nearest plant and shoots instead of chewing.
+**Spider** is the exception for the *first* Brainrot: instead of chewing (or walking through at ground level),
 `SpiderJump` vaults it with a visible parabola (`MonsterBehavior` jump arc —
 column lerps west of the plant while `floatY` peaks at `jumpPeakHeight`), then
 chews later plants normally. Jump timing/height are data-driven via
@@ -331,8 +347,10 @@ end on the boss).
 - **Level 30:** next boss — `QueenSpider` / Queen Spider (**laneSpan 3**,
   random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
   chew; does **not** jump) as the NightFog decade finale.
-- **Levels 31–34:** still NightFog (3 blocked columns); Queen / Duke recur mid-day;
-  counts inch up toward the Werewolf band.
+- **Levels 31–34:** still NightFog (3 blocked columns); **Skeleton** intro on
+  31 (`rangedTiles` 3, westbound arrows) plus **graves** on random fog tiles
+  (`GraveService`); Queen / Duke recur mid-day; counts inch up toward the
+  Werewolf band.
 - **Level 35:** next new non-boss — `Werewolf` (fast march ~2s/tile; authored
   walk/attack clips; **lifesteal** 5% max HP per chew; template under
   `Assets.Brainrots` until moved). Weather switches to `NightFogReceded`
@@ -340,6 +358,9 @@ end on the boss).
 - **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
 - **Level 40:** decade closer — `QueenSpider` + `DukeVampire` dual big-wave
   finale under receded fog (Queen flags the wave; Duke spawns immediately after).
+- **Levels 41–49:** `Desert`; **SmallMummy** only (counts ramp). Later desert
+  species slot in here when authored.
+- **Level 50:** `PharaohMummy` big-wave finale (still mummy grunts before the boss).
 
 Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:
 registry data plus ability handlers, never duplicated base AI.

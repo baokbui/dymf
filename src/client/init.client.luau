@@ -40,13 +40,19 @@ end
 
 for _, controller in controllers do
 	if controller.init then
-		controller.init()
+		local ok, err = pcall(controller.init)
+		if not ok then
+			log:warn("controller init failed", controller.Name, err)
+		end
 	end
 end
 
 for _, controller in controllers do
 	if controller.start then
-		controller.start()
+		local ok, err = pcall(controller.start)
+		if not ok then
+			log:warn("controller start failed", controller.Name, err)
+		end
 	end
 end
 

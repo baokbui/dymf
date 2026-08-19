@@ -3,8 +3,8 @@
 	WeatherController
 	Client-only weather presentation for the local player's current day:
 	night lighting + a cheap, always-visible fog bank over the east lawn and
-	forest. Monsters stay visible through the fog. Planting rules are enforced
-	on the server (WeatherUtil / BrainrotService) — this module is visuals only.
+	forest (NightFog). Desert days swap that for sand lighting, hidden forest,
+	and pyramids (DesertVisuals). Planting rules are enforced on the server.
 ]]
 
 local Lighting = game:GetService("Lighting")
@@ -19,6 +19,7 @@ local Logger = require(Shared.Utilities.Logger)
 local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
+local DesertVisuals = require(script:WaitForChild("DesertVisuals"))
 
 local WeatherController = {}
 WeatherController.Name = "WeatherController"
@@ -92,6 +93,31 @@ local function applyNightLighting()
 	atmosphere.Decay = Color3.fromRGB(70, 80, 120)
 	atmosphere.Glare = WeatherConfig.NIGHT_ATMOSPHERE_GLARE
 	atmosphere.Haze = WeatherConfig.NIGHT_ATMOSPHERE_HAZE
+end
+
+local function applyDesertLighting()
+	captureLighting()
+	Lighting.ClockTime = WeatherConfig.DESERT_CLOCK_TIME
+	Lighting.Brightness = WeatherConfig.DESERT_BRIGHTNESS
+	Lighting.Ambient = WeatherConfig.DESERT_AMBIENT
+	Lighting.OutdoorAmbient = WeatherConfig.DESERT_OUTDOOR_AMBIENT
+	Lighting.ColorShift_Top = WeatherConfig.DESERT_COLOR_SHIFT_TOP
+	Lighting.ColorShift_Bottom = WeatherConfig.DESERT_COLOR_SHIFT_BOTTOM
+	Lighting.FogStart = WeatherConfig.DESERT_FOG_START
+	Lighting.FogEnd = WeatherConfig.DESERT_FOG_END
+	Lighting.FogColor = WeatherConfig.DESERT_FOG_COLOR
+
+	if not atmosphere then
+		local existing = Lighting:FindFirstChildOfClass("Atmosphere")
+		atmosphere = if existing then existing else Instance.new("Atmosphere")
+		atmosphere.Parent = Lighting
+	end
+	atmosphere.Density = WeatherConfig.DESERT_ATMOSPHERE_DENSITY
+	atmosphere.Offset = WeatherConfig.DESERT_ATMOSPHERE_OFFSET
+	atmosphere.Color = WeatherConfig.DESERT_ATMOSPHERE_COLOR
+	atmosphere.Decay = WeatherConfig.DESERT_ATMOSPHERE_DECAY
+	atmosphere.Glare = WeatherConfig.DESERT_ATMOSPHERE_GLARE
+	atmosphere.Haze = WeatherConfig.DESERT_ATMOSPHERE_HAZE
 end
 
 local function clearFogFolder()
@@ -227,15 +253,21 @@ end
 
 local function clearWeatherVisuals()
 	clearFogFolder()
+	DesertVisuals.clear()
 	restoreLighting()
 end
 
 local function applyWeatherVisuals(weather: string?)
 	if weather == currentWeather then
+		local plot = PlotUtil.getLocalPlotModel()
 		if WeatherUtil.isNightFog(weather) then
-			local plot = PlotUtil.getLocalPlotModel()
 			if plot and (not fogFolder or fogFolder.Parent ~= plot) then
 				buildFogVolumes(plot)
+			end
+		elseif WeatherUtil.isDesert(weather) and plot then
+			local ok, err = pcall(DesertVisuals.apply, plot)
+			if not ok then
+				log:warn("desert visuals failed", err)
 			end
 		end
 		return
@@ -243,6 +275,18 @@ local function applyWeatherVisuals(weather: string?)
 
 	clearWeatherVisuals()
 	currentWeather = weather
+
+	if WeatherUtil.isDesert(weather) then
+		applyDesertLighting()
+		local plot = PlotUtil.getLocalPlotModel()
+		if plot then
+			local ok, err = pcall(DesertVisuals.apply, plot)
+			if not ok then
+				log:warn("desert visuals failed", err)
+			end
+		end
+		return
+	end
 
 	if not WeatherUtil.isNight(weather) then
 		return
@@ -288,10 +332,15 @@ function WeatherController.start()
 			WeatherController.setWeather(if type(level.weather) == "string" then level.weather else nil)
 		end
 		for _ = 1, 40 do
-			if WeatherUtil.isNightFog(currentWeather) and PlotUtil.getLocalPlotModel() then
-				local plot = PlotUtil.getLocalPlotModel()
-				if plot and (not fogFolder or fogFolder.Parent ~= plot) then
+			local plot = PlotUtil.getLocalPlotModel()
+			if plot then
+				if WeatherUtil.isNightFog(currentWeather) and (not fogFolder or fogFolder.Parent ~= plot) then
 					buildFogVolumes(plot)
+				elseif WeatherUtil.isDesert(currentWeather) then
+					local applied, err = pcall(DesertVisuals.apply, plot)
+					if not applied then
+						log:warn("desert visuals failed", err)
+					end
 				end
 				break
 			end

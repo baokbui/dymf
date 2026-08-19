@@ -62,12 +62,13 @@ Brainrots in either of its two lanes in the same swing.
 ## Projectiles ✅ (Milestone 7)
 
 `CombatService.launchProjectile` spawns a server-replicated part in
-`plot.Projectiles`, moves it along the row (+X), and applies damage on impact
-(optional status via `options`). Appearance is set by `kind`:
+`plot.Projectiles` and moves it along the row. Brainrot shots travel **+X**;
+Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit` |
+| Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
 | Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
@@ -205,3 +206,8 @@ MonsterBehavior.attackBrainrot
        → CombatService.damageBrainrot
        → Abilities.onBrainrotAttacked (boss effects)
 ```
+
+**Pharaoh Mummy** ✅ — `PharaohSummon` spawns a `SmallMummy` in every row (20s).
+`PharaohSteal` removes one living Brainrot from each of 3 random occupied lanes
+(15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
+boss). Steal is not Combat damage.

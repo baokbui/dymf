@@ -26,6 +26,7 @@ local Config = {
 	Audio = require(script.AudioConfig),
 	UI = require(script.UITheme),
 	Weather = require(script.WeatherConfig),
+	Grave = require(script.GraveConfig),
 }
 
 table.freeze(Config)

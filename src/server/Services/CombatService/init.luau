@@ -216,6 +216,8 @@ export type ProjectileLaunchOptions = {
 	statusKind: Types.StatusEffectKind?,
 	statusDuration: number?,
 	statusVisual: string?,
+	-- Spawn at this world point (Skeleton bow / LArm) instead of lane center.
+	originWorld: Vector3?,
 }
 
 -- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
@@ -273,6 +275,68 @@ function CombatService.launchProjectile(
 			ownerUserId = ownerUserId,
 			kind = if options then options.kind else nil,
 			impact = impact,
+		},
+		worldY,
+		monsterHandlers.setProjectilePosition
+	)
+	return true
+end
+
+-- Westbound shot at a planted Brainrot (Skeleton arrows). `hits` is chew-equivalent.
+function CombatService.launchTowardBrainrot(
+	plotModel: Model,
+	row: number,
+	startColumn: number,
+	brainrotInstanceId: string,
+	hits: number,
+	ownerUserId: number,
+	options: ProjectileLaunchOptions?
+): boolean
+	if not monsterHandlers then
+		return false
+	end
+
+	local worldY = monsterHandlers.getProjectileWorldY(plotModel, row, startColumn)
+	if not worldY then
+		return false
+	end
+	if options and options.kind == "Arrow" then
+		worldY = worldY
+			- CombatConfig.PROJECTILE_HEIGHT_OFFSET
+			+ CombatConfig.ARROW_PROJECTILE_HEIGHT_OFFSET
+	end
+
+	local worldZ: number? = nil
+	local column = startColumn
+	if options and options.originWorld then
+		worldY = options.originWorld.Y
+		worldZ = options.originWorld.Z
+		local GridService = require(script.Parent.GridService)
+		local fromX = GridService.worldXToColumn(plotModel, options.originWorld.X)
+		if fromX then
+			column = fromX
+		end
+	end
+
+	local BrainrotService = require(script.Parent.BrainrotService)
+	local placement = BrainrotService.getPlacement(brainrotInstanceId)
+	if not placement then
+		return false
+	end
+
+	Projectile.launch(
+		{
+			plotModel = plotModel,
+			row = row,
+			startColumn = column,
+			targetInstanceId = brainrotInstanceId,
+			targetColumn = placement.position.column,
+			damage = hits,
+			ownerUserId = ownerUserId,
+			kind = if options then options.kind else "Arrow",
+			targetKind = "Brainrot",
+			columnDirection = -1,
+			worldZ = worldZ,
 		},
 		worldY,
 		monsterHandlers.setProjectilePosition
@@ -499,8 +563,19 @@ local function onProjectileImpact(
 	instanceId: string,
 	damage: number,
 	ownerUserId: number,
-	impact: Projectile.ImpactSpec?
+	impact: Projectile.ImpactSpec?,
+	targetKind: string?
 ): boolean
+	if targetKind == "Brainrot" then
+		local killed = CombatService.damageBrainrot(instanceId, damage)
+		fireCombatVisual(ownerUserId, {
+			kind = "Hit",
+			instanceId = instanceId,
+			soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+		})
+		return killed
+	end
+
 	local killed = CombatService.damageMonster(instanceId, damage)
 	local payload: { [string]: any } = {
 		kind = "Hit",
@@ -534,7 +609,14 @@ function CombatService.start()
 			monsterHandlers.tickStatuses(CombatConfig.TICK)
 			Projectile.tick(
 				CombatConfig.TICK,
-				monsterHandlers.getMonsterColumn,
+				function(instanceId: string, targetKind: string?): number?
+					if targetKind == "Brainrot" then
+						local BrainrotService = require(script.Parent.BrainrotService)
+						local placement = BrainrotService.getPlacement(instanceId)
+						return if placement then placement.position.column else nil
+					end
+					return monsterHandlers.getMonsterColumn(instanceId)
+				end,
 				monsterHandlers.setProjectilePosition,
 				onProjectileImpact
 			)

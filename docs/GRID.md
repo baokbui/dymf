@@ -98,10 +98,10 @@ A `GridPosition` is `{ row: number, column: number }` (see `Shared/Types`).
 | `release(plotModel, position)`                        | free one tile                        |
 | `resetPlot(plotModel)`                                | free all tiles on a plot             |
 
-`tryOccupy` is the server-authoritative placement gate (used by
-`BrainrotService` in Milestone 4): it rejects out-of-bounds, unknown-plot, and
-already-occupied tiles, and stores the placing Brainrot's `brainrotInstanceId`
-on the tile so removal can resolve which instance occupies a cell.
+`tryOccupy(plotModel, position, brainrotInstanceId?)` is the server-authoritative
+placement gate. Pass a Brainrot instance id for plants. Pass **nil** for
+blocking props (**graves**): the tile is occupied (no planting) but
+`brainrotInstanceId` stays nil so monsters **phase through** and never chew.
 
 ---
 
@@ -117,7 +117,7 @@ attribute set by `PlotService`).
   player's own plot, then repositions a single reused highlight part over it.
 - Colors the highlight by the tile's `Occupied` attribute (valid vs. blocked).
   On NightFog days, fog-blocked east columns get **no** hover highlight
-  (`WEATHER.md`).
+  (`WEATHER.md`). Desert days use the same hover rules on a sand-colored lawn.
 - Exposes `getHoveredTile() -> { row, column }?` and the side-effect-free
   `resolveTileAt(x, y) -> BasePart?` (same raycast + own-plot/tag rules as the
   highlight). `PlacementController` (Milestone 4) reuses `resolveTileAt` to
@@ -136,5 +136,5 @@ server, and highlighting is a local visual.
 - Cannot plant without enough coins.
 - Cannot plant on NightFog / NightFogReceded fog columns (easternmost 3 or 2),
   except one-shot `triggersOnPlace` Brainrots (Lirili / Bombardino) — see
-  `WEATHER.md`.
+  `WEATHER.md`. Desert days have a full plantable lawn.
 - The server validates every placement (via `GridService` + cost checks).

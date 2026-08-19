@@ -349,7 +349,9 @@ local function restoreLawn(player: Player, saveData: Types.SaveData)
 	end
 
 	local EnemyService = require(script.Parent.EnemyService)
+	local GraveService = require(script.Parent.GraveService)
 	EnemyService.clearPlot(plotModel)
+	GraveService.clearPlot(plotModel)
 	CoinService.clearPlot(plotModel)
 
 	-- Restore committed lawn only (ids, tiles, HP from last victory / wipe).
@@ -420,6 +422,7 @@ function SaveService.restoreCommittedLawn(player: Player)
 		return
 	end
 	BrainrotService.clearPlot(plotModel)
+	require(script.Parent.GraveService).clearPlot(plotModel)
 	local planted = committedBrainrots[player.UserId] or {}
 	BrainrotService.restorePlacements(player, planted)
 end
@@ -447,6 +450,7 @@ function SaveService.resetProgress(player: Player)
 		BrainrotService.clearPlot(plotModel)
 		local EnemyService = require(script.Parent.EnemyService)
 		EnemyService.clearPlot(plotModel)
+		require(script.Parent.GraveService).clearPlot(plotModel)
 		CoinService.clearPlot(plotModel)
 	end
 	BrainrotService.clearPlantCooldowns(player)
