@@ -245,6 +245,8 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		color = Color3.fromRGB(210, 190, 140),
 		modelId = "SmallMummy",
 		walkAnimationId = "rbxassetid://136444900181135",
+		attackAnimationId = "rbxassetid://133284998118919",
+		spawnStyle = "RiseFromGround",
 	},
 
 	PharaohMummy = {
@@ -263,7 +265,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		},
 		color = Color3.fromRGB(220, 170, 70),
 		modelId = "PharaohMummy",
-		walkAnimationId = "rbxassetid://136444900181135",
+		-- Own clips (do not reuse SmallMummy walk/attack ids).
+		-- Set walkAnimationId / attackAnimationId when Pharaoh uploads are ready;
+		-- until then, template WalkAnimation / AttackAnimation children, else defaults.
+		spawnStyle = "RiseFromGround",
 		modelScale = 1.5,
 		auraColor = Color3.fromRGB(230, 190, 80),
 		auraScale = 1.5,

@@ -86,6 +86,10 @@ export type MonsterDefinition = {
 	proceduralWalk: boolean?,
 	-- Death pose style for MonsterDeath.play. Nil / "TipOver" = randomized tip.
 	deathStyle: string?,
+	-- Spawn entrance. Nil = appear in place. "RiseFromGround" = buried then
+	-- tween up (mummies). Duration: spawnRiseDuration or MonsterConfig.SPAWN_RISE_DURATION.
+	spawnStyle: string?,
+	spawnRiseDuration: number?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
 	-- When set, stop this many tiles east of a Brainrot and shoot instead of chewing.

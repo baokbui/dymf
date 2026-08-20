@@ -20,6 +20,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
+local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local MonsterDeath = {}
@@ -666,6 +667,22 @@ function MonsterDeath.riseUp(model: Model, standCFrame: CFrame, riseDuration: nu
 	end
 	local current = model:GetPivot()
 	tweenPivot(model, current, standCFrame, riseDuration, onRisen)
+end
+
+--[[
+	Spawn entrance: bury the model below the visual AABB, then tween up to
+	the current (standing) pivot. Caller must pause locomotion / grid snap
+	for `duration` so the tween is not overwritten.
+]]
+function MonsterDeath.playRiseFromGround(model: Model, duration: number, onRisen: (() -> ())?)
+	if not model.Parent then
+		return
+	end
+	local stand = model:GetPivot()
+	local bury = math.max(visualHeight(model) * MonsterConfig.SPAWN_RISE_BURY_RATIO, 2)
+	local buried = stand - Vector3.new(0, bury, 0)
+	model:PivotTo(buried)
+	tweenPivot(model, buried, stand, duration, onRisen)
 end
 
 return MonsterDeath

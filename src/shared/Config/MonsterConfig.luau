@@ -86,6 +86,10 @@ local MonsterConfig = {
 	JUMP_LAND_OFFSET = 0.8, -- columns west of plant center to land
 	JUMP_TRIGGER_REACH = 0.95,
 
+	-- RiseFromGround spawn (mummies). Buried by ~visual height, then tween up.
+	SPAWN_RISE_DURATION = 1.15,
+	SPAWN_RISE_BURY_RATIO = 1.05,
+
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.
 	DEV_SPAWN = {

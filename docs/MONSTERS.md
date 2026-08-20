@@ -46,7 +46,9 @@ From `Shared.Types.MonsterDefinition`:
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                                |
 | `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick)         |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)            |
-| `auraColor`               | Color3?                 | Persistent tinted particle + glow (`MonsterFeedback.applyAura`); omit for none |
+| `deathStyle`              | string?                 | Death pose (`TipOver` default, `SpiderFlat` for Queen Spider)                  |
+| `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)                    |
+| `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`                       |
 
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
@@ -153,8 +155,8 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
 | Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
 | Duke Vampire | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
-| Small Mummy  | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+) |
-| Pharaoh Mummy| 15000  | 5.0      | 200    | 1.0s         | Y    | Summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅ |
+| Small Mummy  | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround` |
+| Pharaoh Mummy| 15000  | 5.0      | 200    | 1.0s         | Y    | Rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅ |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.

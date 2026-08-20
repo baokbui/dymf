@@ -210,4 +210,5 @@ MonsterBehavior.attackBrainrot
 **Pharaoh Mummy** ✅ — `PharaohSummon` spawns a `SmallMummy` in every row (20s).
 `PharaohSteal` removes one living Brainrot from each of 3 random occupied lanes
 (15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
-boss). Steal is not Combat damage.
+boss). Steal is not Combat damage. Pharaoh and Small Mummy both use
+`spawnStyle = "RiseFromGround"` (buried, then tween up; invulnerable while rising).

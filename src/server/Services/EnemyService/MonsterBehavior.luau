@@ -314,6 +314,17 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 	runtime.footSnapOffset = ModelUtil.getPivotToVisualBottom(runtime.model)
 	MonsterAnimation.setLocomotionPaused(runtime.model, false)
 	syncTransform(runtime)
+
+	if runtime.definition.spawnStyle == "RiseFromGround" then
+		local duration = runtime.definition.spawnRiseDuration
+		if type(duration) ~= "number" or duration <= 0 then
+			duration = MonsterConfig.SPAWN_RISE_DURATION
+		end
+		runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+		runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+		MonsterAnimation.setLocomotionPaused(runtime.model, true)
+		MonsterDeath.playRiseFromGround(runtime.model, duration)
+	end
 end
 
 local function setAttacking(runtime: MonsterRuntime, attacking: boolean)
