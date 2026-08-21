@@ -81,6 +81,8 @@ export type MonsterDefinition = {
 	modelScale: number?,
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
+	-- One-shot clips keyed by ability handler id (e.g. PharaohSummon).
+	abilityAnimationIds: { [string]: string }?,
 	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld
 	-- leg joints (Toolbox spiders / scorpions without a matching uploaded Animation).
 	proceduralWalk: boolean?,

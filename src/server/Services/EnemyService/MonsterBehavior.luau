@@ -65,6 +65,9 @@ export type MonsterRuntime = {
 	burrowEndColumn: number,
 	burrowDepth: number,
 	burrowDuration: number,
+	-- Stationary ability channel (Pharaoh summon/steal): no walk/chew until
+	-- the one-shot clip finishes, then resume walk.
+	channelingUntil: number,
 	-- Rest-pose pivot.Y − visual bottom (stable feet while limbs animate).
 	footSnapOffset: number?,
 } & MonsterStatus.StatusFields
@@ -136,6 +139,16 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			runtime.isAttacking = false
 			MonsterAnimation.setAttacking(runtime.model, false)
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
+		end,
+		playAbility = function(abilityId: string)
+			MonsterAnimation.playAbility(runtime.model, abilityId)
+		end,
+		getAbilityLength = function(abilityId: string)
+			return MonsterAnimation.getAbilityLength(runtime.model, abilityId)
+		end,
+		beginChannel = function(duration: number)
+			runtime.channelingUntil = math.max(runtime.channelingUntil, os.clock() + math.max(0.05, duration))
+			runtime.isAttacking = false
 		end,
 	}
 end
@@ -452,6 +465,15 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		if now < runtime.burrowingUntil then
 			updateBurrow(runtime, now)
 			continue
+		end
+
+		if now < runtime.channelingUntil then
+			syncTransform(runtime)
+			continue
+		end
+		if runtime.channelingUntil > 0 then
+			runtime.channelingUntil = 0
+			MonsterAnimation.resumeWalk(runtime.model)
 		end
 
 		if now < runtime.frozenUntil then

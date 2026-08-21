@@ -39,6 +39,11 @@ export type AbilityCallbacks = {
 	-- Scorpion-style: sink, travel underground to `endColumn`, then rise.
 	-- `depth` is studs below tile top; `duration` covers sink + travel + rise.
 	beginBurrow: (endColumn: number, duration: number, depth: number) -> (),
+	-- Play a one-shot clip from definition.abilityAnimationIds[abilityId].
+	playAbility: (abilityId: string) -> (),
+	getAbilityLength: (abilityId: string) -> number?,
+	-- Stand still (no walk/chew) for `duration`, then resume walk.
+	beginChannel: (duration: number) -> (),
 }
 
 export type AbilityHandler = {

@@ -286,6 +286,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		burrowEndColumn = 0,
 		burrowDepth = 0,
 		burrowDuration = 0,
+		channelingUntil = 0,
 		footSnapOffset = nil,
 	}
 	for key, value in MonsterStatus.createFields() do

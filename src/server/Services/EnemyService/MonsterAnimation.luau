@@ -29,6 +29,7 @@ type AnimState = {
 	animator: Animator,
 	walk: AnimationTrack?,
 	attack: AnimationTrack?,
+	ability: { [string]: AnimationTrack },
 	mode: "Walk" | "Attack" | "Idle",
 }
 
@@ -195,11 +196,23 @@ function MonsterAnimation.bind(model: Model, definition: Types.MonsterDefinition
 		return
 	end
 
+	local abilityTracks: { [string]: AnimationTrack } = {}
+	local abilityIds = definition.abilityAnimationIds
+	if abilityIds then
+		for abilityId, animationId in abilityIds do
+			local track = loadTrack(animator, animationId, false, Enum.AnimationPriority.Action2)
+			if track then
+				abilityTracks[abilityId] = track
+			end
+		end
+	end
+
 	local state: AnimState = {
 		animator = animator,
 		walk = walkTrack,
 		-- One-shot club / melee swing; replayed each chew hit.
 		attack = loadTrack(animator, attackId, false, Enum.AnimationPriority.Action),
+		ability = abilityTracks,
 		mode = "Idle",
 	}
 	states[model] = state
@@ -267,6 +280,69 @@ function MonsterAnimation.playMelee(model: Model)
 	state.mode = "Attack"
 end
 
+-- One-shot ability clip from definition.abilityAnimationIds (summon / steal).
+function MonsterAnimation.playAbility(model: Model, abilityId: string)
+	local state = states[model]
+	if not state then
+		return
+	end
+	local track = state.ability[abilityId]
+	if not track then
+		return
+	end
+	if state.walk and state.walk.IsPlaying then
+		state.walk:Stop(0.1)
+	end
+	if state.attack and state.attack.IsPlaying then
+		state.attack:Stop(0.05)
+	end
+	for _, other in state.ability do
+		if other.IsPlaying then
+			other:Stop(0.05)
+		end
+	end
+	track:Play(0.05)
+	state.mode = "Attack"
+end
+
+function MonsterAnimation.getAbilityLength(model: Model, abilityId: string): number?
+	local state = states[model]
+	if not state then
+		return nil
+	end
+	local track = state.ability[abilityId]
+	if not track then
+		return nil
+	end
+	local length = track.Length
+	if typeof(length) ~= "number" or length <= 0 then
+		return nil
+	end
+	return length
+end
+
+function MonsterAnimation.resumeWalk(model: Model)
+	local state = states[model]
+	if not state then
+		return
+	end
+	for _, track in state.ability do
+		if track.IsPlaying then
+			track:Stop(0.1)
+		end
+	end
+	if state.attack and state.attack.IsPlaying then
+		state.attack:Stop(0.1)
+	end
+	if state.walk then
+		state.walk:Play(0.15)
+		state.walk:AdjustSpeed(1)
+		state.mode = "Walk"
+	else
+		state.mode = "Idle"
+	end
+end
+
 -- Pause locomotion while status-frozen / bubbled; resume walk when cleared.
 function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
 	MonsterProceduralGait.setActive(model, not paused)
@@ -277,6 +353,11 @@ function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
 	if paused then
 		if state.attack and state.attack.IsPlaying then
 			state.attack:Stop(0.05)
+		end
+		for _, track in state.ability do
+			if track.IsPlaying then
+				track:Stop(0.05)
+			end
 		end
 		if state.walk then
 			state.walk:AdjustSpeed(0)
@@ -315,6 +396,10 @@ function MonsterAnimation.unbind(model: Model)
 	if state.attack then
 		state.attack:Stop(0)
 		state.attack:Destroy()
+	end
+	for _, track in state.ability do
+		track:Stop(0)
+		track:Destroy()
 	end
 	states[model] = nil
 end

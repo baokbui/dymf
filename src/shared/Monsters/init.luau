@@ -262,12 +262,18 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			summonCooldown = 20,
 			stealCooldown = 15,
 			stealLaneCount = 3,
+			-- Seconds after ability anim starts before minions / steal land.
+			summonHitDelay = 0.9,
+			stealHitDelay = 0.85,
 		},
 		color = Color3.fromRGB(220, 170, 70),
 		modelId = "PharaohMummy",
-		-- Own clips (do not reuse SmallMummy walk/attack ids).
-		-- Set walkAnimationId / attackAnimationId when Pharaoh uploads are ready;
-		-- until then, template WalkAnimation / AttackAnimation children, else defaults.
+		walkAnimationId = "rbxassetid://72737313323934",
+		attackAnimationId = "rbxassetid://133284998118919",
+		abilityAnimationIds = {
+			PharaohSummon = "rbxassetid://114030281000299",
+			PharaohSteal = "rbxassetid://93082363577263",
+		},
 		spawnStyle = "RiseFromGround",
 		modelScale = 1.5,
 		auraColor = Color3.fromRGB(230, 190, 80),

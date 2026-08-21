@@ -218,3 +218,7 @@ MonsterBehavior.attackBrainrot
 (15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
 boss). Steal is not Combat damage. Pharaoh and Small Mummy both use
 `spawnStyle = "RiseFromGround"` (buried, then tween up; invulnerable while rising).
+Pharaoh walk / chew / summon / steal clips live on the definition
+(`abilityAnimationIds` for summon + steal; chew uses the Small Mummy attack id).
+Summon/steal wait `summonHitDelay` / `stealHitDelay` after the clip starts.
+Pharaoh **stops walking** for the clip length (`beginChannel`), then resumes walk.

@@ -23,32 +23,35 @@ Monsters.getAll()    -- { [id]: MonsterDefinition }  (do not mutate)
 
 ---
 
+
+
 ## Definition schema
 
 From `Shared.Types.MonsterDefinition`:
 
 
-| Field                     | Type                    | Meaning                                                                        |
-| ------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `id`                      | string                  | Unique key                                                                     |
-| `name`                    | string                  | Display name                                                                   |
-| `health`                  | number                  | Starting HP                                                                    |
-| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)                    |
-| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                             |
-| `attackInterval`          | number                  | Seconds between attacks while chewing a tile                                   |
-| `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                                 |
-| `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                                 |
-| `abilityParams`           | `{ [string]: number }?` | Per-ability tuning                                                             |
-| `color`                   | Color3?                 | Placeholder / fallback tint                                                    |
-| `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)                          |
-| `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                            |
-| `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                             |
-| `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                                |
-| `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick)         |
-| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)            |
-| `deathStyle`              | string?                 | Death pose (`TipOver` default)                                                 |
-| `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)                    |
-| `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`                       |
+| Field                     | Type                    | Meaning                                                                |
+| ------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| `id`                      | string                  | Unique key                                                             |
+| `name`                    | string                  | Display name                                                           |
+| `health`                  | number                  | Starting HP                                                            |
+| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)            |
+| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                     |
+| `attackInterval`          | number                  | Seconds between attacks while chewing a tile                           |
+| `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                         |
+| `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                         |
+| `abilityParams`           | `{ [string]: number }?` | Per-ability tuning                                                     |
+| `color`                   | Color3?                 | Placeholder / fallback tint                                            |
+| `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)                  |
+| `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                    |
+| `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                     |
+| `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                        |
+| `abilityAnimationIds`     | `{ [string]: string }?` | One-shot clips keyed by ability id (`PharaohSummon` / `PharaohSteal`)  |
+| `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick) |
+| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)    |
+| `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
+| `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
+| `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`               |
 
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
@@ -56,9 +59,11 @@ Movement is **grid-based**: monsters spawn deep in the east dark forest
 the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
 
-**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan `tiles across Z, and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
+**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan` tiles across Z, and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
 
 ---
+
+
 
 ## Models ✅ (Milestone 16 pipeline)
 
@@ -80,9 +85,9 @@ Clones use `preserveAnimationRig = true`: only the root part is Anchored so
 Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 
 1. Walk: `WalkAnimation` child / pack `Animation` / AnimSaves, then
-   `walkAnimationId` (`""` disables); `proceduralWalk` skips Toolbox ids
+  `walkAnimationId` (`""` disables); `proceduralWalk` skips Toolbox ids
 2. Attack: `attackAnimationId` when set (`""` disables); else `AttackAnimation`
-   child; else `MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID`
+  child; else `MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID`
 
 **Zombie** uses authored walk / attack clips (`walkAnimationId` /
 `attackAnimationId` on the definition). Tune `attackHitDelay` so chew damage
@@ -114,26 +119,26 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 `modelId`). Campaign-critical first:
 
 
-| Registry `id` | Suggested Assets child |
-| ------------- | ---------------------- |
-| `Zombie`      | `Zombie`               |
-| `Goblin`      | `Goblin`               |
-| `GoblinElite` | `GoblinElite`          |
-| `Vampire`     | `Vampire`              |
-| `DukeVampire` | `DukeVampire`          |
-| `Spider`      | `Spider`               |
-| `QueenSpider` | `QueenSpider`          |
-| `Werewolf`    | `Werewolf` (currently under `Assets.Brainrots`; `ModelUtil` falls back) |
-| `Skeleton`    | `Skeleton`             |
-| `SmallMummy`  | `SmallMummy`           |
-| `PharaohMummy`| `PharaohMummy`         |
-| `Scorpion`    | `Scorpion`             |
+| Registry `id`  | Suggested Assets child                                                  |
+| -------------- | ----------------------------------------------------------------------- |
+| `Zombie`       | `Zombie`                                                                |
+| `Goblin`       | `Goblin`                                                                |
+| `GoblinElite`  | `GoblinElite`                                                           |
+| `Vampire`      | `Vampire`                                                               |
+| `DukeVampire`  | `DukeVampire`                                                           |
+| `Spider`       | `Spider`                                                                |
+| `QueenSpider`  | `QueenSpider`                                                           |
+| `Werewolf`     | `Werewolf` (currently under `Assets.Brainrots`; `ModelUtil` falls back) |
+| `Skeleton`     | `Skeleton`                                                              |
+| `SmallMummy`   | `SmallMummy`                                                            |
+| `PharaohMummy` | `PharaohMummy`                                                          |
+| `Scorpion`     | `Scorpion`                                                              |
+
 
 Spider / Queen Spider / Scorpion Toolbox meshes often face the wrong way
 relative to `MODEL_FACE_DIRECTION` (−X); they set `modelOrientationDegrees`.
 Boss spawns refuse a second living copy of the same `monsterId` on a plot
 (guards Studio soft-reload double-bootstrap).
-
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
 (prefer `HumanoidRootPart`). You do **not** need to hand-delete Scripts —
@@ -147,30 +152,34 @@ models (at least Zombie, Goblin, Goblin Elite).
 
 ---
 
+
+
 ## Roster ✅ (Milestone 6)
 
 
-| Name         | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                                                                                                 |
-| ------------ | ------ | -------- | ------ | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Zombie       | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
-| Vampire      | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
-| Werewolf     | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
-| Skeleton     | 200    | 4.0      | 100     | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅ |
-| Goblin       | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
-| Goblin Elite | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
-| Spider       | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
-| Necromancer  | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
-| Goblin King  | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
-| Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
-| Duke Vampire | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
-| Small Mummy  | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround` |
-| Scorpion     | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅ |
-| Pharaoh Mummy| 15000  | 5.0      | 200    | 1.0s         | Y    | Rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅ |
+| Name          | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                                                                                                 |
+| ------------- | ------ | -------- | ------ | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Zombie        | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
+| Vampire       | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
+| Werewolf      | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
+| Skeleton      | 200    | 4.0      | 100    | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅                                              |
+| Goblin        | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
+| Goblin Elite  | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
+| Spider        | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
+| Necromancer   | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
+| Goblin King   | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
+| Queen Spider  | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅                                                 |
+| Duke Vampire  | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
+| Small Mummy   | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
+| Scorpion      | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅                       |
+| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | Rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅                                 |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
 
 ---
+
+
 
 ## Service ownership
 
@@ -195,6 +204,8 @@ Monsters and their positions are **never saved** (see `SAVE_SYSTEM.md`).
 
 ---
 
+
+
 ## Behavior architecture ✅ (Milestone 6)
 
 ```
@@ -211,6 +222,8 @@ MonsterBehavior (movement + attack tick)
 - Monsters spawn at column `COLUMNS + SPAWN_COLUMN_OFFSET` on a chosen grid row
 (forest march). `EnemyService.spawnAt` places a unit on a lawn column (grave emerge).
 
+
+
 ### Graves (Day 31+)
 
 `GraveService` + `GraveConfig` + optional `LevelDefinition.graves`. At
@@ -223,6 +236,7 @@ under the stone (`MONSTER_RISE_DURATION`). The grave **stays** on the tile
 (still blocking plants; monsters phase through) until the plot is cleared.
 Grave production **stops** when spawn groups finish so victory can fire. Authored model:
 `Assets.Graves.Grave` (Model or MeshPart; procedural tombstone fallback). Graves are not saved.
+
 - Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
 - Monsters **phase through each other** on the same row (no blocking — all parts
 `CanCollide = false`). Player characters also **phase through monsters** via
@@ -325,6 +339,8 @@ silently never render.
 
 ---
 
+
+
 ## Campaign rollout ✅ (Milestone 10)
 
 The roster is introduced **one monster at a time** through campaign levels
@@ -356,22 +372,22 @@ gentle intro counts as NightFog begins.
 early/mid pressure spikes (not the big-wave closer — only decade boss days
 end on the boss).
 - **Level 30:** next boss — `QueenSpider` / Queen Spider (**laneSpan 3**,
-  random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
-  chew; does **not** jump) as the NightFog decade finale.
+random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
+chew; does **not** jump) as the NightFog decade finale.
 - **Levels 31–34:** still NightFog (3 blocked columns); **Skeleton** intro on
-  31 (`rangedTiles` 3, westbound arrows) plus **graves** on random fog tiles
-  (`GraveService`); Queen / Duke recur mid-day; counts inch up toward the
-  Werewolf band.
+31 (`rangedTiles` 3, westbound arrows) plus **graves** on random fog tiles
+(`GraveService`); Queen / Duke recur mid-day; counts inch up toward the
+Werewolf band.
 - **Level 35:** next new non-boss — `Werewolf` (fast march ~2s/tile; authored
-  walk/attack clips; **lifesteal** 5% max HP per chew; template under
-  `Assets.Brainrots` until moved). Weather switches to `NightFogReceded`
-  (2 blocked columns).
+walk/attack clips; **lifesteal** 5% max HP per chew; template under
+`Assets.Brainrots` until moved). Weather switches to `NightFogReceded`
+(2 blocked columns).
 - **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
 - **Level 40:** decade closer — `QueenSpider` + `DukeVampire` dual big-wave
-  finale under receded fog (Queen flags the wave; Duke spawns immediately after).
+finale under receded fog (Queen flags the wave; Duke spawns immediately after).
 - **Levels 41–44:** `Desert`; **SmallMummy** only (counts ramp).
 - **Levels 45–49:** `Scorpion` intro on 45 (burrow under the lawn, emerge in
-  front of the first Brainrot); mixed with Small Mummy.
+front of the first Brainrot); mixed with Small Mummy.
 - **Level 50:** `PharaohMummy` big-wave finale (mummy + scorpion packs first).
 
 Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:

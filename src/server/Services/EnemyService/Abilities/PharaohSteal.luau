@@ -17,6 +17,7 @@ local PharaohSteal = {}
 local DEFAULT_COOLDOWN = 15
 local DEFAULT_LANES = 3
 local RETRY_DELAY = 1
+local DEFAULT_HIT_DELAY = 0.85
 
 local function shuffle(list: { number })
 	for index = #list, 2, -1 do
@@ -45,10 +46,26 @@ local function idsOnRow(plotModel: Model, row: number): { string }
 	return ids
 end
 
-function PharaohSteal.onTick(ctx, state, dt: number, _callbacks)
+local function channelDuration(callbacks, abilityId: string, hitDelay: number, override: number?): number
+	if type(override) == "number" and override > 0 then
+		return override
+	end
+	local length = callbacks.getAbilityLength(abilityId)
+	if type(length) == "number" and length > 0 then
+		return math.max(length, hitDelay)
+	end
+	return math.max(hitDelay + 0.5, 1.4)
+end
+
+function PharaohSteal.onTick(ctx, state, dt: number, callbacks)
 	local params = ctx.definition.abilityParams
 	local cooldown = if params then params.stealCooldown or DEFAULT_COOLDOWN else DEFAULT_COOLDOWN
 	local laneCount = if params then params.stealLaneCount or DEFAULT_LANES else DEFAULT_LANES
+	local hitDelay = DEFAULT_HIT_DELAY
+	if params and type(params.stealHitDelay) == "number" then
+		hitDelay = math.max(0, params.stealHitDelay)
+	end
+	local channelOverride = if params then params.stealChannelDuration else nil
 
 	state.stealCooldown = (state.stealCooldown or cooldown) - dt
 	if state.stealCooldown > 0 then
@@ -66,28 +83,44 @@ function PharaohSteal.onTick(ctx, state, dt: number, _callbacks)
 	end
 	shuffle(rows)
 
-	local stolen = 0
-	local destination = GridService.getWorldPositionAtColumn(ctx.plotModel, ctx.row, ctx.column)
+	local picks: { string } = {}
 	for _, row in rows do
-		if stolen >= laneCount then
+		if #picks >= laneCount then
 			break
 		end
 		local ids = idsOnRow(ctx.plotModel, row)
 		if #ids == 0 then
 			continue
 		end
-		local pick = ids[math.random(1, #ids)]
-		if BrainrotService.stealPlacement(pick, destination) then
-			stolen += 1
-		end
+		table.insert(picks, ids[math.random(1, #ids)])
 	end
 
-	if stolen == 0 then
+	if #picks == 0 then
 		state.stealCooldown = RETRY_DELAY
 		return
 	end
 
+	callbacks.playAbility("PharaohSteal")
+	callbacks.beginChannel(channelDuration(callbacks, "PharaohSteal", hitDelay, channelOverride))
 	state.stealCooldown = cooldown
+
+	local plotModel = ctx.plotModel
+	local row = ctx.row
+	local column = ctx.column
+	local apply = function()
+		if not plotModel.Parent then
+			return
+		end
+		local destination = GridService.getWorldPositionAtColumn(plotModel, row, column)
+		for _, pick in picks do
+			BrainrotService.stealPlacement(pick, destination)
+		end
+	end
+	if hitDelay <= 0 then
+		apply()
+	else
+		task.delay(hitDelay, apply)
+	end
 end
 
 return PharaohSteal
