@@ -4,6 +4,10 @@ You are the lead Roblox engineer for Brainrots vs. Monsters (BVM).
 
 Always prioritize scalable, production-quality architecture over quick solutions.
 
+**Game design lives in `/docs`.** This file restates engineering invariants.
+If they disagree, **docs + existing code win** — update this file; do not
+revert gameplay to an older rule here.
+
 ---
 
 # Before Coding
@@ -22,29 +26,29 @@ Then consult the system-specific docs relevant to the task:
 - docs/GRID.md — battlefield grid, tiles, occupancy, highlighting
 - docs/BRAINROTS.md — Brainrot registry and definitions
 - docs/MONSTERS.md — Monster registry and definitions
-- docs/LEVELS.md — PvZ-style campaign: levels, spawn groups, progression
+- docs/LEVELS.md — PvZ-style campaign: days, spawn groups, victory / defeat / rewind
 - docs/WEATHER.md — per-day weather (NightFog, plant rules, client visuals)
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
-- docs/HOUSE.md — plot houses + boss collection (M25)
+- docs/HOUSE.md — plot houses + boss collection (Milestone 21)
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
 - docs/AUDIO.md — client audio (BGM, SFX, ambient)
 - docs/BALANCE.md — tuning rationale (costs, pacing, HP)
 
-If code conflicts with the documentation, ask before changing architecture.
+If **code** conflicts with the **documentation**, ask before changing architecture.
 
-Keep the docs in sync: when a milestone changes behavior, update the relevant doc (and its ✅/🔜 status markers).
+Keep the docs in sync: when a milestone changes behavior, update the relevant
+doc (and its ✅/🔜 status markers) **and** this file when the invariant changed.
 
 ---
 
 # Tech Stack
 
 - Roblox Studio
-- Luau
+- Luau (`--!strict` in every module)
 - Rojo
 - Cursor
-- Claude
 
 ---
 
@@ -68,11 +72,14 @@ If logic is reused, create a ModuleScript.
 
 # Architecture
 
-Every major gameplay feature belongs inside its own Service.
+Every major gameplay feature belongs inside its own Service (server) or
+Controller (client). Bootstraps auto-discover modules — no bootstrap edits to
+add one.
 
-Examples:
+Services (current):
 
 - PlotService
+- GridService
 - SaveService
 - LevelService
 - CombatService
@@ -80,7 +87,8 @@ Examples:
 - BrainrotService
 - CoinService
 - ProgressService
-- HouseService (🔜 Milestone 25 — boss trophies + brains income)
+- GraveService
+- HouseService (🔜 Milestone 21 — boss trophies + brains income)
 
 Never create massive scripts.
 
@@ -98,14 +106,13 @@ The server owns:
 
 - Coins
 - Brains
-- Damage
-- Health
-- Levels / days
+- Damage / health (combat APIs)
+- Levels / days / hearts
 - Brainrot placement
 - Monster spawning
 - Plot houses (build, owner sign, future boss display)
 - Saving
-- Rewards / unlocks
+- Rewards / unlocks / loadout / statistics
 
 The client owns:
 
@@ -118,8 +125,8 @@ The client owns:
 
 Unit Animator tracks (Brainrot / Monster idle, attack, walk) are driven on the
 **server** so Motor6D poses replicate (`BrainrotAnimation` / `MonsterAnimation`).
-Combat math stays server-authoritative either way — never trust the client for
-damage or targeting.
+Combat math stays server-authoritative — never trust the client for damage or
+targeting.
 
 Never trust RemoteEvents.
 
@@ -131,21 +138,19 @@ Validate everything on the server.
 
 Never hardcode gameplay values.
 
-Store balancing inside Config modules.
+Store balancing inside Config modules (`Shared.Config`) and data-driven
+registries (`Shared.Brainrots` / `Monsters` / `Levels`).
 
 Examples:
 
-- Cost
-- Health
-- Damage
-- Range
-- Cooldown
-- Attack Speed
-- Coin Generation
+- Cost, health, damage, range, cooldown, attack interval
+- Coin generation / day purse (`EconomyConfig.STARTING_COINS`)
 - Monster spawn column / forest march (`MonsterConfig`)
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
+- Weather, graves, VFX, audio
 
-Everything should be configurable.
+Studio-only cheats live in `DevConfig` (`isActive()` = ENABLED **and** Studio).
+Do not ship with cheats on.
 
 ---
 
@@ -166,31 +171,24 @@ Tools, and embedded Sounds on clone. Never branch combat logic on model names.
 
 # Brainrots
 
-Every Brainrot should implement a common interface.
+Every Brainrot implements a common definition interface (registry + ability id).
 
-Each Brainrot defines:
+Typical fields: name, cost, health, damage, range, cooldown / attack interval,
+ability.
 
-- Name
-- Cost
-- Health
-- Damage
-- Range
-- Cooldown
-- Ability
+Behavior is data-driven. Resolve handlers from `definition.ability` (and extra
+abilities if authored). Avoid large if/elseif chains on names or ids.
 
-Behavior should be data-driven.
-
-Avoid large if/elseif chains.
+Brainrots only attack / produce while the day is **Active**.
 
 ---
 
 # Monsters
 
-All monsters derive from one base implementation.
+All monsters share one base runtime (`EnemyService` + `MonsterBehavior`).
 
-Special monster types (zombie, vampire, slime, frankenstein, ...) extend shared behavior.
-
-Avoid duplicated AI.
+Special types extend via **ability handlers** (Zombie, Vampire, Werewolf,
+Skeleton, Goblin, Spider, desert units, bosses, …) — not duplicated AI.
 
 Monsters spawn in the east dark forest (`SPAWN_COLUMN_OFFSET` east of the lawn)
 and walk west into player plots. That forest march is the day plant/setup
@@ -200,14 +198,16 @@ window — do not rely on an idle countdown for setup time.
 
 # Combat
 
-CombatService exclusively controls:
+`CombatService` is the only system that **issues** combat: damage, projectiles,
+target acquisition, and status application.
 
-- Damage
-- Healing
-- Death
-- Status Effects
+`EnemyService` / `BrainrotService` own runtime HP, movement, and death cleanup
+via handlers registered with CombatService (`docs/COMBAT.md`).
 
-Objects should never directly modify another object's health.
+Units never write another object's health directly. Route damage (and heals)
+through CombatService APIs so those handlers run.
+
+Client `CombatController` is visuals / SFX only.
 
 ---
 
@@ -215,22 +215,30 @@ Objects should never directly modify another object's health.
 
 The game is a PvZ-style campaign of discrete, authored **days** (player-facing
 name; code/docs may still say "level"). Days are data-driven entries in
-Shared.Levels; each is a fixed sequence of monster spawn groups (internal
+`Shared.Levels`; each is a fixed sequence of monster spawn groups (internal
 "waves") ending in a big final wave.
 
-LevelService exclusively controls:
+`LevelService` exclusively controls:
 
-- Preparation Phase
+- Preparation
 - Day Start → Active (plant + fight; optional Countdown phase unused)
-- Spawn Groups (internal waves) + progress
-- Big Final Wave
-- Victory / Defeat detection
-- Rewards
-- Linear Progression (unlock next day)
-- Lawn rules: **keep Brainrots on victory**; coin purse Day 1 = 125 / later days
-  = 0 after day end; **clear lawn and reset to Day 1 on defeat**; day select
-  clears lawn; **rejoin restores saved plants**. Brainrots only attack /
-  produce while the day is Active.
+- Spawn groups + progress
+- Big final wave
+- Victory / Defeat (house hearts: −1 per breach, defeat at 0)
+- Rewards and unlocking the next day
+- Lawn + purse rules below
+
+Lawn / purse (see `LEVELS.md`):
+
+- **Victory** — keep planted Brainrots (commit checkpoint); coins via day purse
+  (Day 1 → `STARTING_COINS`; later days → 0).
+- **Defeat** — stay on the failed day; restore the **last victory checkpoint**
+  lawn; hearts refill; Game Over → **Rewind** (`RewindDay`) returns to
+  Preparation on that same day (`highestUnlocked` kept for Day Select).
+- **Day Select** — clears the lawn and the committed checkpoint; apply purse
+  for the selected day.
+- **Rejoin** — restore the committed lawn (not mid-day plants). Player presses
+  Start Day again.
 
 No other service advances days.
 
@@ -243,7 +251,8 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 
 - Prefer Toolbox model under `Assets.Houses`; procedural fallback if missing.
 - Owner sign shows `{DisplayName}'s Base` while the plot is assigned.
-- Boss pedestals ship empty; collection + brains income is **HouseService** (M25).
+- Boss pedestals ship empty; collection + brains income is **HouseService**
+  (Milestone 21).
 - See `docs/HOUSE.md`.
 
 ---
@@ -251,7 +260,7 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 # Economy
 
 - **Coins** — match currency (placement, passive drops). `CoinService` only.
-- **Brains** — progression currency (level rewards, future store / evolve /
+- **Brains** — progression currency (day rewards, future store / evolve /
   house boss income). `ProgressService` only for brains balances.
 - Clients never set balances.
 
@@ -265,36 +274,32 @@ No other service accesses DataStore.
 
 Persist:
 
-- Current Level
-- Highest Unlocked Level
+- Current day / highest unlocked day
 - Brains
-- Player Health (progressive across days)
-- Planted Brainrots (id, tile, HP) — victory checkpoint only (not mid-day)
-- Unlocks
-- Equipped loadout
-- Upgrades
-- Statistics
+- Player health (hearts)
+- Planted Brainrots (id, tile, HP) — **victory checkpoint only** (not mid-day)
+- Unlocks, equipped loadout, upgrades, statistics
 - Future player-owned progression (collected bosses, evolutions, …)
 
 Do NOT persist:
 
-- Coins (Day 1 → `STARTING_COINS`; later days → 0 on day end / join)
-- Monsters
-- Monster Positions
+- Coins (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse`)
+- Monsters / positions
 - Projectiles
-- Ground Coins
-- Temporary Combat Effects
-- Level Timers
+- Ground coins
+- Temporary combat effects
+- Level timers
+- Mid-day plants
 
-If the player leaves during a level:
+If the player leaves during a day:
 
 - Save progression and the **committed** lawn (last victory / wipe).
-- Discard mid-day placements; clear combat runtimes; end the active level.
+- Discard mid-day placements; clear combat runtimes; end the active day.
 
 When they return:
 
 - Restore day, hearts, brains, unlocks, and the committed lawn.
-- Coins via day purse (Day 1 → 125; later → 0); press Start Day again.
+- Coins via day purse; press Start Day again.
 
 Never erase save data unless Reset Progress is confirmed.
 

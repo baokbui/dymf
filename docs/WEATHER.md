@@ -92,6 +92,8 @@ through the player margin + full enemy-column forest (aligned with
 - `WeatherController` applies night Lighting for `Night`, `NightFog`, and
   `NightFogReceded`; fog banks for both fog weathers (lawn band respects
   that weather's column count).
+- `AudioController` crossfades BGM from weather (`Default` / `Night` / `Desert`;
+  see `AUDIO.md`).
 - Desert: desert Lighting + `DesertVisuals` (hide forest, spawn pyramids).
 - `PlacementController.setWeather` blocks ghost/place on fog columns except
   when the selected Brainrot has `triggersOnPlace`.

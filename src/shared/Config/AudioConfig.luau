@@ -63,8 +63,22 @@ local AudioConfig = {
 	},
 
 	MUSIC = {
+		-- Days 1–20 (no weather): Relaxed Scene — chill daytime loop.
 		Default = {
 			SoundId = "rbxassetid://1848354536",
+			Volume = 0.32,
+			Looped = true,
+		},
+		-- Days 21–40 (Night / NightFog / NightFogReceded): same chill energy,
+		-- slightly spooky (APM "Mysterious", same Mystery Movie family).
+		Night = {
+			SoundId = "rbxassetid://1838974004",
+			Volume = 0.32,
+			Looped = true,
+		},
+		-- Days 41–50 (Desert): chill sand / oasis loop.
+		Desert = {
+			SoundId = "rbxassetid://1837253820",
 			Volume = 0.32,
 			Looped = true,
 		},
@@ -75,12 +89,12 @@ local AudioConfig = {
 		},
 	} :: { [string]: SoundDef },
 
+	-- Unused: only weather BGM + boss music loop (no extra plot bed).
 	AMBIENT = {
 		Plot = {
-			SoundId = "rbxasset://sounds/impact_water.mp3",
-			Volume = 0.08,
+			SoundId = "",
+			Volume = 0,
 			Looped = true,
-			PlaybackSpeed = 0.55,
 		},
 	} :: { [string]: SoundDef },
 

@@ -2,11 +2,10 @@
 --[[
 	MonsterProceduralGait
 	Server-side crawl gait for Toolbox spider-style rigs that have Motor6D /
-	Bone / Weld legs but no matching uploaded Animation. Discovers leg joints
-	by name (or falls back to non-root Motor6Ds) and drives Transform / C0 with
-	a phased sine wave while the monster is walking.
+	Bone / Weld legs but no matching uploaded Animation. 	Discovers leg joints by name, then any Motor6D / Weld / WeldConstraint,
+	then synthesizes Motor6Ds onto unnamed `Part` meshes (Toolbox Scorpion).
 
-	Used when MonsterDefinition.proceduralWalk is true (e.g. Spider). Does not
+	Used when MonsterDefinition.proceduralWalk is true (Spider, Scorpion). Does not
 	require catalog animation IDs — works on whatever joints the Assets model has.
 ]]
 
@@ -88,11 +87,15 @@ local function nameLooksLikeLeg(name: string): boolean
 		or string.find(n, "tibia", 1, true) ~= nil
 		or string.find(n, "foot", 1, true) ~= nil
 		or string.find(n, "claw", 1, true) ~= nil
+		or string.find(n, "pincer", 1, true) ~= nil
+		or string.find(n, "chela", 1, true) ~= nil
 		or string.find(n, "pedipalp", 1, true) ~= nil
+		or string.find(n, "tail", 1, true) ~= nil
+		or string.find(n, "stinger", 1, true) ~= nil
 		or string.find(n, "arm", 1, true) ~= nil -- some spider kits label limbs as Arms
 end
 
-local function sidePhase(name: string, index: number): number
+local function sidePhase(name: string, index: number, part1: BasePart?, part0: BasePart?): number
 	local n = lower(name)
 	if string.find(n, "left", 1, true) or string.find(n, "l_", 1, true) or string.find(n, "_l", 1, true) then
 		return 0
@@ -100,13 +103,86 @@ local function sidePhase(name: string, index: number): number
 	if string.find(n, "right", 1, true) or string.find(n, "r_", 1, true) or string.find(n, "_r", 1, true) then
 		return math.pi
 	end
-	-- Alternate odd/even legs for unnamed sides (classic spider gait pairs).
+	if part1 and part0 then
+		local localOffset = part0.CFrame:PointToObjectSpace(part1.Position)
+		return if localOffset.Z >= 0 then 0 else math.pi
+	end
 	return if index % 2 == 0 then 0 else math.pi
+end
+
+-- Toolbox kits often use WeldConstraint (no C0). Convert so the gait can drive Transform.
+local function convertWeldConstraints(model: Model)
+	local constraints: { WeldConstraint } = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("WeldConstraint") then
+			table.insert(constraints, descendant)
+		end
+	end
+	for _, constraint in constraints do
+		local p0 = constraint.Part0
+		local p1 = constraint.Part1
+		if p0 and p1 then
+			local motor = Instance.new("Motor6D")
+			motor.Name = "GaitJoint"
+			motor.Part0 = p0
+			motor.Part1 = p1
+			motor.C0 = p0.CFrame:ToObjectSpace(p1.CFrame)
+			motor.C1 = CFrame.new()
+			motor.Parent = p0
+			p1.Anchored = false
+			p1.Massless = true
+			p1.CanCollide = false
+		end
+		constraint:Destroy()
+	end
+end
+
+-- Unnamed MeshPart piles (every child called "Part"): Motor6D from the root to each other part.
+local function ensureSyntheticMotors(model: Model)
+	local root = model.PrimaryPart
+	if not root then
+		return
+	end
+
+	local alreadyDriven: { [BasePart]: boolean } = { [root] = true }
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Motor6D") then
+			local part1 = (descendant :: Motor6D).Part1
+			if part1 then
+				alreadyDriven[part1] = true
+			end
+		end
+	end
+
+	for _, descendant in model:GetDescendants() do
+		if not descendant:IsA("BasePart") then
+			continue
+		end
+		local part = descendant :: BasePart
+		if alreadyDriven[part] or part.Transparency >= 0.95 then
+			continue
+		end
+		if nameLooksLikeSkip(part.Name) and lower(part.Name) ~= "part" then
+			continue
+		end
+
+		local motor = Instance.new("Motor6D")
+		motor.Name = "GaitJoint"
+		motor.Part0 = root
+		motor.Part1 = part
+		motor.C0 = root.CFrame:ToObjectSpace(part.CFrame)
+		motor.C1 = CFrame.new()
+		motor.Parent = root
+		part.Anchored = false
+		part.Massless = true
+		part.CanCollide = false
+		alreadyDriven[part] = true
+	end
 end
 
 local function collectJoints(model: Model): { LegJoint }
 	local named: { LegJoint } = {}
-	local fallbackMotors: { LegJoint } = {}
+	local fallback: { LegJoint } = {}
 	local index = 0
 
 	for _, descendant in model:GetDescendants() do
@@ -120,12 +196,14 @@ local function collectJoints(model: Model): { LegJoint }
 				kind = "Motor6D",
 				motor = motor,
 				rest = motor.Transform,
-				phase = sidePhase(motor.Name, index) + (index % 4) * (math.pi * 0.25),
+				phase = sidePhase(motor.Name, index, motor.Part1, motor.Part0)
+					+ (index % 4) * (math.pi * 0.25),
 			}
-			if nameLooksLikeLeg(motor.Name) then
+			local label = if motor.Part1 then motor.Part1.Name else motor.Name
+			if nameLooksLikeLeg(motor.Name) or nameLooksLikeLeg(label) then
 				table.insert(named, joint)
 			else
-				table.insert(fallbackMotors, joint)
+				table.insert(fallback, joint)
 			end
 		elseif descendant:IsA("Bone") then
 			local bone = descendant :: Bone
@@ -143,23 +221,28 @@ local function collectJoints(model: Model): { LegJoint }
 			local weld = descendant :: Weld
 			local part1 = weld.Part1
 			local label = if part1 then part1.Name else weld.Name
-			if nameLooksLikeSkip(label) or not nameLooksLikeLeg(label) then
+			if nameLooksLikeSkip(label) then
 				continue
 			end
 			index += 1
-			table.insert(named, {
+			local joint: LegJoint = {
 				kind = "Weld",
 				weld = weld,
 				rest = weld.C0,
-				phase = sidePhase(label, index) + (index % 4) * (math.pi * 0.25),
-			})
+				phase = sidePhase(label, index, part1, weld.Part0) + (index % 4) * (math.pi * 0.25),
+			}
+			if nameLooksLikeLeg(label) then
+				table.insert(named, joint)
+			else
+				table.insert(fallback, joint)
+			end
 		end
 	end
 
 	if #named > 0 then
 		return named
 	end
-	return fallbackMotors
+	return fallback
 end
 
 local function applyDelta(joint: LegJoint, delta: CFrame)
@@ -222,15 +305,17 @@ end
 function MonsterProceduralGait.bind(model: Model)
 	MonsterProceduralGait.unbind(model)
 
+	convertWeldConstraints(model)
+	ensureSyntheticMotors(model)
 	local joints = collectJoints(model)
 	if #joints == 0 then
 		local key = model.Name
 		if not loggedEmpty[key] then
 			loggedEmpty[key] = true
 			log:warn(
-				"proceduralWalk: no Motor6D/Bone/Weld leg joints on",
+				"proceduralWalk: no movable parts on",
 				key,
-				"— rename limb joints with 'Leg' (or use Motor6Ds) so the crawl gait can drive them"
+				"— model needs BaseParts besides PrimaryPart"
 			)
 		end
 		return

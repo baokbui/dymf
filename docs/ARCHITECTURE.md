@@ -88,6 +88,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         GraveService/     (fog graves → Zombie/Skeleton emerge)
         LevelService/
         SaveService/
+        ProgressService/  (brains, unlocks, loadout, statistics)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
@@ -99,7 +100,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         InputController/  (primary intent signal)
         BrainrotController/ (BrainrotAction SFX; ScaleTo pulse only if not animated)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
-        AudioController/  (BGM, SFX via SfxPlayer, ambient — M12)
+        AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
         WeatherController/ (night/fog + desert pyramids)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
@@ -342,8 +343,8 @@ Full details in `MONSTERS.md`. Summary:
 - **`CombatService`** — wired to `EnemyService` for `damageMonster`, row queries,
   and status effects.
 - **`GridService.getWorldPositionAtColumn`** — fractional column positioning.
-- Opening levels now spawn **Zombie**. `MonsterConfig.DEV_SPAWN` sends test
-  zombies in Studio until **Milestone 8** (`LevelService`).
+- Opening levels now spawn **Zombie**. Campaign spawns come from `LevelService`
+  (`MonsterConfig.DEV_SPAWN` stays off for play).
 
 ### Milestone 7 — Combat System ✅
 
@@ -436,12 +437,12 @@ Full details in `UI.md`. Summary:
 
 Full details in `AUDIO.md`. Summary:
 
-- **`AudioConfig`** — music / ambient / SFX ids, volumes, `PRELOAD_SFX`,
+- **`AudioConfig`** — music / SFX ids, volumes, `PRELOAD_SFX`,
   optional `MaxDuration` / `StartOffset`.
 - **`AudioController`** + **`SfxPlayer`** — SoundGroups, preloaded one-shots,
-  default + boss BGM crossfade, plot ambient; mute hook for future Settings.
-- Wired from UI, placement, coins, combat visuals, level phases, boss presence,
-  and Brainrot ability actions (`BrainrotAction`).
+  weather + boss BGM crossfade; mute hook for Settings.
+- Wired from UI, placement, coins, combat visuals, level phases, boss big-wave
+  BGM, and Brainrot ability actions (`BrainrotAction`).
 - Hit flash stays server-side (`MonsterFeedback`); combat SFX never block on
   projectile-folder waits (plots ship with `Projectiles` / `Monsters` / … folders).
 

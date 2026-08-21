@@ -9,7 +9,6 @@
 	Milestone 14+ balance — see docs/BALANCE.md.
 ]]
 
-local MonsterConfig = require(script.Parent.Config.MonsterConfig)
 local Types = require(script.Parent.Types)
 
 local Monsters = {}
@@ -90,9 +89,9 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 1.0,
 		isBoss = false,
 		color = Color3.fromRGB(70, 130, 60),
-		-- Catalog R15 walk fights grid snap on this Toolbox rig — club swing only.
-		walkAnimationId = "",
-		attackAnimationId = MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID,
+		walkAnimationId = "rbxassetid://88413250285755",
+		attackAnimationId = "rbxassetid://117829288192683",
+		attackHitDelay = 0.7,
 	},
 
 	GoblinElite = {
@@ -108,8 +107,9 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- (Kept < 3 so more of the lawn's rows are valid random spawn anchors.)
 		laneSpan = 2,
 		color = Color3.fromRGB(60, 100, 50),
-		walkAnimationId = "",
-		attackAnimationId = MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID,
+		walkAnimationId = "rbxassetid://135233369169455",
+		attackAnimationId = "rbxassetid://117829288192683",
+		attackHitDelay = 0.7,
 	},
 
 	Spider = {
@@ -272,6 +272,32 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		modelScale = 1.5,
 		auraColor = Color3.fromRGB(230, 190, 80),
 		auraScale = 1.5,
+	},
+
+	Scorpion = {
+		id = "Scorpion",
+		name = "Scorpion",
+		health = 500,
+		secondsPerGrid = 1.8,
+		damage = 200,
+		attackInterval = 1.2,
+		isBoss = false,
+		abilities = { "ScorpionBurrow" },
+		abilityParams = {
+			burrowDuration = 1.55,
+			burrowDepth = 5.5,
+			emergeOffset = 0.45,
+		},
+		color = Color3.fromRGB(196, 92, 36),
+		modelId = "Scorpion",
+		-- Toolbox mesh faces the opposite way from Spider; yaw 270 looks house-ward.
+		modelOrientationDegrees = Vector3.new(0, 270, 0),
+		walkAnimationId = "",
+		attackAnimationId = "rbxassetid://134435243507976",
+		-- Seconds after sting anim starts before chew damage lands.
+		attackHitDelay = 0.4,
+		proceduralWalk = true,
+		spawnStyle = "RiseFromGround",
 	},
 }
 

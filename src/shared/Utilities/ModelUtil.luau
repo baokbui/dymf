@@ -14,6 +14,12 @@ local Types = require(script.Parent.Parent.Types)
 
 local ModelUtil = {}
 
+-- True when the clone has Motor6D / Bone limbs that must stay unanchored.
+function ModelUtil.hasAnimationJoints(model: Model): boolean
+	return model:FindFirstChildWhichIsA("Motor6D", true) ~= nil
+		or model:FindFirstChildWhichIsA("Bone", true) ~= nil
+end
+
 local SCRIPT_CLASSES: { [string]: boolean } = {
 	Script = true,
 	LocalScript = true,
@@ -557,7 +563,11 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 		end
 	end
 
-	hardenParts(model, options.keepCollision, preserveAnim)
+	-- Unrigged Toolbox meshes (e.g. Scorpion) have no Motor6Ds. If we still
+	-- "preserve" an animation rig, only the PrimaryPart stays anchored and
+	-- every other part falls through the lawn — leaving a tiny cap on the sand.
+	local animateLimbs = preserveAnim and ModelUtil.hasAnimationJoints(model)
+	hardenParts(model, options.keepCollision, animateLimbs)
 	if preserveAnim then
 		ensureAnimator(model)
 	end
@@ -587,7 +597,7 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 
 	-- Re-apply rig harden after ScaleTo (ScaleTo can leave anchors inconsistent).
 	if preserveAnim then
-		hardenParts(model, options.keepCollision, true)
+		hardenParts(model, options.keepCollision, animateLimbs)
 		ensureAnimator(model)
 	end
 

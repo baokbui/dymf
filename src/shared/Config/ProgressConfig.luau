@@ -56,6 +56,7 @@ local ProgressConfig = {
 		{ day = 31, monsterId = "Skeleton" },
 		{ day = 35, monsterId = "Werewolf" },
 		{ day = 41, monsterId = "SmallMummy" },
+		{ day = 45, monsterId = "Scorpion" },
 		{ day = 50, monsterId = "PharaohMummy" },
 	},
 

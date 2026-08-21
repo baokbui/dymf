@@ -3,7 +3,7 @@
 	HouseConfig
 	Per-plot house shell (west of the lawn) and boss-display pedestals.
 	Prefer a Toolbox model under ReplicatedStorage.Assets.Houses; procedural
-	cottage is the fallback. Boss collection / brains income is Milestone 25.
+	cottage is the fallback. Boss collection / brains income is Milestone 21.
 ]]
 
 local HouseConfig = {
@@ -36,7 +36,7 @@ local HouseConfig = {
 	ROOF_OVERHANG = 3,
 	ROOF_HEIGHT = 10,
 
-	-- Future boss trophies (M25). Empty pedestals + attachments are built now.
+	-- Future boss trophies (M21). Empty pedestals + attachments are built now.
 	BOSS_SLOT_COUNT = 5,
 	BOSS_SLOT_SPACING = 11,
 	BOSS_PEDESTAL_RADIUS = 3.2,

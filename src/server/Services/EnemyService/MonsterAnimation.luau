@@ -117,13 +117,12 @@ local function resolveAnimationId(
 		return nil
 	end
 
-	local childName = if kind == "Walk" then "WalkAnimation" else "AttackAnimation"
-	local embedded = findChildAnimation(model, childName)
-	if embedded then
-		return embedded.AnimationId
-	end
-	-- Toolbox packs often ship a single Animation instance named "Animation".
 	if kind == "Walk" then
+		local embedded = findChildAnimation(model, "WalkAnimation")
+		if embedded then
+			return embedded.AnimationId
+		end
+		-- Toolbox packs often ship a single Animation instance named "Animation".
 		local packAnim = findChildAnimation(model, "Animation")
 		if packAnim then
 			return packAnim.AnimationId
@@ -132,9 +131,6 @@ local function resolveAnimationId(
 		if savesId then
 			return savesId
 		end
-	end
-
-	if kind == "Walk" then
 		-- Explicit field: "" disables walk; nil falls back to default catalog walk.
 		if definition.walkAnimationId ~= nil then
 			if definition.walkAnimationId == "" then
@@ -145,11 +141,17 @@ local function resolveAnimationId(
 		return MonsterConfig.DEFAULT_WALK_ANIMATION_ID
 	end
 
+	-- Authored attack clips beat Toolbox AttackAnimation children (often
+	-- permission-locked). "" disables; nil falls through to embedded / default.
 	if definition.attackAnimationId ~= nil then
 		if definition.attackAnimationId == "" then
 			return nil
 		end
 		return definition.attackAnimationId
+	end
+	local embeddedAttack = findChildAnimation(model, "AttackAnimation")
+	if embeddedAttack then
+		return embeddedAttack.AnimationId
 	end
 	return MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID
 end

@@ -13,7 +13,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 | Module | Role |
 | ------ | ---- |
 | `Shared.Config.AudioConfig` | Sound ids, volumes, music/ambient defs, preload list |
-| `AudioController` (client) | SoundGroups, BGM / boss crossfade, ambient, mute API |
+| `AudioController` (client) | SoundGroups, weather / boss BGM crossfade, mute API |
 | `AudioController/SfxPlayer` | One-shot SFX templates, preload, play/stop |
 | Other controllers | Call `AudioController.play(key)` — never create Sounds |
 
@@ -34,9 +34,9 @@ Gameplay SFX on a plot are heard **only by that plot’s owner**:
 | Placement | Plant / shovel SFX run only on the acting client’s `PlacementController` |
 | Chew feedback | `CombatVisual` kind `MonsterAttack` (plot owner only); goblins use club overrides |
 | Asset hygiene | `ModelUtil` strips embedded `Sound` / audio instances from cloned Brainrot & Monster templates so Toolbox audio cannot leak to spectators |
-| Safety net | Client destroys any `Sound` that appears under another player’s plot model |
+| Safety net | Client destroys any `Sound` under a plot model (Toolbox music on spawn, etc.) |
 
-UI clicks, music, and ambient are still local to each client (not plot-scoped).
+UI clicks and weather/boss BGM are local to each client (not plot-scoped).
 
 ---
 
@@ -46,9 +46,13 @@ UI clicks, music, and ambient are still local to each client (not plot-scoped).
 
 | Key / track | Trigger |
 | ----------- | ------- |
-| `Default` music | Join / non-boss gameplay |
-| `Boss` music | Big-wave warning or boss monster on local plot |
-| `Plot` ambient | Soft loop while playing |
+| `Default` music | Days 1–20 (no weather) — Relaxed Scene, chill daytime |
+| `Night` music | Days 21–40 (`Night` / `NightFog` / `NightFogReceded`) — chill, slightly spooky |
+| `Desert` music | Days 41–50 (`Desert`) — chill sand / oasis |
+| `Boss` music | Big-wave warning (`LevelStateChanged.bigWaveWarning`) — overrides theme; restores weather track after victory / defeat / prep |
+| `Plot` ambient | Disabled (empty id) — no extra loop besides weather / boss |
+
+Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChanged`). Tune ids in `AudioConfig.MUSIC`. Boss music does **not** start when a monster model spawns.
 
 ### SFX
 

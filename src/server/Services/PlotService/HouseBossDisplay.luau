@@ -1,7 +1,7 @@
 --!strict
 --[[
 	HouseBossDisplay
-	Placeholder for Milestone 25 trophies. Authored Cottage already includes
+	Placeholder for Milestone 21 trophies. Authored Cottage already includes
 	pedestals — do not spawn procedural ones. Only ensures a CollectedBosses
 	folder exists for future display models.
 ]]

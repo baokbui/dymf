@@ -36,6 +36,9 @@ export type AbilityCallbacks = {
 	-- Tweens the monster back upright over `duration` seconds. Movement
 	-- stays suspended until `duration` elapses.
 	beginRise: (duration: number) -> (),
+	-- Scorpion-style: sink, travel underground to `endColumn`, then rise.
+	-- `depth` is studs below tile top; `duration` covers sink + travel + rise.
+	beginBurrow: (endColumn: number, duration: number, depth: number) -> (),
 }
 
 export type AbilityHandler = {

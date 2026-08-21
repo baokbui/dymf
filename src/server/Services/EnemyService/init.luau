@@ -281,6 +281,11 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		jumpEndColumn = 0,
 		jumpPeakHeight = 0,
 		jumpDuration = 0,
+		burrowingUntil = 0,
+		burrowStartColumn = 0,
+		burrowEndColumn = 0,
+		burrowDepth = 0,
+		burrowDuration = 0,
 		footSnapOffset = nil,
 	}
 	for key, value in MonsterStatus.createFields() do
@@ -352,6 +357,10 @@ function EnemyService.setHouseBreachHandler(handler: (plotModel: Model, row: num
 	houseBreachHandler = handler
 end
 
+local function isCombatTarget(runtime: MonsterRuntime): boolean
+	return runtime.health > 0 and os.clock() >= runtime.invulnerableUntil
+end
+
 local function occupiesRow(runtime: MonsterRuntime, row: number): boolean
 	return GridUtil.occupiesLaneRow(runtime.row, runtime.definition.laneSpan or 1, row)
 end
@@ -360,7 +369,7 @@ function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { stri
 	local result: { string } = {}
 	for _, runtime in monsters do
 		if runtime.plotModel == plotModel
-			and runtime.health > 0
+			and isCombatTarget(runtime)
 			and occupiesRow(runtime, row)
 			and GridUtil.isOnPlotColumn(runtime.column)
 		then
@@ -381,6 +390,9 @@ function EnemyService.getFirstMonsterInRow(
 	local bestColumn = math.huge
 	for instanceId, runtime in monsters do
 		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
+			continue
+		end
+		if not isCombatTarget(runtime) then
 			continue
 		end
 		if not GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -406,6 +418,9 @@ function EnemyService.getFirstMonsterInMeleeReach(
 		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
 			continue
 		end
+		if not isCombatTarget(runtime) then
+			continue
+		end
 		if not GridUtil.isWithinMeleeReach(fromColumn, runtime.column, reachColumns) then
 			continue
 		end
@@ -427,6 +442,9 @@ function EnemyService.getMonstersInRow(
 	local result: { string } = {}
 	for _, runtime in monsters do
 		if runtime.plotModel ~= plotModel or not occupiesRow(runtime, row) then
+			continue
+		end
+		if not isCombatTarget(runtime) then
 			continue
 		end
 		if GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -514,6 +532,7 @@ function EnemyService.damageMonster(instanceId: string, damage: number): boolean
 					MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
 				end
 			end,
+			beginBurrow = function() end,
 		}
 		for _, handler in Abilities.iterate(runtime.definition) do
 			if handler.onWouldDie and handler.onWouldDie(ctx, runtime.abilityState, rescueCallbacks) then

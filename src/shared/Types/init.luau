@@ -82,7 +82,7 @@ export type MonsterDefinition = {
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
 	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld
-	-- leg joints (for Toolbox spiders without a matching uploaded Animation).
+	-- leg joints (Toolbox spiders / scorpions without a matching uploaded Animation).
 	proceduralWalk: boolean?,
 	-- Death pose style for MonsterDeath.play. Nil / "TipOver" = randomized tip.
 	deathStyle: string?,
@@ -145,7 +145,7 @@ export type PlantedBrainrot = {
 	health: number,
 }
 
--- Future (Milestone 25): bosses displayed in the plot house that generate brains.
+-- Future (Milestone 21): bosses displayed in the plot house that generate brains.
 export type CollectedBoss = {
 	monsterId: string, -- Shared.Monsters id (must be isBoss)
 	slotIndex: number, -- 1-based BossSlot_* pedestal
@@ -167,7 +167,7 @@ export type SaveData = {
 	statistics: { [string]: number },
 	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).
 	introducedMonsters: { string }?,
-	-- 🔜 Milestone 25 — collected boss trophies displayed in the house
+	-- 🔜 Milestone 21 — collected boss trophies displayed in the house
 	collectedBosses: { CollectedBoss }?,
 }
 

@@ -549,8 +549,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		},
 	},
 
-	-- Days 41–50: Desert. Authored waves are Small Mummy only until later
-	-- desert species are added; Day 50 is Pharaoh Mummy (decade boss).
+	-- Days 41–50: Desert. Small Mummy throughout; Scorpion from 45; Pharaoh on 50.
 	Level41 = {
 		id = "Level41",
 		number = 41,
@@ -605,9 +604,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Tomb Pressure",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.2 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.1, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Scorpion", count = 3, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.1, isBigWave = true },
 		},
 	},
 
@@ -617,9 +616,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Bandage Pack",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.3 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.2 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.3 },
+			{ monsterId = "Scorpion", count = 4, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -629,9 +628,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Royal Dust",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.1 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Scorpion", count = 5, startDelay = 12, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -641,9 +640,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Blood Linen",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "SmallMummy", count = 8, startDelay = 11, spawnInterval = 2.0 },
-			{ monsterId = "SmallMummy", count = 8, startDelay = 12, spawnInterval = 1.9, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Scorpion", count = 6, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 1.9, isBigWave = true },
 		},
 	},
 
@@ -653,9 +652,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Before the Tomb",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 8, startDelay = 1.5, spawnInterval = 2.1 },
-			{ monsterId = "SmallMummy", count = 8, startDelay = 11, spawnInterval = 2.0 },
-			{ monsterId = "SmallMummy", count = 8, startDelay = 12, spawnInterval = 1.8, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.1 },
+			{ monsterId = "Scorpion", count = 6, startDelay = 11, spawnInterval = 2.1 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 1.8, isBigWave = true },
 		},
 	},
 
@@ -665,8 +664,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Pharaoh Mummy",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Scorpion", count = 4, startDelay = 12, spawnInterval = 2.3 },
 			{ monsterId = "PharaohMummy", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},

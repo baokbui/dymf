@@ -166,12 +166,12 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 42    | Linen March       | Desert · mummy packs · **14** |
 | 43    | Silk and Sand     | Desert · mummy packs · **16** |
 | 44    | Dust and Fang     | Desert · mummy packs · **17** |
-| 45    | Tomb Pressure     | Desert · mummy packs · **19** |
-| 46    | Bandage Pack      | Desert · mummy packs · **20** |
-| 47    | Royal Dust        | Desert · mummy packs · **21** |
-| 48    | Blood Linen       | Desert · mummy packs · **23** |
-| 49    | Before the Tomb   | Desert · mummy packs · **24** |
-| 50    | Pharaoh Mummy     | Desert · mummy packs + **PharaohMummy** finale · **13** |
+| 45    | Tomb Pressure     | Desert · **Scorpion** intro · **14** |
+| 46    | Bandage Pack      | Desert · mummy + scorpion · **15** |
+| 47    | Royal Dust        | Desert · mummy + scorpion · **17** |
+| 48    | Blood Linen       | Desert · mummy + scorpion · **18** |
+| 49    | Before the Tomb   | Desert · mummy + scorpion · **20** |
+| 50    | Pharaoh Mummy     | Desert · scorpion + **PharaohMummy** finale · **10** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
 Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
@@ -191,8 +191,9 @@ Introduction cadence:
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
   **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**.
   **Exception:** Level 41 introduces `SmallMummy` at the start of the 41–50 band.
-  Days **41–50** authored waves are **SmallMummy** only (plus `PharaohMummy` on
-  50) until later desert species are added. **No graves** on desert days.
+  **Exception:** Level 45 introduces `Scorpion` (matches the 5-level cadence).
+  Days **41–50** authored waves are desert-only: **SmallMummy** from 41,
+  **Scorpion** from 45, **PharaohMummy** on 50. **No graves** on desert days.
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
   dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave;

@@ -164,14 +164,16 @@ function MonsterModel.create(
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
 	applyIdentity(model, instanceId, definition, plotModel, row)
-	-- Never block players or other monsters; keep only the root anchored so Motor6Ds animate.
+	-- Never block players or other monsters. Only unanchor Motor6D/Bone limbs;
+	-- unrigged models keep every part anchored so they do not fall underground.
 	local root = model.PrimaryPart
+	local animateLimbs = ModelUtil.hasAnimationJoints(model)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.Massless = true
-			descendant.Anchored = descendant == root
+			descendant.Anchored = (not animateLimbs) or descendant == root
 		end
 	end
 	CollisionUtil.applyMonster(model)

@@ -108,6 +108,12 @@ occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
+**Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
+entrance). `ScorpionBurrow` only on first **plot** column: sinks, travels
+underground (invulnerable / untargetable), and rises just east of the first
+Brainrot in its lane, then chews. Empty lanes do not burrow. Walk uses the same `proceduralWalk` crawl as Spider (no uploaded clips). Tunables:
+`burrowDuration` / `burrowDepth` / `emergeOffset` (`MonsterConfig.BURROW_*`).
+
 **Spider** ✅ — `SpiderJump` vaults the **first** Brainrot in its lane with a
 visible parabola (`MonsterBehavior` jump state: column lerps west of the plant
 while `floatY` peaks). The plant takes no damage; later Brainrots are chewed

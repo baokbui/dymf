@@ -106,6 +106,7 @@ were raised so early boards need real DPS:
 | `Werewolf` | Fast heavy grunt (L35+) | 1400 | 2.0 | 60 / 1.5s; lifesteal 5% max HP / chew; authored walk/attack clips |
 | `Skeleton` | Ranged grunt (L31+) | 200 | 4.0 | 100 / 1.5s; stops 3 tiles east and shoots arrows; does not chew |
 | `SmallMummy` | Fast grunt (L41+) | 1000 | 2.0 | 150 / 1.5s |
+| `Scorpion` | Burrow grunt (L45+) | 500 | 1.8 | 200 / 1.2s; digs on plot entry only if the lane has a Brainrot |
 | `PharaohMummy` | Boss (L50) | 15000 | 5.0 | 200 / 1.0s; summon SmallMummy ×5 lanes / 20s; steal 1 plant from 3 random lanes / 15s |
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
@@ -138,8 +139,8 @@ east of the plant center so models don't overlap.
 - **Days 35–40 (NightFogReceded):** fog bank loses **one** column (only 2
   blocked) so players regain a plantable tile; Level 35 introduces `Werewolf`.
 - **Days 41–50 (Desert):** sand lawn, no fog; forest replaced by pyramids;
-  authored waves are `SmallMummy` only until later desert units are added;
-  Level 50 is `PharaohMummy`. No graves.
+  authored waves: `SmallMummy` from 41, `Scorpion` from 45, `PharaohMummy` on 50.
+  No graves.
 
 ---
 

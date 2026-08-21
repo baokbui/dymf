@@ -70,7 +70,7 @@ local MonsterConfig = {
 	DEFAULT_WALK_ANIMATION_ID = "rbxassetid://507777826", -- R15 Walk
 	DEFAULT_ATTACK_ANIMATION_ID = "rbxassetid://522635514", -- R15 ToolSlash (club swing)
 
-	-- Procedural crawl gait (MonsterDefinition.proceduralWalk — e.g. Spider).
+	-- Procedural crawl gait (MonsterDefinition.proceduralWalk — Spider / Scorpion).
 	-- Drives Motor6D / Bone / Weld limb joints; no uploaded Animation required.
 	PROCEDURAL_WALK_HZ = 2.4,
 	PROCEDURAL_WALK_PITCH = 0.38, -- radians
@@ -85,6 +85,13 @@ local MonsterConfig = {
 	JUMP_PEAK_HEIGHT = 5.5,
 	JUMP_LAND_OFFSET = 0.8, -- columns west of plant center to land
 	JUMP_TRIGGER_REACH = 0.95,
+
+	-- Scorpion burrow: sink on plot entry if the lane has a Brainrot, travel
+	-- underground, rise east of it (abilityParams burrowDuration / burrowDepth /
+	-- emergeOffset). Empty lanes walk normally.
+	BURROW_DURATION = 1.55,
+	BURROW_DEPTH = 5.5,
+	BURROW_EMERGE_OFFSET = 0.45, -- columns east of plant center
 
 	-- RiseFromGround spawn (mummies). Buried by ~visual height, then tween up.
 	SPAWN_RISE_DURATION = 1.15,

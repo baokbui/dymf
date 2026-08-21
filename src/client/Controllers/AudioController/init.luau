@@ -1,19 +1,17 @@
 --!strict
 --[[
 	AudioController
-	Owns all client audio: SoundGroups, one-shot SFX, looping ambient, and
-	background / boss music. Other controllers call play() / music helpers —
-	they never create Sounds themselves.
+	Owns all client audio: SoundGroups, one-shot SFX, and weather / boss music.
+	Other controllers call play() / music helpers — they never create Sounds
+	themselves.
 
-	Plot gameplay SFX (plant, attack, death, …) are owner-only: the server
-	pushes remotes to the plot owner, and this client plays via SoundService
-	(never spatial Sounds under the plot). Foreign-plot Sounds are silenced.
+	The only looping BGM is weather theme + boss (big-wave warning). Plot
+	gameplay SFX are owner-only via SoundService. Any Sound under a plot model
+	(Toolbox leftovers on monsters, etc.) is destroyed.
 
 	Milestone 12.
 ]]
 
-local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +20,8 @@ local Shared = ReplicatedStorage.Shared
 local AudioConfig = require(Shared.Config.AudioConfig)
 local Constants = require(Shared.Constants)
 local Logger = require(Shared.Utilities.Logger)
+local Remotes = require(Shared.Remotes)
+local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 local SfxPlayer = require(script.SfxPlayer)
@@ -30,8 +30,6 @@ local AudioController = {}
 AudioController.Name = "AudioController"
 
 local log = Logger.new(AudioController.Name)
-local localPlayer = Players.LocalPlayer
-
 local musicGroup: SoundGroup
 local sfxGroup: SoundGroup
 local ambientGroup: SoundGroup
@@ -39,6 +37,8 @@ local ambientGroup: SoundGroup
 local musicSound: Sound? = nil
 local ambientSound: Sound? = nil
 local currentMusicKey: string? = nil
+-- Non-boss loop from the current day's weather (Default / Night / Desert).
+local themeMusicKey = "Default"
 local bossMusicActive = false
 local muted = false
 local musicVolumeScale = 1
@@ -171,12 +171,33 @@ function AudioController.playMusic(trackKey: string)
 	):Play()
 end
 
+local function themeKeyForWeather(weather: string?): string
+	if WeatherUtil.isDesert(weather) then
+		return "Desert"
+	end
+	if WeatherUtil.isNight(weather) then
+		return "Night"
+	end
+	return "Default"
+end
+
+function AudioController.setThemeFromWeather(weather: string?)
+	local key = themeKeyForWeather(weather)
+	if themeMusicKey == key then
+		return
+	end
+	themeMusicKey = key
+	if not bossMusicActive then
+		AudioController.playMusic(key)
+	end
+end
+
 function AudioController.setBossMusic(active: boolean)
 	if bossMusicActive == active then
 		return
 	end
 	bossMusicActive = active
-	AudioController.playMusic(if active then "Boss" else "Default")
+	AudioController.playMusic(if active then "Boss" else themeMusicKey)
 end
 
 function AudioController.isBossMusicActive(): boolean
@@ -218,38 +239,13 @@ function AudioController.setBrainrotSfxEnabled(enabled: boolean)
 	brainrotSfxEnabled = enabled
 end
 
-local function startAmbient()
-	local def = AudioConfig.AMBIENT.Plot
-	if not def or def.SoundId == "" then
-		return
-	end
-	if ambientSound and ambientSound.Parent then
-		return
-	end
-
-	local sound = Instance.new("Sound")
-	sound.Name = "Ambient_Plot"
-	applyDef(sound, def, ambientGroup)
-	sound.Parent = SoundService
-	ambientSound = sound
-	sound:Play()
-end
-
-local function isOnLocalPlot(model: Model): boolean
-	return PlotUtil.isOnLocalPlot(model)
-end
-
--- Silence any Sound that appears under another player's plot (Toolbox leftovers,
--- accidental server Sounds). Gameplay SFX are played via SoundService locally.
-local function silenceForeignPlotSound(instance: Instance)
+-- Destroy any Sound under a plot (Toolbox music on spawn, leftover asset
+-- audio). Gameplay SFX are played via SoundService, not under plot models.
+local function silencePlotSound(instance: Instance)
 	if not instance:IsA("Sound") then
 		return
 	end
-	local plot = PlotUtil.getOwningPlotModel(instance)
-	if not plot then
-		return
-	end
-	if plot:GetAttribute("OwnerUserId") == localPlayer.UserId then
+	if not PlotUtil.getOwningPlotModel(instance) then
 		return
 	end
 	instance:Stop()
@@ -257,25 +253,16 @@ local function silenceForeignPlotSound(instance: Instance)
 	instance:Destroy()
 end
 
-local function watchPlotsForForeignAudio()
+local function watchPlotsForEmbeddedAudio()
 	local plotsFolder = workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Plots)
 	if not plotsFolder then
 		return false
 	end
 	for _, descendant in plotsFolder:GetDescendants() do
-		silenceForeignPlotSound(descendant)
+		silencePlotSound(descendant)
 	end
-	plotsFolder.DescendantAdded:Connect(silenceForeignPlotSound)
+	plotsFolder.DescendantAdded:Connect(silencePlotSound)
 	return true
-end
-
-local function onMonsterAdded(instance: Instance)
-	if not instance:IsA("Model") or not isOnLocalPlot(instance) then
-		return
-	end
-	if instance:GetAttribute("IsBoss") == true then
-		AudioController.setBossMusic(true)
-	end
 end
 
 -- Chew / club SFX are fired from the server via CombatVisual kind
@@ -288,17 +275,28 @@ end
 
 function AudioController.start()
 	SfxPlayer.preload()
-	AudioController.playMusic("Default")
-	startAmbient()
+	AudioController.playMusic(themeMusicKey)
 
-	CollectionService:GetInstanceAddedSignal(Constants.TAGS.Monster):Connect(onMonsterAdded)
-	for _, monster in CollectionService:GetTagged(Constants.TAGS.Monster) do
-		onMonsterAdded(monster)
-	end
+	Remotes.getEvent("LevelStateChanged").OnClientEvent:Connect(function(state: unknown)
+		if type(state) ~= "table" then
+			return
+		end
+		local data = state :: { [string]: any }
+		AudioController.setThemeFromWeather(if type(data.weather) == "string" then data.weather else nil)
+	end)
+	task.spawn(function()
+		local ok, state = pcall(function()
+			return Remotes.getFunction("RequestState"):InvokeServer()
+		end)
+		if ok and type(state) == "table" and type(state.level) == "table" then
+			local level = state.level :: { [string]: any }
+			AudioController.setThemeFromWeather(if type(level.weather) == "string" then level.weather else nil)
+		end
+	end)
 
 	task.spawn(function()
 		for _ = 1, 40 do
-			if watchPlotsForForeignAudio() then
+			if watchPlotsForEmbeddedAudio() then
 				break
 			end
 			task.wait(0.25)

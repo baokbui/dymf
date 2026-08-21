@@ -58,6 +58,13 @@ export type MonsterRuntime = {
 	jumpEndColumn: number,
 	jumpPeakHeight: number,
 	jumpDuration: number,
+	-- Underground travel (Scorpion). While `burrowingUntil` is in the future,
+	-- the tick drives column + negative floatY (sink → slide → rise).
+	burrowingUntil: number,
+	burrowStartColumn: number,
+	burrowEndColumn: number,
+	burrowDepth: number,
+	burrowDuration: number,
 	-- Rest-pose pivot.Y − visual bottom (stable feet while limbs animate).
 	footSnapOffset: number?,
 } & MonsterStatus.StatusFields
@@ -120,6 +127,16 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 				MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
 			end
 		end,
+		beginBurrow = function(endColumn: number, duration: number, depth: number)
+			runtime.burrowDuration = math.max(0.2, duration)
+			runtime.burrowDepth = math.max(1, depth)
+			runtime.burrowStartColumn = runtime.column
+			runtime.burrowEndColumn = endColumn
+			runtime.burrowingUntil = os.clock() + runtime.burrowDuration
+			runtime.isAttacking = false
+			MonsterAnimation.setAttacking(runtime.model, false)
+			MonsterAnimation.setLocomotionPaused(runtime.model, true)
+		end,
 	}
 end
 
@@ -135,6 +152,24 @@ local function syncTransform(runtime: MonsterRuntime, floatY: number?)
 	-- Prefer the rest-pose foot cache so procedural / animated limbs don't
 	-- rewrite minY every tick (spiders were sinking underground mid-gait).
 	ModelUtil.snapFeetToTileTop(runtime.model, worldPos, floatY, runtime.footSnapOffset)
+	MonsterModel.setColumn(runtime.model, runtime.column)
+	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
+end
+
+local function syncTransformUpright(runtime: MonsterRuntime, floatY: number?)
+	local centerRow = GridUtil.laneCenterRow(runtime.row, runtime.definition.laneSpan or 1)
+	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, centerRow, runtime.column)
+	if not worldPos then
+		return
+	end
+	-- Rebuild facing from the definition so burrow never leaves a leftover tilt.
+	ModelUtil.pivotToTileTop(
+		runtime.model,
+		worldPos,
+		runtime.definition.modelOrientationDegrees,
+		MonsterConfig.MODEL_FACE_DIRECTION,
+		floatY
+	)
 	MonsterModel.setColumn(runtime.model, runtime.column)
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
 end
@@ -292,6 +327,39 @@ local function updateJump(runtime: MonsterRuntime, now: number)
 	end
 end
 
+local function updateBurrow(runtime: MonsterRuntime, now: number)
+	local duration = runtime.burrowDuration
+	if duration <= 0 then
+		runtime.burrowingUntil = 0
+		return
+	end
+
+	local t = 1 - ((runtime.burrowingUntil - now) / duration)
+	t = math.clamp(t, 0, 1)
+	local sinkEnd = 0.22
+	local riseStart = 0.78
+	local depth = runtime.burrowDepth
+	local floatY = 0
+	if t < sinkEnd then
+		floatY = -depth * (t / sinkEnd)
+		runtime.column = runtime.burrowStartColumn
+	elseif t < riseStart then
+		local u = (t - sinkEnd) / (riseStart - sinkEnd)
+		local s = u * u * (3 - 2 * u)
+		runtime.column = runtime.burrowStartColumn
+			+ (runtime.burrowEndColumn - runtime.burrowStartColumn) * s
+		floatY = -depth
+	else
+		runtime.column = runtime.burrowEndColumn
+		floatY = -depth * (1 - (t - riseStart) / (1 - riseStart))
+	end
+	syncTransformUpright(runtime, floatY)
+
+	if t >= 1 then
+		MonsterAnimation.setLocomotionPaused(runtime.model, false)
+	end
+end
+
 local function applyPendingHeal(runtime: MonsterRuntime)
 	local pending = runtime.abilityState.pendingHeal
 	if not pending or pending <= 0 then
@@ -378,6 +446,11 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		-- ignore Brainrots/house until the leap lands.
 		if now < runtime.jumpingUntil then
 			updateJump(runtime, now)
+			continue
+		end
+
+		if now < runtime.burrowingUntil then
+			updateBurrow(runtime, now)
 			continue
 		end
 

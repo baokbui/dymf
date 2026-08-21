@@ -46,7 +46,7 @@ From `Shared.Types.MonsterDefinition`:
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                                |
 | `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick)         |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)            |
-| `deathStyle`              | string?                 | Death pose (`TipOver` default, `SpiderFlat` for Queen Spider)                  |
+| `deathStyle`              | string?                 | Death pose (`TipOver` default)                                                 |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)                    |
 | `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`                       |
 
@@ -79,25 +79,29 @@ fight our own grid-driven movement or draw Roblox's built-in nameplate.
 Clones use `preserveAnimationRig = true`: only the root part is Anchored so
 Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 
-1. `WalkAnimation` / `AttackAnimation` children under the template (if present)
-2. `definition.walkAnimationId` / `attackAnimationId` (`""` disables that track)
-3. `MonsterConfig.DEFAULT_WALK_ANIMATION_ID` / `DEFAULT_ATTACK_ANIMATION_ID`
-  when the definition omits the field (`nil`)
+1. Walk: `WalkAnimation` child / pack `Animation` / AnimSaves, then
+   `walkAnimationId` (`""` disables); `proceduralWalk` skips Toolbox ids
+2. Attack: `attackAnimationId` when set (`""` disables); else `AttackAnimation`
+   child; else `MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID`
 
 **Zombie** uses authored walk / attack clips (`walkAnimationId` /
 `attackAnimationId` on the definition). Tune `attackHitDelay` so chew damage
 lands on the impact frame of the swing.
 
-**Goblin** disables walk (`walkAnimationId = ""`) — catalog R15 walk looked
-buggy against grid snap — and plays a one-shot club swing (`ToolSlash`) each
-chew hit via `MonsterAnimation.playMelee`.
+**Goblin** / **Goblin Elite** share the authored club swing (`attackAnimationId`)
+with `attackHitDelay` 0.7; each has its own `walkAnimationId`.
 
-**Spider** Toolbox packs often ship a Script named `Animation` with a child
-`Animation` (`rbxassetid`). Those IDs are usually **permission-locked** for
-other experiences — do not play them. With `proceduralWalk = true`,
+**Spider** / **Scorpion** Toolbox packs often ship a Script named `Animation`
+with a child `Animation` (`rbxassetid`). Those IDs are usually **permission-locked**
+for other experiences — do not play them. With `proceduralWalk = true`,
 `MonsterAnimation` registers a KeyframeSequence from `AnimSaves` via
 `AnimationClipProvider` (local, owned by this place) when present; otherwise
-`MonsterProceduralGait` drives the legs. Sanitize still strips the Script.
+`MonsterProceduralGait` drives the legs (Scorpion also waves pincers / tail
+when those joints exist). Unnamed Toolbox `Part` meshes get synthetic Motor6Ds
+from the root — no rename required. Sanitize still strips the Script. Scorpion
+**walk** stays procedural; **chew** uses authored `attackAnimationId`
+(`rbxassetid://134435243507976`) with `attackHitDelay` 0.4. Scorpion **burrow** is the Spider jump
+equivalent: sink / travel / rise in `MonsterBehavior` (no uploaded clip).
 
 If a template is missing, the server logs once and uses the colored Part
 placeholder so gameplay still works. Movement uses `snapFeetToTileTop` so
@@ -120,9 +124,13 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | `Spider`      | `Spider`               |
 | `QueenSpider` | `QueenSpider`          |
 | `Werewolf`    | `Werewolf` (currently under `Assets.Brainrots`; `ModelUtil` falls back) |
+| `Skeleton`    | `Skeleton`             |
+| `SmallMummy`  | `SmallMummy`           |
+| `PharaohMummy`| `PharaohMummy`         |
+| `Scorpion`    | `Scorpion`             |
 
-Spider / Queen Spider Toolbox meshes face the wrong way relative to
-`MODEL_FACE_DIRECTION` (−X); both set `modelOrientationDegrees`.
+Spider / Queen Spider / Scorpion Toolbox meshes often face the wrong way
+relative to `MODEL_FACE_DIRECTION` (−X); they set `modelOrientationDegrees`.
 Boss spawns refuse a second living copy of the same `monsterId` on a plot
 (guards Studio soft-reload double-bootstrap).
 
@@ -156,6 +164,7 @@ models (at least Zombie, Goblin, Goblin Elite).
 | Queen Spider | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅ |
 | Duke Vampire | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 | Small Mummy  | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround` |
+| Scorpion     | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅ |
 | Pharaoh Mummy| 15000  | 5.0      | 200    | 1.0s         | Y    | Rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅ |
 
 
@@ -360,9 +369,10 @@ end on the boss).
 - **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
 - **Level 40:** decade closer — `QueenSpider` + `DukeVampire` dual big-wave
   finale under receded fog (Queen flags the wave; Duke spawns immediately after).
-- **Levels 41–49:** `Desert`; **SmallMummy** only (counts ramp). Later desert
-  species slot in here when authored.
-- **Level 50:** `PharaohMummy` big-wave finale (still mummy grunts before the boss).
+- **Levels 41–44:** `Desert`; **SmallMummy** only (counts ramp).
+- **Levels 45–49:** `Scorpion` intro on 45 (burrow under the lawn, emerge in
+  front of the first Brainrot); mixed with Small Mummy.
+- **Level 50:** `PharaohMummy` big-wave finale (mummy + scorpion packs first).
 
 Further archetypes (Shield, Flying, Carrier, …) follow the same pattern:
 registry data plus ability handlers, never duplicated base AI.

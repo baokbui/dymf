@@ -38,7 +38,7 @@ Within a lane (see `PlotConfig`):
 - **Fallback:** procedural cottage if the asset is missing (dev-safe).
 - `HouseAnchor` attachment remains on the plot base for legacy markers.
 - Interior: authored pedestals live in the Cottage asset. Runtime only adds an
-  empty `CollectedBosses` folder for future trophy models (M25) — no spawned
+  empty `CollectedBosses` folder for future trophy models (M21) — no spawned
   `BossDisplay` cylinders.
 
 ### Studio: insert from Toolbox

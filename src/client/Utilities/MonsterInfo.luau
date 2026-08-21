@@ -72,6 +72,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Royal Tribute",
 		description = "Steals one Brainrot from each of 3 random lanes (15s cooldown).",
 	},
+	ScorpionBurrow = {
+		label = "Burrow",
+		description = "Digs under the lawn on entry and rises in front of the first Brainrot. Does not burrow in empty lanes.",
+	},
 }
 
 local function abilityIds(definition: Types.MonsterDefinition): { string }

@@ -297,14 +297,13 @@ Persist player progress.
 
 ## Save
 
-- Current level
-- Highest unlocked level
-- Coins
-- Player health
-- Brainrots
-- Brainrot positions
-- Brainrot health
+- Current day
+- Highest unlocked day
+- Brains
+- Player health (hearts)
+- Planted Brainrots (id, tile, HP) — **victory checkpoint only**
 - Unlocks
+- Equipped loadout
 - Upgrades
 - Statistics
 
@@ -312,19 +311,21 @@ Persist player progress.
 
 ## Do Not Save
 
-- Monsters
-- Monster positions
+- **Coins** (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse`)
+- Mid-day plants (until that day is won)
+- Monsters / monster positions
 - Projectiles
 - Ground coins
 - Temporary combat state
+- Level timers
 
 
 
 ## Rejoin Behavior
 
-- Restore battlefield
-- Restore player progress
-- Restart the saved level from the beginning
+- Restore day, hearts, brains, unlocks, and the **committed** lawn
+- Coins via day purse (not a saved balance)
+- Press Start Day again (active day does not resume mid-fight)
 
 
 
@@ -348,7 +349,7 @@ Persist player progress.
   30 = Queen Spider).
 - Adjacent levels ramp slowly — sometimes the same difficulty as the prior level.
 - Days 21–24: Night weather; Days 25–34: NightFog; Days 35–40: NightFogReceded;
-  Days 41–50: Desert (`docs/WEATHER.md`) + Spider / Queen Spider intros.
+  Days 41–50: Desert (`docs/WEATHER.md`) — Small Mummy, Scorpion (45), Pharaoh (50).
 
 
 

@@ -16,7 +16,7 @@
 		                 placement raycast target)
 		SpawnLocation  - left edge of the play area, facing the enemy (+X)
 		HouseAnchor    - attachment marking the house spot behind the player
-		House          - walkable cottage (HouseBuilder) with boss pedestals (M25)
+		House          - walkable cottage (HouseBuilder) with boss pedestals (M21)
 		CoinSpawner    - attachment at the lane center (M3)
 		GridCenter     - attachment at the play-area center; GridService lays the
 		                 tile grid out from here (M2)
