@@ -680,4 +680,272 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	glow.Parent = part
 end
 
+local function sandSequence(): ColorSequence
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, VfxConfig.SAND_COLOR_A),
+		ColorSequenceKeypoint.new(0.5, VfxConfig.SAND_COLOR_B),
+		ColorSequenceKeypoint.new(1, VfxConfig.SAND_COLOR_C),
+	})
+end
+
+local function sandEmitter(parent: Instance, size0: number, size1: number, rate: number): ParticleEmitter
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	emitter.Color = sandSequence()
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, size0),
+		NumberSequenceKeypoint.new(1, size1),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.15),
+		NumberSequenceKeypoint.new(0.65, 0.4),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Lifetime = NumberRange.new(0.6, 1.2)
+	emitter.Speed = NumberRange.new(4, 14)
+	emitter.SpreadAngle = Vector2.new(40, 40)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(120, 360)
+	emitter.Rate = rate
+	emitter.LightEmission = 0.05
+	emitter.LightInfluence = 0.35
+	emitter.Acceleration = Vector3.new(0, 18, 0)
+	emitter.Drag = 1
+	emitter.LockedToPart = true
+	emitter.Parent = parent
+	return emitter
+end
+
+--[[
+	Prefer the right (grab) hand for Pharaoh steal; Toolbox names vary.
+]]
+function VfxUtil.findStealHand(model: Model): BasePart?
+	local preferred = {
+		"RightHand",
+		"Right Hand",
+		"RightArm",
+		"Right Arm",
+		"RightLowerArm",
+		"RightUpperArm",
+		"RArm",
+		"righthand",
+		"rightarm",
+	}
+	for _, name in preferred do
+		local child = model:FindFirstChild(name, true)
+		if child and child:IsA("BasePart") then
+			return child
+		end
+	end
+
+	local fallback: BasePart? = nil
+	for _, descendant in model:GetDescendants() do
+		if not descendant:IsA("BasePart") then
+			continue
+		end
+		local n = string.lower(descendant.Name)
+		if string.find(n, "hand", 1, true) or string.find(n, "palm", 1, true) or string.find(n, "fist", 1, true) then
+			if string.find(n, "right", 1, true) or string.find(n, "r_", 1, true) then
+				return descendant
+			end
+			if fallback == nil then
+				fallback = descendant
+			end
+		elseif fallback == nil and (string.find(n, "rightarm", 1, true) or string.find(n, "rarm", 1, true)) then
+			fallback = descendant
+		end
+	end
+	return fallback
+end
+
+local function cframeFromUp(position: Vector3, up: Vector3, spin: number): CFrame
+	local axis = if up.Magnitude > 1e-3 then up.Unit else Vector3.yAxis
+	local right = axis:Cross(Vector3.zAxis)
+	if right.Magnitude < 0.15 then
+		right = axis:Cross(Vector3.xAxis)
+	end
+	right = right.Unit
+	return CFrame.fromMatrix(position, right, axis) * CFrame.Angles(0, spin, 0)
+end
+
+local function stealTornadoAxis(hand: BasePart, origins: { Vector3 }?): Vector3
+	-- Funnel local +Y is out of the palm; flip so the cone opens toward the plants
+	-- instead of back into the arm.
+	if origins and #origins > 0 then
+		local sum = Vector3.zero
+		for _, origin in origins do
+			sum += origin
+		end
+		local toward = (sum / #origins) - hand.Position
+		if toward.Magnitude > 1.25 then
+			return toward.Unit
+		end
+	end
+	local look = -hand.CFrame.LookVector
+	if look.Magnitude > 0.2 then
+		return look.Unit
+	end
+	return Vector3.yAxis
+end
+
+--[[
+	Pharaoh steal: a big spinning sand funnel, rooted on `attachTo` (steal
+	hand) when provided, plus grit pulled from each plant origin.
+]]
+function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, attachTo: BasePart?)
+	local duration = VfxConfig.SAND_TORNADO_DURATION
+	local height = VfxConfig.SAND_TORNADO_HEIGHT
+	local radius = VfxConfig.SAND_TORNADO_RADIUS
+	local folder = effectsFolder()
+	local sandColor = VfxConfig.SAND_COLOR_A
+	local handOffset = VfxConfig.SAND_TORNADO_HAND_OFFSET
+
+	local startAxis = Vector3.yAxis
+	local startPos = destination + Vector3.new(0, height * 0.08, 0)
+	if attachTo then
+		startAxis = stealTornadoAxis(attachTo, origins)
+		startPos = attachTo.Position + startAxis * handOffset
+	end
+
+	local root = Instance.new("Model")
+	root.Name = "SandTornado"
+	root.Parent = folder
+
+	local column = Instance.new("Part")
+	column.Name = "Hub"
+	column.Anchored = true
+	column.CanCollide = false
+	column.CanQuery = false
+	column.CanTouch = false
+	column.Transparency = 1
+	column.Size = Vector3.new(1, 1, 1)
+	column.CFrame = cframeFromUp(startPos, startAxis, 0)
+	column.Parent = root
+	root.PrimaryPart = column
+
+	-- Visible funnel: wide at the base, tapering up.
+	for i = 1, 7 do
+		local t = (i - 1) / 6
+		-- Narrow at the hand, wide toward the steal targets.
+		local ringRadius = radius * (0.22 + t * 0.8)
+		local band = Instance.new("Part")
+		band.Name = "Funnel" .. i
+		band.Shape = Enum.PartType.Cylinder
+		band.Anchored = true
+		band.CanCollide = false
+		band.CanQuery = false
+		band.CanTouch = false
+		band.Material = Enum.Material.Sand
+		band.Color = if i % 2 == 0 then VfxConfig.SAND_COLOR_B else sandColor
+		band.Transparency = VfxConfig.SAND_TORNADO_MESH_TRANSPARENCY
+		-- Cylinder default is X-axis; rotate so it stands on Y.
+		band.Size = Vector3.new(height / 7 + 0.4, ringRadius * 2, ringRadius * 2)
+		band.CFrame = column.CFrame
+			* CFrame.new(0, t * height + height / 14, 0)
+			* CFrame.Angles(0, 0, math.rad(90))
+		band.Parent = root
+
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = column
+		weld.Part1 = band
+		weld.Parent = band
+		band.Anchored = false
+		band.Massless = true
+	end
+
+	sandEmitter(column, 3.2, 0.8, 55)
+	for i = 1, 4 do
+		local attachment = Instance.new("Attachment")
+		local angle = (i / 4) * math.pi * 2
+		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.4, height * 0.2, math.sin(angle) * radius * 0.4)
+		attachment.Parent = column
+		local swirl = sandEmitter(attachment, 2.2, 0.45, 28)
+		swirl.LockedToPart = true
+		swirl.SpreadAngle = Vector2.new(80, 80)
+		swirl.Speed = NumberRange.new(8, 18)
+	end
+
+	if origins then
+		for _, origin in origins do
+			local suck = Instance.new("Part")
+			suck.Name = "SandSuck"
+			suck.Anchored = true
+			suck.CanCollide = false
+			suck.CanQuery = false
+			suck.CanTouch = false
+			suck.Transparency = 1
+			suck.Size = Vector3.new(0.2, 0.2, 0.2)
+			suck.Position = origin + Vector3.new(0, 2, 0)
+			suck.Parent = folder
+
+			local pullTo = if attachTo then attachTo.Position else destination
+			local toDest = pullTo - origin
+			local accel = Vector3.new(toDest.X, toDest.Y + 6, toDest.Z) * 2.4
+			local grit = Instance.new("ParticleEmitter")
+			grit.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			grit.Color = sandSequence()
+			grit.Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 2.4),
+				NumberSequenceKeypoint.new(1, 0.4),
+			})
+			grit.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.1),
+				NumberSequenceKeypoint.new(1, 1),
+			})
+			grit.Lifetime = NumberRange.new(0.45, 0.9)
+			grit.Speed = NumberRange.new(8, 16)
+			grit.SpreadAngle = Vector2.new(30, 30)
+			grit.Rate = 36
+			grit.LightEmission = 0.05
+			grit.LightInfluence = 0.35
+			grit.Acceleration = accel
+			grit.Drag = 0.2
+			grit.Parent = suck
+			grit:Emit(28)
+
+			task.delay(duration + 0.5, function()
+				suck:Destroy()
+			end)
+		end
+	end
+
+	local RunService = game:GetService("RunService")
+	local elapsed = 0
+	local spinAngle = 0
+	local spin = VfxConfig.SAND_TORNADO_SPIN
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not column.Parent then
+			conn:Disconnect()
+			return
+		end
+		elapsed += dt
+		spinAngle += spin * dt
+		local pos = destination + Vector3.new(0, height * 0.08, 0)
+		local axis = Vector3.yAxis
+		if attachTo and attachTo.Parent then
+			axis = stealTornadoAxis(attachTo, origins)
+			pos = attachTo.Position + axis * handOffset
+		end
+		column.CFrame = cframeFromUp(pos, axis, spinAngle)
+		if elapsed >= duration then
+			for _, descendant in root:GetDescendants() do
+				if descendant:IsA("ParticleEmitter") then
+					descendant.Enabled = false
+					descendant.Rate = 0
+				elseif descendant:IsA("BasePart") and descendant.Name:find("Funnel") == 1 then
+					descendant.Transparency = math.min(1, descendant.Transparency + dt * 2)
+				end
+			end
+		end
+	end)
+
+	task.delay(duration + 1.1, function()
+		if conn.Connected then
+			conn:Disconnect()
+		end
+		root:Destroy()
+	end)
+end
+
 return VfxUtil

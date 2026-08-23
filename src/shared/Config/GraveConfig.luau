@@ -37,6 +37,9 @@ local GraveConfig = {
 	RISE_EXTRA_STUDS = 0.5,
 	-- Zombie/Skeleton climb out of the grave.
 	MONSTER_RISE_DURATION = 0.85,
+
+	-- Default seconds for BustGrave if the definition omits abilityParams.
+	BUST_DURATION = 8,
 }
 
 table.freeze(GraveConfig)

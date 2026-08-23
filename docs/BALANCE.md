@@ -82,6 +82,8 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
 | Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
+| Giraffa Celeste | 125 | 8 | Clears Night Fog on its row (store: 75 brains) |
+| Brr Brr Patapim | 50 | 8 | Plant on grave; bust 8s then despawn (unlock: reach Day 31) |
 
 Intent: Cappuccino is reliable lane DPS; Tung Tung rewards the front line;
 Lirili is a panic freeze (Bombardino-style one-shot); Tralalero is bubble

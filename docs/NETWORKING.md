@@ -43,7 +43,8 @@ Remotes module. That is the only required step.
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
-| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / Terrify / Dizzy / MonsterAttack VFX + SFX (**plot owner only**) |
+| `FogRowsChanged`   | server → client | ✅ | Lawn rows whose Night Fog plant-block is lifted (Giraffa); `{ rows }` **plot owner only** |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / Terrify / SandTornado / Dizzy / MonsterAttack VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
@@ -163,7 +164,9 @@ when all spawn groups are finished and no monsters remain, the server grants
 coins and unlocks the next level. The Victory payload's `reward` table may
 include `unlockedBrainrotId` when clearing that day grants a starter-roster
 Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`) — the client shows this as an
-`UnlockPopup` after the reward popup (see `BRAINROTS.md` / `UI.md`).
+`UnlockPopup` after the reward popup. Join / Preparation payloads may include
+`introducedBrainrotIds` and `introducedMonsterIds` (queued intros; see
+`BRAINROTS.md` / `UI.md` / `LEVELS.md`).
 
 ---
 

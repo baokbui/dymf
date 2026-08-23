@@ -159,7 +159,8 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
-| Coin pickup sparkle | `CoinController` when a collected coin despawns |
+| Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
+| Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
 
 Tuning lives in `Shared.Config.VfxConfig` (particles, colors, durations). Gameplay
 values remain in `CombatConfig`.
@@ -216,7 +217,7 @@ MonsterBehavior.attackBrainrot
 **Pharaoh Mummy** ✅ — `PharaohSummon` spawns a `SmallMummy` in every row (20s).
 `PharaohSteal` removes one living Brainrot from each of 3 random occupied lanes
 (15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
-boss). Steal is not Combat damage. Pharaoh and Small Mummy both use
+boss) with a client sand-tornado suck (`CombatVisual` `SandTornado`). Steal is not Combat damage. Pharaoh and Small Mummy both use
 `spawnStyle = "RiseFromGround"` (buried, then tween up; invulnerable while rising).
 Pharaoh walk / chew / summon / steal clips live on the definition
 (`abilityAnimationIds` for summon + steal; chew uses the Small Mummy attack id).

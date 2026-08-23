@@ -41,6 +41,8 @@ local EVENT_NAMES = {
 	"SetEquipped",
 	-- Brainrots (Milestone 5)
 	"BrainrotAction",
+	-- Fog-cleared lawn rows (Giraffa Celeste) — owner-only
+	"FogRowsChanged",
 	-- Combat visuals (Milestone 7)
 	"CombatVisual",
 }

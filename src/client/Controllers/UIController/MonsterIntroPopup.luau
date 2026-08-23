@@ -3,7 +3,7 @@
 	MonsterIntroPopup
 	Center-screen intro shown the first time the player reaches a day that
 	introduces a new monster / boss (ProgressConfig.MONSTER_INTRO_SCHEDULE).
-	Display-only — LevelService decides what/when via introducedMonsterId.
+	Display-only — LevelService decides what/when via introducedMonsterIds.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -29,6 +29,7 @@ export type MonsterIntroPopupHud = typeof(setmetatable(
 		nameLabel: TextLabel,
 		statsLabel: TextLabel,
 		abilityLabel: TextLabel,
+		onHidden: (() -> ())?,
 	},
 	MonsterIntroPopup
 ))
@@ -168,6 +169,9 @@ end
 
 function MonsterIntroPopup.hide(self: MonsterIntroPopupHud)
 	self.frame.Visible = false
+	if self.onHidden then
+		self.onHidden()
+	end
 end
 
 return MonsterIntroPopup

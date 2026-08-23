@@ -33,6 +33,7 @@ type GraveRuntime = {
 	model: Model,
 	nextSpawnAt: number,
 	monsterPool: { string },
+	busting: boolean,
 }
 
 local gravesByPlot: { [Model]: { GraveRuntime } } = {}
@@ -179,6 +180,9 @@ local function emerge(runtime: GraveRuntime)
 	if spawningClosed[runtime.plotModel] then
 		return
 	end
+	if runtime.busting then
+		return
+	end
 	if not runtime.model.Parent then
 		return
 	end
@@ -209,6 +213,59 @@ local function emerge(runtime: GraveRuntime)
 		runtime.position.row,
 		runtime.position.column
 	))
+end
+
+local function findGrave(plotModel: Model, position: Types.GridPosition): GraveRuntime?
+	local list = gravesByPlot[plotModel]
+	if not list then
+		return nil
+	end
+	for _, runtime in list do
+		if runtime.position.row == position.row and runtime.position.column == position.column then
+			return runtime
+		end
+	end
+	return nil
+end
+
+function GraveService.hasGrave(plotModel: Model, position: Types.GridPosition): boolean
+	return findGrave(plotModel, position) ~= nil
+end
+
+function GraveService.beginBust(plotModel: Model, position: Types.GridPosition): boolean
+	local runtime = findGrave(plotModel, position)
+	if not runtime then
+		return false
+	end
+	runtime.busting = true
+	return true
+end
+
+function GraveService.cancelBust(plotModel: Model, position: Types.GridPosition)
+	local runtime = findGrave(plotModel, position)
+	if runtime then
+		runtime.busting = false
+	end
+end
+
+function GraveService.finishBust(plotModel: Model, position: Types.GridPosition): boolean
+	local list = gravesByPlot[plotModel]
+	if not list then
+		return false
+	end
+	for index, runtime in list do
+		if runtime.position.row == position.row and runtime.position.column == position.column then
+			table.remove(list, index)
+			GridService.setGraveFlag(plotModel, position, false)
+			destroyGraveModel(runtime.model)
+			return true
+		end
+	end
+	return false
+end
+	-- Repeat grave spawns stop when authored waves complete; victory does not
+	-- wait on graves after that.
+	return false
 end
 
 function GraveService.hasPending(plotModel: Model): boolean
@@ -274,6 +331,7 @@ function GraveService.spawnForDay(plotModel: Model, definition: Types.LevelDefin
 		if not GridService.tryOccupy(plotModel, position, nil) then
 			continue
 		end
+		GridService.setGraveFlag(plotModel, position, true)
 
 		local worldPos = GridService.getWorldPosition(plotModel, position)
 		if not worldPos then
@@ -292,6 +350,7 @@ function GraveService.spawnForDay(plotModel: Model, definition: Types.LevelDefin
 			model = model,
 			nextSpawnAt = now + randomInterval(emergeMin, emergeMax),
 			monsterPool = pool,
+			busting = false,
 		})
 	end
 
@@ -318,7 +377,7 @@ function GraveService.start()
 					continue
 				end
 				for _, runtime in list do
-					if now >= runtime.nextSpawnAt then
+					if not runtime.busting and now >= runtime.nextSpawnAt then
 						emerge(runtime)
 					end
 				end

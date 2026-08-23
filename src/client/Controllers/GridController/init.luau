@@ -21,7 +21,6 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared.Constants)
 local GridConfig = require(Shared.Config.GridConfig)
 local Logger = require(Shared.Utilities.Logger)
-local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local GridController = {}
 GridController.Name = "GridController"
@@ -34,22 +33,6 @@ local localPlayer = Players.LocalPlayer
 local highlight: BasePart? = nil
 local rayParams = RaycastParams.new()
 local hoveredTile: BasePart? = nil
-local weatherController: any = nil
-
-local function currentWeather(): string?
-	if weatherController == nil then
-		local module = script.Parent:FindFirstChild("WeatherController")
-		if not module then
-			return nil
-		end
-		local ok, result = pcall(require, module)
-		weatherController = if ok then result else false
-	end
-	if type(weatherController) == "table" and weatherController.getWeather then
-		return weatherController.getWeather()
-	end
-	return nil
-end
 
 local function createHighlight(): BasePart
 	local part = Instance.new("Part")
@@ -122,15 +105,6 @@ end
 local function updateFromScreenPoint(x: number, y: number)
 	local tile = resolveTileAt(x, y)
 	if not tile then
-		hideHighlight()
-		return
-	end
-
-	-- Fog-covered tiles stay unmarked — no hover outline through the mist.
-	local column = tile:GetAttribute("Column")
-	if type(column) == "number"
-		and WeatherUtil.isFogPlotColumn(column, currentWeather())
-	then
 		hideHighlight()
 		return
 	end

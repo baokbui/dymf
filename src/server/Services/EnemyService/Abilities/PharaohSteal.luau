@@ -11,6 +11,7 @@ local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local GridService = require(script.Parent.Parent.Parent.GridService)
 local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
+local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local PharaohSteal = {}
 
@@ -107,13 +108,23 @@ function PharaohSteal.onTick(ctx, state, dt: number, callbacks)
 	local plotModel = ctx.plotModel
 	local row = ctx.row
 	local column = ctx.column
+	local instanceId = ctx.instanceId
 	local apply = function()
 		if not plotModel.Parent then
 			return
 		end
 		local destination = GridService.getWorldPositionAtColumn(plotModel, row, column)
+		local origins: { Vector3 } = {}
 		for _, pick in picks do
+			local placement = BrainrotService.getPlacement(pick)
+			if placement then
+				table.insert(origins, placement.model:GetPivot().Position)
+			end
 			BrainrotService.stealPlacement(pick, destination)
+		end
+		local ownerUserId = plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" and destination then
+			CombatService.notifySandTornado(ownerUserId, instanceId, destination, origins)
 		end
 	end
 	if hitDelay <= 0 then

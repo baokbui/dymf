@@ -46,6 +46,9 @@ From `Shared.Types.BrainrotDefinition`:
 | `coinGeneration`  | number?                | Coins per cycle for producers                                      |
 | `abilityParams`   | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                       |
 | `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb / freeze cast); may plant on NightFog columns |
+| `plantsOnFog`     | boolean?               | May plant on NightFog columns before the row is cleared (Giraffa) |
+| `plantOnGrave`    | boolean?               | Must be planted on a grave (Patapim); graves sit on fog tiles |
+| `brainsCost`      | number?                | Brains price at the physical store (M19); nil = not sold there |
 | `ignoreMonsterChew` | boolean?             | Monsters phase through; no chew damage (Lirili)                    |
 | `plantCooldown`   | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)` |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
@@ -95,12 +98,14 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 | `LiriliLarila` | `Lirilì Larilà` |
 | `CappuccinoAssassino` | `Cappuccino Assassino` |
 | `ChimpanziniBananini` | `Chimpanzini Bananini` |
+| `GiraffaCeleste` | `Giraffa Celeste` |
+| `BrrBrrPatapim` | `Brr Brr Patapim` |
 
 For each Model: set `PrimaryPart` (prefer `RootPart` / `HumanoidRootPart` —
 `ModelUtil.pickPrimaryPart` does this on clone), strip leftover Tools/Scripts/
 Sounds (clones also strip those in `ModelUtil`).
 
-### Animated Brainrots ✅ (Tung Tung) / 🔜 (others)
+### Animated Brainrots ✅ (Milestone 17)
 
 Set on the registry definition (never branch on names):
 
@@ -155,7 +160,9 @@ is economy + melee + wall only, matched against the Day 1–4 Zombie-only ramp
 time (`ProgressConfig.UNLOCK_SCHEDULE`, granted server-side in
 `LevelService.onVictory` → `ProgressService.grantUnlockForLevel`), auto-equipped
 when there's an open loadout slot, and shown via a center-screen
-`UnlockPopup` (client, display-only):
+`UnlockPopup` (client, display-only). The Day 1 starter trio also gets the
+same popup the first time the player reaches Day 1
+(`ProgressConfig.BRAINROT_INTRO_SCHEDULE`):
 
 | Clear Day | Unlocks |
 | --------- | ------- |
@@ -170,6 +177,15 @@ which cost **Brains** at the physical Store (Milestone 19). Re-clearing an
 already-cleared day (Day Select) does not re-grant or re-show the popup
 (`grantUnlockForLevel` is idempotent per player).
 
+**Reach unlock:** **Brr Brr Patapim** is granted the first time the player
+**reaches** Day 31 (`ProgressConfig.REACH_UNLOCK_SCHEDULE`) — same catch-up
+rules as monster intros. Equip into an open loadout slot if one exists
+(`MAX_EQUIPPED` is still 7).
+
+**Store (Milestone 19 🔜):** **Giraffa Celeste** is in `ProgressConfig.STORE_CATALOG`
+(`brainsCost` 75) and is **not** campaign-granted. The physical shop is not
+wired yet; `DevConfig.UNLOCK_ALL_BRAINROTS` unlocks her in Studio.
+
 ## Roster ✅ (Milestone 5)
 
 
@@ -182,6 +198,8 @@ already-cleared day (Day Select) does not re-grant or re-show the popup
 | Lirili Larila        | 75   | —             | 0      | —        | Entire row | Lane freeze 7s on place; despawn after cast anim | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 50   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
+| Giraffa Celeste      | 125  | 800 (8)       | 0      | —        | —        | Clears Night Fog on its row while alive | store 75 brains |
+| Brr Brr Patapim      | 50   | 800 (8)       | 0      | —        | —        | Plant on a grave; destroys it after 8s, then despawns | 12s CD |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 

@@ -189,7 +189,8 @@ Introduction cadence:
 
 - **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
-  **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**.
+  **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**,
+  and grants **Brr Brr Patapim** (grave buster) on first reach of that day.
   **Exception:** Level 41 introduces `SmallMummy` at the start of the 41–50 band.
   **Exception:** Level 45 introduces `Scorpion` (matches the 5-level cadence).
   Days **41–50** authored waves are desert-only: **SmallMummy** from 41,
@@ -198,10 +199,13 @@ Introduction cadence:
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
   dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave;
   Level 50 = `PharaohMummy`).
-- The first time a player **reaches** an intro day, `LevelService` shows a
-  **MonsterIntroPopup** (portrait + stats + ability blurb) driven by
-  `ProgressConfig.MONSTER_INTRO_SCHEDULE` / `introducedMonsterId` — same idea
-  as Brainrot unlock popups, but keyed to day arrival rather than day clear.
+- The first time a player **reaches** an intro day (or skips ahead via Day
+  Select), `LevelService` queues **MonsterIntroPopup**s for every
+  `MONSTER_INTRO_SCHEDULE` entry with `day` ≤ current that has not been
+  shown — Zombie on Day 1, then Goblin / bosses / Skeleton / desert units as
+  listed in `ProgressConfig`. Same idea as Brainrot intros, persisted on
+  `introducedMonsters`. Starter Brainrots use `BRAINROT_INTRO_SCHEDULE` on
+  Day 1 (`introducedBrainrots`).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**

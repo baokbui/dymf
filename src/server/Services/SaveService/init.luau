@@ -93,6 +93,7 @@ local function defaultSaveData(): Types.SaveData
 		upgrades = {},
 		statistics = {},
 		introducedMonsters = {},
+		introducedBrainrots = {},
 	}
 end
 
@@ -185,6 +186,16 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
+	local introducedBrainrots = payload.introducedBrainrots
+	if type(introducedBrainrots) == "table" then
+		save.introducedBrainrots = {}
+		for _, value in introducedBrainrots do
+			if type(value) == "string" then
+				table.insert(save.introducedBrainrots :: { string }, value)
+			end
+		end
+	end
+
 	local brainrots = payload.brainrots
 	if type(brainrots) == "table" then
 		save.brainrots = {}
@@ -243,6 +254,11 @@ local function collectSnapshot(player: Player): Types.SaveData
 			then progress.introducedMonsters
 			elseif fallback and fallback.introducedMonsters
 			then deepCopyStringList(fallback.introducedMonsters)
+			else {},
+		introducedBrainrots = if progress
+			then progress.introducedBrainrots
+			elseif fallback and fallback.introducedBrainrots
+			then deepCopyStringList(fallback.introducedBrainrots)
 			else {},
 	}
 end
@@ -333,9 +349,11 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		equipped = saveData.equipped,
 		statistics = saveData.statistics,
 		introducedMonsters = saveData.introducedMonsters,
+		introducedBrainrots = saveData.introducedBrainrots,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
 	local forcedDay = LevelService.applyDevDay(player)
+	LevelService.queueJoinIntros(player)
 	CoinService.applyDayPurse(player, forcedDay or saveData.currentLevel)
 	ProgressService.applyDevRoster(player)
 	CoinService.applyDevPurse(player)

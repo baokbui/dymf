@@ -38,6 +38,25 @@ function WeatherUtil.isFogPlotColumn(column: number, weather: string?): boolean
 	return column >= WeatherConfig.fogStartColumn(weather) and column <= GridConfig.COLUMNS
 end
 
+-- Fog columns still block planting unless the row was cleared, the unit can
+-- plant into fog, or it is a one-shot caster (Lirili / Bombardino).
+function WeatherUtil.fogBlocksPlanting(
+	column: number,
+	weather: string?,
+	rowCleared: boolean,
+	plantsOnFog: boolean?,
+	triggersOnPlace: boolean?,
+	plantOnGrave: boolean?
+): boolean
+	if not WeatherUtil.isFogPlotColumn(column, weather) then
+		return false
+	end
+	if rowCleared or plantsOnFog == true or triggersOnPlace == true or plantOnGrave == true then
+		return false
+	end
+	return true
+end
+
 -- Every fog-blocked lawn tile (east columns × all rows) for `weather`.
 function WeatherUtil.fogPlotPositions(weather: string?): { Types.GridPosition }
 	local result: { Types.GridPosition } = {}

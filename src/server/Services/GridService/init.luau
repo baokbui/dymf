@@ -238,6 +238,51 @@ function GridService.tryOccupy(plotModel: Model, position: Types.GridPosition, b
 	return true
 end
 
+function GridService.setGraveFlag(plotModel: Model, position: Types.GridPosition, isGrave: boolean)
+	local record = getRecord(plotModel, position)
+	if not record then
+		return
+	end
+	record.part:SetAttribute("Grave", isGrave)
+end
+
+function GridService.isGraveTile(plotModel: Model, position: Types.GridPosition): boolean
+	local record = getRecord(plotModel, position)
+	return record ~= nil and record.part:GetAttribute("Grave") == true
+end
+
+-- Grave tiles are occupied with a nil Brainrot id. Grave-busters claim the
+-- same tile without treating it as a normal plant conflict.
+function GridService.tryOccupyOverGrave(
+	plotModel: Model,
+	position: Types.GridPosition,
+	brainrotInstanceId: string
+): boolean
+	if not GridUtil.isInBounds(position) then
+		return false
+	end
+	local record = getRecord(plotModel, position)
+	if not record or not record.occupied or record.brainrotInstanceId ~= nil then
+		return false
+	end
+	record.brainrotInstanceId = brainrotInstanceId
+	record.part:SetAttribute("Occupied", true)
+	return true
+end
+
+-- After a grave-buster dies mid-channel: tile stays a grave (no Brainrot id).
+function GridService.revertToGrave(plotModel: Model, position: Types.GridPosition): boolean
+	local record = getRecord(plotModel, position)
+	if not record then
+		return false
+	end
+	record.occupied = true
+	record.brainrotInstanceId = nil
+	record.part:SetAttribute("Occupied", true)
+	record.part:SetAttribute("Grave", true)
+	return true
+end
+
 -- Frees a single tile.
 function GridService.release(plotModel: Model, position: Types.GridPosition)
 	local record = getRecord(plotModel, position)
@@ -247,6 +292,7 @@ function GridService.release(plotModel: Model, position: Types.GridPosition)
 	record.occupied = false
 	record.brainrotInstanceId = nil
 	record.part:SetAttribute("Occupied", false)
+	record.part:SetAttribute("Grave", false)
 end
 
 -- Clears all occupancy on a plot (called when a plot is released for reuse).
@@ -259,6 +305,7 @@ function GridService.resetPlot(plotModel: Model)
 		record.occupied = false
 		record.brainrotInstanceId = nil
 		record.part:SetAttribute("Occupied", false)
+		record.part:SetAttribute("Grave", false)
 		paintGrass(record.part, record.position)
 	end
 	local leftover = plotModel:FindFirstChild("Grid")

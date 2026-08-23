@@ -30,6 +30,7 @@ local currentWeather: string? = nil
 local fogFolder: Folder? = nil
 local savedLighting: { [string]: any }? = nil
 local atmosphere: Atmosphere? = nil
+local clearedFogRows: { [number]: boolean } = {}
 
 local function captureLighting()
 	if savedLighting then
@@ -187,6 +188,24 @@ local function makeFogBank(
 	addLightMist(bank, rate, densityScale)
 end
 
+local function applyClearedLawnFog()
+	if not fogFolder then
+		return
+	end
+	for _, child in fogFolder:GetChildren() do
+		local rowText = string.match(child.Name, "^LawnFog_(%d+)$")
+		if not rowText or not child:IsA("BasePart") then
+			continue
+		end
+		local hidden = clearedFogRows[tonumber(rowText) :: number] == true
+		local emitter = child:FindFirstChild("FogMist")
+		if emitter and emitter:IsA("ParticleEmitter") then
+			emitter.Enabled = not hidden
+			emitter.Rate = if hidden then 0 else WeatherConfig.FOG_LAWN_PARTICLE_RATE
+		end
+	end
+end
+
 local function buildFogVolumes(plotModel: Model)
 	clearFogFolder()
 	local folder = Instance.new("Folder")
@@ -199,25 +218,27 @@ local function buildFogVolumes(plotModel: Model)
 	local height = WeatherConfig.FOG_HEIGHT_STUDS
 	local centerHeight = WeatherConfig.FOG_CENTER_HEIGHT_STUDS
 
-	-- Light mist over the fog lawn columns (closest to the playable plot).
-	local west = PlotUtil.getTileTopCenter(plotModel, 1, startCol)
-	local east = PlotUtil.getTileTopCenter(plotModel, GridConfig.ROWS, GridConfig.COLUMNS)
-	if west and east then
-		local minX = math.min(west.X, east.X) - tileSize * 0.5
-		local maxX = math.max(west.X, east.X) + tileSize * 0.5
-		local minZ = math.min(west.Z, east.Z) - tileSize * 0.5
-		local maxZ = math.max(west.Z, east.Z) + tileSize * 0.5
-		local groundY = (west.Y + east.Y) * 0.5
-		local size = Vector3.new(maxX - minX, height, maxZ - minZ)
-		local center = Vector3.new((minX + maxX) * 0.5, groundY + centerHeight, (minZ + maxZ) * 0.5)
-		makeFogBank(
-			"LawnFog",
-			CFrame.new(center),
-			size,
-			folder,
-			WeatherConfig.FOG_LAWN_PARTICLE_RATE,
-			0.8
-		)
+	-- Light mist over fog lawn columns, one bank per row so Giraffa can clear a lane.
+	for row = 1, GridConfig.ROWS do
+		local west = PlotUtil.getTileTopCenter(plotModel, row, startCol)
+		local east = PlotUtil.getTileTopCenter(plotModel, row, GridConfig.COLUMNS)
+		if west and east then
+			local minX = math.min(west.X, east.X) - tileSize * 0.5
+			local maxX = math.max(west.X, east.X) + tileSize * 0.5
+			local minZ = math.min(west.Z, east.Z) - tileSize * 0.5
+			local maxZ = math.max(west.Z, east.Z) + tileSize * 0.5
+			local groundY = (west.Y + east.Y) * 0.5
+			local size = Vector3.new(maxX - minX, height, maxZ - minZ)
+			local center = Vector3.new((minX + maxX) * 0.5, groundY + centerHeight, (minZ + maxZ) * 0.5)
+			makeFogBank(
+				string.format("LawnFog_%d", row),
+				CFrame.new(center),
+				size,
+				folder,
+				WeatherConfig.FOG_LAWN_PARTICLE_RATE,
+				0.8
+			)
+		end
 	end
 
 	-- Forest: denser deep east, lighter near the lawn edge.
@@ -249,6 +270,7 @@ local function buildFogVolumes(plotModel: Model)
 			1.6
 		)
 	end
+	applyClearedLawnFog()
 end
 
 local function clearWeatherVisuals()
@@ -321,6 +343,21 @@ function WeatherController.start()
 		end
 		local data = state :: { [string]: any }
 		WeatherController.setWeather(if type(data.weather) == "string" then data.weather else nil)
+	end)
+
+	Remotes.getEvent("FogRowsChanged").OnClientEvent:Connect(function(payload: unknown)
+		clearedFogRows = {}
+		if type(payload) == "table" then
+			local rows = (payload :: { [string]: any }).rows
+			if type(rows) == "table" then
+				for _, row in rows do
+					if type(row) == "number" then
+						clearedFogRows[row] = true
+					end
+				end
+			end
+		end
+		applyClearedLawnFog()
 	end)
 
 	task.spawn(function()

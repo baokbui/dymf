@@ -46,6 +46,14 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Sturdy Wall",
 		description = "No attack — just soaks up hits to block the lane.",
 	},
+	ClearFogRow = {
+		label = "Clear Fog",
+		description = "Clears Night Fog on this row so you can plant the east tiles.",
+	},
+	BustGrave = {
+		label = "Grave Roots",
+		description = "Plant on a grave. Destroys it after a few seconds, then disappears.",
+	},
 }
 
 function BrainrotInfo.abilityLabel(abilityId: string?): string

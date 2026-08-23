@@ -504,7 +504,7 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 
 # Milestone 16 — Monster Models
 
-
+**Status: ✅ Complete**
 
 ## Replace placeholder visuals
 
@@ -531,11 +531,11 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
 
 ## Complete When
 
-- Campaign monsters used in authored levels (at least Zombie, Goblin, Goblin Elite, plus
-  any other types already in `Shared.Levels`) use real models in-game instead of
-  colored placeholder parts.
-  - **Pipeline ✅** — insert Toolbox Models per `docs/MONSTERS.md` Models table to finish.
-  - Status: 🔜 pending until campaign templates exist under `Assets.Monsters`.
+- Campaign monsters used in authored levels (Zombie, Goblin, Goblin Elite, and
+  the rest of the Days 1–50 roster in `Shared.Levels`) use real models in-game
+  instead of colored placeholder parts. ✅
+  - Templates under `Assets.Monsters` (Werewolf may live under `Assets.Brainrots`;
+    `ModelUtil` falls back). See `docs/MONSTERS.md`.
 
 ---
 
@@ -543,7 +543,7 @@ models for campaign enemies (same pattern as Milestone 15 Brainrots).
 
 # Milestone 17 — Animations
 
-
+**Status: ✅ Complete**
 
 ## Goal
 
@@ -556,27 +556,30 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 ## Add
 
-- Animation assets / ids per unit (idle, attack, death — extend as needed)
+- Animation assets / ids per unit (idle, attack, death — extend as needed) ✅
 - Data-driven mapping on definitions (`animated`, `idleAnimationId`,
-  `attackAnimationId`, `attackHitDelay` — no per-name branching) ✅ Tung Tung
+  `attackAnimationId`, `attackHitDelay` — no per-name branching) ✅
 - Server modules play clips when behavior fires (`BrainrotAnimation` /
-  `MonsterAnimation`) — display-only relative to combat math
+  `MonsterAnimation`) — display-only relative to combat math ✅
 - Brainrot idle + attack for the launch seven; wall / one-shot units use idle
-  (and place/fly clips where applicable) — 🔜 remaining six after Tung Tung
-- Monster walk / attack / death when models support it (partial ✅)
+  (and place/fly clips where applicable) ✅
+- Monster walk / attack / death when models support it ✅
+  (procedural gait where Toolbox clips are permission-locked)
 
 ## Complete When
 
 - Launch Brainrots animate idle and attack in-game instead of static poses /
-  ScaleTo-only feedback alone. (Tung Tung ✅; others 🔜)
+  ScaleTo-only feedback alone. ✅
 - Combat damage / targeting remain server-authoritative; Animator playback does
-  not grant client authority over hits.
+  not grant client authority over hits. ✅
 
 ---
 
 
 
 # Milestone 18 — Retention Systems
+
+**Status: 🔜 Planned**
 
 
 
@@ -647,6 +650,8 @@ UI only displays and sends intents.
 
 - Physical **Brainrots Store** on the plot / lobby (not a ScreenGui shop bar)
 - Spend **Brains** to unlock new Brainrot roster entries
+- Catalog stub already in `ProgressConfig.STORE_CATALOG`: **Giraffa Celeste**
+  (75 brains). Unit + `ClearFogRow` ability ship now; purchase UI is this milestone.
 - Wire purchases into `ProgressService` unlocks + `SaveService`
 
 ## Complete When

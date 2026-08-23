@@ -53,6 +53,7 @@ local plantReadyAt: { [string]: number } = {}
 local placementAllowed = false
 local selectionAllowed = false
 local currentWeather: string? = nil
+local fogClearedRows: { [number]: boolean } = {}
 local shovelMode = false
 local ghostModel: Model? = nil
 local ghostPart: BasePart? = nil
@@ -66,6 +67,21 @@ PlacementController.selectionChanged = selectionChangedBindable.Event
 
 local shovelModeChangedBindable = Instance.new("BindableEvent")
 PlacementController.shovelModeChanged = shovelModeChangedBindable.Event
+
+local function isFogClearedRow(row: number): boolean
+	return fogClearedRows[row] == true
+end
+
+local function fogBlockedFor(definition: Types.BrainrotDefinition, column: number, row: number): boolean
+	return WeatherUtil.fogBlocksPlanting(
+		column,
+		currentWeather,
+		isFogClearedRow(row),
+		definition.plantsOnFog,
+		definition.triggersOnPlace,
+		definition.plantOnGrave
+	)
+end
 
 local function footprintFor(definition: Types.BrainrotDefinition): number
 	return ModelUtil.brainrotFootprintStuds(definition)
@@ -180,11 +196,14 @@ local function updateGhost(tile: BasePart?)
 	ensureGhostFor(definition)
 	local topCenter = tile.Position + Vector3.new(0, tile.Size.Y / 2, 0)
 	local occupied = tile:GetAttribute("Occupied") == true
+	local isGrave = tile:GetAttribute("Grave") == true
 	local column = tile:GetAttribute("Column")
+	local row = tile:GetAttribute("Row")
 	local fogBlocked = type(column) == "number"
-		and WeatherUtil.isFogPlotColumn(column, currentWeather)
-		and definition.triggersOnPlace ~= true
-	local placeable = placementAllowed and not occupied and not fogBlocked and canAfford()
+		and type(row) == "number"
+		and fogBlockedFor(definition, column, row)
+	local tileTaken = if definition.plantOnGrave == true then not isGrave else occupied
+	local placeable = placementAllowed and not tileTaken and not fogBlocked and canAfford()
 
 	if ghostModel then
 		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees, nil, definition.modelYOffset)
@@ -333,6 +352,13 @@ function PlacementController.setWeather(weather: string?)
 	currentWeather = weather
 end
 
+function PlacementController.setFogClearedRows(rows: { number })
+	fogClearedRows = {}
+	for _, row in rows do
+		fogClearedRows[row] = true
+	end
+end
+
 -- Shop selection (ghost) may still enable during legacy Countdown; planting is Active-only.
 function PlacementController.setSelectionAllowed(allowed: boolean)
 	selectionAllowed = allowed
@@ -405,14 +431,22 @@ local function onPrimaryAction(position: Vector2)
 		return
 	end
 
-	if tile:GetAttribute("Occupied") == true then
+	local isGrave = tile:GetAttribute("Grave") == true
+	local occupied = tile:GetAttribute("Occupied") == true
+	if definition.plantOnGrave == true then
+		if not isGrave then
+			UIEvents.firePlantFailed("Unable to plant — plant this on a grave")
+			return
+		end
+	elseif occupied then
 		UIEvents.firePlantFailed("Unable to plant — that spot is already taken")
 		return
 	end
 	local column = tile:GetAttribute("Column")
+	local row = tile:GetAttribute("Row")
 	if type(column) == "number"
-		and WeatherUtil.isFogPlotColumn(column, currentWeather)
-		and definition.triggersOnPlace ~= true
+		and type(row) == "number"
+		and fogBlockedFor(definition, column, row)
 	then
 		UIEvents.firePlantFailed("Unable to plant — that tile is covered in fog")
 		return
@@ -447,6 +481,22 @@ end
 
 function PlacementController.start()
 	InputController.primaryAction:Connect(onPrimaryAction)
+
+	Remotes.getEvent("FogRowsChanged").OnClientEvent:Connect(function(payload: unknown)
+		if type(payload) ~= "table" then
+			return
+		end
+		local rows = (payload :: { [string]: any }).rows
+		if type(rows) == "table" then
+			local list: { number } = {}
+			for _, row in rows do
+				if type(row) == "number" then
+					table.insert(list, row)
+				end
+			end
+			PlacementController.setFogClearedRows(list)
+		end
+	end)
 
 	UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
 		if input.UserInputType == Enum.UserInputType.MouseMovement

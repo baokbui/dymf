@@ -44,10 +44,12 @@ local BrainrotBehavior = require(script.BrainrotBehavior)
 local BrainrotAnimation = require(script.BrainrotAnimation)
 local BrainrotFeedback = require(script.BrainrotFeedback)
 local Abilities = require(script.Abilities)
+local FogRows = require(script.FogRows)
 local PlotService = require(script.Parent.PlotService)
 local GridService = require(script.Parent.GridService)
 local CoinService = require(script.Parent.CoinService)
 local CombatService = require(script.Parent.CombatService)
+local GraveService = require(script.Parent.GraveService)
 
 local BrainrotService = {}
 BrainrotService.Name = "BrainrotService"
@@ -239,9 +241,17 @@ end
 
 -- Tears down a placement: destroys the model, frees its tile, drops state.
 local function destroyPlacement(placement: Placement)
+	local plotModel = placement.plotModel
+	local position = placement.position
+	local restoreGrave = placement.definition.plantOnGrave == true and GraveService.hasGrave(plotModel, position)
+
 	BrainrotBehavior.unregister(placement)
 	placements[placement.instanceId] = nil
-	GridService.release(placement.plotModel, placement.position)
+	if restoreGrave then
+		GridService.revertToGrave(plotModel, position)
+	else
+		GridService.release(plotModel, position)
+	end
 	placement.model:Destroy()
 end
 
@@ -324,18 +334,34 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	end
 
 	local weather = LevelService.getWeather(player)
-	-- Permanent plants can't sit in fog; one-shot casters (Lirili / Bombardino)
-	-- may still be placed there to hit monsters in the mist.
-	if WeatherUtil.isFogPlotColumn(position.column, weather) and definition.triggersOnPlace ~= true then
-		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
-		return
-	end
-
 	local plot = PlotService.getPlot(player)
 	if not plot then
 		return
 	end
 	local plotModel = plot.model
+	local rowCleared = FogRows.isRowCleared(plotModel, position.row)
+	if WeatherUtil.fogBlocksPlanting(
+		position.column,
+		weather,
+		rowCleared,
+		definition.plantsOnFog,
+		definition.triggersOnPlace,
+		definition.plantOnGrave
+	) then
+		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
+		return
+	end
+
+	local hasGrave = GraveService.hasGrave(plotModel, position)
+	if definition.plantOnGrave == true then
+		if not hasGrave then
+			notifyPlaceFailed(player, "Unable to plant — plant this on a grave")
+			return
+		end
+	elseif hasGrave then
+		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
+		return
+	end
 
 	-- Affordability pre-check (cheap reject before reserving the tile).
 	if CoinService.getBalance(player) < definition.cost then
@@ -347,19 +373,29 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	local instanceId = string.format("Brainrot_%d", nextInstanceId)
 
 	-- Reserve first so two requests can't claim the same tile, then charge.
-	if not GridService.tryOccupy(plotModel, position, instanceId) then
+	local occupied = if definition.plantOnGrave == true
+		then GridService.tryOccupyOverGrave(plotModel, position, instanceId)
+		else GridService.tryOccupy(plotModel, position, instanceId)
+	if not occupied then
 		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
 		return
 	end
 	if not CoinService.trySpend(player, definition.cost) then
-		GridService.release(plotModel, position) -- balance changed mid-flight
+		if definition.plantOnGrave == true then
+			GridService.revertToGrave(plotModel, position)
+		else
+			GridService.release(plotModel, position)
+		end
 		notifyPlaceFailed(player, "Unable to plant — not enough coins")
 		return
 	end
 
 	if not createPlacement(instanceId, definition, player.UserId, plotModel, position, definition.health) then
-		-- Should not happen (tile just reserved); roll everything back.
-		GridService.release(plotModel, position)
+		if definition.plantOnGrave == true then
+			GridService.revertToGrave(plotModel, position)
+		else
+			GridService.release(plotModel, position)
+		end
 		CoinService.addCoins(player, definition.cost)
 		return
 	end
@@ -545,6 +581,7 @@ function BrainrotService.clearPlot(plotModel: Model)
 	for _, placement in toRemove do
 		destroyPlacement(placement)
 	end
+	FogRows.clearPlot(plotModel)
 
 	local lineBomb = Abilities.get("LineBomb")
 	if lineBomb and (lineBomb :: any).clearPlot then
@@ -565,8 +602,9 @@ function BrainrotService.clearFogBlockedPlacements(player: Player, weather: stri
 	for _, placement in placements do
 		if placement.plotModel == plot.model
 			and WeatherUtil.isFogPlotColumn(placement.position.column, weather)
-			-- One-shot fog casts may still be mid-ability when weather rules run.
 			and placement.definition.triggersOnPlace ~= true
+			and placement.definition.plantsOnFog ~= true
+			and not FogRows.isRowCleared(plot.model, placement.position.row)
 		then
 			table.insert(toRemove, placement)
 		end

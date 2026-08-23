@@ -31,6 +31,7 @@ export type AbilityContext = {
 
 export type AbilityHandler = {
 	onPlaced: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
+	onRemoved: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
 	tryAct: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> boolean)?,
 }
 
@@ -43,6 +44,8 @@ local handlers: { [string]: AbilityHandler } = {
 	FreezeTime = require(script.FreezeTime),
 	ThrowKnife = require(script.ThrowKnife),
 	Wall = require(script.Wall),
+	ClearFogRow = require(script.ClearFogRow),
+	BustGrave = require(script.BustGrave),
 }
 
 function Abilities.get(abilityId: string?): AbilityHandler?

@@ -34,6 +34,7 @@ type Profile = {
 	equipped: { string },
 	statistics: { [string]: number },
 	introducedMonsters: { string },
+	introducedBrainrots: { string },
 	sessionStartedAt: number,
 	hydrated: boolean, -- false until SaveService.applySaveSlice (or reset)
 }
@@ -96,6 +97,34 @@ local function sanitizeMonsterIdList(raw: { string }): { string }
 	return result
 end
 
+local function sanitizeBrainrotIntroList(raw: { string }): { string }
+	local seen: { [string]: boolean } = {}
+	local result: { string } = {}
+	for _, id in raw do
+		if type(id) ~= "string" or seen[id] or not Brainrots.exists(id) then
+			continue
+		end
+		seen[id] = true
+		table.insert(result, id)
+	end
+	return result
+end
+
+local function listContains(list: { string }, id: string): boolean
+	for _, value in list do
+		if value == id then
+			return true
+		end
+	end
+	return false
+end
+
+local function markIntroduced(list: { string }, id: string)
+	if not listContains(list, id) then
+		table.insert(list, id)
+	end
+end
+
 local function unlockSet(unlocks: { string }): { [string]: boolean }
 	local set: { [string]: boolean } = {}
 	for _, id in unlocks do
@@ -115,6 +144,7 @@ local function ensureProfile(player: Player): Profile
 		equipped = defaultEquipped(),
 		statistics = {},
 		introducedMonsters = {},
+		introducedBrainrots = {},
 		sessionStartedAt = os.clock(),
 		hydrated = false,
 	}
@@ -182,6 +212,7 @@ function ProgressService.getSaveSlice(player: Player): {
 	equipped: { string },
 	statistics: { [string]: number },
 	introducedMonsters: { string },
+	introducedBrainrots: { string },
 }?
 	local profile = profiles[player.UserId]
 	if not profile or not profile.hydrated then
@@ -195,6 +226,7 @@ function ProgressService.getSaveSlice(player: Player): {
 		equipped = copyList(profile.equipped),
 		statistics = copyStats(profile.statistics),
 		introducedMonsters = copyList(profile.introducedMonsters),
+		introducedBrainrots = copyList(profile.introducedBrainrots),
 	}
 end
 
@@ -204,6 +236,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	equipped: { string }?,
 	statistics: { [string]: number }?,
 	introducedMonsters: { string }?,
+	introducedBrainrots: { string }?,
 })
 	local profile = ensureProfile(player)
 	if type(slice.brains) == "number" then
@@ -233,6 +266,11 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	else
 		profile.introducedMonsters = {}
 	end
+	if type(slice.introducedBrainrots) == "table" then
+		profile.introducedBrainrots = sanitizeBrainrotIntroList(slice.introducedBrainrots :: { string })
+	else
+		profile.introducedBrainrots = {}
+	end
 	profile.sessionStartedAt = os.clock()
 	profile.hydrated = true
 	broadcast(player)
@@ -245,6 +283,7 @@ function ProgressService.reset(player: Player)
 		equipped = defaultEquipped(),
 		statistics = {},
 		introducedMonsters = {},
+		introducedBrainrots = {},
 		sessionStartedAt = os.clock(),
 		hydrated = true,
 	}
@@ -344,35 +383,78 @@ function ProgressService.grantUnlockForLevel(player: Player, clearedLevelNumber:
 	if #profile.equipped < ProgressConfig.MAX_EQUIPPED then
 		table.insert(profile.equipped, scheduled)
 	end
+	markIntroduced(profile.introducedBrainrots, scheduled)
 	return scheduled
 end
 
--- Monster / boss intro cadence (ProgressConfig.MONSTER_INTRO_SCHEDULE). Idempotent:
--- returns the monster id the first time the player *reaches* `dayNumber`, nil
--- on replay. Persisted via SaveData.introducedMonsters.
-function ProgressService.consumeMonsterIntroForDay(player: Player, dayNumber: number): string?
-	local scheduled: string? = nil
-	for _, entry in ProgressConfig.MONSTER_INTRO_SCHEDULE do
-		if entry.day == dayNumber then
-			scheduled = entry.monsterId
-			break
-		end
-	end
-	if not scheduled or not Monsters.exists(scheduled) then
-		return nil
-	end
-
+-- Grant REACH_UNLOCK_SCHEDULE units the first time the player reaches `day`
+-- (catch-up for day <= dayNumber). Does not mark intros; BRAINROT_INTRO_SCHEDULE
+-- still shows UnlockPopup.
+function ProgressService.consumeReachUnlocksForDay(player: Player, dayNumber: number)
 	local profile = ensureProfile(player)
 	if not profile.hydrated then
-		return nil
+		return
 	end
-	for _, id in profile.introducedMonsters do
-		if id == scheduled then
-			return nil
+	local granted = false
+	for _, entry in ProgressConfig.REACH_UNLOCK_SCHEDULE do
+		if entry.day > dayNumber or not Brainrots.exists(entry.brainrotId) then
+			continue
 		end
+		if ProgressService.isUnlocked(player, entry.brainrotId) then
+			continue
+		end
+		table.insert(profile.unlocks, entry.brainrotId)
+		if #profile.equipped < ProgressConfig.MAX_EQUIPPED then
+			table.insert(profile.equipped, entry.brainrotId)
+		end
+		granted = true
 	end
-	table.insert(profile.introducedMonsters, scheduled)
-	return scheduled
+	if granted then
+		broadcast(player)
+	end
+end
+
+-- Reach-day Brainrot intros (starters + reach-unlocks). Catch-up: every BRAINROT_INTRO_SCHEDULE
+-- entry with day <= dayNumber not yet persisted. Unlock-schedule units are
+-- marked introduced in grantUnlockForLevel instead.
+function ProgressService.consumeBrainrotIntrosForDay(player: Player, dayNumber: number): { string }
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return {}
+	end
+	local granted: { string } = {}
+	for _, entry in ProgressConfig.BRAINROT_INTRO_SCHEDULE do
+		if entry.day > dayNumber or not Brainrots.exists(entry.brainrotId) then
+			continue
+		end
+		if listContains(profile.introducedBrainrots, entry.brainrotId) then
+			continue
+		end
+		markIntroduced(profile.introducedBrainrots, entry.brainrotId)
+		table.insert(granted, entry.brainrotId)
+	end
+	return granted
+end
+
+-- Monster / boss intro cadence. Catch-up: every MONSTER_INTRO_SCHEDULE entry
+-- with day <= dayNumber not yet in SaveData.introducedMonsters.
+function ProgressService.consumeMonsterIntrosForDay(player: Player, dayNumber: number): { string }
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return {}
+	end
+	local granted: { string } = {}
+	for _, entry in ProgressConfig.MONSTER_INTRO_SCHEDULE do
+		if entry.day > dayNumber or not Monsters.exists(entry.monsterId) then
+			continue
+		end
+		if listContains(profile.introducedMonsters, entry.monsterId) then
+			continue
+		end
+		markIntroduced(profile.introducedMonsters, entry.monsterId)
+		table.insert(granted, entry.monsterId)
+	end
+	return granted
 end
 
 function ProgressService.incrementStat(player: Player, key: string, amount: number?)

@@ -246,6 +246,54 @@ local function playMonsterAttackSound(monsterId: unknown)
 	AudioController.play("MonsterAttack")
 end
 
+local function asVector3(x: any, y: any, z: any): Vector3?
+	if type(x) == "number" and type(y) == "number" and type(z) == "number" then
+		return Vector3.new(x, y, z)
+	end
+	return nil
+end
+
+local function playSandTornado(data: { [string]: any })
+	local model: Model? = nil
+	local instanceId = data.instanceId
+	if type(instanceId) == "string" then
+		model = findModelByInstanceId(instanceId)
+	end
+
+	local hand: BasePart? = nil
+	if model then
+		hand = VfxUtil.findStealHand(model)
+	end
+
+	local destination = asVector3(data.destX, data.destY, data.destZ)
+	if not destination and hand then
+		destination = hand.Position
+	end
+	if not destination and model then
+		destination = PlotUtil.getModelBodyCenter(model)
+	end
+	if not destination then
+		return
+	end
+
+	local origins: { Vector3 } = {}
+	if type(data.origins) == "table" then
+		for _, point in data.origins do
+			if typeof(point) == "Vector3" then
+				table.insert(origins, point)
+			elseif type(point) == "table" then
+				local packed = point :: { [string]: any }
+				local origin = asVector3(packed.x or packed.X, packed.y or packed.Y, packed.z or packed.Z)
+				if origin then
+					table.insert(origins, origin)
+				end
+			end
+		end
+	end
+
+	VfxUtil.playSandTornado(destination, origins, hand)
+end
+
 local function onCombatVisual(payload: unknown)
 	if type(payload) ~= "table" then
 		return
@@ -270,6 +318,8 @@ local function onCombatVisual(payload: unknown)
 	elseif kind == "Terrify" then
 		AudioController.play("Terrify")
 		playTerrifyPulse(data.instanceId)
+	elseif kind == "SandTornado" then
+		playSandTornado(data)
 	elseif kind == "Dizzy" then
 		playDizzy(data.instanceId, data.duration)
 	elseif kind == "Poison" then

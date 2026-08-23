@@ -95,6 +95,27 @@ function CombatService.notifyTerrifyPulse(ownerUserId: number, instanceId: strin
 	})
 end
 
+-- Pharaoh steal: sand tornado at the boss, sucking from plant origins.
+function CombatService.notifySandTornado(
+	ownerUserId: number,
+	instanceId: string,
+	destination: Vector3,
+	origins: { Vector3 }
+)
+	local originPayload: { { x: number, y: number, z: number } } = {}
+	for _, point in origins do
+		table.insert(originPayload, { x = point.X, y = point.Y, z = point.Z })
+	end
+	fireCombatVisual(ownerUserId, {
+		kind = "SandTornado",
+		instanceId = instanceId,
+		destX = destination.X,
+		destY = destination.Y,
+		destZ = destination.Z,
+		origins = originPayload,
+	})
+end
+
 function CombatService.notifyDizzy(ownerUserId: number, brainrotInstanceId: string, duration: number)
 	fireCombatVisual(ownerUserId, {
 		kind = "Dizzy",

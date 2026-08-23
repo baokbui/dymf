@@ -60,6 +60,61 @@ local lastLevelPhase: string? = nil
 local lastCountdownCeil: number? = nil
 local lastBigWaveWarning = false
 
+type IntroItem = { kind: string, id: string }
+local introQueue: { IntroItem } = {}
+local introBusy = false
+local introHoldForReward = false
+
+local function enqueueIntro(kind: string, id: string)
+	if id == "" then
+		return
+	end
+	table.insert(introQueue, { kind = kind, id = id })
+end
+
+local function enqueueIntroList(kind: string, ids: any)
+	if type(ids) ~= "table" then
+		return
+	end
+	for _, id in ids do
+		if type(id) == "string" then
+			enqueueIntro(kind, id)
+		end
+	end
+end
+
+local function pumpIntros()
+	if introBusy or introHoldForReward then
+		return
+	end
+	local nextItem = table.remove(introQueue, 1)
+	if not nextItem then
+		return
+	end
+	introBusy = true
+	if nextItem.kind == "brainrot" and unlockPopup then
+		unlockPopup:show(nextItem.id)
+		if not unlockPopup.frame.Visible then
+			introBusy = false
+			pumpIntros()
+		end
+	elseif nextItem.kind == "monster" and monsterIntroPopup then
+		monsterIntroPopup:show(nextItem.id)
+		if not monsterIntroPopup.frame.Visible then
+			introBusy = false
+			pumpIntros()
+		end
+	else
+		introBusy = false
+		pumpIntros()
+	end
+end
+
+local function onIntroHidden()
+	introBusy = false
+	pumpIntros()
+end
+
 local function setBalance(amount: number)
 	if coinCounter then
 		coinCounter:setBalance(amount)
@@ -249,28 +304,30 @@ local function applyLevelState(state: { [string]: any }?)
 		local reward = state.reward :: { [string]: any }
 		if type(reward.clearedLevel) == "number" and type(reward.brains) == "number" then
 			rewardPopup:show(reward.clearedLevel, reward.brains)
+			introHoldForReward = true
+			if type(reward.unlockedBrainrotId) == "string" then
+				enqueueIntro("brainrot", reward.unlockedBrainrotId)
+			end
+			enqueueIntroList("brainrot", state.introducedBrainrotIds)
+			enqueueIntroList("monster", state.introducedMonsterIds)
 			task.delay(3, function()
 				if rewardPopup then
 					rewardPopup:hide()
 				end
-				if unlockPopup and type(reward.unlockedBrainrotId) == "string" then
-					unlockPopup:show(reward.unlockedBrainrotId)
-				end
+				introHoldForReward = false
+				pumpIntros()
 			end)
 		end
 	elseif state.phase ~= Constants.PHASE.Victory and rewardPopup then
 		rewardPopup:hide()
-	end
-
-	if type(state.introducedMonsterId) == "string" and monsterIntroPopup then
-		local introId = state.introducedMonsterId
-		-- Let a Brainrot unlock popup finish first if it's already up.
-		local delaySec = if unlockPopup and unlockPopup.frame.Visible then 2.5 else 0.35
-		task.delay(delaySec, function()
-			if monsterIntroPopup then
-				monsterIntroPopup:show(introId)
-			end
-		end)
+		introHoldForReward = false
+		enqueueIntroList("brainrot", state.introducedBrainrotIds)
+		enqueueIntroList("monster", state.introducedMonsterIds)
+		pumpIntros()
+	else
+		enqueueIntroList("brainrot", state.introducedBrainrotIds)
+		enqueueIntroList("monster", state.introducedMonsterIds)
+		pumpIntros()
 	end
 
 	local phase = state.phase
@@ -333,6 +390,12 @@ function UIController.init()
 	rewardPopup = buildRewardPopup()
 	unlockPopup = buildUnlockPopup()
 	monsterIntroPopup = buildMonsterIntroPopup()
+	if unlockPopup then
+		unlockPopup.onHidden = onIntroHidden
+	end
+	if monsterIntroPopup then
+		monsterIntroPopup.onHidden = onIntroHidden
+	end
 	gameOverPopup = buildGameOverPopup()
 	settingsPanel = buildSettings()
 	buildHudEntries()

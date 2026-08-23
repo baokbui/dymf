@@ -11,7 +11,7 @@ local Constants = {}
 
 -- Current save schema version. Increment when SaveData shape changes so
 -- SaveService can migrate older payloads.
-Constants.SAVE_VERSION = 3
+Constants.SAVE_VERSION = 4
 
 -- DataStore name owned exclusively by SaveService.
 Constants.SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"

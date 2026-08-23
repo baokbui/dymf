@@ -42,11 +42,35 @@ local ProgressConfig = {
 		{ day = 9, brainrotId = "BombardinoCrocodilo" },
 	},
 
+	-- Grant on first *reach* of `day` (Preparation / Day Select / rejoin),
+	-- not on clear. Catch-up: any entry with day <= current not yet unlocked.
+	REACH_UNLOCK_SCHEDULE = {
+		{ day = 31, brainrotId = "BrrBrrPatapim" },
+	},
+
+	-- Brains catalog for the physical Brainrots Store (Milestone 19). Units
+	-- listed here are NOT campaign-granted; ProgressService still owns unlocks.
+	STORE_CATALOG = {
+		{ brainrotId = "GiraffaCeleste", brainsCost = 75 },
+	},
+
+	-- Reach-day intros for Brainrots that never go through UNLOCK_SCHEDULE
+	-- (Day 1 starters + reach-unlocks). Catch-up: any entry with `day` <=
+	-- current day that is not yet in SaveData.introducedBrainrots.
+	BRAINROT_INTRO_SCHEDULE = {
+		{ day = 1, brainrotId = "BallerinaCappucina" },
+		{ day = 1, brainrotId = "TungTungSahur" },
+		{ day = 1, brainrotId = "ChimpanziniBananini" },
+		{ day = 31, brainrotId = "BrrBrrPatapim" },
+	},
+
 	-- Monster / boss intro cadence: the first time the player *reaches* `day`
 	-- (Preparation / Day Select / rejoin), LevelService shows a MonsterIntro
-	-- popup with portrait + stats + ability blurb. Idempotent via saved
-	-- `introducedMonsters`. Aligns with the campaign species ramp in LEVELS.md.
+	-- popup. Catch-up grants every schedule entry with `day` <= current that
+	-- is not yet in `introducedMonsters` (Day Select / Studio FORCE_DAY).
+	-- Campaign units only — Necromancer / GoblinKing are not in Days 1–50.
 	MONSTER_INTRO_SCHEDULE = {
+		{ day = 1, monsterId = "Zombie" },
 		{ day = 5, monsterId = "Goblin" },
 		{ day = 10, monsterId = "GoblinElite" },
 		{ day = 15, monsterId = "Vampire" },

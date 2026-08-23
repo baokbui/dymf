@@ -29,6 +29,7 @@ export type UnlockPopupHud = typeof(setmetatable(
 		nameLabel: TextLabel,
 		statsLabel: TextLabel,
 		abilityLabel: TextLabel,
+		onHidden: (() -> ())?,
 	},
 	UnlockPopup
 ))
@@ -173,6 +174,9 @@ end
 
 function UnlockPopup.hide(self: UnlockPopupHud)
 	self.frame.Visible = false
+	if self.onHidden then
+		self.onHidden()
+	end
 end
 
 return UnlockPopup

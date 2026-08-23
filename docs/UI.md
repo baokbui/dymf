@@ -108,15 +108,18 @@ hardcode a second palette in new UI.
   resolved from the same `Shared.Brainrots` registry). Server validates equip
   changes via `SetEquipped`.
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
-  a starter-roster Brainrot unlocks (portrait, name, stat summary, ability
-  blurb, dismiss button). Shown after the victory `RewardPopup` fades, driven
-  by `reward.unlockedBrainrotId` on `LevelStateChanged` (server-decided; UI is
-  display-only).
-- **MonsterIntroPopup** ✅ — same cartoon modal pattern for new monsters /
-  bosses the first time the player **reaches** an intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`:
-  Goblin 5, Goblin Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
-  Werewolf 35).
-  Driven by `introducedMonsterId` on `LevelStateChanged`; portrait via
+  a Brainrot is introduced (portrait, name, stat summary, ability blurb,
+  dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) on first
+  **reach** of Day 1 (`ProgressConfig.BRAINROT_INTRO_SCHEDULE`). The other
+  four after first **clear** of their unlock day (`UNLOCK_SCHEDULE` →
+  `reward.unlockedBrainrotId`). Queued so several intros play one after
+  another. Server-decided; UI is display-only.
+- **MonsterIntroPopup** ✅ — same cartoon modal for every campaign monster /
+  boss the first time the player **reaches** its intro day (or catch-up if
+  they skip ahead). `ProgressConfig.MONSTER_INTRO_SCHEDULE`: Zombie 1, Goblin
+  5, Goblin Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
+  Skeleton 31, Werewolf 35, Small Mummy 41, Scorpion 45, Pharaoh Mummy 50.
+  Driven by `introducedMonsterIds` on `LevelStateChanged`; portrait via
   `MonsterPreview`, stats/abilities via `MonsterInfo`. Persisted in
   `SaveData.introducedMonsters` so it only fires once.
 - **GameOverPopup** ✅ — full-screen defeat overlay when hearts hit 0: slow

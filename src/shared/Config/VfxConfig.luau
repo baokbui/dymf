@@ -115,6 +115,18 @@ local VfxConfig = {
 	STATUS_FLOAT_POISON_COLOR = Color3.fromRGB(200, 110, 255),
 	STATUS_FLOAT_STUN_COLOR = Color3.fromRGB(255, 225, 70),
 
+	-- Pharaoh steal: sand tornado at the boss + grit sucked from each plant.
+	SAND_TORNADO_DURATION = 1.6,
+	SAND_TORNADO_HEIGHT = 18,
+	SAND_TORNADO_RADIUS = 6.5,
+	SAND_TORNADO_SPIN = 7,
+	SAND_TORNADO_MESH_TRANSPARENCY = 0.35,
+	-- Local studs from the steal-hand part (along tornado axis).
+	SAND_TORNADO_HAND_OFFSET = 0.9,
+	SAND_COLOR_A = Color3.fromRGB(210, 170, 95),
+	SAND_COLOR_B = Color3.fromRGB(160, 120, 70),
+	SAND_COLOR_C = Color3.fromRGB(235, 200, 140),
+
 	-- Cappuccino spinning shuriken trail.
 	SHURIKEN_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(255, 230, 140),
 	SHURIKEN_PROJECTILE_TRAIL_LIFETIME = 0.18,

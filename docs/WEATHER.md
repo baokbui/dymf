@@ -25,8 +25,8 @@ Status: ✅ `Night` (Days 21–24) · ✅ `NightFog` (Days 25–34) · ✅ `Nigh
 | Effect | Owner | Behavior |
 | ------ | ----- | -------- |
 | Visible fog banks | Client `WeatherController` | Soft particle mist (no box mesh): heavy deep forest → medium near forest → light on fog lawn columns; monsters stay fully visible. Lawn bank width follows `WeatherConfig.fogStartColumn(weather)`. |
-| Unplantable fog columns | Server `BrainrotService` + client placement | Easternmost `fogPlotColumns(weather)` lawn columns reject **permanent** plants; **one-shot** Brainrots (`triggersOnPlace` — Lirili, Bombardino) may still be placed there. Other plants on fog columns are cleared on prep / lawn restore |
-| Fog graves | Server `GraveService` | From Day 31, random fog tiles get graves at Start Day; a Zombie or Skeleton emerges later; monsters phase through graves |
+| Unplantable fog columns | Server `BrainrotService` + client placement | Easternmost `fogPlotColumns(weather)` lawn columns reject **permanent** plants unless that **row** is cleared by a living **Giraffa Celeste** (`ClearFogRow` / `FogRowsChanged`). **One-shot** Brainrots (`triggersOnPlace`) and **grave-busters** (`plantOnGrave`) may still be placed on fog tiles. Other plants on fog columns are cleared on prep / lawn restore unless the row is fog-cleared |
+| Fog graves | Server `GraveService` | From Day 31, random fog tiles get graves at Start Day; a Zombie or Skeleton emerges later; monsters phase through graves. **Brr Brr Patapim** (`BustGrave`) must be planted on a grave; after `bustDuration` (8s) the grave is destroyed and Patapim despawns |
 | No fog-tile hover | Client `GridController` | Fog columns do not show a hover highlight |
 | Clear-lawn coin drops | Server `CoinService` | Passive rain + Ballerina spit land only on non-fog tiles |
 

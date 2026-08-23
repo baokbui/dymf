@@ -147,8 +147,8 @@ Smoke on server start. Optional: parent `WalkAnimation` / `AttackAnimation`
 instances under the model to override catalog IDs. Use
 `modelOrientationDegrees` if the mesh needs a Tung-style upright fix.
 
-M16 **Complete When** is met once campaign monsters in authored levels use real
-models (at least Zombie, Goblin, Goblin Elite).
+M16 **Complete When** ✅ — campaign monsters in authored levels use real models
+(Zombie, Goblin, Goblin Elite, and the rest of the Days 1–50 roster).
 
 ---
 
@@ -344,7 +344,10 @@ silently never render.
 ## Campaign rollout ✅ (Milestone 10)
 
 The roster is introduced **one monster at a time** through campaign levels
-(spawn counts assume **lawn carry-over** after victory — see `LEVELS.md`):
+(spawn counts assume **lawn carry-over** after victory — see `LEVELS.md`).
+Each campaign type also gets a **MonsterIntroPopup** the first time the
+player reaches its intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`,
+including **Zombie** on Day 1).
 
 - Levels 1–4: same `Zombie` profile, with rising counts/pacing (Day 1 empty board).
 - **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).

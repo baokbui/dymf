@@ -53,9 +53,9 @@ type PlayerState = {
 	activeRun: LevelRun.LevelRun?,
 	countdownEnd: number,
 	bigWaveWarning: boolean,
-	-- One-shot: consumed into LevelStateChanged.introducedMonsterId on the
-	-- next broadcast (Monster intro popup).
-	pendingMonsterIntroId: string?,
+	-- One-shot: consumed into LevelStateChanged intro arrays on the next broadcast.
+	pendingMonsterIntroIds: { string }?,
+	pendingBrainrotIntroIds: { string }?,
 }
 
 local states: { [number]: PlayerState } = {}
@@ -101,9 +101,14 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		end
 	end
 
-	if state.pendingMonsterIntroId then
-		payload.introducedMonsterId = state.pendingMonsterIntroId
-		state.pendingMonsterIntroId = nil
+	if state.pendingBrainrotIntroIds and #state.pendingBrainrotIntroIds > 0 then
+		payload.introducedBrainrotIds = state.pendingBrainrotIntroIds
+		state.pendingBrainrotIntroIds = nil
+	end
+	if state.pendingMonsterIntroIds and #state.pendingMonsterIntroIds > 0 then
+		payload.introducedMonsterIds = state.pendingMonsterIntroIds
+		payload.introducedMonsterId = state.pendingMonsterIntroIds[1]
+		state.pendingMonsterIntroIds = nil
 	end
 
 	return payload
@@ -131,14 +136,22 @@ local function applyWeatherRules(player: Player, state: PlayerState)
 	SaveService.commitLawn(player)
 end
 
+local function queueIntros(player: Player, state: PlayerState)
+	ProgressService.consumeReachUnlocksForDay(player, state.currentLevel)
+	local brainrotIds = ProgressService.consumeBrainrotIntrosForDay(player, state.currentLevel)
+	local monsterIds = ProgressService.consumeMonsterIntrosForDay(player, state.currentLevel)
+	state.pendingBrainrotIntroIds = if #brainrotIds > 0 then brainrotIds else nil
+	state.pendingMonsterIntroIds = if #monsterIds > 0 then monsterIds else nil
+	if #brainrotIds > 0 or #monsterIds > 0 then
+		local SaveService = require(script.Parent.SaveService)
+		SaveService.saveNow(player, "unit_intro")
+	end
+end
+
 local function beginPreparation(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.bigWaveWarning = false
-	state.pendingMonsterIntroId = ProgressService.consumeMonsterIntroForDay(player, state.currentLevel)
-	if state.pendingMonsterIntroId then
-		local SaveService = require(script.Parent.SaveService)
-		SaveService.saveNow(player, "monster_intro")
-	end
+	queueIntros(player, state)
 	applyWeatherRules(player, state)
 	setPhase(player, state, PHASE.Preparation)
 end
@@ -423,7 +436,8 @@ local function initPlayer(player: Player)
 		activeRun = nil,
 		countdownEnd = 0,
 		bigWaveWarning = false,
-		pendingMonsterIntroId = nil,
+		pendingMonsterIntroIds = nil,
+		pendingBrainrotIntroIds = nil,
 	}
 	task.defer(function()
 		broadcast(player)
@@ -485,8 +499,6 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
 	state.phase = PHASE.Preparation
-	local introId = ProgressService.consumeMonsterIntroForDay(player, sanitizedCurrent)
-	state.pendingMonsterIntroId = introId
 
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
@@ -495,11 +507,6 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	end
 
 	broadcast(player)
-
-	if introId then
-		local SaveService = require(script.Parent.SaveService)
-		SaveService.saveNow(player, "monster_intro")
-	end
 end
 
 -- TEMP Studio cheat: jump current + unlocked day (see DevConfig.FORCE_DAY).
@@ -526,16 +533,19 @@ function LevelService.applyDevDay(player: Player): number?
 	state.bigWaveWarning = false
 	state.phase = PHASE.Preparation
 
-	local introId = ProgressService.consumeMonsterIntroForDay(player, target)
-	state.pendingMonsterIntroId = introId
 	broadcast(player)
 
-	if introId then
-		local SaveService = require(script.Parent.SaveService)
-		SaveService.saveNow(player, "monster_intro")
-	end
-
 	return target
+end
+
+-- After join hydrate + optional FORCE_DAY, show any pending unit intros once.
+function LevelService.queueJoinIntros(player: Player)
+	local state = states[player.UserId]
+	if not state then
+		return
+	end
+	queueIntros(player, state)
+	broadcast(player)
 end
 
 -- Placement and coin income are only allowed while a level is in progress.

@@ -40,6 +40,12 @@ export type BrainrotDefinition = {
 	triggersOnPlace: boolean?, -- true = ability fires once on placement (e.g. line bomb)
 	-- When true, monsters phase through and never deal chew damage (one-shot casters).
 	ignoreMonsterChew: boolean?,
+	-- May plant on NightFog columns even before the row is cleared (Giraffa).
+	plantsOnFog: boolean?,
+	-- Must be planted on a grave tile (Patapim); other plants still cannot.
+	plantOnGrave: boolean?,
+	-- Brains price at the physical store (Milestone 19). Nil = not sold there.
+	brainsCost: number?,
 	plantCooldown: number?, -- seconds before re-plant; nil = BrainrotConfig.plantCooldownFor(cost)
 	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
@@ -169,6 +175,8 @@ export type SaveData = {
 	statistics: { [string]: number },
 	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).
 	introducedMonsters: { string }?,
+	-- Brainrot intro popups already shown (BRAINROT_INTRO_SCHEDULE + UNLOCK_SCHEDULE).
+	introducedBrainrots: { string }?,
 	-- 🔜 Milestone 21 — collected boss trophies displayed in the house
 	collectedBosses: { CollectedBoss }?,
 }

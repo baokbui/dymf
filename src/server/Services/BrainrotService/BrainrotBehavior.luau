@@ -154,21 +154,23 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	active[placement.instanceId] = placement
 	BrainrotAnimation.bind(placement.model, placement.definition)
 
-	if placement.definition.triggersOnPlace then
-		local handler = Abilities.get(placement.definition.ability)
-		if handler and handler.onPlaced then
-			local onPlaced = handler.onPlaced
-			task.defer(function()
-				if active[placement.instanceId] ~= placement then
-					return
-				end
-				onPlaced(buildContext(placement), buildCallbacks(placement))
-			end)
-		end
+	local handler = Abilities.get(placement.definition.ability)
+	if handler and handler.onPlaced then
+		local onPlaced = handler.onPlaced
+		task.defer(function()
+			if active[placement.instanceId] ~= placement then
+				return
+			end
+			onPlaced(buildContext(placement), buildCallbacks(placement))
+		end)
 	end
 end
 
 function BrainrotBehavior.unregister(placement: RuntimePlacement)
+	local handler = Abilities.get(placement.definition.ability)
+	if handler and handler.onRemoved then
+		handler.onRemoved(buildContext(placement), buildCallbacks(placement))
+	end
 	active[placement.instanceId] = nil
 	BrainrotAnimation.unbind(placement.model)
 	BrainrotFeedback.cleanup(placement.model)
