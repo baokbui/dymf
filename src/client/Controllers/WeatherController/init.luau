@@ -31,6 +31,7 @@ local fogFolder: Folder? = nil
 local savedLighting: { [string]: any }? = nil
 local atmosphere: Atmosphere? = nil
 local clearedFogRows: { [number]: boolean } = {}
+local plotFogCleared = false
 
 local function captureLighting()
 	if savedLighting then
@@ -188,22 +189,58 @@ local function makeFogBank(
 	addLightMist(bank, rate, densityScale)
 end
 
+local function fogBankRate(name: string): number
+	if name == "ForestFogNear" then
+		return WeatherConfig.FOG_FOREST_NEAR_PARTICLE_RATE
+	end
+	if name == "ForestFogDeep" then
+		return WeatherConfig.FOG_FOREST_DEEP_PARTICLE_RATE
+	end
+	return WeatherConfig.FOG_LAWN_PARTICLE_RATE
+end
+
 local function applyClearedLawnFog()
 	if not fogFolder then
 		return
 	end
 	for _, child in fogFolder:GetChildren() do
+		local hide = plotFogCleared
 		local rowText = string.match(child.Name, "^LawnFog_(%d+)$")
-		if not rowText or not child:IsA("BasePart") then
-			continue
+		if not hide and rowText then
+			hide = clearedFogRows[tonumber(rowText) :: number] == true
+		elseif child.Name == "ForestFogNear" or child.Name == "ForestFogDeep" then
+			hide = plotFogCleared
+			if not hide then
+				hide = true
+				for row = 1, GridConfig.ROWS do
+					if clearedFogRows[row] ~= true then
+						hide = false
+						break
+					end
+				end
+			end
 		end
-		local hidden = clearedFogRows[tonumber(rowText) :: number] == true
 		local emitter = child:FindFirstChild("FogMist")
-		if emitter and emitter:IsA("ParticleEmitter") then
-			emitter.Enabled = not hidden
-			emitter.Rate = if hidden then 0 else WeatherConfig.FOG_LAWN_PARTICLE_RATE
+		if child:IsA("BasePart") and emitter and emitter:IsA("ParticleEmitter") then
+			if hide then
+				emitter.Enabled = false
+				emitter.Rate = 0
+				emitter:Clear()
+			else
+				emitter.Enabled = true
+				emitter.Rate = fogBankRate(child.Name)
+			end
 		end
 	end
+end
+
+-- Instant hide so wind VFX and fog drop on the same client frame.
+function WeatherController.hidePlotFogVisual()
+	plotFogCleared = true
+	for row = 1, GridConfig.ROWS do
+		clearedFogRows[row] = true
+	end
+	applyClearedLawnFog()
 end
 
 local function buildFogVolumes(plotModel: Model)
@@ -347,8 +384,11 @@ function WeatherController.start()
 
 	Remotes.getEvent("FogRowsChanged").OnClientEvent:Connect(function(payload: unknown)
 		clearedFogRows = {}
+		plotFogCleared = false
 		if type(payload) == "table" then
-			local rows = (payload :: { [string]: any }).rows
+			local data = payload :: { [string]: any }
+			plotFogCleared = data.plotCleared == true
+			local rows = data.rows
 			if type(rows) == "table" then
 				for _, row in rows do
 					if type(row) == "number" then

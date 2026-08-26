@@ -101,6 +101,10 @@ function ModelUtil.getGraveTemplatesFolder(): Folder?
 	return templatesFolder("Graves") or templatesFolder("Props")
 end
 
+function ModelUtil.getStoreTemplatesFolder(): Folder?
+	return templatesFolder("Stores")
+end
+
 function ModelUtil.getDecorTemplatesFolder(): Folder?
 	return templatesFolder("Decor")
 end
@@ -137,6 +141,10 @@ function ModelUtil.findMonsterTemplate(modelId: string): Model?
 	-- Fallback: some monster meshes (e.g. Werewolf) currently sit under
 	-- Assets.Brainrots in Studio until moved into Assets.Monsters.
 	return findTemplate(ModelUtil.getBrainrotTemplatesFolder(), modelId)
+end
+
+function ModelUtil.findStoreTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getStoreTemplatesFolder(), modelId)
 end
 
 function ModelUtil.findHouseTemplate(modelId: string): Model?
@@ -447,6 +455,8 @@ export type PrepareOptions = {
 	skipBodyAlias: boolean?,
 	-- Monsters: keep Motor6D rig + Animator; only root part stays anchored.
 	preserveAnimationRig: boolean?,
+	-- Anchor every BasePart (Toolbox humanoids that fall through the lawn).
+	anchorAllParts: boolean?,
 }
 
 --[[
@@ -567,6 +577,9 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	-- "preserve" an animation rig, only the PrimaryPart stays anchored and
 	-- every other part falls through the lawn — leaving a tiny cap on the sand.
 	local animateLimbs = preserveAnim and ModelUtil.hasAnimationJoints(model)
+	if options.anchorAllParts == true then
+		animateLimbs = false
+	end
 	hardenParts(model, options.keepCollision, animateLimbs)
 	if preserveAnim then
 		ensureAnimator(model)
@@ -599,6 +612,9 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	if preserveAnim then
 		hardenParts(model, options.keepCollision, animateLimbs)
 		ensureAnimator(model)
+	end
+	if options.anchorAllParts == true then
+		hardenParts(model, options.keepCollision, false)
 	end
 
 	if options.ghost then

@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AudioConfig = require(Shared.Config.AudioConfig)
 local Brainrots = require(Shared.Brainrots)
+local GridConfig = require(Shared.Config.GridConfig)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
@@ -147,6 +148,7 @@ local function ensureGhostFor(definition: Types.BrainrotDefinition)
 			orientationDegrees = definition.modelOrientationDegrees,
 			preserveAnimationRig = animated,
 			skipBodyAlias = animated,
+			anchorAllParts = definition.anchorAllParts == true,
 		})
 		model.Name = "PlacementGhost"
 		model.Parent = Workspace
@@ -486,7 +488,16 @@ function PlacementController.start()
 		if type(payload) ~= "table" then
 			return
 		end
-		local rows = (payload :: { [string]: any }).rows
+		local data = payload :: { [string]: any }
+		if data.plotCleared == true then
+			local list: { number } = {}
+			for row = 1, GridConfig.ROWS do
+				table.insert(list, row)
+			end
+			PlacementController.setFogClearedRows(list)
+			return
+		end
+		local rows = data.rows
 		if type(rows) == "table" then
 			local list: { number } = {}
 			for _, row in rows do

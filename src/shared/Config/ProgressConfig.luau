@@ -2,7 +2,7 @@
 --[[
 	ProgressConfig
 	Loadout, brains rewards, and progression UX knobs (Milestone 13).
-	Physical Brainrots Store purchases are deferred (see ROADMAP Milestone 20).
+	Physical Brainrots Store / player-upgrade shop (Milestone 18).
 ]]
 
 local ProgressConfig = {
@@ -34,7 +34,7 @@ local ProgressConfig = {
 	-- `brainrotId` (auto-equipped if there's an open loadout slot) and shows
 	-- an unlock popup. Ordered by rising cost/power alongside the campaign's
 	-- species ramp (see docs/LEVELS.md). Never applies to future post-launch
-	-- Brainrots — those cost Brains at the Store (Milestone 22).
+	-- Brainrots — those cost Brains at the Store (Milestone 18).
 	UNLOCK_SCHEDULE = {
 		{ day = 3, brainrotId = "CappuccinoAssassino" },
 		{ day = 5, brainrotId = "LiriliLarila" },
@@ -45,13 +45,32 @@ local ProgressConfig = {
 	-- Grant on first *reach* of `day` (Preparation / Day Select / rejoin),
 	-- not on clear. Catch-up: any entry with day <= current not yet unlocked.
 	REACH_UNLOCK_SCHEDULE = {
+		{ day = 25, brainrotId = "GiraffaCeleste" },
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
 	},
 
-	-- Brains catalog for the physical Brainrots Store (Milestone 19). Units
-	-- listed here are NOT campaign-granted; ProgressService still owns unlocks.
+	-- Buy with brains at the blue mini store (Tung Mascot). Already-unlocked
+	-- units show as owned; campaign grants remain free later.
 	STORE_CATALOG = {
-		{ brainrotId = "GiraffaCeleste", brainsCost = 75 },
+		{ brainrotId = "CappuccinoAssassino", brainsCost = 15 },
+		{ brainrotId = "LiriliLarila", brainsCost = 25 },
+		{ brainrotId = "TralaleroTralala", brainsCost = 40 },
+		{ brainrotId = "BombardinoCrocodilo", brainsCost = 80 },
+		{ brainrotId = "GiraffaCeleste", brainsCost = 50 },
+		{ brainrotId = "BrrBrrPatapim", brainsCost = 60 },
+	},
+
+	-- Buy with brains at the red mini store (67 Mascot). Level is persisted
+	-- in SaveData.upgrades[id]. Walk speed = PlayerConfig.WALK_SPEED + level * bonus.
+	UPGRADE_CATALOG = {
+		{
+			id = "WalkSpeed",
+			name = "Speed",
+			description = "Run faster on the plot.",
+			maxLevel = 5,
+			brainsCosts = { 10, 18, 28, 42, 60 },
+			walkSpeedBonusPerLevel = 3,
+		},
 	},
 
 	-- Reach-day intros for Brainrots that never go through UNLOCK_SCHEDULE
@@ -61,6 +80,7 @@ local ProgressConfig = {
 		{ day = 1, brainrotId = "BallerinaCappucina" },
 		{ day = 1, brainrotId = "TungTungSahur" },
 		{ day = 1, brainrotId = "ChimpanziniBananini" },
+		{ day = 25, brainrotId = "GiraffaCeleste" },
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
 	},
 

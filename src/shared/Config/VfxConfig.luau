@@ -127,6 +127,20 @@ local VfxConfig = {
 	SAND_COLOR_B = Color3.fromRGB(160, 120, 70),
 	SAND_COLOR_C = Color3.fromRGB(235, 200, 140),
 
+	-- Giraffa plot-wide gust that blows Night Fog off the lawn.
+	WIND_GUST_DURATION = 1.5,
+	WIND_GUST_RATE = 90,
+	WIND_GUST_SPEED = 72,
+	WIND_GUST_LIFETIME = NumberRange.new(0.9, 1.4),
+	WIND_GUST_SIZE = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 14),
+		NumberSequenceKeypoint.new(0.4, 11),
+		NumberSequenceKeypoint.new(1, 1.2),
+	}),
+	WIND_GUST_COLOR_A = Color3.fromRGB(245, 252, 255),
+	WIND_GUST_COLOR_B = Color3.fromRGB(160, 210, 255),
+	WIND_GUST_ACCEL_EAST = 38,
+
 	-- Cappuccino spinning shuriken trail.
 	SHURIKEN_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(255, 230, 140),
 	SHURIKEN_PROJECTILE_TRAIL_LIFETIME = 0.18,

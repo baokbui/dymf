@@ -102,6 +102,8 @@ A `GridPosition` is `{ row: number, column: number }` (see `Shared/Types`).
 placement gate. Pass a Brainrot instance id for plants. Pass **nil** for
 blocking props (**graves**): the tile is occupied (no planting) but
 `brainrotInstanceId` stays nil so monsters **phase through** and never chew.
+**Brr Brr Patapim** uses `tryOccupyOverGrave` / `revertToGrave` so it can sit
+on a grave without dropping the grave occupancy flag until the stone collapses.
 
 ---
 

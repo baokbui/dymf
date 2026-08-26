@@ -16,7 +16,7 @@
 		                 placement raycast target)
 		SpawnLocation  - left edge of the play area, facing the enemy (+X)
 		HouseAnchor    - attachment marking the house spot behind the player
-		House          - walkable cottage (HouseBuilder) with boss pedestals (M21)
+		House          - walkable cottage + per-plot ProgressionStores (M18)
 		CoinSpawner    - attachment at the lane center (M3)
 		GridCenter     - attachment at the play-area center; GridService lays the
 		                 tile grid out from here (M2)
@@ -32,6 +32,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
 local HouseBuilder = require(script.Parent.HouseBuilder)
+local StoreService = require(script.Parent.Parent.StoreService)
 
 local PlotBuilder = {}
 
@@ -123,6 +124,7 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	local houseZoneWestX = leftEdge + PlotConfig.MARGIN_X
 	local house = HouseBuilder.build(originPosition, houseZoneWestX, playLeftX)
 	house.Parent = model
+	StoreService.attachToHouse(model, house)
 
 	-- Empty folders for content added by later milestones.
 	addFolder("Grid", model)

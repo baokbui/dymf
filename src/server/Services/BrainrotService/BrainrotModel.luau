@@ -113,8 +113,8 @@ function BrainrotModel.create(
 		targetFootprint = footprintFor(definition),
 		orientationDegrees = definition.modelOrientationDegrees,
 		preserveAnimationRig = animated,
-		-- Keep RootPart name for Motor6D chains; feedback uses PrimaryPart / Body.
 		skipBodyAlias = animated,
+		anchorAllParts = definition.anchorAllParts == true,
 	})
 	model.Name = string.format("%s_%s", definition.id, instanceId)
 	ModelUtil.pivotToTileTop(model, topCenter, definition.modelOrientationDegrees, nil, definition.modelYOffset)

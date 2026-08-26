@@ -408,13 +408,13 @@ Persist player progress.
 
 # Milestone 13 — UI Polish
 
-**Status: ✅ Complete** (physical Brainrots Store deferred → Milestone 19)
+**Status: ✅ Complete** (physical Progression Store → Milestone 18)
 
 ## Improve and Add
 
 - Shop (Already implemented in a previous milestone. Can improve if needed) ✅
-- Brainrots Store (Buy new brainrots) → **deferred to Milestone 19** (physical world shop)
-- Brains (currency) ✅ granted on victory; spent at store in M19
+- Brainrots Store (Buy new brainrots) → **Milestone 18** (physical world shops)
+- Brains (currency) ✅ granted on victory; spent at store in M18
 - Reward System ✅ victory popup shows brains earned (level number × config)
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
 - Coins ✅ (prior milestone)
@@ -577,7 +577,32 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 
 
-# Milestone 18 — Retention Systems
+# Milestone 18 — Progression Store
+
+**Status: 🔜 In progress** (moved ahead of Retention; deferred from Milestone 13)
+
+## Add
+
+- Physical **Progression Stores** cloned beside each plot house (not the
+  ScreenGui seed-packet shop bar)
+- **Blue mini store** — **Tung Mascot**: spend **Brains** to unlock Brainrots
+  (early buy; campaign grants stay free later)
+- **Red mini store** — **67 Mascot**: spend Brains on player upgrades (Speed)
+- Catalog in `ProgressConfig.STORE_CATALOG` / `UPGRADE_CATALOG`
+- Purchases through `ProgressService` + persist via `SaveService` (`unlocks`,
+  `upgrades`)
+
+## Complete When
+
+- Players can talk to each mascot, browse, and buy with brains.
+- Speed upgrades apply on spawn / rejoin.
+- Exploits (free unlock, fake spend) fail server validation.
+
+---
+
+
+
+# Milestone 19 — Retention Systems
 
 **Status: 🔜 Planned**
 
@@ -637,26 +662,6 @@ UI only displays and sends intents.
 - Players can use the spinner on its free cadence and receive the rolled reward.
 - Daily quests appear, track progress, reset on schedule, and grant rewards on claim.
 - All progress survives leave/rejoin; exploits (double-claim, fake progress) fail server checks.
-
----
-
-
-
-# Milestone 19 — Progression Store
-
-**Status: 🔜 Planned** (deferred from Milestone 13)
-
-## Add
-
-- Physical **Brainrots Store** on the plot / lobby (not a ScreenGui shop bar)
-- Spend **Brains** to unlock new Brainrot roster entries
-- Catalog stub already in `ProgressConfig.STORE_CATALOG`: **Giraffa Celeste**
-  (75 brains). Unit + `ClearFogRow` ability ship now; purchase UI is this milestone.
-- Wire purchases into `ProgressService` unlocks + `SaveService`
-
-## Complete When
-
-- Players can browse and buy locked Brainrots with brains earned from levels.
 
 ---
 
@@ -757,7 +762,7 @@ tables above are flavor targets, not final numbers.
 ## Goal
 
 Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
-it for display; displayed bosses generate **brains** used for the store (M19)
+it for display; displayed bosses generate **brains** used for the store (M18)
 and evolutions/mutations (M20).
 
 ## Prerequisites

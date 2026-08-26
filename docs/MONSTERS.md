@@ -227,13 +227,19 @@ MonsterBehavior (movement + attack tick)
 ### Graves (Day 31+)
 
 `GraveService` + `GraveConfig` + optional `LevelDefinition.graves`. At
-Start Day, **1–5** graves occupy random **fog** tiles (`occupied`, no Brainrot id —
+Start Day, **5–8** graves occupy random **fog** tiles (`occupied`, no Brainrot id —
 plants blocked, monsters phase through) and **rise from under the tile**
 (`GraveConfig.RISE_DURATION`). While the day is Active **and authored waves
 are still running**, each grave repeatedly spawns a **Zombie** or **Skeleton**
 at random intervals (`EMERGE_*` first, then `RESPAWN_*`). Units rise from
 under the stone (`MONSTER_RISE_DURATION`). The grave **stays** on the tile
-(still blocking plants; monsters phase through) until the plot is cleared.
+(still blocking plants; monsters phase through) until **Brr Brr Patapim**
+lands **6** smashes (`GraveConfig.PATAPIM_HITS`) or the plot is cleared.
+Other Brainrot damage and status **cannot** chip graves; lane shots stop at
+the stone for monsters **behind** it (higher column / east) without shaking.
+**Bombardino** bombs still damage those monsters. Collapse uses the same
+fade-in-place death as monsters. **Patapim** uses `ignoreMonsterChew` so
+monsters walk through him and the grave.
 Grave production **stops** when spawn groups finish so victory can fire. Authored model:
 `Assets.Graves.Grave` (Model or MeshPart; procedural tombstone fallback). Graves are not saved.
 

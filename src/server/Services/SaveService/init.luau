@@ -245,7 +245,10 @@ local function collectSnapshot(player: Player): Types.SaveData
 		brainrots = planted,
 		unlocks = if progress then progress.unlocks elseif fallback then deepCopyStringList(fallback.unlocks) else deepCopyStringList(ProgressConfig.DEFAULT_UNLOCKS),
 		equipped = if progress then progress.equipped elseif fallback then deepCopyStringList(fallback.equipped) else deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED),
-		upgrades = {},
+		upgrades = if progress
+			then progress.upgrades
+			elseif fallback then deepCopyNumberMap(fallback.upgrades)
+			else {},
 		statistics = if progress
 			then progress.statistics
 			elseif fallback then deepCopyNumberMap(fallback.statistics)
@@ -347,6 +350,7 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		brains = saveData.brains,
 		unlocks = saveData.unlocks,
 		equipped = saveData.equipped,
+		upgrades = saveData.upgrades,
 		statistics = saveData.statistics,
 		introducedMonsters = saveData.introducedMonsters,
 		introducedBrainrots = saveData.introducedBrainrots,

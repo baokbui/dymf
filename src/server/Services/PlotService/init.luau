@@ -20,7 +20,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local PlotConfig = require(Shared.Config.PlotConfig)
-local PlayerConfig = require(Shared.Config.PlayerConfig)
 local Logger = require(Shared.Utilities.Logger)
 local CollisionUtil = require(Shared.Utilities.CollisionUtil)
 
@@ -41,10 +40,11 @@ local plotsByUserId: { [number]: Plot.Plot } = {}
 local enemyLanesByRow: { [number]: Model } = {}
 local characterAddedConnections: { [number]: RBXScriptConnection } = {}
 
-local function applyCharacterMovement(character: Model)
+local function applyCharacterMovement(player: Player, character: Model)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
-		humanoid.WalkSpeed = PlayerConfig.WALK_SPEED
+		local ProgressService = require(script.Parent.ProgressService)
+		humanoid.WalkSpeed = ProgressService.getWalkSpeed(player)
 	end
 	CollisionUtil.applyCharacter(character)
 end
@@ -75,7 +75,7 @@ local function hookRespawn(player: Player, character: Model)
 end
 
 local function onCharacterAdded(player: Player, character: Model)
-	applyCharacterMovement(character)
+	applyCharacterMovement(player, character)
 	hookRespawn(player, character)
 end
 

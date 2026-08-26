@@ -29,7 +29,6 @@ local MonsterModel = require(script.MonsterModel)
 local MonsterStatus = require(script.MonsterStatus)
 local CombatService = require(script.Parent.CombatService)
 local GridService = require(script.Parent.GridService)
-local BrainrotService = require(script.Parent.BrainrotService)
 local PlotService = require(script.Parent.PlotService)
 
 local EnemyService = {}
@@ -106,6 +105,7 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 end
 
 local function computeBrainrotHits(runtime: MonsterRuntime, brainrotInstanceId: string): number
+	local BrainrotService = require(script.Parent.BrainrotService)
 	local placement = BrainrotService.getPlacement(brainrotInstanceId)
 	if not placement then
 		return 1

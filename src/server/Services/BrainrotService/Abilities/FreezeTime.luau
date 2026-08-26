@@ -1,10 +1,9 @@
 --!strict
 --[[
 	FreezeTime (Lirili Larila)
-	One-shot on place: play attack anim + cast SFX, Freeze the entire row
-	(ahead and behind) for freezeDuration, despawn when the cast animation
-	ends (plant does not linger for the full freeze), then thaw SFX when
-	the status expires.
+	One-shot on place: play attack anim + cast SFX, Freeze 2 tiles ahead
+	and 2 tiles behind (plus this tile) for freezeDuration, despawn when
+	the cast animation ends, then thaw SFX when the status expires.
 ]]
 
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
@@ -16,8 +15,10 @@ local DEFAULT_CAST_FALLBACK = 1.2
 
 function FreezeTime.onPlaced(ctx, callbacks)
 	local freezeDuration = DEFAULT_FREEZE_DURATION
+	local freezeTiles = 2
 	if ctx.definition.abilityParams then
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
+		freezeTiles = ctx.definition.abilityParams.freezeTiles or freezeTiles
 	end
 
 	local hitDelay = 0
@@ -47,7 +48,17 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			return
 		end
 
-		CombatService.applyEntireRowStatus(plotModel, row, "Freeze", freezeDuration, nil, "Ice")
+		CombatService.applyStatusAroundColumn(
+			plotModel,
+			row,
+			ctx.position.column,
+			freezeTiles,
+			freezeTiles,
+			"Freeze",
+			freezeDuration,
+			nil,
+			"Ice"
+		)
 
 		task.delay(freezeDuration, function()
 			callbacks.playSound("FreezeTimeEnd")

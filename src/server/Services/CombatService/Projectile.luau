@@ -61,7 +61,10 @@ type ImpactCallback = (
 	damage: number,
 	ownerUserId: number,
 	impact: ImpactSpec?,
-	targetKind: string?
+	targetKind: string?,
+	plotModel: Model?,
+	row: number?,
+	column: number?
 ) -> boolean
 type GetColumnCallback = (instanceId: string, targetKind: string?) -> number?
 type SetPositionCallback = (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> ()
@@ -439,7 +442,9 @@ function Projectile.tick(
 	onImpact: ImpactCallback
 )
 	for id, projectile in active do
-		local liveColumn = getColumn(projectile.spec.targetInstanceId, projectile.spec.targetKind)
+		local liveColumn = if projectile.spec.targetKind == "Grave"
+			then projectile.spec.targetColumn
+			else getColumn(projectile.spec.targetInstanceId, projectile.spec.targetKind)
 		if not liveColumn then
 			destroyProjectile(projectile)
 			active[id] = nil
@@ -478,7 +483,10 @@ function Projectile.tick(
 				projectile.spec.damage,
 				projectile.spec.ownerUserId,
 				projectile.spec.impact,
-				projectile.spec.targetKind
+				projectile.spec.targetKind,
+				projectile.spec.plotModel,
+				projectile.spec.row,
+				projectile.spec.targetColumn
 			)
 			destroyProjectile(projectile)
 			active[id] = nil

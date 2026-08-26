@@ -82,6 +82,9 @@ local function sortedDefinitions(filterIds: { string }?): { Types.BrainrotDefini
 		if allowed and not allowed[definition.id] then
 			continue
 		end
+		if definition.hidden == true then
+			continue
+		end
 		table.insert(list, definition)
 	end
 	table.sort(list, function(a, b)

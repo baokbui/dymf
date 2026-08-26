@@ -60,6 +60,11 @@ local BRAINROT_SFX: { [string]: boolean } = {
 	PlaceBrainrot_LiriliLarila = true,
 	PlaceBrainrot_CappuccinoAssassino = true,
 	PlaceBrainrot_ChimpanziniBananini = true,
+	PlaceBrainrot_BrrBrrPatapim = true,
+	PlaceBrainrot_GiraffaCeleste = true,
+	WindGust = true,
+	GraveShake = true,
+	GraveCollapse = true,
 	RemoveBrainrot = true,
 	ThrowKnifeHit = true,
 }

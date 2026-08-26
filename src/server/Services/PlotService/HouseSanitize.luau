@@ -1,7 +1,8 @@
 --!strict
 --[[
 	HouseSanitize
-	Toolbox house cleanup: strip Lock Base UI, rewrite Empty Base owner sign.
+	Toolbox house cleanup: strip Lock Base UI, leftover Tung Mascot, rewrite
+	Empty Base owner sign.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +26,10 @@ function HouseSanitize.stripLockBase(house: Model)
 
 	for _, inst in house:GetDescendants() do
 		if nameLooksLikeLock(inst.Name) then
+			table.insert(toDestroy, inst)
+			continue
+		end
+		if inst:IsA("Model") and string.lower(inst.Name) == "tung mascot" then
 			table.insert(toDestroy, inst)
 			continue
 		end

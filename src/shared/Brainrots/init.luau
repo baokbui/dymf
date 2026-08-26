@@ -112,9 +112,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		health = 0,
 		damage = 0,
 		attackInterval = 0,
-		rangeTiles = FULL_LINE,
+		rangeTiles = 2,
 		ability = "FreezeTime",
-		abilityParams = { freezeDuration = 7 },
+		abilityParams = { freezeDuration = 7, freezeTiles = 2 },
 		triggersOnPlace = true,
 		ignoreMonsterChew = true,
 		plantCooldown = 20,
@@ -173,22 +173,25 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 	GiraffaCeleste = {
 		id = "GiraffaCeleste",
 		name = "Giraffa Celeste",
-		cost = 125,
-		maxHealth = 800,
-		health = 8,
+		cost = 50,
+		maxHealth = 0,
+		health = 0,
 		damage = 0,
 		attackInterval = 0,
 		rangeTiles = 0,
 		ability = "ClearFogRow",
-		plantsOnFog = true,
-		brainsCost = 75,
+		abilityParams = { fogDuration = 7 },
+		triggersOnPlace = true,
+		ignoreMonsterChew = true,
 		color = Color3.fromRGB(120, 190, 255),
-		previewFocusOffset = Vector3.new(0, -0.4, 0),
-		modelId = "Giraffa Celeste",
+		previewFocusOffset = Vector3.new(0, 0, 0),
+		modelId = "Girafa Celestre",
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 0,
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 		animated = true,
+		anchorAllParts = true,
+		attackAnimationId = "rbxassetid://124620822680703",
 	},
 
 	BrrBrrPatapim = {
@@ -198,19 +201,22 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		maxHealth = 800,
 		health = 8,
 		damage = 0,
-		attackInterval = 0,
+		attackInterval = 2.6,
 		rangeTiles = 0,
 		ability = "BustGrave",
+		abilityParams = { smashCount = 2, smashGap = 1 },
 		plantOnGrave = true,
-		abilityParams = { bustDuration = 8 },
+		ignoreMonsterChew = true,
+		attackHitDelay = 0.45,
 		plantCooldown = 12,
 		color = Color3.fromRGB(70, 130, 70),
-		previewFocusOffset = Vector3.new(0, -0.4, 0),
+		previewFocusOffset = Vector3.new(0, -0.5, 0),
 		modelId = "Brr Brr Patapim",
 		modelOrientationDegrees = Vector3.new(0, 0, 0),
 		modelYOffset = 0,
-		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		modelScale = 2.2,
 		animated = true,
+		attackAnimationId = "rbxassetid://79102095600921",
 	},
 }
 
@@ -220,6 +226,11 @@ end
 
 function Brainrots.exists(id: string): boolean
 	return definitions[id] ~= nil
+end
+
+function Brainrots.isPlayable(id: string): boolean
+	local definition = definitions[id]
+	return definition ~= nil and definition.hidden ~= true
 end
 
 function Brainrots.getAll(): { [string]: Types.BrainrotDefinition }

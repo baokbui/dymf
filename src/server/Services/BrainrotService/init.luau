@@ -221,6 +221,8 @@ local function createPlacement(
 		-- so the shop's "recharges, then acts" feel stays intact).
 		cooldownRemaining = if randomizeCooldown
 			then math.random() * definition.attackInterval
+			elseif definition.plantOnGrave == true
+			then 0
 			else definition.attackInterval,
 		frozenUntil = 0,
 		poisonUntil = 0,
@@ -541,7 +543,7 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 		end
 
 		local definition = Brainrots.get(saved.brainrotId)
-		if not definition then
+		if not definition or definition.hidden == true then
 			continue
 		end
 

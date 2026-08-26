@@ -12,7 +12,6 @@ local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
 local HouseBossDisplay = require(script.Parent.HouseBossDisplay)
-local HouseMascot = require(script.Parent.HouseMascot)
 local HouseSanitize = require(script.Parent.HouseSanitize)
 local HouseSlot = require(script.Parent.HouseSlot)
 local ProceduralHouse = require(script.Parent.ProceduralHouse)
@@ -41,8 +40,6 @@ local function buildFromTemplate(template: Model, slot: HouseSlot.Slot): Model
 	model.Name = "House"
 	HouseSanitize.stripLockBase(model)
 
-	local restoreMascot = HouseMascot.beginExcludeFromFit(model)
-
 	local size = select(1, ModelUtil.getVisualSizeAndCenter(model))
 	local scaleCandidates: { number } = {}
 	if size.X > 0.01 then
@@ -63,8 +60,6 @@ local function buildFromTemplate(template: Model, slot: HouseSlot.Slot): Model
 		model:ScaleTo(model:GetScale() * scale)
 	end
 
-	restoreMascot()
-
 	ModelUtil.snapFeetToTileTop(model, Vector3.new(slot.centerX, slot.grassY, slot.centerZ))
 
 	local fittedSize, fittedCenter = ModelUtil.getVisualSizeAndCenter(model)
@@ -75,7 +70,6 @@ local function buildFromTemplate(template: Model, slot: HouseSlot.Slot): Model
 	local finalSize, finalCenter = ModelUtil.getVisualSizeAndCenter(model)
 	HouseBossDisplay.attach(model, slot, 0, slot.grassY)
 	HouseSanitize.setOwnerLabel(model, nil)
-	HouseMascot.dress(model)
 
 	model:SetAttribute("HouseFrontX", slot.frontX - slot.originX)
 	model:SetAttribute("HouseSource", "Template")

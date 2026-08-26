@@ -87,6 +87,7 @@ Services (current):
 - BrainrotService
 - CoinService
 - ProgressService
+- StoreService
 - GraveService
 - HouseService (🔜 Milestone 21 — boss trophies + brains income)
 
@@ -112,7 +113,7 @@ The server owns:
 - Monster spawning
 - Plot houses (build, owner sign, future boss display)
 - Saving
-- Rewards / unlocks / loadout / statistics
+- Rewards / unlocks / loadout / statistics / store purchases
 
 The client owns:
 
@@ -149,8 +150,8 @@ Examples:
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
 - Weather, graves, VFX, audio
 
-Studio-only cheats live in `DevConfig` (`isActive()` = ENABLED **and** Studio).
-Do not ship with cheats on.
+	-- TEMP playtest cheats. `isActive()` = ENABLED and Studio only (never live).
+	-- Do not ship with cheats on.
 
 ---
 
@@ -162,6 +163,7 @@ Unit and prop visuals live under `ReplicatedStorage.Assets` (Rojo
 - `Assets.Brainrots` — Brainrot models (`modelId` / registry `id`)
 - `Assets.Monsters` — Monster models (`modelId` / registry `id`)
 - `Assets.Houses` — Plot house models (`HouseConfig.MODEL_ID`)
+- `Assets.Stores` — Per-plot mini stores (`StoreConfig`; cloned beside each house)
 
 Clone via `Shared.Utilities.ModelUtil`. Prefer templates when present; use
 procedural / Part fallbacks so gameplay works without assets. Strip Scripts,

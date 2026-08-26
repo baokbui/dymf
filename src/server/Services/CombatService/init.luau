@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
+local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
@@ -44,6 +45,26 @@ type MonsterHandlers = {
 }
 
 local monsterHandlers: MonsterHandlers?
+
+local function graveService()
+	return require(script.Parent.GraveService)
+end
+
+local function monsterColumnOf(instanceId: string): number?
+	if monsterHandlers then
+		return monsterHandlers.getMonsterColumn(instanceId)
+	end
+	return nil
+end
+
+-- If a grave sits between the shooter and this monster, shake the stone (no HP).
+local function absorbGraveBlock(plotModel: Model, row: number, fromColumn: number, targetColumn: number): boolean
+	return graveService().absorbLaneHit(plotModel, row, fromColumn, targetColumn)
+end
+
+local function isBehindGrave(plotModel: Model, row: number, fromColumn: number, targetColumn: number): boolean
+	return graveService().isMonsterBehindGrave(plotModel, row, fromColumn, targetColumn)
+end
 
 local function fireCombatVisual(ownerUserId: number, payload: { [string]: any })
 	local player = Players:GetPlayerByUserId(ownerUserId)
@@ -154,6 +175,11 @@ function CombatService.attackFirstInRow(
 	if not targetId then
 		return false
 	end
+	local targetColumn = monsterColumnOf(targetId)
+	if type(targetColumn) == "number" and isBehindGrave(plotModel, position.row, position.column, targetColumn) then
+		absorbGraveBlock(plotModel, position.row, position.column, targetColumn)
+		return true
+	end
 	CombatService.damageMonster(targetId, damage)
 	fireCombatVisual(ownerUserId, {
 		kind = "Hit",
@@ -196,6 +222,11 @@ function CombatService.attackFirstInMeleeReach(
 	if not targetId then
 		return false
 	end
+	local targetColumn = monsterColumnOf(targetId)
+	if type(targetColumn) == "number" and isBehindGrave(plotModel, position.row, position.column, targetColumn) then
+		absorbGraveBlock(plotModel, position.row, position.column, targetColumn)
+		return true
+	end
 	CombatService.damageMonster(targetId, damage)
 	CombatService.notifyHitVisual(ownerUserId, targetId, {
 		muteSound = muteSound == true,
@@ -217,7 +248,15 @@ function CombatService.attackInRow(
 	if #targets == 0 then
 		return false
 	end
+	local hitAny = false
 	for _, monsterId in targets do
+		local targetColumn = monsterColumnOf(monsterId)
+		if type(targetColumn) == "number" and isBehindGrave(plotModel, position.row, position.column, targetColumn) then
+			absorbGraveBlock(plotModel, position.row, position.column, targetColumn)
+			hitAny = true
+			continue
+		end
+		hitAny = true
 		CombatService.damageMonster(monsterId, damage)
 		local payload: { [string]: any } = {
 			kind = "Hit",
@@ -275,13 +314,27 @@ function CombatService.launchProjectile(
 		return false
 	end
 
+	local blockingColumn = graveService().getBlockingColumn(
+		plotModel,
+		position.row,
+		position.column,
+		targetColumn
+	)
+	local targetKind: string? = nil
+	local targetInstanceId = targetId
+	if blockingColumn then
+		targetKind = "Grave"
+		targetInstanceId = "Grave"
+		targetColumn = blockingColumn
+	end
+
 	local impact: Projectile.ImpactSpec? = nil
 	if options then
 		impact = {
 			soundKey = options.soundKey,
-			statusKind = options.statusKind,
-			statusDuration = options.statusDuration,
-			statusVisual = options.statusVisual,
+			statusKind = if blockingColumn then nil else options.statusKind,
+			statusDuration = if blockingColumn then nil else options.statusDuration,
+			statusVisual = if blockingColumn then nil else options.statusVisual,
 		}
 	end
 
@@ -290,12 +343,13 @@ function CombatService.launchProjectile(
 			plotModel = plotModel,
 			row = position.row,
 			startColumn = position.column,
-			targetInstanceId = targetId,
+			targetInstanceId = targetInstanceId,
 			targetColumn = targetColumn,
-			damage = damage,
+			damage = if blockingColumn then 0 else damage,
 			ownerUserId = ownerUserId,
 			kind = if options then options.kind else nil,
 			impact = impact,
+			targetKind = targetKind,
 		},
 		worldY,
 		monsterHandlers.setProjectilePosition
@@ -363,6 +417,10 @@ function CombatService.launchTowardBrainrot(
 		monsterHandlers.setProjectilePosition
 	)
 	return true
+end
+
+function CombatService.fireWindGust(ownerUserId: number)
+	fireCombatVisual(ownerUserId, { kind = "WindGust" })
 end
 
 function CombatService.fireRowExplosion(
@@ -451,6 +509,11 @@ function CombatService.dealRowDamage(
 )
 	local targets = CombatService.getMonstersInRow(plotModel, row, fromColumn, FULL_LINE)
 	for _, monsterId in targets do
+		local targetColumn = monsterColumnOf(monsterId)
+		if type(targetColumn) == "number" and isBehindGrave(plotModel, row, fromColumn, targetColumn) then
+			absorbGraveBlock(plotModel, row, fromColumn, targetColumn)
+			continue
+		end
 		CombatService.damageMonster(monsterId, damage)
 	end
 	if #targets > 0 then
@@ -470,10 +533,17 @@ function CombatService.applyRowStatus(
 	visual: string?
 ): boolean
 	local targets = CombatService.getMonstersInRow(plotModel, row, fromColumn, rangeTiles)
+	local applied = false
 	for _, monsterId in targets do
+		local targetColumn = monsterColumnOf(monsterId)
+		if type(targetColumn) == "number" and isBehindGrave(plotModel, row, fromColumn, targetColumn) then
+			absorbGraveBlock(plotModel, row, fromColumn, targetColumn)
+			continue
+		end
 		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
+		applied = true
 	end
-	return #targets > 0
+	return applied
 end
 
 -- Status on every monster on the row (ahead and behind the caster).
@@ -486,10 +556,56 @@ function CombatService.applyEntireRowStatus(
 	visual: string?
 ): boolean
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
+	local applied = false
 	for _, monsterId in targets do
+		local targetColumn = monsterColumnOf(monsterId)
+		if type(targetColumn) == "number" and isBehindGrave(plotModel, row, 0, targetColumn) then
+			absorbGraveBlock(plotModel, row, 0, targetColumn)
+			continue
+		end
 		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
+		applied = true
 	end
-	return #targets > 0
+	return applied
+end
+
+-- Status on this row in a band: `tilesBehind` west of `centerColumn` and
+-- `tilesAhead` east (inclusive lawn tiles). Graves still block eastward.
+function CombatService.applyStatusAroundColumn(
+	plotModel: Model,
+	row: number,
+	centerColumn: number,
+	tilesAhead: number,
+	tilesBehind: number,
+	kind: Types.StatusEffectKind,
+	duration: number,
+	magnitude: number?,
+	visual: string?
+): boolean
+	local ahead = math.max(0, tilesAhead)
+	local behind = math.max(0, tilesBehind)
+	local minCol = math.max(1, centerColumn - behind)
+	local maxColExclusive = math.min(GridConfig.COLUMNS, centerColumn + ahead) + 1
+	local targets = CombatService.getAllMonstersInRow(plotModel, row)
+	local applied = false
+	for _, monsterId in targets do
+		local targetColumn = monsterColumnOf(monsterId)
+		if type(targetColumn) ~= "number" then
+			continue
+		end
+		if targetColumn < minCol or targetColumn >= maxColExclusive then
+			continue
+		end
+		if targetColumn > centerColumn
+			and isBehindGrave(plotModel, row, centerColumn, targetColumn)
+		then
+			absorbGraveBlock(plotModel, row, centerColumn, targetColumn)
+			continue
+		end
+		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
+		applied = true
+	end
+	return applied
 end
 
 function CombatService.getFirstMonsterInRow(
@@ -585,8 +701,19 @@ local function onProjectileImpact(
 	damage: number,
 	ownerUserId: number,
 	impact: Projectile.ImpactSpec?,
-	targetKind: string?
+	targetKind: string?,
+	plotModel: Model?,
+	row: number?,
+	column: number?
 ): boolean
+	if targetKind == "Grave" then
+		fireCombatVisual(ownerUserId, {
+			kind = "Hit",
+			soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+		})
+		return false
+	end
+
 	if targetKind == "Brainrot" then
 		local killed = CombatService.damageBrainrot(instanceId, damage)
 		fireCombatVisual(ownerUserId, {

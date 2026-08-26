@@ -10,7 +10,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local GridService = require(script.Parent.Parent.Parent.GridService)
-local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local PharaohSteal = {}
@@ -37,6 +36,7 @@ local function idsOnRow(plotModel: Model, row: number): { string }
 			if seen[id] then
 				continue
 			end
+			local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 			local placement = BrainrotService.getPlacement(id)
 			if placement and placement.health > 0 then
 				seen[id] = true
@@ -113,6 +113,7 @@ function PharaohSteal.onTick(ctx, state, dt: number, callbacks)
 		if not plotModel.Parent then
 			return
 		end
+		local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 		local destination = GridService.getWorldPositionAtColumn(plotModel, row, column)
 		local origins: { Vector3 } = {}
 		for _, pick in picks do

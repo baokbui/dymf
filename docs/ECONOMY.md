@@ -1,7 +1,7 @@
 # BVM Economy
 
 The single **match** currency is **Coins**. **Brains** are a separate soft
-currency for progression unlocks (Milestone 13 grants; Milestone 19 store;
+currency for progression unlocks (Milestone 13 grants; Milestone 18 store;
 Milestone 20 evolve/mutate; Milestone 21 house boss income).
 Only the server controls currency — clients send collection intent and display
 balances, never set them (`.cursorrules`).
@@ -90,6 +90,9 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
 with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
 — the coins spent placing it are lost (see `BRAINROTS.md` / `NETWORKING.md`).
+
+**Brains** are spent at the Progression Stores (Milestone 18): `ProgressService`
+validates `BuyStoreItem` and deducts brains. See `docs/STORE.md`.
 
 ### Implementation
 

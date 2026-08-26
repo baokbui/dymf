@@ -36,7 +36,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	FreezeTime = {
 		label = "Freeze",
-		description = "Freezes the entire lane for 7s on plant, then disappears. Can't be eaten.",
+		description = "Freezes 2 tiles in front and 2 behind (7s) on plant, then disappears. Can't be eaten.",
 	},
 	ThrowKnife = {
 		label = "Throw Shuriken",
@@ -48,11 +48,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	ClearFogRow = {
 		label = "Clear Fog",
-		description = "Clears Night Fog on this row so you can plant the east tiles.",
+		description = "One-shot. Plays a gust, blows Night Fog off the whole plot for 7s, then disappears.",
 	},
 	BustGrave = {
-		label = "Grave Roots",
-		description = "Plant on a grave. Destroys it after a few seconds, then disappears.",
+		label = "Grave Smash",
+		description = "Plant on a grave. Immune — monsters walk through. Two smashes per swing (1s apart); 6 collapse the stone, then he disappears.",
 	},
 }
 

@@ -12,7 +12,6 @@ local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local GridService = require(script.Parent.Parent.Parent.GridService)
-local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 
 local ScorpionBurrow = {}
 
@@ -20,6 +19,7 @@ local function firstBrainrotColumn(plotModel: Model, row: number): number?
 	for column = GridConfig.COLUMNS, 1, -1 do
 		local tile = GridService.getTile(plotModel, { row = row, column = column })
 		if tile and tile.occupied and tile.brainrotInstanceId then
+			local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 			local placement = BrainrotService.getPlacement(tile.brainrotInstanceId)
 			if placement and placement.health > 0 and placement.definition.ignoreMonsterChew ~= true then
 				return column

@@ -43,7 +43,7 @@ Remotes module. That is the only required step.
 | `CollectCoin`      | client → server | ✅ M3  | Intent to collect a ground coin (by id) |
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
-| `FogRowsChanged`   | server → client | ✅ | Lawn rows whose Night Fog plant-block is lifted (Giraffa); `{ rows }` **plot owner only** |
+| `FogRowsChanged`   | server → client | ✅ | Lawn rows whose Night Fog plant-block is lifted (Giraffa plot gust); `{ rows }` **plot owner only** |
 | `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / Terrify / SandTornado / Dizzy / MonsterAttack VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
@@ -51,7 +51,10 @@ Remotes module. That is the only required step.
 | `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats |
-| `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated)     |
+| `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
+| `OpenProgressionStore` | server → client | ✅ M18 | Talk to Tung / 67 mascot → open store overlay (`Brainrots` / `Upgrades`) |
+| `BuyStoreItem`     | client → server | ✅ M18 | Spend brains (`shop` + `id`); server validates catalog |
+| `StorePurchaseFailed` | server → client | ✅ M18 | Rejected buy (broke / owned / max) |
 
 ### RemoteFunctions
 

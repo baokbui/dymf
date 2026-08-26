@@ -43,10 +43,17 @@ local AudioConfig = {
 		"Death_Goblin",
 		"Death_GoblinElite",
 		"Death_GoblinKing",
+		"Death_SmallMummy",
+		"Death_PharaohMummy",
+		"Death_Scorpion",
 		"MonsterAttack",
 		"MonsterAttack_Goblin",
 		"MonsterAttack_GoblinElite",
 		"MonsterAttack_GoblinKing",
+		"MonsterAttack_Scorpion",
+		"MonsterAttack_SmallMummy",
+		"MonsterAttack_PharaohMummy",
+		"SandTornado",
 		"Terrify",
 		"FreezeTime",
 		"FreezeTimeEnd",
@@ -60,6 +67,11 @@ local AudioConfig = {
 		"PlaceBrainrot_LiriliLarila",
 		"PlaceBrainrot_CappuccinoAssassino",
 		"PlaceBrainrot_ChimpanziniBananini",
+		"PlaceBrainrot_BrrBrrPatapim",
+		"PlaceBrainrot_GiraffaCeleste",
+		"WindGust",
+		"GraveShake",
+		"GraveCollapse",
 	},
 
 	MUSIC = {
@@ -152,6 +164,14 @@ local AudioConfig = {
 			SoundId = "rbxassetid://112519317017452",
 			Volume = 0.85,
 		},
+		PlaceBrainrot_BrrBrrPatapim = {
+			SoundId = "rbxassetid://138952404452431",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_GiraffaCeleste = {
+			SoundId = "rbxassetid://72548265830474",
+			Volume = 0.85,
+		},
 		RemoveBrainrot = {
 			SoundId = "rbxassetid://135342195223049",
 			Volume = 0.7,
@@ -193,6 +213,18 @@ local AudioConfig = {
 		Death_GoblinKing = {
 			SoundId = "rbxassetid://83502215419926",
 			Volume = 0.9,
+		},
+		Death_SmallMummy = {
+			SoundId = "rbxassetid://297569488",
+			Volume = 0.85,
+		},
+		Death_PharaohMummy = {
+			SoundId = "rbxassetid://297569488",
+			Volume = 0.85,
+		},
+		Death_Scorpion = {
+			SoundId = "rbxassetid://74185022698539",
+			Volume = 0.85,
 		},
 		Explosion = {
 			SoundId = "rbxasset://sounds/impact_explosion_03.mp3",
@@ -239,6 +271,23 @@ local AudioConfig = {
 			SoundId = "rbxassetid://128854594485072",
 			Volume = 0.9,
 		},
+		MonsterAttack_Scorpion = {
+			SoundId = "rbxassetid://136569304505276",
+			Volume = 0.85,
+		},
+		MonsterAttack_SmallMummy = {
+			SoundId = "rbxassetid://78304267856955",
+			Volume = 0.85,
+		},
+		MonsterAttack_PharaohMummy = {
+			SoundId = "rbxassetid://78304267856955",
+			Volume = 0.85,
+		},
+		-- Pharaoh steal tornado (CombatVisual kind "SandTornado").
+		SandTornado = {
+			SoundId = "rbxassetid://8011936855",
+			Volume = 0.85,
+		},
 		-- Duke Vampire Terrify scream (CombatVisual kind "Terrify").
 		Terrify = {
 			SoundId = "rbxassetid://5527368920",
@@ -269,6 +318,19 @@ local AudioConfig = {
 		ThrowKnifeHit = {
 			SoundId = "rbxassetid://137287949709499",
 			Volume = 0.75,
+		},
+		-- Giraffa Celeste gust after the place animation.
+		WindGust = {
+			SoundId = "rbxassetid://139638115866253",
+			Volume = 0.85,
+		},
+		GraveShake = {
+			SoundId = "rbxassetid://114632405756391",
+			Volume = 0.85,
+		},
+		GraveCollapse = {
+			SoundId = "rbxassetid://6860676457",
+			Volume = 0.9,
 		},
 	} :: { [string]: SoundDef },
 }

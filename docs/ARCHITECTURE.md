@@ -88,7 +88,8 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         GraveService/     (fog graves → Zombie/Skeleton emerge)
         LevelService/
         SaveService/
-        ProgressService/  (brains, unlocks, loadout, statistics)
+        StoreService/     (Progression Store prompts — M18)
+        ProgressService/  (brains, unlocks, loadout, upgrades, statistics)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
@@ -110,7 +111,10 @@ Workspace/
     Plots/        plot models are generated here at runtime
     EnemyPaths/
     Maps/
+    ProgressionStores/  per-plot clones (runtime)
 ```
+
+`ReplicatedStorage.Assets.Stores` holds mini-store **templates**.
 
 ---
 
@@ -430,7 +434,7 @@ Full details in `UI.md`. Summary:
 - **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
 - **Inventory** — separate left HUD bar + modal for equip/unequip loadout.
-- **Reward popup** — victory shows brains earned (store purchases → M19).
+- **Reward popup** — victory shows brains earned (store purchases → M18).
 - Save schema **v2** adds `brains` + `equipped`.
 
 ### Milestone 12 — Audio ✅

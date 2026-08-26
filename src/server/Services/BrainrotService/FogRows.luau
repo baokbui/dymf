@@ -1,29 +1,42 @@
 --!strict
 --[[
 	FogRows
-	Tracks lawn rows whose NightFog plant-block is lifted by a living
-	ClearFogRow Brainrot. Owner client gets FogRowsChanged for visuals.
+	Tracks lawn rows whose NightFog plant-block is lifted. Giraffa applies a
+	timed clear (not tied to the plant staying alive). Owner client gets
+	FogRowsChanged for visuals.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 local PlotService = require(script.Parent.Parent.PlotService)
 
 local FogRows = {}
 
-local counts: { [Model]: { [number]: number } } = {}
+local active: { [Model]: { [number]: boolean } } = {}
+local generation: { [Model]: { [number]: number } } = {}
+
+local plotWideOn: { [Model]: boolean } = {}
+local plotWideGen: { [Model]: number } = {}
 
 local function rowList(plotModel: Model): { number }
-	local plotCounts = counts[plotModel]
-	if not plotCounts then
+	if plotWideOn[plotModel] == true then
+		local rows: { number } = {}
+		for row = 1, GridConfig.ROWS do
+			table.insert(rows, row)
+		end
+		return rows
+	end
+	local plotActive = active[plotModel]
+	if not plotActive then
 		return {}
 	end
 	local rows: { number } = {}
-	for row, n in plotCounts do
-		if n > 0 then
+	for row, isOn in plotActive do
+		if isOn then
 			table.insert(rows, row)
 		end
 	end
@@ -46,45 +59,91 @@ local function broadcast(plotModel: Model)
 	if not owner then
 		return
 	end
-	Remotes.getEvent("FogRowsChanged"):FireClient(owner, { rows = rowList(plotModel) })
+	Remotes.getEvent("FogRowsChanged"):FireClient(owner, {
+		rows = rowList(plotModel),
+		plotCleared = plotWideOn[plotModel] == true,
+	})
 end
 
 function FogRows.isRowCleared(plotModel: Model, row: number): boolean
-	local plotCounts = counts[plotModel]
-	return plotCounts ~= nil and (plotCounts[row] or 0) > 0
+	if plotWideOn[plotModel] == true then
+		return true
+	end
+	local plotActive = active[plotModel]
+	return plotActive ~= nil and plotActive[row] == true
 end
 
-function FogRows.add(plotModel: Model, row: number)
-	local plotCounts = counts[plotModel]
-	if not plotCounts then
-		plotCounts = {}
-		counts[plotModel] = plotCounts
+-- Lift fog on `row` for `duration` seconds. A later cast on the same row
+-- restarts the timer.
+function FogRows.applyTimed(plotModel: Model, row: number, duration: number)
+	local seconds = math.max(0, duration)
+	local plotGen = generation[plotModel]
+	if not plotGen then
+		plotGen = {}
+		generation[plotModel] = plotGen
 	end
-	plotCounts[row] = (plotCounts[row] or 0) + 1
-	if plotCounts[row] == 1 then
+	plotGen[row] = (plotGen[row] or 0) + 1
+	local token = plotGen[row]
+
+	local plotActive = active[plotModel]
+	if not plotActive then
+		plotActive = {}
+		active[plotModel] = plotActive
+	end
+	local already = plotActive[row] == true
+	plotActive[row] = true
+	if not already then
 		broadcast(plotModel)
 	end
-end
 
-function FogRows.remove(plotModel: Model, row: number)
-	local plotCounts = counts[plotModel]
-	if not plotCounts then
+	if seconds <= 0 then
 		return
 	end
-	local nextCount = (plotCounts[row] or 0) - 1
-	if nextCount <= 0 then
-		plotCounts[row] = nil
+
+	task.delay(seconds, function()
+		if not plotModel.Parent then
+			return
+		end
+		local gens = generation[plotModel]
+		if not gens or gens[row] ~= token then
+			return
+		end
+		local act = active[plotModel]
+		if act then
+			act[row] = nil
+		end
 		broadcast(plotModel)
-	else
-		plotCounts[row] = nextCount
-	end
+	end)
+end
+
+-- Lift Night Fog on every lawn row for `duration` seconds (Giraffa gust).
+function FogRows.applyPlotTimed(plotModel: Model, duration: number)
+	local seconds = math.max(0.05, duration)
+	plotWideGen[plotModel] = (plotWideGen[plotModel] or 0) + 1
+	local token = plotWideGen[plotModel]
+	plotWideOn[plotModel] = true
+	broadcast(plotModel)
+
+	task.delay(seconds, function()
+		if not plotModel.Parent then
+			return
+		end
+		if plotWideGen[plotModel] ~= token then
+			return
+		end
+		plotWideOn[plotModel] = nil
+		broadcast(plotModel)
+	end)
 end
 
 function FogRows.clearPlot(plotModel: Model)
-	if counts[plotModel] then
-		counts[plotModel] = nil
-		broadcast(plotModel)
+	plotWideOn[plotModel] = nil
+	plotWideGen[plotModel] = nil
+	if active[plotModel] or generation[plotModel] then
+		active[plotModel] = nil
+		generation[plotModel] = nil
 	end
+	broadcast(plotModel)
 end
 
 return FogRows

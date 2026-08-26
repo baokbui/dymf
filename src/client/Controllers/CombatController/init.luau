@@ -276,6 +276,8 @@ local function playSandTornado(data: { [string]: any })
 		return
 	end
 
+	AudioController.play("SandTornado")
+
 	local origins: { Vector3 } = {}
 	if type(data.origins) == "table" then
 		for _, point in data.origins do
@@ -324,6 +326,13 @@ local function onCombatVisual(payload: unknown)
 		playDizzy(data.instanceId, data.duration)
 	elseif kind == "Poison" then
 		playPoison(data.instanceId, data.duration)
+	elseif kind == "WindGust" then
+		local WeatherController = require(script.Parent.WeatherController)
+		WeatherController.hidePlotFogVisual()
+		local plotModel = PlotUtil.getLocalPlotModel()
+		if plotModel then
+			VfxUtil.playWindGust(plotModel)
+		end
 	elseif kind == "MonsterAttack" then
 		playMonsterAttackSound(data.monsterId)
 	end

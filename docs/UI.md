@@ -106,7 +106,8 @@ hardcode a second palette in new UI.
   an info tooltip (portrait + stat rows + ability blurb) built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). Server validates equip
-  changes via `SetEquipped`.
+  changes via `SetEquipped`. Loadout **cannot** change while the day is
+  **Active** (server reject + inventory packets locked).
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
   a Brainrot is introduced (portrait, name, stat summary, ability blurb,
   dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) on first
@@ -130,12 +131,13 @@ hardcode a second palette in new UI.
 - **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
   day (`LevelStateChanged.reward`).
 
-### Deferred (Milestone 19 — Progression Store)
+### Milestone 18 — Progression Store 🔜
 
-- Physical **Brainrots Store** (world shop to spend brains on new unlocks).
-- Purchasing locked roster entries with brains.
+- Physical **Brainrots Store** (Tung Mascot, blue mini store) and **Upgrade
+  Store** (67 Mascot, red mini store) cloned beside each plot house.
+- Purchasing locked roster entries and Speed with brains.
 
-Brains currency + victory grants are live so the store can plug in later.
+See `docs/STORE.md`.
 
 ---
 

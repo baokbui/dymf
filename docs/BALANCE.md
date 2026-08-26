@@ -78,12 +78,12 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Ballerina | 50 | 5 | Economy (25 / 18s) |
 | Chimpanzini | 50 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
-| Lirili | 75 | — | One-shot lane freeze (7s); uneatable; plant cooldown 20s |
+| Lirili | 75 | — | One-shot freeze 2 tiles ahead + behind (7s); uneatable; plant cooldown 20s |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
 | Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
-| Giraffa Celeste | 125 | 8 | Clears Night Fog on its row (store: 75 brains) |
-| Brr Brr Patapim | 50 | 8 | Plant on grave; bust 8s then despawn (unlock: reach Day 31) |
+| Giraffa Celeste | 50 | — | One-shot plot fog clear 7s (unlock: reach Day 25) |
+| Brr Brr Patapim | 50 | — | Immune; two hits per swing (1s apart); 6 collapse the grave (unlock: Day 31) |
 
 Intent: Cappuccino is reliable lane DPS; Tung Tung rewards the front line;
 Lirili is a panic freeze (Bombardino-style one-shot); Tralalero is bubble

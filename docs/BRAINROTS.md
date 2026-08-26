@@ -47,9 +47,10 @@ From `Shared.Types.BrainrotDefinition`:
 | `abilityParams`   | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                       |
 | `triggersOnPlace` | boolean?               | Fires ability once on placement (line bomb / freeze cast); may plant on NightFog columns |
 | `plantsOnFog`     | boolean?               | May plant on NightFog columns before the row is cleared (Giraffa) |
+| `hidden`          | boolean?               | Omit from shop, inventory, unlock-all, lawn restore |
 | `plantOnGrave`    | boolean?               | Must be planted on a grave (Patapim); graves sit on fog tiles |
-| `brainsCost`      | number?                | Brains price at the physical store (M19); nil = not sold there |
-| `ignoreMonsterChew` | boolean?             | Monsters phase through; no chew damage (Lirili)                    |
+| `brainsCost`      | number?                | Brains price at the physical store (M18); nil = not sold there |
+| `ignoreMonsterChew` | boolean?             | Monsters phase through; no chew damage (Lirili, Patapim)           |
 | `plantCooldown`   | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)` |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
 | `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
@@ -98,7 +99,7 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 | `LiriliLarila` | `Lirilì Larilà` |
 | `CappuccinoAssassino` | `Cappuccino Assassino` |
 | `ChimpanziniBananini` | `Chimpanzini Bananini` |
-| `GiraffaCeleste` | `Giraffa Celeste` |
+| `GiraffaCeleste` | `Girafa Celestre` |
 | `BrrBrrPatapim` | `Brr Brr Patapim` |
 
 For each Model: set `PrimaryPart` (prefer `RootPart` / `HumanoidRootPart` —
@@ -173,18 +174,18 @@ same popup the first time the player reaches Day 1
 
 This cadence is **starter-roster only** — a one-time, free unlock path tied to
 campaign progress. It never applies to post-launch Brainrots (Milestone 25+),
-which cost **Brains** at the physical Store (Milestone 19). Re-clearing an
+which cost **Brains** at the physical Store (Milestone 18). Re-clearing an
 already-cleared day (Day Select) does not re-grant or re-show the popup
 (`grantUnlockForLevel` is idempotent per player).
 
-**Reach unlock:** **Brr Brr Patapim** is granted the first time the player
-**reaches** Day 31 (`ProgressConfig.REACH_UNLOCK_SCHEDULE`) — same catch-up
-rules as monster intros. Equip into an open loadout slot if one exists
-(`MAX_EQUIPPED` is still 7).
+**Reach unlock:** **Giraffa Celeste** is granted on first reach of Day 25
+(Night Fog). **Brr Brr Patapim** is granted on first reach of Day 31
+(`ProgressConfig.REACH_UNLOCK_SCHEDULE`). Equip into an open loadout slot if
+one exists (`MAX_EQUIPPED` is still 7).
 
-**Store (Milestone 19 🔜):** **Giraffa Celeste** is in `ProgressConfig.STORE_CATALOG`
-(`brainsCost` 75) and is **not** campaign-granted. The physical shop is not
-wired yet; `DevConfig.UNLOCK_ALL_BRAINROTS` unlocks her in Studio.
+**Store (Milestone 18):** Mini stores cloned beside each plot house
+(`docs/STORE.md`). Catalog units can be bought early with brains; Giraffa /
+Patapim are also still granted free on reach (Days 25 / 31).
 
 ## Roster ✅ (Milestone 5)
 
@@ -195,11 +196,11 @@ wired yet; `DevConfig.UNLOCK_ALL_BRAINROTS` unlocks her in Studio.
 | Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 325  | — (1)         | 1000   | —        | Full row | Line bomb on place  | 30s   |
-| Lirili Larila        | 75   | —             | 0      | —        | Entire row | Lane freeze 7s on place; despawn after cast anim | 20s |
+| Lirili Larila        | 75   | —             | 0      | —        | 2 ahead + 2 behind | Freeze 7s on place; despawn after cast anim | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 50   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
-| Giraffa Celeste      | 125  | 800 (8)       | 0      | —        | —        | Clears Night Fog on its row while alive | store 75 brains |
-| Brr Brr Patapim      | 50   | 800 (8)       | 0      | —        | —        | Plant on a grave; destroys it after 8s, then despawns | 12s CD |
+| Giraffa Celeste      | 50   | — (immune)    | 0      | —        | —        | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | ~7.5s CD |
+| Brr Brr Patapim      | 50   | — (immune)    | 0      | 2.6s     | —        | Plant on a grave; 2 smashes per clip (1s apart); 6 collapse it, then despawns | 12s CD |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.
 
@@ -254,8 +255,9 @@ impact they despawn into a tile explosion + column damage. Tune
 `LINE_BOMB_DROP_STAGGER` (fly + drop cadence), `LINE_BOMB_FALL_DURATION`,
 `LINE_BOMB_FLY_HEIGHT`, `LINE_BOMB_DROP_HEIGHT`,
 `LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`. Lirili stays on its
-tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to **every**
-monster on the row (ahead and behind) for `abilityParams.freezeDuration` (7s).
+tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to monsters
+on its tile and **2 tiles ahead and 2 behind** (`abilityParams.freezeTiles`)
+for `abilityParams.freezeDuration` (7s).
 `ignoreMonsterChew` means monsters walk through and never chew it. The plant
 **despawns when the cast animation ends** (not when freeze expires); thaw SFX
 plays when the freeze duration ends.

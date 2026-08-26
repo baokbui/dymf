@@ -13,7 +13,6 @@ local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local GridService = require(script.Parent.Parent.Parent.GridService)
-local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 
 local DukeVampireTerrify = {}
 
@@ -51,6 +50,7 @@ local function collectTargets(ctx, columnsAhead: number): { string }
 				continue
 			end
 			-- Occupancy can briefly lag a destroy — only hit living placements.
+			local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 			local placement = BrainrotService.getPlacement(id)
 			if not placement or placement.health <= 0 then
 				continue

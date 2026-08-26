@@ -29,6 +29,7 @@ local RewardPopup = require(script.RewardPopup)
 local UnlockPopup = require(script.UnlockPopup)
 local MonsterIntroPopup = require(script.MonsterIntroPopup)
 local GameOverPopup = require(script.GameOverPopup)
+local ProgressionStore = require(script.ProgressionStore)
 local PlantToast = require(script.PlantToast)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
@@ -50,6 +51,7 @@ local rewardPopup: RewardPopup.RewardPopupHud? = nil
 local unlockPopup: UnlockPopup.UnlockPopupHud? = nil
 local monsterIntroPopup: MonsterIntroPopup.MonsterIntroPopupHud? = nil
 local gameOverPopup: GameOverPopup.GameOverPopupHud? = nil
+local progressionStore: ProgressionStore.ProgressionStoreHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
@@ -151,6 +153,9 @@ local function applyProfile(profile: { [string]: any }?)
 	if inventoryPanel then
 		inventoryPanel:applyProfile(profile)
 	end
+	if progressionStore then
+		progressionStore:setProfile(profile)
+	end
 	if settingsPanel and type(profile.statistics) == "table" then
 		settingsPanel:applyStatistics(profile.statistics :: { [string]: number })
 	end
@@ -223,6 +228,10 @@ end
 
 local function buildGameOverPopup(): GameOverPopup.GameOverPopupHud
 	return GameOverPopup.new(buildMain():WaitForChild("GameOverPopup") :: Frame)
+end
+
+local function buildProgressionStore(): ProgressionStore.ProgressionStoreHud
+	return ProgressionStore.new(buildMain():WaitForChild("ProgressionStore") :: Frame)
 end
 
 local function buildSettings(): Settings.SettingsPanel
@@ -337,6 +346,9 @@ local function applyLevelState(state: { [string]: any }?)
 		PlacementController.setPlacementAllowed(isActive)
 		PlacementController.setSelectionAllowed(canSelect)
 		PlacementController.setWeather(if type(state.weather) == "string" then state.weather else nil)
+		if inventoryPanel then
+			inventoryPanel:setLoadoutLocked(isActive)
+		end
 
 		if lastLevelPhase ~= phase then
 			if phase == Constants.PHASE.Victory then
@@ -397,6 +409,7 @@ function UIController.init()
 		monsterIntroPopup.onHidden = onIntroHidden
 	end
 	gameOverPopup = buildGameOverPopup()
+	progressionStore = buildProgressionStore()
 	settingsPanel = buildSettings()
 	buildHudEntries()
 end
@@ -452,6 +465,28 @@ function UIController.start()
 	Remotes.getEvent("ProfileUpdated").OnClientEvent:Connect(function(profile: unknown)
 		if type(profile) == "table" then
 			applyProfile(profile :: { [string]: any })
+		end
+	end)
+
+	Remotes.getEvent("OpenProgressionStore").OnClientEvent:Connect(function(shopKind: unknown)
+		if type(shopKind) ~= "string" or not progressionStore then
+			return
+		end
+		if inventoryPanel then
+			inventoryPanel:setOpen(false)
+		end
+		if settingsPanel then
+			settingsPanel:setOpen(false)
+		end
+		progressionStore:open(shopKind)
+	end)
+
+	Remotes.getEvent("StorePurchaseFailed").OnClientEvent:Connect(function(reason: unknown)
+		if type(reason) == "string" and progressionStore then
+			progressionStore:setStatus(reason)
+		end
+		if type(reason) == "string" and plantToast then
+			plantToast:push(reason)
 		end
 	end)
 

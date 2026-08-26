@@ -23,6 +23,7 @@ local Types = require(Shared.Types)
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
 local BrainrotInfo = require(script.Parent.Parent.Parent.Utilities.BrainrotInfo)
 local AudioController = require(script.Parent.Parent.AudioController)
+local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -50,7 +51,9 @@ export type InventoryPanel = typeof(setmetatable(
 		list: ScrollingFrame,
 		unlocks: { string },
 		equipped: { string },
+		loadoutLocked: boolean,
 		packets: { [string]: Packet },
+		hint: TextLabel,
 		tooltip: Frame,
 		tooltipPortraitHolder: Frame,
 		tooltipName: TextLabel,
@@ -63,7 +66,7 @@ local function sortedUnlocks(unlocks: { string }): { Types.BrainrotDefinition }
 	local list: { Types.BrainrotDefinition } = {}
 	for _, id in unlocks do
 		local def = Brainrots.get(id)
-		if def then
+		if def and def.hidden ~= true then
 			table.insert(list, def)
 		end
 	end
@@ -197,6 +200,7 @@ function Inventory.new(parent: Frame): InventoryPanel
 	UITheme.applyOutlinedTitle(close)
 
 	local hint = Instance.new("TextLabel")
+	hint.Name = "Hint"
 	hint.BackgroundTransparency = 1
 	hint.Size = UDim2.new(1, -32, 0, 18)
 	hint.Position = UDim2.fromOffset(16, 48)
@@ -240,7 +244,9 @@ function Inventory.new(parent: Frame): InventoryPanel
 		list = list,
 		unlocks = {},
 		equipped = {},
+		loadoutLocked = false,
 		packets = {},
+		hint = hint,
 		tooltip = tooltip,
 		tooltipPortraitHolder = portraitHolder,
 		tooltipName = tooltipName,
@@ -259,14 +265,22 @@ function Inventory.new(parent: Frame): InventoryPanel
 	return self
 end
 
-local function stylePacket(packet: Packet, equipped: boolean)
-	UITheme.applyCardLook(packet.button, equipped)
-	packet.button.BackgroundTransparency = if equipped then 0 else 0.3
+local HINT_OPEN = string.format("Equip up to %d for the shop bar — hover a packet for details", ProgressConfig.MAX_EQUIPPED)
+local HINT_LOCKED = "Loadout is locked while the day is underway"
 
-	packet.ribbon.BackgroundColor3 = if equipped then UITheme.SUCCESS else UITheme.SUBTEXT
-	packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "TAP TO EQUIP"
+local function stylePacket(packet: Packet, equipped: boolean, locked: boolean)
+	UITheme.applyCardLook(packet.button, equipped)
+	packet.button.BackgroundTransparency = if locked then 0.45 elseif equipped then 0 else 0.3
+
+	if locked then
+		packet.ribbon.BackgroundColor3 = UITheme.SUBTEXT
+		packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "LOCKED"
+	else
+		packet.ribbon.BackgroundColor3 = if equipped then UITheme.SUCCESS else UITheme.SUBTEXT
+		packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "TAP TO EQUIP"
+	end
 	UITheme.applyOutlinedTitle(packet.ribbonLabel, UITheme.TITLE)
-	packet.ribbonLabel.TextSize = if equipped then 11 else 10
+	packet.ribbonLabel.TextSize = if equipped and not locked then 11 else 10
 end
 
 function Inventory.showTooltip(self: InventoryPanel, packet: Packet)
@@ -444,6 +458,10 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 
 	button.Activated:Connect(function()
 		AudioController.play("UiClick")
+		if self.loadoutLocked then
+			UIEvents.firePlantFailed("Unable to change loadout — the day has already started")
+			return
+		end
 		local nextEquipped = table.clone(self.equipped)
 		if isEquipped(nextEquipped, definition.id) then
 			if #nextEquipped <= 1 then
@@ -481,7 +499,7 @@ function Inventory.refresh(self: InventoryPanel)
 	for _, definition in sortedUnlocks(self.unlocks) do
 		order += 1
 		local packet = self:buildPacket(order, definition)
-		stylePacket(packet, isEquipped(self.equipped, definition.id))
+		stylePacket(packet, isEquipped(self.equipped, definition.id), self.loadoutLocked)
 		self.packets[definition.id] = packet
 	end
 end
@@ -494,6 +512,14 @@ function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any }
 		self.equipped = profile.equipped :: { string }
 	end
 	self:refresh()
+end
+
+function Inventory.setLoadoutLocked(self: InventoryPanel, locked: boolean)
+	self.loadoutLocked = locked == true
+	self.hint.Text = if self.loadoutLocked then HINT_LOCKED else HINT_OPEN
+	for id, packet in self.packets do
+		stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked)
+	end
 end
 
 function Inventory.setOpen(self: InventoryPanel, open: boolean)

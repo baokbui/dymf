@@ -1,9 +1,8 @@
 --!strict
 --[[
 	ProgressService
-	Owns brains, unlocks, equipped loadout, and statistics. SaveService persists
-	the slice; UI only displays ProfileUpdated pushes. Physical Brainrots Store
-	purchases are deferred (Milestone 22).
+	Owns brains, unlocks, equipped loadout, player upgrades, and statistics.
+	The physical Progression Store spends brains here (Milestone 18).
 
 	Statistics update live via ProfileUpdated. Time played includes the current
 	session in client payloads; it is committed into the saved total on flush
@@ -18,7 +17,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
 local Monsters = require(Shared.Monsters)
+local PlayerConfig = require(Shared.Config.PlayerConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local StoreConfig = require(Shared.Config.StoreConfig)
 local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -32,6 +33,7 @@ type Profile = {
 	brains: number,
 	unlocks: { string },
 	equipped: { string },
+	upgrades: { [string]: number },
 	statistics: { [string]: number },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
@@ -57,6 +59,72 @@ local function copyStats(source: { [string]: number }): { [string]: number }
 	return result
 end
 
+local function copyUpgrades(source: { [string]: number }): { [string]: number }
+	return copyStats(source)
+end
+
+local function findStoreBrainrot(brainrotId: string): { brainrotId: string, brainsCost: number }?
+	for _, entry in ProgressConfig.STORE_CATALOG do
+		if entry.brainrotId == brainrotId then
+			return entry
+		end
+	end
+	return nil
+end
+
+local function findUpgrade(upgradeId: string): any?
+	for _, entry in ProgressConfig.UPGRADE_CATALOG do
+		if entry.id == upgradeId then
+			return entry
+		end
+	end
+	return nil
+end
+
+local function sanitizeUpgrades(raw: { [string]: number }?): { [string]: number }
+	local result: { [string]: number } = {}
+	if type(raw) ~= "table" then
+		return result
+	end
+	for key, value in raw do
+		if type(key) ~= "string" or type(value) ~= "number" then
+			continue
+		end
+		local def = findUpgrade(key)
+		if not def then
+			continue
+		end
+		result[key] = math.clamp(math.floor(value), 0, def.maxLevel)
+	end
+	return result
+end
+
+local function upgradeCost(def: any, nextLevel: number): number?
+	local costs = def.brainsCosts
+	if type(costs) ~= "table" or nextLevel < 1 then
+		return nil
+	end
+	local cost = costs[nextLevel]
+	if type(cost) ~= "number" then
+		cost = costs[#costs]
+	end
+	if type(cost) ~= "number" then
+		return nil
+	end
+	return math.max(0, math.floor(cost))
+end
+
+local function applyWalkSpeedToCharacter(player: Player, speed: number)
+	local character = player.Character
+	if not character then
+		return
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = speed
+	end
+end
+
 local function defaultUnlocks(): { string }
 	return copyList(ProgressConfig.DEFAULT_UNLOCKS)
 end
@@ -65,11 +133,11 @@ local function defaultEquipped(): { string }
 	return copyList(ProgressConfig.DEFAULT_EQUIPPED)
 end
 
-local function sanitizeIdList(raw: { string }, requireUnlocked: { [string]: boolean }?): { string }
+local function sanitizeIdList(raw: { string }, requireUnlocked: { [string]: boolean }?, maxCount: number?): { string }
 	local seen: { [string]: boolean } = {}
 	local result: { string } = {}
 	for _, id in raw do
-		if type(id) ~= "string" or seen[id] or not Brainrots.exists(id) then
+		if type(id) ~= "string" or seen[id] or not Brainrots.isPlayable(id) then
 			continue
 		end
 		if requireUnlocked and not requireUnlocked[id] then
@@ -77,7 +145,7 @@ local function sanitizeIdList(raw: { string }, requireUnlocked: { [string]: bool
 		end
 		seen[id] = true
 		table.insert(result, id)
-		if #result >= ProgressConfig.MAX_EQUIPPED then
+		if maxCount and #result >= maxCount then
 			break
 		end
 	end
@@ -101,7 +169,7 @@ local function sanitizeBrainrotIntroList(raw: { string }): { string }
 	local seen: { [string]: boolean } = {}
 	local result: { string } = {}
 	for _, id in raw do
-		if type(id) ~= "string" or seen[id] or not Brainrots.exists(id) then
+		if type(id) ~= "string" or seen[id] or not Brainrots.isPlayable(id) then
 			continue
 		end
 		seen[id] = true
@@ -142,6 +210,7 @@ local function ensureProfile(player: Player): Profile
 		brains = ProgressConfig.STARTING_BRAINS,
 		unlocks = defaultUnlocks(),
 		equipped = defaultEquipped(),
+		upgrades = {},
 		statistics = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
@@ -166,6 +235,7 @@ local function buildPayload(profile: Profile): { [string]: any }
 		brains = profile.brains,
 		unlocks = copyList(profile.unlocks),
 		equipped = copyList(profile.equipped),
+		upgrades = copyUpgrades(profile.upgrades),
 		statistics = statsForClient(profile),
 	}
 end
@@ -200,6 +270,7 @@ function ProgressService.getClientState(player: Player): { [string]: any }
 			brains = profile.brains,
 			unlocks = copyList(profile.unlocks),
 			equipped = copyList(profile.equipped),
+			upgrades = {},
 			statistics = {},
 		}
 	end
@@ -210,6 +281,7 @@ function ProgressService.getSaveSlice(player: Player): {
 	brains: number,
 	unlocks: { string },
 	equipped: { string },
+	upgrades: { [string]: number },
 	statistics: { [string]: number },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
@@ -224,6 +296,7 @@ function ProgressService.getSaveSlice(player: Player): {
 		brains = profile.brains,
 		unlocks = copyList(profile.unlocks),
 		equipped = copyList(profile.equipped),
+		upgrades = copyUpgrades(profile.upgrades),
 		statistics = copyStats(profile.statistics),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
@@ -234,6 +307,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	brains: number?,
 	unlocks: { string }?,
 	equipped: { string }?,
+	upgrades: { [string]: number }?,
 	statistics: { [string]: number }?,
 	introducedMonsters: { string }?,
 	introducedBrainrots: { string }?,
@@ -249,13 +323,14 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	end
 	local unlocked = unlockSet(profile.unlocks)
 	if type(slice.equipped) == "table" and #(slice.equipped :: { string }) > 0 then
-		profile.equipped = sanitizeIdList(slice.equipped :: { string }, unlocked)
+		profile.equipped = sanitizeIdList(slice.equipped :: { string }, unlocked, ProgressConfig.MAX_EQUIPPED)
 	else
-		profile.equipped = sanitizeIdList(defaultEquipped(), unlocked)
+		profile.equipped = sanitizeIdList(defaultEquipped(), unlocked, ProgressConfig.MAX_EQUIPPED)
 	end
 	if #profile.equipped == 0 then
-		profile.equipped = sanitizeIdList(defaultEquipped(), unlocked)
+		profile.equipped = sanitizeIdList(defaultEquipped(), unlocked, ProgressConfig.MAX_EQUIPPED)
 	end
+	profile.upgrades = sanitizeUpgrades(slice.upgrades)
 	if type(slice.statistics) == "table" then
 		profile.statistics = copyStats(slice.statistics :: { [string]: number })
 	else
@@ -274,6 +349,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	profile.sessionStartedAt = os.clock()
 	profile.hydrated = true
 	broadcast(player)
+	ProgressService.applyMovement(player)
 end
 
 function ProgressService.reset(player: Player)
@@ -281,6 +357,7 @@ function ProgressService.reset(player: Player)
 		brains = ProgressConfig.STARTING_BRAINS,
 		unlocks = defaultUnlocks(),
 		equipped = defaultEquipped(),
+		upgrades = {},
 		statistics = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
@@ -288,6 +365,7 @@ function ProgressService.reset(player: Player)
 		hydrated = true,
 	}
 	broadcast(player)
+	ProgressService.applyMovement(player)
 end
 
 function ProgressService.isUnlocked(player: Player, brainrotId: string): boolean
@@ -317,6 +395,9 @@ function ProgressService.isEquipped(player: Player, brainrotId: string): boolean
 end
 
 function ProgressService.canPlace(player: Player, brainrotId: string): boolean
+	if not Brainrots.isPlayable(brainrotId) then
+		return false
+	end
 	return ProgressService.isUnlocked(player, brainrotId) and ProgressService.isEquipped(player, brainrotId)
 end
 
@@ -331,11 +412,14 @@ function ProgressService.applyDevRoster(player: Player)
 	end
 	local allIds: { string } = {}
 	for id in pairs(Brainrots.getAll()) do
+		if not Brainrots.isPlayable(id) then
+			continue
+		end
 		table.insert(allIds, id)
 	end
 	table.sort(allIds)
 	profile.unlocks = sanitizeIdList(allIds)
-	profile.equipped = sanitizeIdList(allIds, unlockSet(profile.unlocks))
+	profile.equipped = sanitizeIdList(allIds, unlockSet(profile.unlocks), ProgressConfig.MAX_EQUIPPED)
 	broadcast(player)
 end
 
@@ -370,7 +454,7 @@ function ProgressService.grantUnlockForLevel(player: Player, clearedLevelNumber:
 			break
 		end
 	end
-	if not scheduled or not Brainrots.exists(scheduled) then
+	if not scheduled or not Brainrots.isPlayable(scheduled) then
 		return nil
 	end
 
@@ -397,7 +481,7 @@ function ProgressService.consumeReachUnlocksForDay(player: Player, dayNumber: nu
 	end
 	local granted = false
 	for _, entry in ProgressConfig.REACH_UNLOCK_SCHEDULE do
-		if entry.day > dayNumber or not Brainrots.exists(entry.brainrotId) then
+		if entry.day > dayNumber or not Brainrots.isPlayable(entry.brainrotId) then
 			continue
 		end
 		if ProgressService.isUnlocked(player, entry.brainrotId) then
@@ -424,7 +508,7 @@ function ProgressService.consumeBrainrotIntrosForDay(player: Player, dayNumber: 
 	end
 	local granted: { string } = {}
 	for _, entry in ProgressConfig.BRAINROT_INTRO_SCHEDULE do
-		if entry.day > dayNumber or not Brainrots.exists(entry.brainrotId) then
+		if entry.day > dayNumber or not Brainrots.isPlayable(entry.brainrotId) then
 			continue
 		end
 		if listContains(profile.introducedBrainrots, entry.brainrotId) then
@@ -457,6 +541,108 @@ function ProgressService.consumeMonsterIntrosForDay(player: Player, dayNumber: n
 	return granted
 end
 
+function ProgressService.getWalkSpeed(player: Player): number
+	local speed = PlayerConfig.WALK_SPEED
+	local profile = profiles[player.UserId]
+	if not profile then
+		return speed
+	end
+	local def = findUpgrade("WalkSpeed")
+	if not def then
+		return speed
+	end
+	local level = profile.upgrades["WalkSpeed"] or 0
+	local bonus = def.walkSpeedBonusPerLevel
+	if type(bonus) ~= "number" then
+		bonus = 0
+	end
+	return speed + level * bonus
+end
+
+function ProgressService.applyMovement(player: Player)
+	applyWalkSpeedToCharacter(player, ProgressService.getWalkSpeed(player))
+end
+
+local function failPurchase(player: Player, reason: string)
+	Remotes.getEvent("StorePurchaseFailed"):FireClient(player, reason)
+end
+
+local function tryBuyBrainrot(player: Player, brainrotId: string)
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	local entry = findStoreBrainrot(brainrotId)
+	if not entry or not Brainrots.isPlayable(brainrotId) then
+		failPurchase(player, "That Brainrot is not for sale")
+		return
+	end
+	if ProgressService.isUnlocked(player, brainrotId) then
+		failPurchase(player, "You already own this Brainrot")
+		return
+	end
+	if profile.brains < entry.brainsCost then
+		failPurchase(player, "Not enough brains")
+		return
+	end
+	profile.brains -= entry.brainsCost
+	table.insert(profile.unlocks, brainrotId)
+	if #profile.equipped < ProgressConfig.MAX_EQUIPPED then
+		table.insert(profile.equipped, brainrotId)
+	end
+	markIntroduced(profile.introducedBrainrots, brainrotId)
+	broadcast(player)
+end
+
+local function tryBuyUpgrade(player: Player, upgradeId: string)
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	local def = findUpgrade(upgradeId)
+	if not def then
+		failPurchase(player, "That upgrade is not for sale")
+		return
+	end
+	local current = profile.upgrades[upgradeId] or 0
+	if current >= def.maxLevel then
+		failPurchase(player, "Already at max level")
+		return
+	end
+	local cost = upgradeCost(def, current + 1)
+	if not cost then
+		failPurchase(player, "That upgrade is not for sale")
+		return
+	end
+	if profile.brains < cost then
+		failPurchase(player, "Not enough brains")
+		return
+	end
+	profile.brains -= cost
+	profile.upgrades[upgradeId] = current + 1
+	broadcast(player)
+	if upgradeId == "WalkSpeed" then
+		ProgressService.applyMovement(player)
+	end
+end
+
+local function onBuyStoreItem(player: Player, raw: unknown)
+	if type(raw) ~= "table" then
+		return
+	end
+	local data = raw :: { [string]: any }
+	local shop = data.shop
+	local id = data.id
+	if type(shop) ~= "string" or type(id) ~= "string" then
+		return
+	end
+	if shop == StoreConfig.SHOP_BRAINROTS then
+		tryBuyBrainrot(player, id)
+	elseif shop == StoreConfig.SHOP_UPGRADES then
+		tryBuyUpgrade(player, id)
+	end
+end
+
 function ProgressService.incrementStat(player: Player, key: string, amount: number?)
 	local profile = ensureProfile(player)
 	if not profile.hydrated then
@@ -478,6 +664,14 @@ local function onSetEquipped(player: Player, raw: unknown)
 	if not profile.hydrated then
 		return
 	end
+	local LevelService = require(script.Parent.LevelService)
+	if LevelService.isLevelActive(player) then
+		Remotes.getEvent("PlaceBrainrotFailed"):FireClient(
+			player,
+			"Unable to change loadout — the day has already started"
+		)
+		return
+	end
 	local unlocked = unlockSet(profile.unlocks)
 	local requested: { string } = {}
 	for _, value in raw :: { any } do
@@ -485,7 +679,7 @@ local function onSetEquipped(player: Player, raw: unknown)
 			table.insert(requested, value)
 		end
 	end
-	local nextEquipped = sanitizeIdList(requested, unlocked)
+	local nextEquipped = sanitizeIdList(requested, unlocked, ProgressConfig.MAX_EQUIPPED)
 	if #nextEquipped == 0 then
 		return -- keep at least one equipped; ignore empty loadouts
 	end
@@ -495,6 +689,7 @@ end
 
 function ProgressService.init()
 	Remotes.getEvent("SetEquipped").OnServerEvent:Connect(onSetEquipped)
+	Remotes.getEvent("BuyStoreItem").OnServerEvent:Connect(onBuyStoreItem)
 end
 
 function ProgressService.start()

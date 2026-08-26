@@ -14,8 +14,8 @@ local GraveConfig = {
 	FACE_DIRECTION = Vector3.new(-1, 0, 0),
 
 	-- How many graves to place at Start Day (inclusive).
-	COUNT_MIN = 1,
-	COUNT_MAX = 5,
+	COUNT_MIN = 5,
+	COUNT_MAX = 8,
 	EMERGE_MIN = 8,
 	EMERGE_MAX = 52,
 	-- Seconds between later spawns from the same grave (while the day is Active
@@ -38,8 +38,13 @@ local GraveConfig = {
 	-- Zombie/Skeleton climb out of the grave.
 	MONSTER_RISE_DURATION = 0.85,
 
-	-- Default seconds for BustGrave if the definition omits abilityParams.
-	BUST_DURATION = 8,
+	-- Hits from Brr Brr Patapim before the grave collapses. Other Brainrots
+	-- cannot chip this HP. Lane shots stop at the stone (no shake); only
+	-- Patapim smashes shake. Bombardino still damages monsters behind it.
+	PATAPIM_HITS = 6,
+	SHAKE_STUDS = 0.45,
+	SHAKE_OUT_DURATION = 0.06,
+	SHAKE_BACK_DURATION = 0.1,
 }
 
 table.freeze(GraveConfig)

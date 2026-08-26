@@ -97,7 +97,7 @@ Levels.count()             -- number of authored levels
 | `name`    | string           | Display name                                  |
 | `groups`  | `{ SpawnGroup }` | Ordered internal waves to spawn               |
 | `weather` | string?          | Optional weather id (`Night`, `NightFog`, …); see `WEATHER.md` |
-| `graves`  | boolean?         | If true, place 1–5 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
+| `graves`  | boolean?         | If true, place 5–8 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
 | `reward`  | number?          | Completion coins (defaults to economy base)   |
 
 ### `SpawnGroup` (`Shared.Types`)

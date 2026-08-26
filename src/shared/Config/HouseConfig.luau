@@ -45,11 +45,6 @@ local HouseConfig = {
 	-- How far inside the back (−X) of the house AABB to place pedestals.
 	BOSS_PEDESTAL_INSET = 8,
 
-	-- Optional roof mascot under Assets.Houses.Cottage (exact child name).
-	MASCOT_NAME = "Tung Mascot",
-	MASCOT_SCALE = 4.5, -- multiplier after the house is fitted (very large on roof)
-	MASCOT_STRIP_LEGS = true, -- destroy Leg/Foot-named parts when present
-
 	FLOOR_COLOR = Color3.fromRGB(92, 72, 52),
 	WALL_COLOR = Color3.fromRGB(168, 148, 118),
 	TRIM_COLOR = Color3.fromRGB(72, 52, 36),

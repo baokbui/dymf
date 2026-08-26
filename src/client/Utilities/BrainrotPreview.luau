@@ -112,11 +112,11 @@ function BrainrotPreview.mount(
 		orientationDegrees = definition.modelOrientationDegrees,
 		preserveAnimationRig = animated,
 		skipBodyAlias = animated,
+		anchorAllParts = definition.anchorAllParts == true,
 	})
 	model.Name = "PreviewModel"
-	centerAtOrigin(model)
 	model.Parent = world
-
+	centerAtOrigin(model)
 	frameModel(camera, model, definition.previewFocusOffset)
 	return viewport
 end

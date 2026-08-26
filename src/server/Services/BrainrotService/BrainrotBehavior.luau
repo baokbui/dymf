@@ -166,6 +166,13 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	end
 end
 
+local function isBehaviorAlive(placement: RuntimePlacement): boolean
+	if placement.definition.ignoreMonsterChew == true then
+		return placement.model.Parent ~= nil
+	end
+	return placement.health > 0
+end
+
 function BrainrotBehavior.unregister(placement: RuntimePlacement)
 	local handler = Abilities.get(placement.definition.ability)
 	if handler and handler.onRemoved then
@@ -179,7 +186,7 @@ end
 function BrainrotBehavior.tick(dt: number)
 	local now = os.clock()
 	for _, placement in active do
-		if placement.health <= 0 then
+		if not isBehaviorAlive(placement) then
 			continue
 		end
 
@@ -199,7 +206,7 @@ function BrainrotBehavior.tick(dt: number)
 			BrainrotFeedback.setPoisoned(placement.model, false)
 		end
 
-		if placement.health <= 0 then
+		if not isBehaviorAlive(placement) then
 			continue
 		end
 

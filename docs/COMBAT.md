@@ -29,7 +29,8 @@ column). When a Brainrot attacks a row:
 | First in row | `attackFirstInRow` / `launchProjectile` | Damages the monster with the **lowest column** in range (closest to the house — PvZ peashooter style). Used by Cappuccino knives and Tralalero bubbles. |
 | All in range | `attackInRow` | Damages every monster in range (instant splash) |
 | Entire row | `dealEntireRowDamage` | Damages **every** monster on the row (Bombardino line bomb) |
-| Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row (Lirili freeze — ahead and behind) |
+| Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row |
+| Column-band status | `applyStatusAroundColumn` | Status on the caster's tile plus N tiles ahead and behind (Lirili freeze = 2) |
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
 for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead.
@@ -42,6 +43,15 @@ damage — if nothing is still in range, the swing misses (cooldown already spen
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
+
+**Fog graves** sit on a lawn column and **block** Brainrot damage, projectiles,
+and status aimed at monsters **strictly east** of the stone (`fromColumn <
+grave < targetColumn`). Combat does not apply HP or status to those monsters
+(shurikens stop at the stone). Graves have no combat HP except **Patapim**
+smashes (`hitFromPatapim`), which also **shake** the mesh. Other hits do not
+shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
+on and behind the grave tile. Monsters on the grave tile or west of it remain
+valid targets for lane shots. Graves do not block westbound Skeleton arrows.
 
 Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 2) occupy rows
 `[row, row + laneSpan − 1]` — `row` is the unit's lowest/anchor row, not a
@@ -125,8 +135,9 @@ normally. Tunables: `jumpDuration` / `jumpPeakHeight` / `jumpLandOffset` /
 its max HP via `abilityState.pendingHeal` (applied next `MonsterBehavior`
 tick, capped at max HP). Fast march (`secondsPerGrid` 2.0).
 
-**Lirili / Bombardino** — entire-row status (`applyEntireRowStatus`) only
-targets monsters **on the lawn** (`isOnPlotColumn`). Bombardino column hits
+**Lirili / Bombardino** — Lirili freeze (`applyStatusAroundColumn`, 2 tiles
+ahead and behind) and Bombardino entire-row damage only target monsters **on
+the lawn** (`isOnPlotColumn`). Bombardino column hits
 match by **tile index** so chewing units at melee standoff still take damage.
 Freeze/Stun are rejected while a monster is **downed**, and starting a tip-over
 (last stand) clears any active freeze.

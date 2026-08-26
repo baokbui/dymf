@@ -17,7 +17,6 @@ local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 local WeatherUtil = require(ReplicatedStorage.Shared.Utilities.WeatherUtil)
 
-local EnemyService = require(script.Parent.EnemyService)
 local GridService = require(script.Parent.GridService)
 
 local GraveService = {}
@@ -34,6 +33,9 @@ type GraveRuntime = {
 	nextSpawnAt: number,
 	monsterPool: { string },
 	busting: boolean,
+	hitsRemaining: number,
+	restPivot: CFrame?,
+	collapsing: boolean,
 }
 
 local gravesByPlot: { [Model]: { GraveRuntime } } = {}
@@ -180,7 +182,7 @@ local function emerge(runtime: GraveRuntime)
 	if spawningClosed[runtime.plotModel] then
 		return
 	end
-	if runtime.busting then
+	if runtime.busting or runtime.collapsing then
 		return
 	end
 	if not runtime.model.Parent then
@@ -188,6 +190,7 @@ local function emerge(runtime: GraveRuntime)
 	end
 
 	local monsterId = pickMonsterId(runtime.monsterPool)
+	local EnemyService = require(script.Parent.EnemyService)
 	local instanceId = EnemyService.spawnAt(
 		runtime.plotModel,
 		monsterId,
@@ -228,8 +231,151 @@ local function findGrave(plotModel: Model, position: Types.GridPosition): GraveR
 	return nil
 end
 
+local function shakeGrave(runtime: GraveRuntime)
+	if runtime.collapsing or not runtime.model.Parent then
+		return
+	end
+	local rest = runtime.restPivot or runtime.model:GetPivot()
+	runtime.restPivot = rest
+	local amplitude = GraveConfig.SHAKE_STUDS
+	local offset = Vector3.new((math.random() - 0.5) * 2 * amplitude, 0, (math.random() - 0.5) * 2 * amplitude)
+	tweenPivot(runtime.model, rest, rest + offset, GraveConfig.SHAKE_OUT_DURATION, Enum.EasingDirection.Out, function()
+		if not runtime.model.Parent or runtime.collapsing then
+			return
+		end
+		tweenPivot(runtime.model, runtime.model:GetPivot(), rest, GraveConfig.SHAKE_BACK_DURATION, Enum.EasingDirection.Out)
+	end)
+end
+
+local function collapseGrave(runtime: GraveRuntime)
+	if runtime.collapsing then
+		return
+	end
+	runtime.collapsing = true
+	runtime.busting = true
+	GridService.setGraveFlag(runtime.plotModel, runtime.position, false)
+
+	local list = gravesByPlot[runtime.plotModel]
+	if list then
+		for index, entry in list do
+			if entry == runtime then
+				table.remove(list, index)
+				break
+			end
+		end
+	end
+
+	local model = runtime.model
+	local MonsterDeath = require(script.Parent.EnemyService.MonsterDeath)
+	MonsterDeath.playFadeInPlace(model)
+	task.delay(MonsterDeath.totalLifetime(), function()
+		destroyGraveModel(model)
+	end)
+end
+
+local function graveColumn(runtime: GraveRuntime): number
+	return runtime.position.column
+end
+
+-- True when a shot from `fromColumn` at `targetColumn` hits this grave first.
+local function graveBlocksTarget(runtime: GraveRuntime, row: number, fromColumn: number, targetColumn: number): boolean
+	if runtime.collapsing or runtime.position.row ~= row then
+		return false
+	end
+	local column = graveColumn(runtime)
+	return fromColumn < column and column < targetColumn
+end
+
 function GraveService.hasGrave(plotModel: Model, position: Types.GridPosition): boolean
-	return findGrave(plotModel, position) ~= nil
+	local runtime = findGrave(plotModel, position)
+	return runtime ~= nil and not runtime.collapsing
+end
+
+-- Lane block: a living grave sits strictly between the shooter and the target.
+function GraveService.isMonsterBehindGrave(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	targetColumn: number
+): boolean
+	local list = gravesByPlot[plotModel]
+	if not list then
+		return false
+	end
+	for _, runtime in list do
+		if graveBlocksTarget(runtime, row, fromColumn, targetColumn) then
+			return true
+		end
+	end
+	return false
+end
+
+local function findBlockingGrave(plotModel: Model, row: number, fromColumn: number, targetColumn: number): GraveRuntime?
+	local list = gravesByPlot[plotModel]
+	if not list then
+		return nil
+	end
+	local best: GraveRuntime? = nil
+	local bestColumn = math.huge
+	for _, runtime in list do
+		if graveBlocksTarget(runtime, row, fromColumn, targetColumn) then
+			local column = graveColumn(runtime)
+			if column < bestColumn then
+				bestColumn = column
+				best = runtime
+			end
+		end
+	end
+	return best
+end
+
+function GraveService.getBlockingColumn(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	targetColumn: number
+): number?
+	local runtime = findBlockingGrave(plotModel, row, fromColumn, targetColumn)
+	if not runtime then
+		return nil
+	end
+	return graveColumn(runtime)
+end
+
+-- Shake the nearest blocking grave (no HP). Returns true if a grave ate the hit.
+function GraveService.absorbLaneHit(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	targetColumn: number
+): boolean
+	local runtime = findBlockingGrave(plotModel, row, fromColumn, targetColumn)
+	if not runtime then
+		return false
+	end
+	return true
+end
+
+function GraveService.shakeAt(plotModel: Model, row: number, column: number)
+	local runtime = findGrave(plotModel, { row = row, column = column })
+	if runtime then
+		shakeGrave(runtime)
+	end
+end
+
+-- One smash from Patapim. Returns true if the grave collapsed.
+function GraveService.hitFromPatapim(plotModel: Model, position: Types.GridPosition): boolean
+	local runtime = findGrave(plotModel, position)
+	if not runtime or runtime.collapsing then
+		return false
+	end
+	runtime.hitsRemaining -= 1
+	if runtime.hitsRemaining <= 0 then
+		collapseGrave(runtime)
+		return true
+	end
+	shakeGrave(runtime)
+	return false
 end
 
 function GraveService.beginBust(plotModel: Model, position: Types.GridPosition): boolean
@@ -249,23 +395,12 @@ function GraveService.cancelBust(plotModel: Model, position: Types.GridPosition)
 end
 
 function GraveService.finishBust(plotModel: Model, position: Types.GridPosition): boolean
-	local list = gravesByPlot[plotModel]
-	if not list then
+	local runtime = findGrave(plotModel, position)
+	if not runtime then
 		return false
 	end
-	for index, runtime in list do
-		if runtime.position.row == position.row and runtime.position.column == position.column then
-			table.remove(list, index)
-			GridService.setGraveFlag(plotModel, position, false)
-			destroyGraveModel(runtime.model)
-			return true
-		end
-	end
-	return false
-end
-	-- Repeat grave spawns stop when authored waves complete; victory does not
-	-- wait on graves after that.
-	return false
+	collapseGrave(runtime)
+	return true
 end
 
 function GraveService.hasPending(plotModel: Model): boolean
@@ -342,7 +477,10 @@ function GraveService.spawnForDay(plotModel: Model, definition: Types.LevelDefin
 		local model = createGraveModel()
 		model.Parent = gravesFolder(plotModel)
 		ModelUtil.snapFeetToTileTop(model, worldPos)
-		playRiseFromTile(model, model:GetPivot(), #list * GraveConfig.RISE_STAGGER)
+		local restPivot = model:GetPivot()
+		playRiseFromTile(model, restPivot, #list * GraveConfig.RISE_STAGGER, nil, function()
+			-- Rise finished — keep this as the shake rest pose.
+		end)
 
 		table.insert(list, {
 			plotModel = plotModel,
@@ -351,6 +489,9 @@ function GraveService.spawnForDay(plotModel: Model, definition: Types.LevelDefin
 			nextSpawnAt = now + randomInterval(emergeMin, emergeMax),
 			monsterPool = pool,
 			busting = false,
+			hitsRemaining = GraveConfig.PATAPIM_HITS,
+			restPivot = restPivot,
+			collapsing = false,
 		})
 	end
 

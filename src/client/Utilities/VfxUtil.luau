@@ -948,4 +948,83 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 	end)
 end
 
+function VfxUtil.playWindGust(plotModel: Model)
+	local PlotUtil = require(script.Parent.PlotUtil)
+	local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
+	local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
+
+	local westSample = PlotUtil.getTileTopCenter(plotModel, 1, 1)
+	local eastSample = PlotUtil.getTileTopCenter(plotModel, 1, GridConfig.COLUMNS)
+	if not westSample or not eastSample then
+		return
+	end
+
+	local eastDir = Vector3.new(eastSample.X - westSample.X, 0, eastSample.Z - westSample.Z)
+	if eastDir.Magnitude < 0.01 then
+		eastDir = Vector3.new(1, 0, 0)
+	else
+		eastDir = eastDir.Unit
+	end
+
+	-- Emit from the west of each row so streaks travel east across the lawn
+	-- (a plot-sized box facing east spawned particles off the forest edge).
+	local root = Instance.new("Folder")
+	root.Name = "WindGust"
+	root.Parent = effectsFolder()
+
+	for row = 1, GridConfig.ROWS do
+		local west = PlotUtil.getTileTopCenter(plotModel, row, 1)
+		if west then
+			local origin = west + Vector3.new(0, 4, 0)
+			local anchor = Instance.new("Part")
+			anchor.Name = "GustRow"
+			anchor.Anchored = true
+			anchor.CanCollide = false
+			anchor.CanQuery = false
+			anchor.CanTouch = false
+			anchor.Transparency = 1
+			anchor.Size = Vector3.new(2.5, 14, PlotConfig.TILE_SIZE * 1.15)
+			anchor.CFrame = CFrame.lookAt(origin, origin + eastDir)
+			anchor.Parent = root
+
+			local emitter = Instance.new("ParticleEmitter")
+			emitter.Name = "Gust"
+			emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			emitter.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, VfxConfig.WIND_GUST_COLOR_A),
+				ColorSequenceKeypoint.new(1, VfxConfig.WIND_GUST_COLOR_B),
+			})
+			emitter.Size = VfxConfig.WIND_GUST_SIZE
+			emitter.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.15),
+				NumberSequenceKeypoint.new(0.4, 0.35),
+				NumberSequenceKeypoint.new(1, 1),
+			})
+			emitter.Lifetime = VfxConfig.WIND_GUST_LIFETIME
+			emitter.Speed = NumberRange.new(VfxConfig.WIND_GUST_SPEED * 0.75, VfxConfig.WIND_GUST_SPEED)
+			emitter.Rate = VfxConfig.WIND_GUST_RATE
+			emitter.SpreadAngle = Vector2.new(12, 28)
+			emitter.Acceleration = eastDir * VfxConfig.WIND_GUST_ACCEL_EAST + Vector3.new(0, 8, 0)
+			emitter.EmissionDirection = Enum.NormalId.Front
+			emitter.RotSpeed = NumberRange.new(-50, 50)
+			emitter.LightEmission = 0.55
+			emitter.LockedToPart = false
+			emitter.Parent = anchor
+			emitter:Emit(48)
+		end
+	end
+
+	task.delay(VfxConfig.WIND_GUST_DURATION, function()
+		for _, descendant in root:GetDescendants() do
+			if descendant:IsA("ParticleEmitter") then
+				descendant.Enabled = false
+				descendant.Rate = 0
+			end
+		end
+	end)
+	task.delay(VfxConfig.WIND_GUST_DURATION + 1.4, function()
+		root:Destroy()
+	end)
+end
+
 return VfxUtil

@@ -27,11 +27,6 @@ Within a lane (see `PlotConfig`):
   door facing +X (tune `MODEL_ORIENTATION_DEGREES` if needed). Collision kept.
   On clone: strips Toolbox **Lock Base** UI/pads; the **Empty Base** sign is
   rewritten to `{DisplayName}'s Base` when the plot is assigned.
-- **Roof mascot** ✅ — optional Model named `HouseConfig.MASCOT_NAME`
-  (default `Tung Mascot`), found anywhere under the cottage (e.g.
-  `Cottage → Second Floor → Tung Mascot`). Excluded from house fit, then
-  scaled by `MASCOT_SCALE`, legs stripped when names match
-  (`MASCOT_STRIP_LEGS`), re-seated on the roof, non-colliding (`HouseMascot`).
 - **Owner sign** ✅ — TextLabel/TextButton under a `Sign` ancestor (e.g.
   `Second Floor → Sign`) or with Empty Base / `'s Base` text; rewritten to
   `{DisplayName}'s Base` on plot assign.
@@ -49,11 +44,11 @@ Within a lane (see `PlotConfig`):
 4. Set a `PrimaryPart`, strip Tools/Scripts if any.
 5. Prefer the doorway facing the mesh forward; default yaw is **180°**
    (`MODEL_ORIENTATION_DEGREES`). If still wrong, try `0` or `±90`.
-6. Optional roof props under a **`Second Floor`** (or any) child Model:
-   - **`Tung Mascot`** — scaled/seated by `HouseMascot`
-   - **`Sign`** — owner label TextLabel(s) updated by `HouseSanitize`
+6. Optional **`Sign`** under a `Second Floor` (or any) child Model —
+   owner label TextLabel(s) updated by `HouseSanitize`. Leftover **Tung Mascot**
+   meshes in the Cottage asset are stripped on clone.
 
-Tune size / pedestal count / mascot in `HouseConfig` — never inline.
+Tune size / pedestal count in `HouseConfig` — never inline.
 
 ---
 
@@ -69,7 +64,7 @@ Design target (not implemented yet):
    house to see their trophies.
 3. **Income** — displayed bosses generate **brains** on a slow server tick
    (rate from config per `monsterId`). Brains remain the progression currency
-   already used for the Brainrots Store (M19) and evolutions/mutations (M20).
+   already used for the Brainrots Store (M18) and evolutions/mutations (M20).
 4. **Spend** — no new currency: brains buy unlocks / evolves as those
    milestones define. House income is an additional brains source.
 

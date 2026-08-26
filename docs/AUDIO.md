@@ -66,12 +66,20 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
 | `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
+| `PlaceBrainrot_BrrBrrPatapim` | Patapim plant / spawn |
+| `PlaceBrainrot_GiraffaCeleste` | Giraffa plant / spawn |
+| `WindGust` | Giraffa gust after her place animation (`BrainrotAction`) |
+| `GraveShake` | Grave takes a Patapim smash (`BrainrotAction`) |
+| `GraveCollapse` | Grave destroyed by the last Patapim smash |
 | `Hit` | Generic `CombatVisual` Hit (when no `soundKey`) |
 | `ThrowKnifeHit` | Cappuccino knife impact (`CombatVisual.soundKey`) |
 | `Death` | Generic monster death |
-| `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`, `Death_Vampire`, `Death_Goblin`) |
+| `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`, `Death_SmallMummy`, `Death_PharaohMummy`) |
 | `MonsterAttack` | Generic monster chew (`CombatVisual` kind `MonsterAttack`) |
 | `MonsterAttack_Goblin` / `_GoblinElite` / `_GoblinKing` | Goblin club swing |
+| `MonsterAttack_Scorpion` | Scorpion chew landing on a Brainrot |
+| `MonsterAttack_SmallMummy` / `_PharaohMummy` | Mummy chew landing on a Brainrot |
+| `SandTornado` | Pharaoh steal tornado (`CombatVisual` kind `SandTornado`) |
 | `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
 | `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |
 | `FreezeTime` | Lirili Larila cast on place (with attack anim) |

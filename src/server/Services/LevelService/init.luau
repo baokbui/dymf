@@ -509,7 +509,7 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	broadcast(player)
 end
 
--- TEMP Studio cheat: jump current + unlocked day (see DevConfig.FORCE_DAY).
+-- TEMP cheat: jump current + unlocked day (see DevConfig.FORCE_DAY).
 function LevelService.applyDevDay(player: Player): number?
 	if not DevConfig.isActive() then
 		return nil
