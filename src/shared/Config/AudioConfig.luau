@@ -59,6 +59,8 @@ local AudioConfig = {
 		"FreezeTimeEnd",
 		"BubbleTrap",
 		"CoinCollect",
+		"PurchaseKaching",
+		"PurchaseError",
 		"PlaceBrainrot",
 		"PlaceBrainrot_BallerinaCappucina",
 		"PlaceBrainrot_TungTungSahur",
@@ -129,6 +131,15 @@ local AudioConfig = {
 		-- Economy / placement
 		CoinCollect = {
 			SoundId = "rbxassetid://134583420216867",
+			Volume = 0.7,
+		},
+		PurchaseKaching = {
+			SoundId = "rbxassetid://7112275565",
+			Volume = 0.85,
+			MaxDuration = 1.4,
+		},
+		PurchaseError = {
+			SoundId = "rbxassetid://132281440773764",
 			Volume = 0.7,
 		},
 		PlaceBrainrot = {

@@ -55,7 +55,7 @@ Defined in `default.project.json`:
 | `src/shared`      | `ReplicatedStorage.Shared`                       |
 | `src/server`      | `ServerScriptService.Server` (Script)            |
 | `src/client`      | `StarterPlayerScripts.Client` (LocalScript)      |
-| (declared inline) | `StarterGui.MainUI` (Shop/Coins/LevelUI/Settings) |
+| (declared inline) | `StarterGui.MainUI` (Shop / Coins / Brains / Speed / Hearts / LevelUI / Settings / Inventory / popups / ProgressionStore) |
 | (declared inline) | `Workspace.{Plots, EnemyPaths, Maps}`            |
 
 A folder containing `init.luau` becomes a single requireable ModuleScript with
@@ -68,7 +68,7 @@ entry-point Script / LocalScript.
 
 ```
 ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Level, Plot, Weather + aggregator init
+    Config/        Grid, Economy, Level, Plot, Progress, Store, House, Weather, Audio, UI + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
     Utilities/     Logger, GridUtil, WeatherUtil + aggregator init
@@ -93,7 +93,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/     (init + Shop — coin counter + shop HUD)
+        UIController/     (init + Shop, HUD counters, Level, Settings, Inventory, ProgressionStore, popups)
         CoinController/   (ground-coin pickup intent + sparkle — M3/M11)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
@@ -174,8 +174,8 @@ to call, e.g. `PlotService.getPlot(player)`.
 
 | Server owns                                   | Client owns                       |
 | --------------------------------------------- | --------------------------------- |
-| Coins, damage, health, levels, spawning       | UI, camera, input                 |
-| Brainrot placement, saving, rewards           | SFX, particles, UI juice          |
+| Coins, brains, store spends, damage, health, levels, spawning | UI, camera, input                 |
+| Brainrot placement, saving, rewards, unlocks / loadout        | SFX, particles, UI juice          |
 | Unit Animator tracks (idle / attack / walk)   | Placement ghost / shop previews   |
 | Plot assignment & ownership                   |                                   |
 
@@ -430,12 +430,26 @@ Full details in `UI.md`. Summary:
   rest of the launch seven unlock via `UNLOCK_SCHEDULE`
   (`grantUnlockForLevel`, called from `LevelService.onVictory`) — see
   `BRAINROTS.md`.
-- **Hearts HUD** — 5 house hearts; LevelService −1 per breach, defeat at 0.
-- **Settings** — left HUD bar; mute, volume steps, Brainrot SFX toggle,
+- **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
+- **Settings** — bottom-left HUD button; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
-- **Inventory** — separate left HUD bar + modal for equip/unequip loadout.
+- **Inventory** — bottom-left HUD button (above Settings) + modal for equip/unequip loadout.
 - **Reward popup** — victory shows brains earned (store purchases → M18).
-- Save schema **v2** adds `brains` + `equipped`.
+- Save schema **v4** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists.
+
+### Milestone 18 — Progression Store ✅
+
+Full details in `STORE.md` / `UI.md`. Summary:
+
+- **`StoreService`** + **`StoreConfig`** — clone blue/red mini stores beside each
+  plot house; ProximityPrompt → `OpenProgressionStore`.
+- **`ProgressService`** validates `BuyStoreItem` (brains spend, catalog, owned /
+  max level). Catalogs in `ProgressConfig.STORE_CATALOG` (Girafa Celestre) and
+  `UPGRADE_CATALOG` (WalkSpeed, 10 ranks). Speed applied on spawn / rejoin via
+  `PlotService` + `ProgressService.getWalkSpeed`.
+- **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
+  stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; Inventory +
+  Settings bottom-left.
 
 ### Milestone 12 — Audio ✅
 

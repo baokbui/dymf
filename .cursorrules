@@ -113,7 +113,7 @@ The server owns:
 - Monster spawning
 - Plot houses (build, owner sign, future boss display)
 - Saving
-- Rewards / unlocks / loadout / statistics / store purchases
+- Rewards / unlocks / loadout / statistics / Progression Store purchases
 
 The client owns:
 
@@ -146,12 +146,14 @@ Examples:
 
 - Cost, health, damage, range, cooldown, attack interval
 - Coin generation / day purse (`EconomyConfig.STARTING_COINS`)
+- Player walk speed (`PlayerConfig.WALK_SPEED`) and store catalogs (`ProgressConfig`)
+- Mini-store yard placement (`StoreConfig`)
 - Monster spawn column / forest march (`MonsterConfig`)
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
 - Weather, graves, VFX, audio
 
-	-- TEMP playtest cheats. `isActive()` = ENABLED and Studio only (never live).
-	-- Do not ship with cheats on.
+Studio-only playtest cheats live in `DevConfig`. `isActive()` = ENABLED and
+Studio only (never live). Do not ship with cheats on.
 
 ---
 
@@ -223,7 +225,7 @@ name; code/docs may still say "level"). Days are data-driven entries in
 `LevelService` exclusively controls:
 
 - Preparation
-- Day Start → Active (plant + fight; optional Countdown phase unused)
+- Day Start → Countdown (3…0 overlay) → Active (plant + fight)
 - Spawn groups + progress
 - Big final wave
 - Victory / Defeat (house hearts: −1 per breach, defeat at 0)
@@ -262,8 +264,8 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 # Economy
 
 - **Coins** — match currency (placement, passive drops). `CoinService` only.
-- **Brains** — progression currency (day rewards, future store / evolve /
-  house boss income). `ProgressService` only for brains balances.
+- **Brains** — progression currency (day rewards, Progression Store spends,
+  future evolve / house boss income). `ProgressService` only for brains balances.
 - Clients never set balances.
 
 ---

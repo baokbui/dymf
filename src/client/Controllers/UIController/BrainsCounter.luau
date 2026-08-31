@@ -1,11 +1,10 @@
 --!strict
 --[[
 	BrainsCounter
-	Top-left brains balance display, docked directly under the coin counter.
-	Display-only — value comes from ProfileUpdated / RequestState.
-	Cartoon thick-outline look via UITheme.
+	Mid-left brains balance: icon + amount under coins. Display-only.
 ]]
 
+local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UITheme = require(ReplicatedStorage:WaitForChild("Shared").Config.UITheme)
@@ -14,18 +13,11 @@ local BrainsCounter = {}
 BrainsCounter.__index = BrainsCounter
 
 local BRAIN_ICON_ASSET_ID = "rbxassetid://12691330734"
+local FLOAT_DURATION = 0.85
+local FLOAT_OFFSET_Y = -40
+local DELTA_TEXT_SIZE = 32
 
-local function buildBrainGlyph(parent: Instance)
-	local image = Instance.new("ImageLabel")
-	image.Name = "Glyph"
-	image.BackgroundTransparency = 1
-	image.AnchorPoint = Vector2.new(0.5, 0.5)
-	image.Position = UDim2.fromScale(0.5, 0.5)
-	image.Size = UDim2.fromScale(0.8, 0.8)
-	image.Image = BRAIN_ICON_ASSET_ID
-	image.ScaleType = Enum.ScaleType.Fit
-	image.Parent = parent
-end
+local ICON_SIZE = 64
 
 export type BrainsCounter = typeof(setmetatable(
 	{} :: {
@@ -38,38 +30,34 @@ export type BrainsCounter = typeof(setmetatable(
 function BrainsCounter.new(frame: Frame): BrainsCounter
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.fromOffset(16, 76)
-	frame.Size = UDim2.fromOffset(168, 52)
+	frame.Position = UDim2.new(0, 16, 0.42, 0)
+	frame.Size = UDim2.fromOffset(180, ICON_SIZE)
+	frame.BackgroundTransparency = 1
+	frame.BorderSizePixel = 0
 	frame.ClipsDescendants = false
-	UITheme.applyChipLook(frame, UITheme.CHIP_BG_BRAINS)
 
-	-- Round badge (same shape language as the coin chip) holding a small
-	-- procedural cartoon brain icon — no external image asset dependency.
-	local icon = Instance.new("Frame")
-	icon.Name = "Icon"
+	local icon = Instance.new("ImageLabel")
+	icon.Name = "Glyph"
+	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0, 0.5)
-	icon.Position = UDim2.new(0, 12, 0.5, 0)
-	icon.Size = UDim2.fromOffset(28, 28)
-	icon.BackgroundColor3 = Color3.fromRGB(245, 240, 255)
-	icon.BorderSizePixel = 0
+	icon.Position = UDim2.new(0, 0, 0.5, 0)
+	icon.Size = UDim2.fromOffset(ICON_SIZE, ICON_SIZE)
+	icon.Image = BRAIN_ICON_ASSET_ID
+	icon.ScaleType = Enum.ScaleType.Fit
 	icon.Parent = frame
-	UITheme.styleCorner(icon, 14)
-	UITheme.applyStroke(icon, UITheme.STROKE_CARD)
-
-	buildBrainGlyph(icon)
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
 	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, 52, 0.5, 0)
-	label.Size = UDim2.new(1, -64, 1, 0)
+	label.Position = UDim2.new(0, ICON_SIZE + 6, 0.5, 0)
+	label.Size = UDim2.new(1, -(ICON_SIZE + 6), 1, 0)
 	label.BackgroundTransparency = 1
-	label.TextSize = 22
+	label.TextSize = 30
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
 	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
-	label.TextSize = 22
+	label.TextSize = 30
 
 	return setmetatable({
 		frame = frame,
@@ -79,6 +67,46 @@ end
 
 function BrainsCounter.setBalance(self: BrainsCounter, amount: number)
 	self.amountLabel.Text = string.format("%d", amount)
+end
+
+function BrainsCounter.showDelta(self: BrainsCounter, delta: number)
+	if delta == 0 then
+		return
+	end
+
+	local popup = Instance.new("TextLabel")
+	popup.Name = "Delta"
+	popup.BackgroundTransparency = 1
+	popup.TextSize = DELTA_TEXT_SIZE
+	popup.TextXAlignment = Enum.TextXAlignment.Center
+	popup.AnchorPoint = Vector2.new(0.5, 0)
+	popup.Position = UDim2.new(0.5, 0, 1, 6)
+	popup.Size = UDim2.fromOffset(120, 40)
+	popup.ZIndex = self.frame.ZIndex + 1
+
+	if delta > 0 then
+		popup.Text = string.format("+%d", delta)
+		UITheme.applyOutlinedTitle(popup, UITheme.SUCCESS)
+	else
+		popup.Text = string.format("%d", delta)
+		UITheme.applyOutlinedTitle(popup, UITheme.DANGER)
+	end
+	popup.TextSize = DELTA_TEXT_SIZE
+	popup.Parent = self.frame
+
+	local tween = TweenService:Create(
+		popup,
+		TweenInfo.new(FLOAT_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{
+			Position = UDim2.new(0.5, 0, 1, 6 + FLOAT_OFFSET_Y),
+			TextTransparency = 1,
+			TextStrokeTransparency = 1,
+		}
+	)
+	tween:Play()
+	tween.Completed:Connect(function()
+		popup:Destroy()
+	end)
 end
 
 return BrainsCounter

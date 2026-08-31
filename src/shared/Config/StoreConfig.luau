@@ -27,15 +27,18 @@ local StoreConfig = {
 
 	PLOT_FOLDER_NAME = "ProgressionStores",
 
-	-- Open stall faces the lawn / spawn (+X), where the player stands.
-	FACE_DIRECTION = Vector3.new(1, 0, 0),
+	-- Open stall faces the yard on a diagonal toward the outer sand (lawn +X, −Z).
+	FACE_DIRECTION = Vector3.new(1, 0, -1),
 	MODEL_ORIENTATION_DEGREES = Vector3.new(0, -90, 0),
 
-	-- Same Z (right of the door). Spread along X (house ↔ lawn) so they sit
-	-- side by side after the −90° yaw (Z is now stall depth, not width).
-	YARD_OFFSET_X = 18,
-	STORE_SPACING_X = 16,
-	DOOR_RIGHT_Z = -18,
+	-- Origin is the Brainrots stall (closer to the door). Upgrades is offset
+	-- along FACE: after template yaw −90 that axis is stall *width*, so the
+	-- pair sits side by side instead of one behind the other.
+	-- Smaller STORE_SPACING = closer together. More negative DOOR_RIGHT_Z =
+	-- further back along the house (away from the door / walk-up).
+	YARD_OFFSET_X = 16,
+	STORE_SPACING = 16,
+	DOOR_RIGHT_Z = -32,
 }
 
 table.freeze(StoreConfig)

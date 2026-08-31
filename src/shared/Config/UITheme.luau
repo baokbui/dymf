@@ -24,6 +24,7 @@ UITheme.MODAL_SCRIM = Color3.fromRGB(20, 24, 40)
 -- as its own colorful "candy" rather than one wall of blue.
 UITheme.CHIP_BG_COINS = Color3.fromRGB(255, 200, 60) -- gold
 UITheme.CHIP_BG_BRAINS = Color3.fromRGB(180, 120, 255) -- purple
+UITheme.CHIP_BG_SPEED = Color3.fromRGB(70, 205, 220) -- cyan
 UITheme.CHIP_BG_HEARTS = Color3.fromRGB(255, 120, 150) -- rosy red
 UITheme.CHIP_BG_INVENTORY_BUTTON = Color3.fromRGB(90, 210, 140) -- leafy green
 UITheme.CHIP_BG_SETTINGS_BUTTON = Color3.fromRGB(255, 150, 70) -- orange
@@ -31,6 +32,7 @@ UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
 UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
 UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold
 UITheme.PANEL_BG_UNLOCK = Color3.fromRGB(200, 130, 255) -- purple
+UITheme.PANEL_BG_STORE = Color3.fromRGB(50, 195, 175) -- teal
 UITheme.PANEL_BG_MONSTER_INTRO = Color3.fromRGB(255, 140, 90) -- fiery orange
 UITheme.PANEL_BG_GAME_OVER = Color3.fromRGB(45, 28, 40) -- dark defeat card
 

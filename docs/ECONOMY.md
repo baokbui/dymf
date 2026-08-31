@@ -107,5 +107,6 @@ onto a random tile.
 
 ## Persistence (see `SAVE_SYSTEM.md`)
 
-- The coin **balance** is saved.
+- The coin **balance** is **not** saved. Join / day end apply the day purse
+  (Day 1 → `STARTING_COINS`; later days → 0).
 - **Ground coins** (uncollected pickups) are **not** saved.

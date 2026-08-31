@@ -418,12 +418,12 @@ Persist player progress.
 - Reward System ✅ victory popup shows brains earned (level number × config)
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
 - Coins ✅ (prior milestone)
-- Level display ✅ + Level Select in Settings
+- Level display ✅ (Day panel). Level Select in Settings was **not** shipped —
+  deferred to a dedicated UI (`SelectLevel` remote remains)
 - Health ✅ 5 hearts; −1 per house breach; defeat at 0
-- Settings ✅ mute, music/SFX volume, Brainrot SFX toggle (left HUD entry)
+- Settings ✅ mute, music/SFX volume, Brainrot SFX toggle (bottom-left HUD)
 - Reset Progress ✅ double-confirm in Settings → `ResetProgress`
 - Statistics ✅ levels cleared, placements, kills, brains earned, time played
-- Level Select → deferred (dedicated UI later; `SelectLevel` remote remains)
 
 ## Complete When
 
@@ -579,14 +579,15 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 # Milestone 18 — Progression Store
 
-**Status: 🔜 In progress** (moved ahead of Retention; deferred from Milestone 13)
+**Status: ✅ Complete** (moved ahead of Retention; deferred from Milestone 13)
 
 ## Add
 
 - Physical **Progression Stores** cloned beside each plot house (not the
   ScreenGui seed-packet shop bar)
-- **Blue mini store** — **Tung Mascot**: spend **Brains** to unlock Brainrots
-  (early buy; campaign grants stay free later)
+- **Blue mini store** — **Tung Mascot**: spend **Brains** on `STORE_CATALOG`
+  (Girafa Celestre for now; still free on reach Day 25). Starter roster and
+  Patapim stay campaign/reach unlocks.
 - **Red mini store** — **67 Mascot**: spend Brains on player upgrades (Speed)
 - Catalog in `ProgressConfig.STORE_CATALOG` / `UPGRADE_CATALOG`
 - Purchases through `ProgressService` + persist via `SaveService` (`unlocks`,

@@ -8,10 +8,9 @@
 local LevelConfig = {
 	PREPARATION_TIME = 30, -- reserved prep window before Start (planned)
 
-	-- Unused by the live loop: Start Day goes straight to Active. Monsters spawn
-	-- in the forest and walk in (MonsterConfig.SPAWN_COLUMN_OFFSET); that march
-	-- is the plant/setup window. Kept for optional Countdown UX experiments.
-	COUNTDOWN_TIME = 0,
+	-- Brief Start Day overlay: UI shows 3, 2, 1, 0 (1s each) then Active.
+	-- Forest march after Active is still the plant/setup window.
+	COUNTDOWN_TIME = 4,
 
 	STARTING_PLAYER_HEALTH = 5, -- hearts; one lost per house breach
 

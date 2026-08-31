@@ -9,7 +9,7 @@ local ProgressConfig = {
 	-- House HP shown as hearts. One heart lost per monster that reaches the house.
 	MAX_PLAYER_HEALTH = 5,
 
-	-- Soft currency for future store unlocks (granted on level clear).
+	-- Soft currency for the Progression Store (granted on level clear).
 	STARTING_BRAINS = 0,
 
 	-- Max Brainrots shown in the placement shop bar at once.
@@ -49,27 +49,25 @@ local ProgressConfig = {
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
 	},
 
-	-- Buy with brains at the blue mini store (Tung Mascot). Already-unlocked
-	-- units show as owned; campaign grants remain free later.
+	-- Buy with brains at the blue mini store (Tung Mascot). Starter-roster
+	-- units (DEFAULT_UNLOCKS + UNLOCK_SCHEDULE) and Patapim stay campaign-only.
+	-- Giraffa can be bought early; reach Day 25 still grants her for free.
 	STORE_CATALOG = {
-		{ brainrotId = "CappuccinoAssassino", brainsCost = 15 },
-		{ brainrotId = "LiriliLarila", brainsCost = 25 },
-		{ brainrotId = "TralaleroTralala", brainsCost = 40 },
-		{ brainrotId = "BombardinoCrocodilo", brainsCost = 80 },
 		{ brainrotId = "GiraffaCeleste", brainsCost = 50 },
-		{ brainrotId = "BrrBrrPatapim", brainsCost = 60 },
 	},
 
 	-- Buy with brains at the red mini store (67 Mascot). Level is persisted
 	-- in SaveData.upgrades[id]. Walk speed = PlayerConfig.WALK_SPEED + level * bonus.
+	-- 10 levels × +1 WalkSpeed: 16 → 26 at max (same cap as the old 5×+2
+	-- curve — more steps, still a comfortable coin-pickup pace, not a sprint).
 	UPGRADE_CATALOG = {
 		{
 			id = "WalkSpeed",
 			name = "Speed",
-			description = "Run faster on the plot.",
-			maxLevel = 5,
-			brainsCosts = { 10, 18, 28, 42, 60 },
-			walkSpeedBonusPerLevel = 3,
+			description = "Run faster to collect coins on the plot.",
+			maxLevel = 10,
+			brainsCosts = { 6, 10, 14, 19, 25, 32, 41, 52, 65, 80 },
+			walkSpeedBonusPerLevel = 1,
 		},
 	},
 

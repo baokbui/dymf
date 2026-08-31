@@ -49,7 +49,6 @@ From `Shared.Types.BrainrotDefinition`:
 | `plantsOnFog`     | boolean?               | May plant on NightFog columns before the row is cleared (Giraffa) |
 | `hidden`          | boolean?               | Omit from shop, inventory, unlock-all, lawn restore |
 | `plantOnGrave`    | boolean?               | Must be planted on a grave (Patapim); graves sit on fog tiles |
-| `brainsCost`      | number?                | Brains price at the physical store (M18); nil = not sold there |
 | `ignoreMonsterChew` | boolean?             | Monsters phase through; no chew damage (Lirili, Patapim)           |
 | `plantCooldown`   | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)` |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
@@ -178,14 +177,15 @@ which cost **Brains** at the physical Store (Milestone 18). Re-clearing an
 already-cleared day (Day Select) does not re-grant or re-show the popup
 (`grantUnlockForLevel` is idempotent per player).
 
-**Reach unlock:** **Giraffa Celeste** is granted on first reach of Day 25
+**Reach unlock:** **Girafa Celestre** is granted on first reach of Day 25
 (Night Fog). **Brr Brr Patapim** is granted on first reach of Day 31
 (`ProgressConfig.REACH_UNLOCK_SCHEDULE`). Equip into an open loadout slot if
 one exists (`MAX_EQUIPPED` is still 7).
 
 **Store (Milestone 18):** Mini stores cloned beside each plot house
-(`docs/STORE.md`). Catalog units can be bought early with brains; Giraffa /
-Patapim are also still granted free on reach (Days 25 / 31).
+(`docs/STORE.md`). The Brainrot shop currently sells **Girafa Celestre** only
+(50 brains in `ProgressConfig.STORE_CATALOG`; still granted free on reach Day 25). Starter-roster units and
+**Brr Brr Patapim** stay campaign/reach unlocks — they are not sold.
 
 ## Roster ✅ (Milestone 5)
 
@@ -199,7 +199,7 @@ Patapim are also still granted free on reach (Days 25 / 31).
 | Lirili Larila        | 75   | —             | 0      | —        | 2 ahead + 2 behind | Freeze 7s on place; despawn after cast anim | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 50   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
-| Giraffa Celeste      | 50   | — (immune)    | 0      | —        | —        | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | ~7.5s CD |
+| Girafa Celestre      | 50   | — (immune)    | 0      | —        | —        | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | ~7.5s CD |
 | Brr Brr Patapim      | 50   | — (immune)    | 0      | 2.6s     | —        | Plant on a grave; 2 smashes per clip (1s apart); 6 collapse it, then despawns | 12s CD |
 
 Milestone 14 tuning rationale: **`docs/BALANCE.md`**.

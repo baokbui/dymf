@@ -5,8 +5,9 @@
 ]]
 
 local PlayerConfig = {
-	-- Roblox default is 16; higher speed improves coin collection pacing.
-	WALK_SPEED = 26,
+	-- Roblox default. Speed shop levels add ProgressConfig.walkSpeedBonusPerLevel
+	-- on top so unupgraded collection is slower and upgrades stay noticeable.
+	WALK_SPEED = 16,
 }
 
 table.freeze(PlayerConfig)

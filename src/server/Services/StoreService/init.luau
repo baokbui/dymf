@@ -187,7 +187,19 @@ function StoreService.attachToHouse(plotModel: Model, house: Model)
 	local grassY = center.Y - size.Y * 0.5
 	local frontX = center.X + size.X * 0.5
 	local origin = Vector3.new(frontX + StoreConfig.YARD_OFFSET_X, grassY, center.Z + StoreConfig.DOOR_RIGHT_Z)
-	local spacing = Vector3.new(StoreConfig.STORE_SPACING_X, 0, 0)
+	local face = Vector3.new(StoreConfig.FACE_DIRECTION.X, 0, StoreConfig.FACE_DIRECTION.Z)
+	if face.Magnitude < 1e-4 then
+		face = Vector3.new(1, 0, 0)
+	else
+		face = face.Unit
+	end
+	-- After template yaw −90, FACE is stall width (not depth). Offset along
+	-- FACE so Upgrades sits beside Brainrots instead of behind it.
+	local along = face
+	if along.Z > 0 then
+		along = -along
+	end
+	local spacing = along * StoreConfig.STORE_SPACING
 
 	if brainrotTemplate then
 		placeStore(

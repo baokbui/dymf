@@ -592,6 +592,7 @@ local function tryBuyBrainrot(player: Player, brainrotId: string)
 	end
 	markIntroduced(profile.introducedBrainrots, brainrotId)
 	broadcast(player)
+	Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, entry.brainsCost)
 end
 
 local function tryBuyUpgrade(player: Player, upgradeId: string)
@@ -621,6 +622,7 @@ local function tryBuyUpgrade(player: Player, upgradeId: string)
 	profile.brains -= cost
 	profile.upgrades[upgradeId] = current + 1
 	broadcast(player)
+	Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, cost)
 	if upgradeId == "WalkSpeed" then
 		ProgressService.applyMovement(player)
 	end

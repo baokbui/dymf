@@ -54,6 +54,7 @@ Remotes module. That is the only required step.
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
 | `OpenProgressionStore` | server → client | ✅ M18 | Talk to Tung / 67 mascot → open store overlay (`Brainrots` / `Upgrades`) |
 | `BuyStoreItem`     | client → server | ✅ M18 | Spend brains (`shop` + `id`); server validates catalog |
+| `StorePurchaseSucceeded` | server → client | ✅ M18 | Authoritative spend (`cost`); client kaching + brains delta |
 | `StorePurchaseFailed` | server → client | ✅ M18 | Rejected buy (broke / owned / max) |
 
 ### RemoteFunctions
@@ -143,7 +144,7 @@ The campaign loop is server-authoritative, owned by `LevelService` (see
 
 **Start** — the client sends `StartLevel()` with no arguments when the player
 presses the button (only enabled during `Preparation`). The server
-validates phase, clears stray monsters, and enters `Active` immediately.
+validates phase, enters `Countdown` (3…0 overlay), then `Active`.
 Monsters spawn in the forest and walk toward the plot (setup time).
 
 **`RewindDay`** — client fires from the Game Over overlay while phase is

@@ -1,8 +1,7 @@
 --!strict
 --[[
 	CoinCounter
-	Top-left coin balance display plus floating +/- feedback labels.
-	Cartoon thick-outline look via UITheme.
+	Mid-left coin balance: icon + amount (no chip). Floating +/- on collect/spend.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -33,44 +32,34 @@ function CoinCounter.new(frame: Frame): CoinCounter
 
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.fromOffset(16, 16)
-	frame.Size = UDim2.fromOffset(168, 52)
+	frame.Position = UDim2.new(0, 16, 0.42, -72)
+	frame.Size = UDim2.fromOffset(180, 64)
+	frame.BackgroundTransparency = 1
+	frame.BorderSizePixel = 0
 	frame.ClipsDescendants = false
-	UITheme.applyChipLook(frame, UITheme.CHIP_BG_COINS)
 
-	local icon = Instance.new("Frame")
-	icon.Name = "Icon"
+	local icon = Instance.new("ImageLabel")
+	icon.Name = "Glyph"
+	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0, 0.5)
-	icon.Position = UDim2.new(0, 12, 0.5, 0)
-	icon.Size = UDim2.fromOffset(28, 28)
-	icon.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
-	icon.BorderSizePixel = 0
+	icon.Position = UDim2.new(0, 0, 0.5, 0)
+	icon.Size = UDim2.fromOffset(64, 64)
+	icon.Image = "rbxassetid://15993201893"
+	icon.ScaleType = Enum.ScaleType.Fit
 	icon.Parent = frame
-	UITheme.styleCorner(icon, 14)
-	UITheme.applyStroke(icon, UITheme.STROKE_CARD)
-
-	local iconImage = Instance.new("ImageLabel")
-	iconImage.Name = "Glyph"
-	iconImage.BackgroundTransparency = 1
-	iconImage.AnchorPoint = Vector2.new(0.5, 0.5)
-	iconImage.Position = UDim2.fromScale(0.5, 0.5)
-	iconImage.Size = UDim2.fromScale(0.8, 0.8)
-	iconImage.Image = "rbxassetid://15993201893"
-	iconImage.ScaleType = Enum.ScaleType.Fit
-	iconImage.Parent = icon
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
 	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, 52, 0.5, 0)
-	label.Size = UDim2.new(1, -64, 1, 0)
+	label.Position = UDim2.new(0, 72, 0.5, 0)
+	label.Size = UDim2.new(1, -72, 1, 0)
 	label.BackgroundTransparency = 1
-	label.TextSize = 22
+	label.TextSize = 30
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
 	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
-	label.TextSize = 22
+	label.TextSize = 30
 
 	self.amountLabel = label
 	return self

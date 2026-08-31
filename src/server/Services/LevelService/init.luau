@@ -2,8 +2,9 @@
 --[[
 	LevelService
 	The ONLY system that advances campaign levels (PvZ-style). Owns preparation,
-	Active spawn groups, victory/defeat, rewards, and progression. Start Day goes
-	straight to Active — monsters spawn in the forest and walk in (setup time).
+	Start Day countdown (3…0 overlay), Active spawn groups, victory/defeat,
+	rewards, and progression. After 0 the day goes Active — monsters spawn in
+	the forest and walk in (that march is setup time).
 	Drives EnemyService for spawns; broadcasts state via LevelStateChanged.
 
 	Victory keeps planted Brainrots on the plot and commits them for rejoin.
@@ -21,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local GridConfig = require(Shared.Config.GridConfig)
+local LevelConfig = require(Shared.Config.LevelConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local DevConfig = require(Shared.Config.DevConfig)
 local Levels = require(Shared.Levels)
@@ -312,7 +314,14 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	broadcast(player)
 end
 
--- Optional Countdown → Active bridge (COUNTDOWN_TIME > 0). Live flow skips this.
+-- Countdown overlay (COUNTDOWN_TIME) then Active.
+local function beginCountdown(player: Player, state: PlayerState)
+	state.activeRun = nil
+	state.countdownEnd = os.clock() + LevelConfig.COUNTDOWN_TIME
+	setPhase(player, state, PHASE.Countdown)
+end
+
+-- Countdown → Active. Live flow always uses COUNTDOWN_TIME > 0.
 local function beginActiveRun(player: Player, state: PlayerState, definition)
 	local plotModel = PlotService.getPlotModel(player)
 	if plotModel then
@@ -365,9 +374,12 @@ local function onStartLevel(player: Player)
 		return
 	end
 
-	-- Skip idle countdown: Active immediately so players can plant while the
-	-- first monsters spawn in the forest and walk toward the plot.
-	beginActiveRun(player, state, definition)
+	-- Brief 3…0 overlay, then Active so players plant while monsters march in.
+	if LevelConfig.COUNTDOWN_TIME > 0 then
+		beginCountdown(player, state)
+	else
+		beginActiveRun(player, state, definition)
+	end
 end
 
 local function onHouseBreach(plotModel: Model, _row: number)

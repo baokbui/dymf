@@ -42,6 +42,7 @@ local EVENT_NAMES = {
 	"OpenProgressionStore",
 	"BuyStoreItem",
 	"StorePurchaseFailed",
+	"StorePurchaseSucceeded",
 	-- Brainrots (Milestone 5)
 	"BrainrotAction",
 	-- Fog-cleared lawn rows (Giraffa Celeste) — owner-only

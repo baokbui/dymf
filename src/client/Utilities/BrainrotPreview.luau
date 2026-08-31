@@ -64,9 +64,11 @@ end
 function BrainrotPreview.mount(
 	parent: GuiObject,
 	definition: Types.BrainrotDefinition,
-	size: UDim2,
-	position: UDim2
+	size: UDim2?,
+	position: UDim2?
 ): GuiObject
+	local resolvedSize = size or UDim2.fromScale(1, 1)
+	local resolvedPosition = position or UDim2.new(0.5, 0, 0, 0)
 	local modelId = definition.modelId or definition.id
 	local template = ModelUtil.findBrainrotTemplate(modelId)
 
@@ -74,8 +76,8 @@ function BrainrotPreview.mount(
 		local swatch = Instance.new("Frame")
 		swatch.Name = "Swatch"
 		swatch.AnchorPoint = Vector2.new(0.5, 0)
-		swatch.Position = position
-		swatch.Size = size
+		swatch.Position = resolvedPosition
+		swatch.Size = resolvedSize
 		swatch.BackgroundColor3 = definition.color or Color3.fromRGB(180, 140, 220)
 		swatch.BorderSizePixel = 0
 		swatch.Active = false
@@ -86,8 +88,8 @@ function BrainrotPreview.mount(
 	local viewport = Instance.new("ViewportFrame")
 	viewport.Name = "Preview"
 	viewport.AnchorPoint = Vector2.new(0.5, 0)
-	viewport.Position = position
-	viewport.Size = size
+	viewport.Position = resolvedPosition
+	viewport.Size = resolvedSize
 	viewport.BackgroundColor3 = Color3.fromRGB(75, 155, 220)
 	viewport.BackgroundTransparency = 0.4
 	viewport.BorderSizePixel = 0

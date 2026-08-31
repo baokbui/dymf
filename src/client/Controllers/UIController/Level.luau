@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared.Constants)
+local LevelConfig = require(Shared.Config.LevelConfig)
 local Remotes = require(Shared.Remotes)
 local UITheme = require(Shared.Config.UITheme)
 
@@ -32,6 +33,7 @@ export type LevelPanel = typeof(setmetatable(
 		progressFill: Frame,
 		startButton: TextButton,
 		warningBanner: TextLabel,
+		startCountdownLabel: TextLabel,
 	},
 	Level
 ))
@@ -42,6 +44,19 @@ function Level.new(parent: Frame): LevelPanel
 	parent.Position = UDim2.new(1, -16, 1, -16)
 	parent.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT_PREP)
 	UITheme.applyPanelLook(parent)
+
+	local startCountdownLabel = Instance.new("TextLabel")
+	startCountdownLabel.Name = "StartCountdown"
+	startCountdownLabel.AnchorPoint = Vector2.new(1, 1)
+	startCountdownLabel.Position = UDim2.new(1, 0, 0, -8)
+	startCountdownLabel.Size = UDim2.fromOffset(PANEL_WIDTH, 40)
+	startCountdownLabel.BackgroundTransparency = 1
+	startCountdownLabel.TextSize = 26
+	startCountdownLabel.Text = "Day starting in 3"
+	startCountdownLabel.Visible = false
+	startCountdownLabel.Parent = parent
+	UITheme.applyOutlinedTitle(startCountdownLabel, UITheme.DANGER)
+	startCountdownLabel.TextSize = 26
 
 	local warningBanner = Instance.new("TextLabel")
 	warningBanner.Name = "BigWaveWarning"
@@ -121,15 +136,19 @@ function Level.new(parent: Frame): LevelPanel
 		progressFill = progressFill,
 		startButton = startButton,
 		warningBanner = warningBanner,
+		startCountdownLabel = startCountdownLabel,
 	}, Level)
 end
 
-local function phaseMessage(phase: string, countdownRemaining: number?): string
+local function startCountdownShown(remaining: number): number
+	return math.clamp(math.floor(remaining), 0, math.max(0, LevelConfig.COUNTDOWN_TIME - 1))
+end
+
+local function phaseMessage(phase: string, _countdownRemaining: number?): string
 	if phase == PHASE.Preparation then
 		return "Start the day to plant and defend"
 	elseif phase == PHASE.Countdown then
-		local n = if countdownRemaining then math.ceil(countdownRemaining) else 0
-		return string.format("Starting in %d…", n)
+		return "Get ready!"
 	elseif phase == PHASE.Active then
 		return "Plant before they leave the forest!"
 	elseif phase == PHASE.Victory then
@@ -153,6 +172,12 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 
 	local countdown = if type(state.countdownRemaining) == "number" then state.countdownRemaining else nil
 	self.phaseLabel.Text = phaseMessage(phase, countdown)
+
+	local countingDown = phase == PHASE.Countdown and countdown ~= nil
+	self.startCountdownLabel.Visible = countingDown
+	if countingDown and countdown then
+		self.startCountdownLabel.Text = string.format("Day starting in %d", startCountdownShown(countdown))
+	end
 
 	if phase == PHASE.Victory then
 		UITheme.applyOutlinedTitle(self.phaseLabel, UITheme.SUCCESS)

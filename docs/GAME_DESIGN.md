@@ -126,16 +126,21 @@ See `GRID.md` for implementation details.
 
 # Currency
 
-Currency: Coins
+**Coins** are the match currency (placement, passive drops). **Brains** are
+progression currency (day-clear rewards, Progression Store spends).
 
 Coins are earned by:
 
-- Passive drops (every ~30 seconds) ✅
+- Passive drops (every 25 seconds) ✅
 - Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s) ✅
-- Completing days 🔜 Milestone 8
-- Future achievements/events
+- Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0 ✅
 
-Only the server controls currency.
+Brains are earned on victory and spent at per-plot mini stores (Tung / 67
+mascots) — see `STORE.md`. Speed upgrades persist in `SaveData.upgrades`.
+
+Only the server controls currency. Clients display balances and send intent.
+
+Authoritative numbers: `docs/ECONOMY.md`.
 
 ---
 
@@ -342,48 +347,9 @@ Reset should require confirmation.
 
 # Folder Structure
 
-Source lives under `src/` and syncs via Rojo. See `ARCHITECTURE.md` for the
-full mapping and lifecycle.
-
-```
-ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Level, Plot, Brainrot + aggregator
-    Constants/     save version, tags, phases, folder names
-    Types/         shared Luau types
-    Utilities/     Logger, GridUtil
-    Brainrots/     data-driven Brainrot registry
-    Monsters/      data-driven Monster registry
-    Levels/        data-driven campaign level registry
-    Remotes/       single network boundary
-
-ServerScriptService/Server/
-    Services/
-        PlotService/      plots + enemy-spawn lanes
-        GridService/      tile grid + occupancy
-        CoinService/      currency + ground coins
-        BrainrotService/  placement, lifecycle, behavior
-        CombatService/    damage + status (monsters stubbed until M6–7)
-        EnemyService/     🔜 Milestone 6
-        LevelService/     🔜 Milestone 8
-        SaveService/      🔜 Milestone 9
-
-StarterPlayerScripts/Client/Controllers/
-    UIController/         Shop, coin counter
-    PlacementController/  selection, ghost, place/remove intent
-    GridController/       hover highlight
-    CoinController/       ground-coin pickup intent
-    BrainrotController/   action sound feedback
-    InputController/      primary/secondary intent
-    CameraController/     default third-person
-
-StarterGui/MainUI/
-    Shop, Coins, LevelUI, Settings
-
-Workspace/
-    Plots/        player plot models (runtime)
-    EnemyPaths/   enemy-spawn lanes (runtime)
-    Maps/
-```
+Source lives under `src/` and syncs via Rojo. **Authoritative layout, services,
+and lifecycle:** `docs/ARCHITECTURE.md`. Do not treat this file as the folder
+map — it drifted when milestones landed.
 
 ---
 
@@ -393,11 +359,12 @@ See `ROADMAP.md` for milestone status. Summary:
 
 **Phase 1 ✅** — Rojo, folder structure, plots, grid, coins, placement, shop
 
-**Phase 2 (in progress)** — Brainrot framework ✅ (M5); monsters ✅ (M6); combat ✅
-(M7); levels ✅ (M8); save 🔜 (M9)
+**Phase 2 ✅** — Brainrots (M5), monsters (M6), combat (M7), days (M8), save (M9)
 
-**Phase 3 🔜** — Save system, progression (M9)
+**Phase 3 ✅** — Campaign content, VFX, audio, UI polish, balance, models,
+animations, weather, graves (M10–17)
 
-**Phase 4 🔜** — Additional monsters & bosses (M10)
+**Phase 4 ✅** — Progression Store (M18): per-plot mini stores, brains spends,
+Speed upgrades
 
-**Phase 5 🔜** — VFX, audio, UI polish, balancing, roster expansion, release (M11–18)
+**Phase 5 🔜** — Retention (M19), evolve/mutate (M20), house boss collection (M21)

@@ -60,10 +60,12 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | --- | ------- |
 | `UiClick` / `UiSelect` | Shovel enable, cancel, shop select |
 | `LevelStart` | Start / Restart Level button |
-| `CountdownTick` | Countdown second ticks |
+| `CountdownTick` | Start Day overlay ticks (3…0) |
 | `BigWave` | First frame of big-wave warning |
 | `Victory` / `Defeat` | Level phase change |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
+| `PurchaseKaching` | Store purchase succeeded (cash register) |
+| `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
 | `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
 | `PlaceBrainrot_BrrBrrPatapim` | Patapim plant / spawn |

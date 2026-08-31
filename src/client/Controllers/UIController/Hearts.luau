@@ -1,8 +1,7 @@
 --!strict
 --[[
 	Hearts
-	House health as five ♥ icons inside a horizontal HUD box (below coins/brains).
-	Cartoon thick-outline look via UITheme.
+	House health as five ♥ icons at top-left (no chip).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,10 +12,9 @@ local UITheme = require(Shared.Config.UITheme)
 local Hearts = {}
 Hearts.__index = Hearts
 
-local PANEL_WIDTH = 168
-local PANEL_HEIGHT = 48
-local HEART_SIZE = 28
-local HEART_GAP = 4
+local HEART_SIZE = 44
+local HEART_GAP = 6
+local HEART_TEXT_SIZE = 48
 
 export type HeartsHud = typeof(setmetatable(
 	{} :: {
@@ -30,14 +28,24 @@ export type HeartsHud = typeof(setmetatable(
 
 function Hearts.new(parent: Frame): HeartsHud
 	local maxHealth = ProgressConfig.MAX_PLAYER_HEALTH
+	local rowWidth = maxHealth * (HEART_SIZE + HEART_GAP) - HEART_GAP
+
 	parent.Visible = true
 	parent.AnchorPoint = Vector2.new(0, 0)
-	parent.Position = UDim2.fromOffset(16, 136)
-	parent.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
-	UITheme.applyChipLook(parent, UITheme.CHIP_BG_HEARTS)
+	parent.Position = UDim2.fromOffset(16, 16)
+	parent.Size = UDim2.fromOffset(rowWidth, HEART_SIZE)
+	parent.BackgroundTransparency = 1
+	parent.BorderSizePixel = 0
+	parent.ClipsDescendants = false
 
-	local rowWidth = maxHealth * (HEART_SIZE + HEART_GAP) - HEART_GAP
-	local startX = math.floor((PANEL_WIDTH - rowWidth) / 2)
+	local stroke = parent:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke:Destroy()
+	end
+	local corner = parent:FindFirstChildOfClass("UICorner")
+	if corner then
+		corner:Destroy()
+	end
 
 	local icons: { TextLabel } = {}
 	for i = 1, maxHealth do
@@ -45,10 +53,10 @@ function Hearts.new(parent: Frame): HeartsHud
 		icon.Name = "Heart" .. i
 		icon.BackgroundTransparency = 1
 		icon.AnchorPoint = Vector2.new(0, 0.5)
-		icon.Position = UDim2.new(0, startX + (i - 1) * (HEART_SIZE + HEART_GAP), 0.5, 0)
+		icon.Position = UDim2.new(0, (i - 1) * (HEART_SIZE + HEART_GAP), 0.5, 0)
 		icon.Size = UDim2.fromOffset(HEART_SIZE, HEART_SIZE)
 		icon.Font = Enum.Font.SourceSansBold
-		icon.TextSize = 30
+		icon.TextSize = HEART_TEXT_SIZE
 		icon.Text = "♥"
 		icon.TextColor3 = UITheme.HEART_FILLED
 		icon.TextStrokeColor3 = UITheme.OUTLINE

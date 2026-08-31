@@ -34,7 +34,7 @@ scaling.
 ## Per-day loop
 
 ```
-Start Day ─► Active (plant + fight; monsters march from forest)
+Start Day ─► Countdown (Day starting in 3…0) ─► Active (plant + fight)
    ▲                              │
    │                  spawn groups run
    │                  (progress bar → big wave)
@@ -46,12 +46,13 @@ Start Day ─► Active (plant + fight; monsters march from forest)
                                    (restore victory checkpoint lawn)
 ```
 
-During `Preparation`, planting and ground-coin drops are blocked. Both unlock
-when the day enters `Active`. There is **no idle countdown**: monsters spawn
-deep in the dark forest (`MonsterConfig.SPAWN_COLUMN_OFFSET` columns east of
-the lawn) and walk west into the plot — that approach is the plant/setup
-window. First spawn groups use a short `startDelay` (~1.5s); travel time to
-the lawn edge is ~20–30s depending on species speed.
+During `Preparation`, planting and ground-coin drops are blocked. After
+**Start Day**, a **3…0** overlay plays (`Countdown`), then the day enters
+`Active` and both unlock. Monsters spawn deep in the dark forest
+(`MonsterConfig.SPAWN_COLUMN_OFFSET` columns east of the lawn) and walk west
+into the plot — that approach is the plant/setup window. First spawn groups
+use a short `startDelay` (~1.5s); travel time to the lawn edge is ~20–30s
+depending on species speed.
 
 **Lawn carry-over:** after **Victory**, planted Brainrots (and their remaining
 HP) stay on the plot. Coin purse: **Day 1 → `STARTING_COINS` (125)**; after any
@@ -65,8 +66,8 @@ hearts refill; coins use `applyDayPurse` (Day 1 → 125, later → 0). Phase sta
 wipe — not mid-day placements on an unfinished day). Brainrots only attack /
 spit coins while the day is **`Active`**.
 
-Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (unused /
-optional), `Active`, `Victory`, `Defeat`.
+Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (3…0 Start
+Day overlay), `Active`, `Victory`, `Defeat`.
 
 ---
 
@@ -245,7 +246,7 @@ is in the registry above, not here.
 | Key                     | Value | Meaning                                    |
 | ----------------------- | ----- | ------------------------------------------ |
 | `PREPARATION_TIME`      | 30    | Reserved prep window before Start (planned) |
-| `COUNTDOWN_TIME`        | 0     | Unused (optional Countdown experiments)    |
+| `COUNTDOWN_TIME`        | 4     | Start Day overlay: 3, 2, 1, 0 then Active |
 | `STARTING_PLAYER_HEALTH`| 5     | Hearts at day start (one lost per breach) |
 | `BIG_WAVE_WARNING_TIME` | 5     | Lead time for the "huge wave!" banner      |
 | `DEFAULT_SPAWN_INTERVAL`| 1.8   | Fallback gap between monsters in a group   |
@@ -260,7 +261,7 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
 
 `LevelService` owns:
 
-- Preparation phase; Start Day enters Active immediately (forest march = setup).
+- Preparation phase; Start Day → Countdown (3…0 overlay) → Active (forest march = setup).
 - Handling the `StartLevel` request (validated server-side).
 - Playing the current level's `groups` in order: driving `EnemyService` to spawn
   (it decides *what* and *when*; `EnemyService` handles *how* monsters

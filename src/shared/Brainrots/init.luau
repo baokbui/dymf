@@ -172,7 +172,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 
 	GiraffaCeleste = {
 		id = "GiraffaCeleste",
-		name = "Giraffa Celeste",
+		name = "Girafa Celestre",
 		cost = 50,
 		maxHealth = 0,
 		health = 0,

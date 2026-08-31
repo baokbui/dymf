@@ -82,7 +82,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
 | Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
-| Giraffa Celeste | 50 | — | One-shot plot fog clear 7s (unlock: reach Day 25) |
+| Girafa Celestre | 50 | — | One-shot plot fog clear 7s (unlock: reach Day 25) |
 | Brr Brr Patapim | 50 | — | Immune; two hits per swing (1s apart); 6 collapse the grave (unlock: Day 31) |
 
 Intent: Cappuccino is reliable lane DPS; Tung Tung rewards the front line;
@@ -146,6 +146,15 @@ east of the plant center so models don't overlap.
 
 ---
 
+## Player movement (`PlayerConfig` + Speed shop)
+
+Unupgraded walk speed is Roblox default **16** so the red-store Speed upgrade
+is worth buying. Ten levels add **+1 WalkSpeed** each (noticeable over a
+couple of ranks, not a sprint). Max is **26** — comfortable coin pickup,
+not trivial. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80**.
+
+---
+
 ## Where to tune
 
 | What | Where |
@@ -156,3 +165,4 @@ east of the plant center so models don't overlap.
 | Coins / drops | `EconomyConfig` |
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
+| Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |

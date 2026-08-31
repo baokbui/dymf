@@ -83,6 +83,13 @@
             "BackgroundTransparency": 1
           }
         },
+        "Speed": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
         "LevelUI": {
           "$className": "Frame",
           "$properties": {

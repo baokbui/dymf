@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local Constants = require(Shared.Constants)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local LevelConfig = require(Shared.Config.LevelConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Logger = require(Shared.Utilities.Logger)
 
@@ -22,6 +23,7 @@ local Shop = require(script.Shop)
 local Level = require(script.Level)
 local CoinCounter = require(script.CoinCounter)
 local BrainsCounter = require(script.BrainsCounter)
+local SpeedHud = require(script.SpeedHud)
 local Hearts = require(script.Hearts)
 local Settings = require(script.Settings)
 local Inventory = require(script.Inventory)
@@ -42,6 +44,7 @@ local log = Logger.new(UIController.Name)
 local localPlayer = Players.LocalPlayer
 local coinCounter: CoinCounter.CoinCounter? = nil
 local brainsCounter: BrainsCounter.BrainsCounter? = nil
+local speedHud: SpeedHud.SpeedHud? = nil
 local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local heartsHud: Hearts.HeartsHud? = nil
@@ -134,6 +137,17 @@ local function applyProfile(profile: { [string]: any }?)
 	if brainsCounter and type(profile.brains) == "number" then
 		brainsCounter:setBalance(profile.brains)
 	end
+	if speedHud then
+		local upgrades: { [string]: number } = {}
+		if type(profile.upgrades) == "table" then
+			for key, value in (profile.upgrades :: { [string]: any }) do
+				if type(key) == "string" and type(value) == "number" then
+					upgrades[key] = value
+				end
+			end
+		end
+		speedHud:applyUpgrades(upgrades)
+	end
 	if shop and type(profile.equipped) == "table" then
 		local equipped = profile.equipped :: { string }
 		shop:setEquipped(equipped)
@@ -174,6 +188,11 @@ end
 local function buildBrainsCounter(): BrainsCounter.BrainsCounter
 	local frame = buildMain():WaitForChild("Brains") :: Frame
 	return BrainsCounter.new(frame)
+end
+
+local function buildSpeedHud(): SpeedHud.SpeedHud
+	local frame = buildMain():WaitForChild("Speed") :: Frame
+	return SpeedHud.new(frame)
 end
 
 local function buildShop(): Shop.Shop
@@ -238,12 +257,19 @@ local function buildSettings(): Settings.SettingsPanel
 	return Settings.new(buildMain():WaitForChild("Settings") :: Frame)
 end
 
-local function makeHudEntry(name: string, label: string, y: number, fill: Color3, onClick: () -> ()): TextButton
+local function makeHudEntry(
+	name: string,
+	label: string,
+	position: UDim2,
+	anchor: Vector2,
+	fill: Color3,
+	onClick: () -> ()
+): TextButton
 	local main = buildMain()
 	local button = Instance.new("TextButton")
 	button.Name = name
-	button.AnchorPoint = Vector2.new(0, 0)
-	button.Position = UDim2.fromOffset(16, y)
+	button.AnchorPoint = anchor
+	button.Position = position
 	button.Size = UDim2.fromOffset(168, 44)
 	button.AutoButtonColor = true
 	button.TextSize = 18
@@ -261,9 +287,14 @@ local function makeHudEntry(name: string, label: string, y: number, fill: Color3
 end
 
 local function buildHudEntries()
-	-- Coins (16,16 h52) → Brains (16,76 h52) → Hearts (16,136 h48) →
-	-- Inventory → Settings (8px gaps).
-	inventoryEntry = makeHudEntry("InventoryEntry", "Inventory", 192, UITheme.CHIP_BG_INVENTORY_BUTTON, function()
+	-- Bottom-left: Inventory above Settings.
+	inventoryEntry = makeHudEntry(
+		"InventoryEntry",
+		"Inventory",
+		UDim2.new(0, 16, 1, -68),
+		Vector2.new(0, 1),
+		UITheme.CHIP_BG_INVENTORY_BUTTON,
+		function()
 		if not inventoryPanel then
 			return
 		end
@@ -273,7 +304,13 @@ local function buildHudEntries()
 		end
 		inventoryPanel:setOpen(opening)
 	end)
-	settingsEntry = makeHudEntry("SettingsEntry", "Settings", 244, UITheme.CHIP_BG_SETTINGS_BUTTON, function()
+	settingsEntry = makeHudEntry(
+		"SettingsEntry",
+		"Settings",
+		UDim2.new(0, 16, 1, -16),
+		Vector2.new(0, 1),
+		UITheme.CHIP_BG_SETTINGS_BUTTON,
+		function()
 		if not settingsPanel then
 			return
 		end
@@ -381,11 +418,15 @@ local function applyLevelState(state: { [string]: any }?)
 	lastBigWaveWarning = state.bigWaveWarning == true
 
 	if phase == Constants.PHASE.Countdown and type(state.countdownRemaining) == "number" then
-		local ceil = math.ceil(state.countdownRemaining)
-		if lastCountdownCeil ~= ceil and ceil > 0 then
+		local shown = math.clamp(
+			math.floor(state.countdownRemaining),
+			0,
+			math.max(0, LevelConfig.COUNTDOWN_TIME - 1)
+		)
+		if lastCountdownCeil ~= shown then
 			AudioController.play("CountdownTick")
+			lastCountdownCeil = shown
 		end
-		lastCountdownCeil = ceil
 	else
 		lastCountdownCeil = nil
 	end
@@ -394,6 +435,7 @@ end
 function UIController.init()
 	coinCounter = buildCoinCounter()
 	brainsCounter = buildBrainsCounter()
+	speedHud = buildSpeedHud()
 	shop = buildShop()
 	plantToast = PlantToast.new(buildMain())
 	levelPanel = buildLevelPanel()
@@ -481,11 +523,26 @@ function UIController.start()
 		progressionStore:open(shopKind)
 	end)
 
-	Remotes.getEvent("StorePurchaseFailed").OnClientEvent:Connect(function(reason: unknown)
-		if type(reason) == "string" and progressionStore then
-			progressionStore:setStatus(reason)
+	Remotes.getEvent("StorePurchaseSucceeded").OnClientEvent:Connect(function(cost: unknown)
+		if type(cost) == "number" and brainsCounter then
+			brainsCounter:showDelta(-cost)
 		end
-		if type(reason) == "string" and plantToast then
+		if progressionStore then
+			progressionStore:showPurchaseFeedback(true)
+		end
+	end)
+
+	Remotes.getEvent("StorePurchaseFailed").OnClientEvent:Connect(function(reason: unknown)
+		if type(reason) ~= "string" then
+			return
+		end
+		if reason == "Not enough brains" then
+			if progressionStore then
+				progressionStore:showPurchaseFeedback(false)
+			end
+			return
+		end
+		if plantToast then
 			plantToast:push(reason)
 		end
 	end)
