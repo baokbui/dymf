@@ -87,7 +87,8 @@ hardcode a second palette in new UI.
   only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
-  stroke on the viewport) so the row stays readable. Framing uses visual AABB
+  stroke on the viewport) so the row stays readable. Names and costs use
+  outlined title text (same as HUD) so they stay readable on the yellow cards. Framing uses visual AABB
   + optional `previewFocusOffset`; animated rigs stay posed (no idle playback
   in the ViewportFrame). After planting, the card
   shows a **recharge overlay** (`PlantCooldownsUpdated`; cheaper units recharge
@@ -112,7 +113,8 @@ hardcode a second palette in new UI.
   equip/unequip of unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only
   unlocked entries appear — locked starter-roster Brainrots are simply absent
   until their unlock day clears (see `BRAINROTS.md`). Hovering a packet opens
-  an info tooltip (portrait + stat rows + ability blurb) built from
+  an info tooltip (portrait + stat rows + ability blurb, all outlined title
+  text) built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). Server validates equip
   changes via `SetEquipped`. Loadout **cannot** change while the day is
@@ -137,8 +139,10 @@ hardcode a second palette in new UI.
   and **Rewind Day N**. Clicking Rewind plays a translucent clock spin, fades
   the overlay, and fires `RewindDay` (server → Preparation on the failed day
   with the victory-checkpoint lawn already restored).
-- **RewardPopup** ✅ M13 — victory overlay showing brains earned for the cleared
-  day (`LevelStateChanged.reward`).
+- **RewardPopup** ✅ M13 — victory overlay: day-clear brains, leftover-gold
+  brains (smaller), and a large **Total Brains Earned**. After the title, those
+  lines and **Continue** scale-pop in one at a time (no fade). Stays until
+  **Continue** (`ContinueVictory`); then unlock intros may play.
 
 ### Milestone 18 — Progression Store ✅
 
@@ -151,6 +155,8 @@ hardcode a second palette in new UI.
   on the brains HUD and a green “Purchased Successfully!” float. Broke
   buys play an error SFX and a red “Purchase Unsuccessful…” message above the
   Buy button. Repeat fails stack (new on top; older slide up and fade faster).
+  Walking farther than `StoreConfig.CLOSE_DISTANCE` from the mascot closes the overlay.
+  Talk / buy is **own plot only** — other players' stalls do not show a prompt.
 
 See `docs/STORE.md`.
 

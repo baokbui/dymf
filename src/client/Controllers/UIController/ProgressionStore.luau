@@ -5,6 +5,8 @@
 	(description + buy). Display + BuyStoreItem intent only.
 ]]
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -55,9 +57,31 @@ export type ProgressionStoreHud = typeof(setmetatable(
 		unlocks: { [string]: boolean },
 		upgrades: { [string]: number },
 		banners: { Frame },
+		anchorPosition: Vector3?,
+		rangeConnection: RBXScriptConnection?,
 	},
 	ProgressionStore
 ))
+
+local localPlayer = Players.LocalPlayer
+
+local function characterPosition(): Vector3?
+	local character = localPlayer.Character
+	if not character then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		return root.Position
+	end
+	return character:GetPivot().Position
+end
+
+local function horizontalDistance(a: Vector3, b: Vector3): number
+	local dx = a.X - b.X
+	local dz = a.Z - b.Z
+	return math.sqrt(dx * dx + dz * dz)
+end
 
 local function styleRow(row: GuiObject, owned: boolean?, selected: boolean?)
 	if owned then
@@ -220,6 +244,8 @@ function ProgressionStore.new(parent: Frame): ProgressionStoreHud
 		unlocks = {},
 		upgrades = {},
 		banners = {},
+		anchorPosition = nil,
+		rangeConnection = nil,
 	}, ProgressionStore)
 
 	close.MouseButton1Click:Connect(function()
@@ -252,7 +278,40 @@ function ProgressionStore.hideStats(self: ProgressionStoreHud)
 	end
 end
 
+function ProgressionStore.stopRangeWatch(self: ProgressionStoreHud)
+	if self.rangeConnection then
+		self.rangeConnection:Disconnect()
+		self.rangeConnection = nil
+	end
+	self.anchorPosition = nil
+end
+
+function ProgressionStore.startRangeWatch(self: ProgressionStoreHud, anchor: Vector3)
+	self:stopRangeWatch()
+	self.anchorPosition = anchor
+	self.rangeConnection = RunService.Heartbeat:Connect(function()
+		if not self.frame.Visible then
+			self:stopRangeWatch()
+			return
+		end
+		local pos = characterPosition()
+		if not pos then
+			self:close()
+			return
+		end
+		local origin = self.anchorPosition
+		if not origin then
+			self:stopRangeWatch()
+			return
+		end
+		if horizontalDistance(pos, origin) >= StoreConfig.CLOSE_DISTANCE then
+			self:close()
+		end
+	end)
+end
+
 function ProgressionStore.close(self: ProgressionStoreHud)
+	self:stopRangeWatch()
 	self.shopKind = nil
 	self.frame.Visible = false
 	self:hideStats()
@@ -521,7 +580,7 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		body.TextSize = 14
 		body.Text = BrainrotInfo.abilityDescription(definition.ability)
 		body.Parent = self.statsBody
-		UITheme.applyBodyText(body, UITheme.SUBTEXT)
+		UITheme.applyOutlinedTitle(body)
 		body.TextSize = 14
 
 		local stats = Instance.new("TextLabel")
@@ -591,7 +650,7 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		body.TextSize = 15
 		body.Text = def.description
 		body.Parent = self.statsBody
-		UITheme.applyBodyText(body, UITheme.SUBTEXT)
+		UITheme.applyOutlinedTitle(body)
 		body.TextSize = 15
 
 		local stats = Instance.new("TextLabel")
@@ -759,13 +818,18 @@ function ProgressionStore.rebuild(self: ProgressionStoreHud)
 	end
 end
 
-function ProgressionStore.open(self: ProgressionStoreHud, shopKind: string)
+function ProgressionStore.open(self: ProgressionStoreHud, shopKind: string, anchor: Vector3?)
 	self.shopKind = shopKind
 	self.selectedId = nil
 	self.statsCard.Visible = false
 	layoutShop(self, false)
 	self.frame.Visible = true
 	self:rebuild()
+	if anchor then
+		self:startRangeWatch(anchor)
+	else
+		self:stopRangeWatch()
+	end
 	AudioController.play("UiSelect")
 end
 

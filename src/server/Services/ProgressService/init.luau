@@ -19,6 +19,7 @@ local Brainrots = require(Shared.Brainrots)
 local Monsters = require(Shared.Monsters)
 local PlayerConfig = require(Shared.Config.PlayerConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local EconomyConfig = require(Shared.Config.EconomyConfig)
 local StoreConfig = require(Shared.Config.StoreConfig)
 local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
@@ -442,6 +443,18 @@ function ProgressService.brainsForLevel(levelNumber: number): number
 	return math.max(0, math.floor(levelNumber * ProgressConfig.BRAINS_PER_LEVEL_NUMBER))
 end
 
+function ProgressService.brainsFromLeftoverCoins(coins: number): number
+	if coins <= 0 then
+		return 0
+	end
+	local per = EconomyConfig.COINS_PER_LEFTOVER_BRAIN
+	if per <= 0 then
+		return 0
+	end
+	local raw = math.floor(coins / per)
+	return math.max(0, raw)
+end
+
 -- Starter-roster unlock cadence (ProgressConfig.UNLOCK_SCHEDULE). Idempotent:
 -- returns the newly unlocked Brainrot id the first time `clearedLevelNumber`
 -- is reached, nil on replay (Day Select) or if nothing is scheduled for it.
@@ -636,6 +649,10 @@ local function onBuyStoreItem(player: Player, raw: unknown)
 	local shop = data.shop
 	local id = data.id
 	if type(shop) ~= "string" or type(id) ~= "string" then
+		return
+	end
+	local StoreService = require(script.Parent.StoreService)
+	if not StoreService.canPlayerUseShop(player, shop) then
 		return
 	end
 	if shop == StoreConfig.SHOP_BRAINROTS then

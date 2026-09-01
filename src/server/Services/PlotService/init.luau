@@ -4,7 +4,8 @@
 	Owns player battlefields (plots): builds a fixed pool at startup, assigns a
 	unique plot per player, spawns the player onto it, and releases/cleans plots
 	on leave for reuse. Plots are open for walking/spectating; gameplay actions
-	(plant, shovel, coin collect) stay owner-only via server validation.
+	Gameplay actions (plant, shovel, coin collect, Progression Store) stay
+	owner-only via server validation.
 
 	Server-authoritative: clients never choose or move their own plot. Spawning
 	is driven entirely server-side via per-player RespawnLocation + LoadCharacter;

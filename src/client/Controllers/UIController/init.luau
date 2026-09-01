@@ -349,20 +349,17 @@ local function applyLevelState(state: { [string]: any }?)
 	if type(state.reward) == "table" and rewardPopup then
 		local reward = state.reward :: { [string]: any }
 		if type(reward.clearedLevel) == "number" and type(reward.brains) == "number" then
-			rewardPopup:show(reward.clearedLevel, reward.brains)
+			rewardPopup:show(
+				reward.clearedLevel,
+				reward.brains,
+				if type(reward.leftoverBrains) == "number" then reward.leftoverBrains else 0
+			)
 			introHoldForReward = true
 			if type(reward.unlockedBrainrotId) == "string" then
 				enqueueIntro("brainrot", reward.unlockedBrainrotId)
 			end
 			enqueueIntroList("brainrot", state.introducedBrainrotIds)
 			enqueueIntroList("monster", state.introducedMonsterIds)
-			task.delay(3, function()
-				if rewardPopup then
-					rewardPopup:hide()
-				end
-				introHoldForReward = false
-				pumpIntros()
-			end)
 		end
 	elseif state.phase ~= Constants.PHASE.Victory and rewardPopup then
 		rewardPopup:hide()
@@ -442,6 +439,11 @@ function UIController.init()
 	heartsHud = buildHearts()
 	inventoryPanel = buildInventory()
 	rewardPopup = buildRewardPopup()
+	rewardPopup.onContinue = function()
+		introHoldForReward = false
+		Remotes.getEvent("ContinueVictory"):FireServer()
+		pumpIntros()
+	end
 	unlockPopup = buildUnlockPopup()
 	monsterIntroPopup = buildMonsterIntroPopup()
 	if unlockPopup then
@@ -510,7 +512,7 @@ function UIController.start()
 		end
 	end)
 
-	Remotes.getEvent("OpenProgressionStore").OnClientEvent:Connect(function(shopKind: unknown)
+	Remotes.getEvent("OpenProgressionStore").OnClientEvent:Connect(function(shopKind: unknown, anchor: unknown)
 		if type(shopKind) ~= "string" or not progressionStore then
 			return
 		end
@@ -520,7 +522,8 @@ function UIController.start()
 		if settingsPanel then
 			settingsPanel:setOpen(false)
 		end
-		progressionStore:open(shopKind)
+		local position = if typeof(anchor) == "Vector3" then anchor else nil
+		progressionStore:open(shopKind, position)
 	end)
 
 	Remotes.getEvent("StorePurchaseSucceeded").OnClientEvent:Connect(function(cost: unknown)

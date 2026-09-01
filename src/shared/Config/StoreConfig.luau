@@ -21,6 +21,10 @@ local StoreConfig = {
 	PROMPT_ACTION = "Talk",
 	PROMPT_DISTANCE = 14,
 	PROMPT_HOLD = 0,
+	-- Overlay closes once the player is this far (XZ) from the mascot they
+	-- talked to. Larger than PROMPT_DISTANCE so sidestepping at the stall
+	-- does not dismiss the UI; running onto the lawn does.
+	CLOSE_DISTANCE = 22,
 
 	SHOP_BRAINROTS = "Brainrots",
 	SHOP_UPGRADES = "Upgrades",

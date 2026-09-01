@@ -21,7 +21,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
   internal "waves". A progress bar fills as groups are spawned/cleared, and the
   final group is the **big wave** (the PvZ "flag"), preceded by a warning.
 - Clearing every group (no monsters left alive) → **Victory** → brains reward +
-unlock next day. A monster reaching the house → **−1 heart**; at **0 hearts** →
+leftover pocket coins convert to brains + unlock next day. A monster reaching the house → **−1 heart**; at **0 hearts** →
 **Defeat** → Game Over → **Rewind** stays on the failed day with the last
 victory lawn restored (`highestUnlocked` kept for Day Select).
 
@@ -270,9 +270,12 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
   living monsters) vs. **Defeat** (a monster reaches the house). Graves stop
   producing when spawn groups finish so the lawn can clear.
 - On **Victory**: clear monsters / projectiles / ground coins; **keep planted
-  Brainrots** (current HP); set coin purse via `applyDayPurse` (Day 1 → 125,
-  later days → 0); then unlock/advance to the next level.
-- On **Defeat**: clear mid-day Brainrots / monsters / ground coins; **keep**
+  Brainrots** (current HP); convert leftover **pocket** coins to brains
+  (`100` coins → `1` brain, uncapped); set coin purse via `applyDayPurse`
+  (Day 1 → 125, later days → 0); then unlock/advance to the next level.
+  Phase stays **Victory** until **Continue** (`ContinueVictory` → Preparation).
+- On **Defeat**: convert leftover pocket coins the same way; clear mid-day
+  Brainrots / monsters / ground coins; **keep**
   `currentLevel` on the failed day; **restore** the last victory checkpoint lawn
   (`SaveService.restoreCommittedLawn` — do not wipe the checkpoint); hearts
   refill; purse via `applyDayPurse`. Phase stays **`Defeat`** until the player

@@ -35,6 +35,7 @@ local EVENT_NAMES = {
 	"LevelStateChanged",
 	"SelectLevel",
 	"RewindDay", -- Defeat → Preparation on the failed day (Game Over rewind)
+	"ContinueVictory", -- Victory overlay Continue → Preparation on the next day
 	-- Settings / progression (Milestone 13)
 	"ResetProgress",
 	"ProfileUpdated",

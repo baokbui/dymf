@@ -17,9 +17,10 @@ From `GAME_DESIGN.md`:
 - Passive drops (every ~25 seconds) ✅
 - Coin-producing Brainrots (e.g. **Ballerina Cappucina** — see `BRAINROTS.md`) ✅
 - Completing a level ✅ Milestone 8 — after Day 1, purse resets to **0**;
-  Day 1 gets `STARTING_COINS` (125). Defeat applies the same day-purse rules
-  for the failed day (not a forced Day 1 reset). Victory keeps plants;
-  coin purse does not carry between days.
+  Day 1 gets `STARTING_COINS` (125). Leftover **pocket** coins convert to
+  brains first (`COINS_PER_LEFTOVER_BRAIN`), then the
+  purse applies. Defeat uses the same conversion + day-purse rules for the
+  failed day. Victory keeps plants; coin purse does not carry between days.
 - Future achievements / events
 
 ---
@@ -40,6 +41,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | `PRODUCER_SPIT_ARC_HEIGHT` | 7.5 | Peak loft of spit arc (studs)            |
 | `PRODUCER_SPIT_ORIGIN_CLEARANCE` | −0.8 | Studs vs visual mesh top for spit origin (− = lower / into head) |
 | `LEVEL_COMPLETION_REWARD`| 50  | Reserved; day purse uses Day 1 / 0 rules |
+| `COINS_PER_LEFTOVER_BRAIN` | 100 | Pocket coins per leftover brain (floor) |
 | `GROUND_COIN_LIFETIME` | 15    | Seconds an uncollected coin persists     |
 | `COIN_COLLECT_RADIUS`  | 16    | Max studs from a coin to collect it      |
 
@@ -92,7 +94,10 @@ with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
 — the coins spent placing it are lost (see `BRAINROTS.md` / `NETWORKING.md`).
 
 **Brains** are spent at the Progression Stores (Milestone 18): `ProgressService`
-validates `BuyStoreItem` and deducts brains. See `docs/STORE.md`.
+validates `BuyStoreItem` and deducts brains. See `docs/STORE.md`. Leftover
+match coins convert to brains at victory / defeat via
+`ProgressService.brainsFromLeftoverCoins` (then `applyDayPurse`). Day Select
+and leave do **not** convert.
 
 ### Implementation
 

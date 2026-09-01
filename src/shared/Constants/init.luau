@@ -30,6 +30,7 @@ Constants.TAGS = {
 	GridTile = "GridTile",
 	Plot = "Plot",
 	Coin = "Coin",
+	StorePrompt = "StorePrompt",
 }
 
 -- PhysicsService collision groups (players phase through monsters).

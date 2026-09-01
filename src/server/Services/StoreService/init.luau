@@ -2,13 +2,15 @@
 --[[
 	StoreService
 	Clones mini-store templates beside each plot house and wires Talk prompts.
-	Purchases stay on ProgressService.
+	Only the plot owner can open or buy; purchases stay on ProgressService.
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
+local Constants = require(Shared.Constants)
 local StoreConfig = require(Shared.Config.StoreConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
@@ -64,6 +66,39 @@ local function promptPart(model: Model): BasePart?
 	return model:FindFirstChildWhichIsA("BasePart", true)
 end
 
+local function owningPlotModel(instance: Instance): Model?
+	local plotsFolder = Workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Plots)
+	if not plotsFolder then
+		return nil
+	end
+	local current: Instance? = instance
+	while current and current ~= plotsFolder do
+		if current:IsA("Model") and current.Parent == plotsFolder then
+			return current
+		end
+		current = current.Parent
+	end
+	return nil
+end
+
+local function horizontalDistance(a: Vector3, b: Vector3): number
+	local dx = a.X - b.X
+	local dz = a.Z - b.Z
+	return math.sqrt(dx * dx + dz * dz)
+end
+
+local function characterRootPosition(player: Player): Vector3?
+	local character = player.Character
+	if not character then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		return root.Position
+	end
+	return nil
+end
+
 local function attachPrompt(mascot: Model, shopKind: string, objectText: string)
 	local part = promptPart(mascot)
 	if not part then
@@ -81,9 +116,18 @@ local function attachPrompt(mascot: Model, shopKind: string, objectText: string)
 	prompt.HoldDuration = StoreConfig.PROMPT_HOLD
 	prompt.MaxActivationDistance = StoreConfig.PROMPT_DISTANCE
 	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("ShopKind", shopKind)
 	prompt.Parent = part
+	CollectionService:AddTag(prompt, Constants.TAGS.StorePrompt)
 	prompt.Triggered:Connect(function(player: Player)
-		Remotes.getEvent("OpenProgressionStore"):FireClient(player, shopKind)
+		local plotModel = owningPlotModel(mascot)
+		if not plotModel then
+			return
+		end
+		if plotModel:GetAttribute("OwnerUserId") ~= player.UserId then
+			return
+		end
+		Remotes.getEvent("OpenProgressionStore"):FireClient(player, shopKind, part.Position)
 	end)
 end
 
@@ -223,6 +267,41 @@ function StoreService.attachToHouse(plotModel: Model, house: Model)
 			StoreConfig.UPGRADE_PROMPT_OBJECT
 		)
 	end
+end
+
+function StoreService.getShopAnchor(player: Player, shopKind: string): Vector3?
+	local PlotService = require(script.Parent.PlotService)
+	local plotModel = PlotService.getPlotModel(player)
+	if not plotModel then
+		return nil
+	end
+	local folder = plotModel:FindFirstChild(StoreConfig.PLOT_FOLDER_NAME)
+	if not folder then
+		return nil
+	end
+	for _, desc in folder:GetDescendants() do
+		if desc:IsA("ProximityPrompt") and desc:GetAttribute("ShopKind") == shopKind then
+			local parent = desc.Parent
+			if parent and parent:IsA("BasePart") then
+				return parent.Position
+			end
+		end
+	end
+	return nil
+end
+
+-- True when the player owns a plot and is within CLOSE_DISTANCE of that
+-- plot's stall for `shopKind`. Neighbor stalls never count.
+function StoreService.canPlayerUseShop(player: Player, shopKind: string): boolean
+	local anchor = StoreService.getShopAnchor(player, shopKind)
+	if not anchor then
+		return false
+	end
+	local pos = characterRootPosition(player)
+	if not pos then
+		return false
+	end
+	return horizontalDistance(pos, anchor) <= StoreConfig.CLOSE_DISTANCE
 end
 
 function StoreService.init()

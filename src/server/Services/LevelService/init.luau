@@ -45,7 +45,6 @@ LevelService.Name = "LevelService"
 local log = Logger.new(LevelService.Name)
 
 local PHASE = Constants.PHASE
-local RESULT_DISPLAY_TIME = 3
 
 type PlayerState = {
 	currentLevel: number,
@@ -179,6 +178,16 @@ local function clearLawn(player: Player)
 	end
 end
 
+-- Pocket coins that are about to be wiped → brains. Ground coins do not count.
+local function grantLeftoverCoinBrains(player: Player): number
+	local leftover = CoinService.getBalance(player)
+	local brains = ProgressService.brainsFromLeftoverCoins(leftover)
+	if brains > 0 then
+		ProgressService.addBrains(player, brains)
+	end
+	return brains
+end
+
 local function onVictory(player: Player, state: PlayerState)
 	local definition = getDefinition(state.currentLevel)
 	if not definition then
@@ -189,6 +198,7 @@ local function onVictory(player: Player, state: PlayerState)
 	clearTransientCombat(player)
 
 	local clearedNumber = definition.number
+	local leftoverBrains = grantLeftoverCoinBrains(player)
 	local brainsEarned = ProgressService.brainsForLevel(clearedNumber)
 	local unlockedBrainrotId = ProgressService.grantUnlockForLevel(player, clearedNumber)
 	ProgressService.addBrains(player, brainsEarned)
@@ -225,21 +235,24 @@ local function onVictory(player: Player, state: PlayerState)
 		reward = {
 			clearedLevel = clearedNumber,
 			brains = brainsEarned,
+			leftoverBrains = leftoverBrains,
 			unlockedBrainrotId = unlockedBrainrotId,
 		},
 	})
-	log:info(string.format("%s cleared level %d (+%d brains)", player.Name, clearedNumber, brainsEarned))
+	log:info(
+		string.format(
+			"%s cleared level %d (+%d brains, +%d from leftover coins)",
+			player.Name,
+			clearedNumber,
+			brainsEarned,
+			leftoverBrains
+		)
+	)
 
 	-- Commit lawn checkpoint, then persist (mid-day plants after this only stick on next victory).
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.commitLawn(player)
 	SaveService.saveNow(player, "victory")
-
-	task.delay(RESULT_DISPLAY_TIME, function()
-		if states[player.UserId] == state then
-			beginPreparation(player, state)
-		end
-	end)
 end
 
 local function onDefeat(player: Player, state: PlayerState)
@@ -250,10 +263,22 @@ local function onDefeat(player: Player, state: PlayerState)
 	clearLawn(player)
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.restoreCommittedLawn(player)
+	local leftoverBrains = grantLeftoverCoinBrains(player)
 	CoinService.applyDayPurse(player, failedLevel)
 	applyWeatherRules(player, state)
 	setPhase(player, state, PHASE.Defeat)
-	log:info(string.format("%s defeated on day %d — awaiting rewind", player.Name, failedLevel))
+	if leftoverBrains > 0 then
+		log:info(
+			string.format(
+				"%s defeated on day %d — awaiting rewind (+%d brains from leftover coins)",
+				player.Name,
+				failedLevel,
+				leftoverBrains
+			)
+		)
+	else
+		log:info(string.format("%s defeated on day %d — awaiting rewind", player.Name, failedLevel))
+	end
 	SaveService.saveNow(player, "defeat")
 end
 
@@ -267,6 +292,15 @@ local function onRewindDay(player: Player)
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.saveNow(player, "rewind")
 	log:info(string.format("%s rewound day %d", player.Name, state.currentLevel))
+end
+
+local function onContinueVictory(player: Player)
+	local state = states[player.UserId]
+	if not state or state.phase ~= PHASE.Victory then
+		return
+	end
+	beginPreparation(player, state)
+	log:info(string.format("%s continued after day victory", player.Name))
 end
 
 local function tickActivePlayer(player: Player, state: PlayerState)
@@ -579,6 +613,7 @@ function LevelService.init()
 	end)
 	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(onSelectLevel)
 	Remotes.getEvent("RewindDay").OnServerEvent:Connect(onRewindDay)
+	Remotes.getEvent("ContinueVictory").OnServerEvent:Connect(onContinueVictory)
 end
 
 function LevelService.start()

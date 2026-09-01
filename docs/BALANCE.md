@@ -50,6 +50,7 @@ Campaign spawn counts assume that growing board — see `Shared.Levels` /
 | `PASSIVE_DROP_INTERVAL` | 25s | Backup income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
 | Ballerina `coinGeneration` | 25 / 18s | Primary mid-level income (slower snowball) |
+| Leftover coins → brains | 100 coins = 1 brain | Day-end pocket leftover only. Steep so a couple Ballerina cycles are not a brain. Uncollected ground coins are wasted. |
 
 ---
 
@@ -149,9 +150,9 @@ east of the plant center so models don't overlap.
 ## Player movement (`PlayerConfig` + Speed shop)
 
 Unupgraded walk speed is Roblox default **16** so the red-store Speed upgrade
-is worth buying. Ten levels add **+1 WalkSpeed** each (noticeable over a
-couple of ranks, not a sprint). Max is **26** — comfortable coin pickup,
-not trivial. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80**.
+is worth buying. Twenty levels add **+1 WalkSpeed** each (noticeable over a
+couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
+41 / 52 / 65 / 80 / 98 / 118 / 142 / 170 / 204 / 245 / 294 / 353 / 424 / 509**.
 
 ---
 
@@ -163,6 +164,7 @@ not trivial. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80**.
 | Wave content | `Shared.Levels` |
 | Weather / fog | `WeatherConfig`, `WeatherUtil` (see `WEATHER.md`) |
 | Coins / drops | `EconomyConfig` |
+| Leftover coins → brains | `EconomyConfig.COINS_PER_LEFTOVER_BRAIN` |
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |

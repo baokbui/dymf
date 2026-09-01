@@ -135,8 +135,10 @@ Coins are earned by:
 - Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s) ✅
 - Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0 ✅
 
-Brains are earned on victory and spent at per-plot mini stores (Tung / 67
-mascots) — see `STORE.md`. Speed upgrades persist in `SaveData.upgrades`.
+Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a
+stingy leftover-coin conversion at day end — see `ECONOMY.md`. Spend them at
+per-plot mini stores (Tung / 67 mascots) — see `STORE.md`. Speed upgrades
+persist in `SaveData.upgrades`.
 
 Only the server controls currency. Clients display balances and send intent.
 

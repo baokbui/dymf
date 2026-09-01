@@ -49,11 +49,12 @@ Remotes module. That is the only required step.
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
 | `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day |
+| `ContinueVictory`  | client → server | ✅     | Reward Continue → Preparation (next day) |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats |
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
-| `OpenProgressionStore` | server → client | ✅ M18 | Talk to Tung / 67 mascot → open store overlay (`Brainrots` / `Upgrades`) |
-| `BuyStoreItem`     | client → server | ✅ M18 | Spend brains (`shop` + `id`); server validates catalog |
+| `OpenProgressionStore` | server → client | ✅ M18 | Owner talks to own Tung / 67 mascot → open overlay (`shopKind`, mascot `Vector3`) |
+| `BuyStoreItem`     | client → server | ✅ M18 | Spend brains (`shop` + `id`); server validates own stall range + catalog |
 | `StorePurchaseSucceeded` | server → client | ✅ M18 | Authoritative spend (`cost`); client kaching + brains delta |
 | `StorePurchaseFailed` | server → client | ✅ M18 | Rejected buy (broke / owned / max) |
 
@@ -167,8 +168,9 @@ keeps `currentLevel` on the failed day, refills hearts, applies the day purse
 when all spawn groups are finished and no monsters remain, the server grants
 coins and unlocks the next level. The Victory payload's `reward` table may
 include `unlockedBrainrotId` when clearing that day grants a starter-roster
-Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`) — the client shows this as an
-`UnlockPopup` after the reward popup. Join / Preparation payloads may include
+Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`). Phase stays **Victory** until the
+player presses **Continue** (`ContinueVictory`); then Preparation. Unlock
+popups queue after Continue. Join / Preparation payloads may include
 `introducedBrainrotIds` and `introducedMonsterIds` (queued intros; see
 `BRAINROTS.md` / `UI.md` / `LEVELS.md`).
 

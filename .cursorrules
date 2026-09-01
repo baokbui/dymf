@@ -264,8 +264,9 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 # Economy
 
 - **Coins** — match currency (placement, passive drops). `CoinService` only.
-- **Brains** — progression currency (day rewards, Progression Store spends,
-  future evolve / house boss income). `ProgressService` only for brains balances.
+- **Brains** — progression currency (day rewards, leftover-coin conversion at
+  day end, Progression Store spends, future evolve / house boss income).
+  `ProgressService` only for brains balances.
 - Clients never set balances.
 
 ---

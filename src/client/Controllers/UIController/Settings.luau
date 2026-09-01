@@ -194,28 +194,30 @@ function Settings.new(parent: Frame): SettingsPanel
 	local statsSection = section("Statistics", 2)
 	local statsLabel = Instance.new("TextLabel")
 	statsLabel.BackgroundTransparency = 1
-	statsLabel.Size = UDim2.new(1, 0, 0, 120)
+	statsLabel.Size = UDim2.new(1, 0, 0, 130)
 	statsLabel.LayoutOrder = 1
-	statsLabel.TextSize = 14
+	statsLabel.TextSize = 16
 	statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statsLabel.TextYAlignment = Enum.TextYAlignment.Top
 	statsLabel.Text = "Loading…"
 	statsLabel.TextWrapped = true
 	statsLabel.Parent = statsSection
-	UITheme.applyBodyText(statsLabel, UITheme.SUBTEXT)
+	UITheme.applyOutlinedTitle(statsLabel, UITheme.TITLE)
+	statsLabel.TextSize = 16
 
 	local dangerSection = section("Danger Zone", 3)
 	local dangerHint = Instance.new("TextLabel")
 	dangerHint.BackgroundTransparency = 1
 	dangerHint.Size = UDim2.new(1, 0, 0, 36)
-	dangerHint.TextSize = 12
+	dangerHint.TextSize = 14
 	dangerHint.TextXAlignment = Enum.TextXAlignment.Left
 	dangerHint.TextYAlignment = Enum.TextYAlignment.Top
 	dangerHint.TextWrapped = true
 	dangerHint.Text = "Resets you to Day 1, clears your lawn, and restores 125 coins. Requires two confirmations."
 	dangerHint.LayoutOrder = 1
 	dangerHint.Parent = dangerSection
-	UITheme.applyBodyText(dangerHint, UITheme.DANGER)
+	UITheme.applyOutlinedTitle(dangerHint, UITheme.TITLE)
+	dangerHint.TextSize = 14
 
 	local resetButton = makeButton(dangerSection, "Reset Progress", UITheme.DANGER)
 	resetButton.LayoutOrder = 2

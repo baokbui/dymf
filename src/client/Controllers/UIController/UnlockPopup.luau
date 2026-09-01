@@ -108,7 +108,8 @@ function UnlockPopup.new(parent: Frame): UnlockPopupHud
 	abilityLabel.TextWrapped = true
 	abilityLabel.Text = ""
 	abilityLabel.Parent = abilityCard
-	UITheme.applyBodyText(abilityLabel, UITheme.SUBTEXT)
+	UITheme.applyOutlinedTitle(abilityLabel)
+	abilityLabel.TextSize = 13
 
 	local dismiss = Instance.new("TextButton")
 	dismiss.Name = "Dismiss"

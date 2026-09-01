@@ -262,7 +262,8 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Text = definition.name
 	nameLabel.Parent = button
-	UITheme.applyBodyText(nameLabel, UITheme.SUBTEXT)
+	UITheme.applyOutlinedTitle(nameLabel, UITheme.TITLE)
+	nameLabel.TextSize = 10
 
 	local costLabel = Instance.new("TextLabel")
 	costLabel.Name = "Cost"

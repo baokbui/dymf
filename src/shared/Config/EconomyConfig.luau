@@ -26,6 +26,11 @@ local EconomyConfig = {
 	-- later days = 0 after each day ends (see CoinService.applyDayPurse).
 	LEVEL_COMPLETION_REWARD = 50,
 
+	-- Leftover *pocket* coins → brains at day end (victory / defeat), before
+	-- the purse resets. Floor division; uncollected ground coins do not count.
+	-- 100:1 so a couple Ballerina cycles are not a brain.
+	COINS_PER_LEFTOVER_BRAIN = 100,
+
 	GROUND_COIN_LIFETIME = 15, -- seconds
 	COIN_COLLECT_RADIUS = 16, -- studs (server re-validates pickup)
 }

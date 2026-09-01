@@ -337,7 +337,8 @@ function Inventory.showTooltip(self: InventoryPanel, packet: Packet)
 	abilityDesc.TextSize = 12
 	abilityDesc.Text = BrainrotInfo.abilityDescription(definition.ability)
 	abilityDesc.Parent = self.tooltipStats
-	UITheme.applyBodyText(abilityDesc, UITheme.SUBTEXT)
+	UITheme.applyOutlinedTitle(abilityDesc)
+	abilityDesc.TextSize = 13
 
 	local button = packet.button
 	local absPos = button.AbsolutePosition
@@ -416,9 +417,8 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
 	nameLabel.Text = definition.name
 	nameLabel.Parent = namePlate
-	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.TextColor3 = UITheme.BODY
-	nameLabel.TextStrokeTransparency = 1
+	UITheme.applyOutlinedTitle(nameLabel)
+	nameLabel.TextSize = 12
 
 	local sizeConstraint = Instance.new("UITextSizeConstraint")
 	sizeConstraint.MaxTextSize = 12

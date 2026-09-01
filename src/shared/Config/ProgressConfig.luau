@@ -58,15 +58,36 @@ local ProgressConfig = {
 
 	-- Buy with brains at the red mini store (67 Mascot). Level is persisted
 	-- in SaveData.upgrades[id]. Walk speed = PlayerConfig.WALK_SPEED + level * bonus.
-	-- 10 levels × +1 WalkSpeed: 16 → 26 at max (same cap as the old 5×+2
-	-- curve — more steps, still a comfortable coin-pickup pace, not a sprint).
+	-- 20 levels × +1 WalkSpeed: 16 → 36 at max. Players who already maxed the
+	-- old 10-rank track can keep buying.
 	UPGRADE_CATALOG = {
 		{
 			id = "WalkSpeed",
 			name = "Speed",
 			description = "Run faster to collect coins on the plot.",
-			maxLevel = 10,
-			brainsCosts = { 6, 10, 14, 19, 25, 32, 41, 52, 65, 80 },
+			maxLevel = 20,
+			brainsCosts = {
+				6,
+				10,
+				14,
+				19,
+				25,
+				32,
+				41,
+				52,
+				65,
+				80,
+				98,
+				118,
+				142,
+				170,
+				204,
+				245,
+				294,
+				353,
+				424,
+				509,
+			},
 			walkSpeedBonusPerLevel = 1,
 		},
 	},

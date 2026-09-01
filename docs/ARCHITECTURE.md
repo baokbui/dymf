@@ -102,6 +102,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         BrainrotController/ (BrainrotAction SFX; ScaleTo pulse only if not animated)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
+        StoreController/  (hide other players' store Talk prompts — M18)
         WeatherController/ (night/fog + desert pyramids)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
@@ -217,7 +218,8 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   forest on the local client and spawn pyramids instead (`WEATHER.md`).
 - See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
 - Gameplay isolation is **server-validated**, not physical: plant / shovel /
-  coin collect only succeed on the acting player's own plot (and own coins).
+  coin collect / Progression Store only succeed on the acting player's own plot
+  (and own coins / own stalls).
   Players **phase through monsters** (`CollisionUtil` / `BvmPlayers` ×
   `BvmMonsters`); monster parts also stay `CanCollide = false`.
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
@@ -442,10 +444,12 @@ Full details in `UI.md`. Summary:
 Full details in `STORE.md` / `UI.md`. Summary:
 
 - **`StoreService`** + **`StoreConfig`** — clone blue/red mini stores beside each
-  plot house; ProximityPrompt → `OpenProgressionStore`.
-- **`ProgressService`** validates `BuyStoreItem` (brains spend, catalog, owned /
+  plot house; owner-only ProximityPrompt → `OpenProgressionStore`. Overlay closes
+  past `CLOSE_DISTANCE` from the mascot. `BuyStoreItem` requires the caller at
+  their own stall.
+- **`ProgressService`** validates `BuyStoreItem` (own shop range, brains spend, catalog, owned /
   max level). Catalogs in `ProgressConfig.STORE_CATALOG` (Girafa Celestre) and
-  `UPGRADE_CATALOG` (WalkSpeed, 10 ranks). Speed applied on spawn / rejoin via
+  `UPGRADE_CATALOG` (WalkSpeed, 20 ranks). Speed applied on spawn / rejoin via
   `PlotService` + `ProgressService.getWalkSpeed`.
 - **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
   stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; Inventory +
