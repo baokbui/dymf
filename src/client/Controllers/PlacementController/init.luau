@@ -29,6 +29,7 @@ local UIEvents = require(script.Parent.Parent.UIEvents)
 local GridController = require(script.Parent.GridController)
 local InputController = require(script.Parent.InputController)
 local AudioController = require(script.Parent.AudioController)
+local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 
 local PlacementController = {}
 PlacementController.Name = "PlacementController"
@@ -312,6 +313,30 @@ local function tryRemoveAt(position: Vector2)
 	AudioController.play("RemoveBrainrot")
 end
 
+local function tryInspectAt(position: Vector2)
+	local tile = GridController.resolveTileAt(position.X, position.Y)
+	if not tile then
+		UIEvents.fireFieldInspect(nil)
+		return
+	end
+	if tile:GetAttribute("Occupied") ~= true then
+		UIEvents.fireFieldInspect(nil)
+		return
+	end
+	local row = tile:GetAttribute("Row")
+	local column = tile:GetAttribute("Column")
+	if type(row) ~= "number" or type(column) ~= "number" then
+		return
+	end
+	local model = PlotUtil.getLocalBrainrotAt(row, column)
+	if model then
+		UIEvents.fireFieldInspect(model)
+		AudioController.play("UiClick")
+	else
+		UIEvents.fireFieldInspect(nil)
+	end
+end
+
 function PlacementController.setBalance(amount: number)
 	balance = amount
 end
@@ -342,6 +367,7 @@ function PlacementController.select(brainrotId: string)
 	if shovelMode then
 		PlacementController.setShovelMode(false)
 	end
+	UIEvents.fireFieldInspect(nil)
 	setSelected(brainrotId)
 	AudioController.play("UiSelect")
 end
@@ -395,6 +421,7 @@ function PlacementController.setShovelMode(enabled: boolean)
 	shovelMode = enabled
 	setShovelCursorVisible(enabled)
 	if enabled then
+		UIEvents.fireFieldInspect(nil)
 		local mouse = localPlayer:GetMouse()
 		updateShovelCursorPosition(Vector2.new(mouse.X, mouse.Y))
 		AudioController.play("UiClick")
@@ -416,6 +443,7 @@ local function onPrimaryAction(position: Vector2)
 
 	local id = selectedId
 	if not id then
+		tryInspectAt(position)
 		return
 	end
 	if not placementAllowed then

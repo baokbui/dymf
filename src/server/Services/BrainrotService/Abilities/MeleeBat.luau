@@ -18,7 +18,7 @@ local function applyHit(ctx, callbacks, targetId: string)
 	-- Bat SFX on every connecting hit (including kills). Death SFX still fires
 	-- from CombatVisual when damage is fatal.
 	callbacks.playSound("MeleeBat")
-	local killed = CombatService.damageMonster(targetId, ctx.definition.damage)
+	local killed = CombatService.damageMonster(targetId, ctx.definition.damage, ctx.definition.id)
 	if not killed then
 		CombatService.notifyHitVisual(ctx.ownerUserId, targetId, { muteSound = true })
 	end

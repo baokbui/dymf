@@ -24,6 +24,7 @@ export type ImpactSpec = {
 	statusKind: Types.StatusEffectKind?,
 	statusDuration: number?,
 	statusVisual: string?,
+	sourceBrainrotId: string?,
 }
 
 export type LaunchSpec = {

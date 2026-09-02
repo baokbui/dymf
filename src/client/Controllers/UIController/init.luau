@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Brainrots = require(Shared.Brainrots)
 local Remotes = require(Shared.Remotes)
 local Constants = require(Shared.Constants)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
@@ -33,6 +34,7 @@ local MonsterIntroPopup = require(script.MonsterIntroPopup)
 local GameOverPopup = require(script.GameOverPopup)
 local ProgressionStore = require(script.ProgressionStore)
 local PlantToast = require(script.PlantToast)
+local BrainrotInspect = require(script.BrainrotInspect)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
 
@@ -56,6 +58,9 @@ local monsterIntroPopup: MonsterIntroPopup.MonsterIntroPopupHud? = nil
 local gameOverPopup: GameOverPopup.GameOverPopupHud? = nil
 local progressionStore: ProgressionStore.ProgressionStoreHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
+local fieldInspect: BrainrotInspect.InspectCard? = nil
+local lastBrainrotXp: { [string]: number } = {}
+local lastEvolutions: { [string]: { string } } = {}
 local settingsEntry: TextButton? = nil
 local inventoryEntry: TextButton? = nil
 local selectedId: string? = nil
@@ -166,6 +171,38 @@ local function applyProfile(profile: { [string]: any }?)
 	end
 	if inventoryPanel then
 		inventoryPanel:applyProfile(profile)
+	end
+	local xp: { [string]: number } = {}
+	if type(profile.brainrotXp) == "table" then
+		for key, value in (profile.brainrotXp :: { [string]: any }) do
+			if type(key) == "string" and type(value) == "number" then
+				xp[key] = value
+			end
+		end
+	end
+	lastBrainrotXp = xp
+	local evolutions: { [string]: { string } } = {}
+	if type(profile.evolutions) == "table" then
+		for key, value in (profile.evolutions :: { [string]: any }) do
+			if type(key) ~= "string" or type(value) ~= "table" then
+				continue
+			end
+			local rarities: { string } = {}
+			for _, rarity in value do
+				if type(rarity) == "string" then
+					table.insert(rarities, rarity)
+				end
+			end
+			evolutions[key] = rarities
+		end
+	end
+	lastEvolutions = evolutions
+	if fieldInspect and fieldInspect:isOpen() then
+		local id = fieldInspect:getBrainrotId()
+		if id then
+			fieldInspect:setTotalXp(xp[id] or 0)
+			fieldInspect:setClaimedRarities(evolutions[id] or {})
+		end
 	end
 	if progressionStore then
 		progressionStore:setProfile(profile)
@@ -303,6 +340,9 @@ local function buildHudEntries()
 			settingsPanel:setOpen(false)
 		end
 		inventoryPanel:setOpen(opening)
+		if opening and fieldInspect then
+			fieldInspect:hide()
+		end
 	end)
 	settingsEntry = makeHudEntry(
 		"SettingsEntry",
@@ -435,9 +475,16 @@ function UIController.init()
 	speedHud = buildSpeedHud()
 	shop = buildShop()
 	plantToast = PlantToast.new(buildMain())
+	fieldInspect = BrainrotInspect.new(buildMain())
+	fieldInspect:dockField()
 	levelPanel = buildLevelPanel()
 	heartsHud = buildHearts()
 	inventoryPanel = buildInventory()
+	local function requestEvolve(brainrotId: string, rarity: string)
+		Remotes.getEvent("EvolveBrainrot"):FireServer(brainrotId, rarity)
+	end
+	fieldInspect:setEvolveHandler(requestEvolve)
+	inventoryPanel.inspect:setEvolveHandler(requestEvolve)
 	rewardPopup = buildRewardPopup()
 	rewardPopup.onContinue = function()
 		introHoldForReward = false
@@ -486,6 +533,39 @@ function UIController.start()
 		end
 	end)
 
+	UIEvents.fieldInspect:Connect(function(model: Model?)
+		if not fieldInspect then
+			return
+		end
+		if not model then
+			fieldInspect:hide()
+			return
+		end
+		local brainrotId = model:GetAttribute("BrainrotId")
+		if type(brainrotId) ~= "string" then
+			fieldInspect:hide()
+			return
+		end
+		local definition = Brainrots.get(brainrotId)
+		if not definition then
+			fieldInspect:hide()
+			return
+		end
+		if inventoryPanel then
+			inventoryPanel:setOpen(false)
+		end
+		if settingsPanel then
+			settingsPanel:setOpen(false)
+		end
+		fieldInspect:show({
+			definition = definition,
+			mode = "field",
+			healthModel = model,
+			totalXp = lastBrainrotXp[brainrotId] or 0,
+			claimedRarities = lastEvolutions[brainrotId] or {},
+		})
+	end)
+
 	Remotes.getEvent("PlaceBrainrotFailed").OnClientEvent:Connect(function(reason: unknown)
 		if type(reason) == "string" and plantToast then
 			plantToast:push(reason)
@@ -522,6 +602,9 @@ function UIController.start()
 		if settingsPanel then
 			settingsPanel:setOpen(false)
 		end
+		if fieldInspect then
+			fieldInspect:hide()
+		end
 		local position = if typeof(anchor) == "Vector3" then anchor else nil
 		progressionStore:open(shopKind, position)
 	end)
@@ -530,7 +613,7 @@ function UIController.start()
 		if type(cost) == "number" and brainsCounter then
 			brainsCounter:showDelta(-cost)
 		end
-		if progressionStore then
+		if progressionStore and progressionStore:isOpen() then
 			progressionStore:showPurchaseFeedback(true)
 		end
 	end)
@@ -540,13 +623,21 @@ function UIController.start()
 			return
 		end
 		if reason == "Not enough brains" then
-			if progressionStore then
+			if progressionStore and progressionStore:isOpen() then
 				progressionStore:showPurchaseFeedback(false)
+			else
+				AudioController.play("PurchaseError")
+				if plantToast then
+					plantToast:push(reason)
+				end
 			end
 			return
 		end
 		if plantToast then
 			plantToast:push(reason)
+		end
+		if not (progressionStore and progressionStore:isOpen()) then
+			AudioController.play("PurchaseError")
 		end
 	end)
 

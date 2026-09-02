@@ -2,7 +2,7 @@
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
-	(level, brains, health, unlocks, loadout, stats) and a *committed* lawn
+	(level, brains, health, unlocks, loadout, stats, Brainrot XP) and a *committed* lawn
 	snapshot (Brainrots after the last victory / wipe). Match coins are never
 	persisted (Day 1 purse / later days = 0). Mid-day placements are session-
 	only until the day is won. Monsters and other combat transients are not saved.
@@ -63,6 +63,19 @@ local function deepCopyStringList(source: { string }): { string }
 	return result
 end
 
+local function deepCopyEvolutions(source: { [string]: { string } }?): { [string]: { string } }
+	local result: { [string]: { string } } = {}
+	if type(source) ~= "table" then
+		return result
+	end
+	for brainrotId, rarities in source do
+		if type(brainrotId) == "string" and type(rarities) == "table" then
+			result[brainrotId] = deepCopyStringList(rarities)
+		end
+	end
+	return result
+end
+
 local function deepCopyPlanted(source: { Types.PlantedBrainrot }): { Types.PlantedBrainrot }
 	local result: { Types.PlantedBrainrot } = {}
 	for _, entry in source do
@@ -92,6 +105,8 @@ local function defaultSaveData(): Types.SaveData
 		equipped = deepCopyStringList(ProgressConfig.DEFAULT_EQUIPPED),
 		upgrades = {},
 		statistics = {},
+		brainrotXp = {},
+		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 	}
@@ -176,6 +191,20 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
+	local brainrotXp = payload.brainrotXp
+	if type(brainrotXp) == "table" then
+		for key, value in brainrotXp do
+			if type(key) == "string" and type(value) == "number" then
+				save.brainrotXp[key] = value
+			end
+		end
+	end
+
+	local evolutions = payload.evolutions
+	if type(evolutions) == "table" then
+		save.evolutions = deepCopyEvolutions(evolutions)
+	end
+
 	local introducedMonsters = payload.introducedMonsters
 	if type(introducedMonsters) == "table" then
 		save.introducedMonsters = {}
@@ -252,6 +281,14 @@ local function collectSnapshot(player: Player): Types.SaveData
 		statistics = if progress
 			then progress.statistics
 			elseif fallback then deepCopyNumberMap(fallback.statistics)
+			else {},
+		brainrotXp = if progress
+			then progress.brainrotXp
+			elseif fallback then deepCopyNumberMap(fallback.brainrotXp or {})
+			else {},
+		evolutions = if progress
+			then progress.evolutions
+			elseif fallback then deepCopyEvolutions(fallback.evolutions)
 			else {},
 		introducedMonsters = if progress
 			then progress.introducedMonsters
@@ -352,6 +389,8 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		equipped = saveData.equipped,
 		upgrades = saveData.upgrades,
 		statistics = saveData.statistics,
+		brainrotXp = saveData.brainrotXp,
+		evolutions = saveData.evolutions,
 		introducedMonsters = saveData.introducedMonsters,
 		introducedBrainrots = saveData.introducedBrainrots,
 	})

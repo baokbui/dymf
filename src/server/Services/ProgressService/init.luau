@@ -1,8 +1,10 @@
 --!strict
 --[[
 	ProgressService
-	Owns brains, unlocks, equipped loadout, player upgrades, and statistics.
-	The physical Progression Store spends brains here (Milestone 18).
+	Owns brains, unlocks, equipped loadout, player upgrades, statistics,
+	per-species Brainrot XP, and claimed evolution tiers (brains spend after
+	the level gate). The physical Progression Store spends brains here
+	(Milestone 18).
 
 	Statistics update live via ProfileUpdated. Time played includes the current
 	session in client payloads; it is committed into the saved total on flush
@@ -16,9 +18,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
+local Evolutions = require(Shared.Evolutions)
 local Monsters = require(Shared.Monsters)
 local PlayerConfig = require(Shared.Config.PlayerConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local EconomyConfig = require(Shared.Config.EconomyConfig)
 local StoreConfig = require(Shared.Config.StoreConfig)
 local DevConfig = require(Shared.Config.DevConfig)
@@ -36,6 +40,8 @@ type Profile = {
 	equipped: { string },
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
+	brainrotXp: { [string]: number },
+	evolutions: { [string]: { string } },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
 	sessionStartedAt: number,
@@ -62,6 +68,65 @@ end
 
 local function copyUpgrades(source: { [string]: number }): { [string]: number }
 	return copyStats(source)
+end
+
+local function copyXp(source: { [string]: number }): { [string]: number }
+	return copyStats(source)
+end
+
+local function copyEvolutions(source: { [string]: { string } }): { [string]: { string } }
+	local result: { [string]: { string } } = {}
+	for brainrotId, rarities in source do
+		result[brainrotId] = copyList(rarities)
+	end
+	return result
+end
+
+local function sanitizeEvolutions(raw: { [string]: { string } }?): { [string]: { string } }
+	local result: { [string]: { string } } = {}
+	if type(raw) ~= "table" then
+		return result
+	end
+	for brainrotId, rarities in raw do
+		if type(brainrotId) ~= "string" or not Brainrots.exists(brainrotId) then
+			continue
+		end
+		if type(rarities) ~= "table" then
+			continue
+		end
+		local cleaned = Evolutions.sanitizeClaimed(brainrotId, rarities :: { string })
+		if #cleaned > 0 then
+			result[brainrotId] = cleaned
+		end
+	end
+	return result
+end
+
+local function sanitizeBrainrotXp(raw: { [string]: number }?): { [string]: number }
+	local result: { [string]: number } = {}
+	if type(raw) ~= "table" then
+		return result
+	end
+	local cap = EvolutionConfig.maxTotalXp()
+	for key, value in raw do
+		if type(key) ~= "string" or type(value) ~= "number" then
+			continue
+		end
+		if not Brainrots.exists(key) then
+			continue
+		end
+		result[key] = math.clamp(math.floor(value), 0, cap)
+	end
+	return result
+end
+
+local function addXp(profile: Profile, brainrotId: string, amount: number)
+	if amount <= 0 or not Brainrots.exists(brainrotId) then
+		return
+	end
+	local cap = EvolutionConfig.maxTotalXp()
+	local current = profile.brainrotXp[brainrotId] or 0
+	profile.brainrotXp[brainrotId] = math.clamp(current + math.floor(amount), 0, cap)
 end
 
 local function findStoreBrainrot(brainrotId: string): { brainrotId: string, brainsCost: number }?
@@ -213,6 +278,8 @@ local function ensureProfile(player: Player): Profile
 		equipped = defaultEquipped(),
 		upgrades = {},
 		statistics = {},
+		brainrotXp = {},
+		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 		sessionStartedAt = os.clock(),
@@ -238,6 +305,8 @@ local function buildPayload(profile: Profile): { [string]: any }
 		equipped = copyList(profile.equipped),
 		upgrades = copyUpgrades(profile.upgrades),
 		statistics = statsForClient(profile),
+		brainrotXp = copyXp(profile.brainrotXp),
+		evolutions = copyEvolutions(profile.evolutions),
 	}
 end
 
@@ -273,6 +342,8 @@ function ProgressService.getClientState(player: Player): { [string]: any }
 			equipped = copyList(profile.equipped),
 			upgrades = {},
 			statistics = {},
+			brainrotXp = {},
+			evolutions = {},
 		}
 	end
 	return buildPayload(profile)
@@ -284,6 +355,8 @@ function ProgressService.getSaveSlice(player: Player): {
 	equipped: { string },
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
+	brainrotXp: { [string]: number },
+	evolutions: { [string]: { string } },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
 }?
@@ -299,6 +372,8 @@ function ProgressService.getSaveSlice(player: Player): {
 		equipped = copyList(profile.equipped),
 		upgrades = copyUpgrades(profile.upgrades),
 		statistics = copyStats(profile.statistics),
+		brainrotXp = copyXp(profile.brainrotXp),
+		evolutions = copyEvolutions(profile.evolutions),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
 	}
@@ -310,6 +385,8 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	equipped: { string }?,
 	upgrades: { [string]: number }?,
 	statistics: { [string]: number }?,
+	brainrotXp: { [string]: number }?,
+	evolutions: { [string]: { string } }?,
 	introducedMonsters: { string }?,
 	introducedBrainrots: { string }?,
 })
@@ -337,6 +414,8 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	else
 		profile.statistics = {}
 	end
+	profile.brainrotXp = sanitizeBrainrotXp(slice.brainrotXp)
+	profile.evolutions = sanitizeEvolutions(slice.evolutions)
 	if type(slice.introducedMonsters) == "table" then
 		profile.introducedMonsters = sanitizeMonsterIdList(slice.introducedMonsters :: { string })
 	else
@@ -360,6 +439,8 @@ function ProgressService.reset(player: Player)
 		equipped = defaultEquipped(),
 		upgrades = {},
 		statistics = {},
+		brainrotXp = {},
+		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 		sessionStartedAt = os.clock(),
@@ -675,6 +756,69 @@ function ProgressService.incrementStat(player: Player, key: string, amount: numb
 	broadcast(player)
 end
 
+-- Silent: mutates XP without broadcasting. Callers that also increment a
+-- statistic (monster death) rely on that increment's ProfileUpdated.
+function ProgressService.grantKillXp(player: Player, lastHitBrainrotId: string?, isBoss: boolean)
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	if isBoss then
+		local PlotService = require(script.Parent.PlotService)
+		local BrainrotService = require(script.Parent.BrainrotService)
+		local plotModel = PlotService.getPlotModel(player)
+		if not plotModel then
+			return
+		end
+		local living: { { instanceId: string, brainrotId: string } } = {}
+		for _, placement in BrainrotService.getPlacements(plotModel) do
+			if placement.health > 0 then
+				table.insert(living, {
+					instanceId = placement.instanceId,
+					brainrotId = placement.definition.id,
+				})
+			end
+		end
+		table.sort(living, function(a, b)
+			return a.instanceId < b.instanceId
+		end)
+		local count = #living
+		if count == 0 then
+			return
+		end
+		local total = EvolutionConfig.BOSS_XP
+		local base = math.floor(total / count)
+		local remainder = total % count
+		for index, entry in living do
+			addXp(profile, entry.brainrotId, base + (if index <= remainder then 1 else 0))
+		end
+		return
+	end
+	if type(lastHitBrainrotId) ~= "string" then
+		return
+	end
+	addXp(profile, lastHitBrainrotId, EvolutionConfig.KILL_XP)
+end
+
+-- Broadcasts so inspect XP bars update (coin / soak / freeze are not paired
+-- with a statistic increment).
+function ProgressService.grantBrainrotXp(player: Player, brainrotId: string, amount: number)
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	addXp(profile, brainrotId, amount)
+	broadcast(player)
+end
+
+function ProgressService.grantBrainrotXpForUser(userId: number, brainrotId: string, amount: number)
+	local player = Players:GetPlayerByUserId(userId)
+	if not player then
+		return
+	end
+	ProgressService.grantBrainrotXp(player, brainrotId, amount)
+end
+
 local function onSetEquipped(player: Player, raw: unknown)
 	if type(raw) ~= "table" then
 		return
@@ -706,9 +850,64 @@ local function onSetEquipped(player: Player, raw: unknown)
 	broadcast(player)
 end
 
+local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unknown)
+	if type(rawId) ~= "string" or type(rawRarity) ~= "string" then
+		return
+	end
+	local brainrotId = rawId
+	local rarity = rawRarity
+	if rarity == "Common" then
+		return
+	end
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	if not ProgressService.isUnlocked(player, brainrotId) then
+		failPurchase(player, "Unable to evolve — Brainrot not owned")
+		return
+	end
+	local row = Evolutions.rowFor(brainrotId, rarity)
+	if not row then
+		failPurchase(player, "Unable to evolve — unknown evolution")
+		return
+	end
+	local level = EvolutionConfig.parseXp(profile.brainrotXp[brainrotId] or 0).level
+	if not Evolutions.tierUnlocked(row, level) then
+		failPurchase(player, "Unable to evolve — Brainrot level too low")
+		return
+	end
+	local claimed = Evolutions.sanitizeClaimed(brainrotId, profile.evolutions[brainrotId])
+	local claimedSet = Evolutions.claimedSet(claimed)
+	if claimedSet[rarity] then
+		failPurchase(player, "Already evolved")
+		return
+	end
+	local previous = Evolutions.previousRarity(rarity)
+	if previous and previous ~= "Common" and not claimedSet[previous] then
+		failPurchase(player, "Evolve the previous tier first")
+		return
+	end
+	local cost = EvolutionConfig.brainsCost(rarity)
+	if cost <= 0 then
+		failPurchase(player, "Unable to evolve — unknown evolution")
+		return
+	end
+	if profile.brains < cost then
+		failPurchase(player, "Not enough brains")
+		return
+	end
+	profile.brains -= cost
+	table.insert(claimed, rarity)
+	profile.evolutions[brainrotId] = claimed
+	broadcast(player)
+	Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, cost)
+end
+
 function ProgressService.init()
 	Remotes.getEvent("SetEquipped").OnServerEvent:Connect(onSetEquipped)
 	Remotes.getEvent("BuyStoreItem").OnServerEvent:Connect(onBuyStoreItem)
+	Remotes.getEvent("EvolveBrainrot").OnServerEvent:Connect(onEvolveBrainrot)
 end
 
 function ProgressService.start()

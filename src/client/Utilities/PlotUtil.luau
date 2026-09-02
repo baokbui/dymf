@@ -5,6 +5,7 @@
 ]]
 
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Constants = require(ReplicatedStorage.Shared.Constants)
@@ -29,6 +30,19 @@ end
 function PlotUtil.isOnLocalPlot(instance: Instance): boolean
 	local plot = PlotUtil.getLocalPlotModel()
 	return plot ~= nil and instance:IsDescendantOf(plot)
+end
+
+function PlotUtil.getLocalBrainrotAt(row: number, column: number): Model?
+	for _, inst in CollectionService:GetTagged(Constants.TAGS.Brainrot) do
+		if inst:IsA("Model")
+			and inst:GetAttribute("OwnerUserId") == localPlayer.UserId
+			and inst:GetAttribute("Row") == row
+			and inst:GetAttribute("Column") == column
+		then
+			return inst
+		end
+	end
+	return nil
 end
 
 function PlotUtil.getOwningPlotModel(instance: Instance): Model?

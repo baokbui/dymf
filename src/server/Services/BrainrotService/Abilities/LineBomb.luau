@@ -188,7 +188,8 @@ local function dropBombOnTile(ctx, column: number, muteExplosionSound: boolean)
 			ctx.position.row,
 			column,
 			ctx.definition.damage,
-			ctx.ownerUserId
+			ctx.ownerUserId,
+			ctx.definition.id
 		)
 		CombatService.fireTileExplosion(ctx.ownerUserId, ctx.position.row, column, muteExplosionSound)
 		return
@@ -224,7 +225,8 @@ local function dropBombOnTile(ctx, column: number, muteExplosionSound: boolean)
 		ctx.position.row,
 		column,
 		ctx.definition.damage,
-		ctx.ownerUserId
+		ctx.ownerUserId,
+		ctx.definition.id
 	)
 	CombatService.fireTileExplosion(ctx.ownerUserId, ctx.position.row, column, muteExplosionSound)
 end

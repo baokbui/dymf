@@ -383,23 +383,26 @@ function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
 	end
 end
 
+local function destroyTrack(track: AnimationTrack?)
+	if not track then
+		return
+	end
+	pcall(function()
+		track:Stop(0)
+		track:Destroy()
+	end)
+end
+
 function MonsterAnimation.unbind(model: Model)
 	MonsterProceduralGait.unbind(model)
 	local state = states[model]
 	if not state then
 		return
 	end
-	if state.walk then
-		state.walk:Stop(0)
-		state.walk:Destroy()
-	end
-	if state.attack then
-		state.attack:Stop(0)
-		state.attack:Destroy()
-	end
+	destroyTrack(state.walk)
+	destroyTrack(state.attack)
 	for _, track in state.ability do
-		track:Stop(0)
-		track:Destroy()
+		destroyTrack(track)
 	end
 	states[model] = nil
 end

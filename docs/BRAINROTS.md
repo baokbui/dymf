@@ -317,11 +317,14 @@ independently of monster presence rules.
 Expand beyond the initial seven after launch. Each addition is registry data
 plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).
 
-## Planned evolution & mutations (Milestone 20)
+## Planned evolution (Milestone 19)
 
-Two progression layers on existing Brainrots (see `ROADMAP.md` Milestone 20):
+Each roster Brainrot has its own **Brainrot level** (not campaign day). At
+levels 10 / 20 / 30 / 40 / 50 they unlock Epic → Immortal (aura + stat / active /
+passive / ultimate). Tiers stack; core shop id and base ability stay the same.
 
-- **Evolution** — changes **color / look** and **base stats** (e.g. Diamond Tung
-  Tung Tung Sahur: diamond tint + stronger HP/damage; same core ability).
-- **Mutation** — **replaces** the unit's ability or **adds an extra** ability
-  (ability handlers stay data-driven; no name-based combat branches).
+Full sheet + architecture: **`docs/EVOLUTIONS.md`**. XP is live (shared per
+registry id; last-hit normal kills; boss XP split across plants on the lawn;
+coin / soak / freeze jobs for producer, wall, and freeze abilities). Claiming
+an evolution after the level gate spends brains (`evolutions` save v6).
+A separate mutation layer (replace core ability) is optional and not on the sheet.

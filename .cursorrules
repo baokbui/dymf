@@ -31,6 +31,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
 - docs/HOUSE.md — plot houses + boss collection (Milestone 21)
+- docs/EVOLUTIONS.md — Brainrot leveling + Epic→Immortal tiers (Milestone 19)
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
 - docs/AUDIO.md — client audio (BGM, SFX, ambient)
@@ -283,7 +284,7 @@ Persist:
 - Brains
 - Player health (hearts)
 - Planted Brainrots (id, tile, HP) — **victory checkpoint only** (not mid-day)
-- Unlocks, equipped loadout, upgrades, statistics
+- Unlocks, equipped loadout, upgrades, statistics, **Brainrot XP** (per registry id)
 - Future player-owned progression (collected bosses, evolutions, …)
 
 Do NOT persist:

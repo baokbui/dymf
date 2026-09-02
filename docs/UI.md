@@ -110,15 +110,33 @@ hardcode a second palette in new UI.
 - **Inventory** ✅ M13 — bottom-left HUD button (above Settings) opens the
   loadout modal; a
   PvZ-style **seed packet grid** (portrait + name plate + status ribbon) for
-  equip/unequip of unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only
-  unlocked entries appear — locked starter-roster Brainrots are simply absent
-  until their unlock day clears (see `BRAINROTS.md`). Hovering a packet opens
-  an info tooltip (portrait + stat rows + ability blurb, all outlined title
-  text) built from
+  unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only unlocked
+  entries appear — locked starter-roster Brainrots are simply absent until
+  their unlock day clears (see `BRAINROTS.md`).   **Click** a packet to inspect
+  it: stats and ability copy open on a card to the **right** of the modal
+  (same layout as the field inspect card), with **Equip** /
+  **Equipped** at the bottom. Equipped packets keep a green ribbon; clicking
+  Equipped unequips unless it is the last unit in the loadout. The inspect
+  header puts **name, an HP bar** (`current / max` inside the bar), **current
+  Brainrot level, and an XP bar** (`current / needed` for the next level,
+  inside the bar) beside the portrait. **Description** (base ability) and
+  **Current Evolution** sit below: a white **Common** row (always unlocked,
+  the unit’s current ability) then Epic → Immortal. Rows below the Brainrot
+  level gate stay gray. At the gate the tab uses a **light rarity fill**, the
+  `Epic - level 10` (etc.) line is a **shiny dark rarity color**, and the
+  name / kind / description are a **lighter rarity color**. Until the player
+  spends brains to claim (`EvolveBrainrot`, costs in `TIER_BRAINS`), a
+  **lock** sits on that row. Click it to open a confirm prompt (Evolve /
+  Cancel). Claimed rows drop the lock. Combat bonuses still 🔜
+  (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
-  resolved from the same `Shared.Brainrots` registry). Server validates equip
-  changes via `SetEquipped`. Loadout **cannot** change while the day is
-  **Active** (server reject + inventory packets locked).
+  resolved from the same `Shared.Brainrots` registry). **Clicking a planted
+  Brainrot on your lawn** opens the same inspect card on the right of the
+  screen, with live **HP** (`Health` / `MaxHealth`; updates as it takes
+  hits). No Equip button on the field card. No close X — dismiss by clicking
+  empty lawn, shovel, a shop seed, or closing Inventory. Server validates
+  equip changes via `SetEquipped`. Loadout **cannot** change while the day is
+  **Active** (server reject + inventory packets / Equip button locked).
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
   a Brainrot is introduced (portrait, name, stat summary, ability blurb,
   dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) on first

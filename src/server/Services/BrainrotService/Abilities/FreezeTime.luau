@@ -6,7 +6,11 @@
 	the cast animation ends, then thaw SFX when the status expires.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
+local ProgressService = require(script.Parent.Parent.Parent.ProgressService)
 
 local FreezeTime = {}
 
@@ -31,7 +35,10 @@ function FreezeTime.onPlaced(ctx, callbacks)
 
 	local plotModel = ctx.plotModel
 	local row = ctx.position.row
+	local column = ctx.position.column
 	local plantModel = ctx.model
+	local ownerUserId = ctx.ownerUserId
+	local brainrotId = ctx.definition.id
 
 	local animLength = DEFAULT_CAST_FALLBACK
 	if callbacks.getAttackLength then
@@ -48,10 +55,10 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			return
 		end
 
-		CombatService.applyStatusAroundColumn(
+		local frozen = CombatService.applyStatusAroundColumn(
 			plotModel,
 			row,
-			ctx.position.column,
+			column,
 			freezeTiles,
 			freezeTiles,
 			"Freeze",
@@ -59,6 +66,13 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			nil,
 			"Ice"
 		)
+		if frozen > 0 then
+			ProgressService.grantBrainrotXpForUser(
+				ownerUserId,
+				brainrotId,
+				EvolutionConfig.FREEZE_XP * frozen
+			)
+		end
 
 		task.delay(freezeDuration, function()
 			callbacks.playSound("FreezeTimeEnd")

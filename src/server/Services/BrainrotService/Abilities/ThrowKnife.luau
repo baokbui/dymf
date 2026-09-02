@@ -27,6 +27,7 @@ function ThrowKnife.tryAct(ctx, callbacks)
 			{
 				kind = "Shuriken",
 				soundKey = "ThrowKnifeHit",
+				sourceBrainrotId = ctx.definition.id,
 			}
 		)
 	end

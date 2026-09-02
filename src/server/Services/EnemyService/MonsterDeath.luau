@@ -10,9 +10,10 @@
 	Ground contact uses ModelUtil visual AABB (same as foot snap) so invisible
 	HumanoidRootPart / hitboxes do not leave corpses floating.
 
-	Before animating, freezeCorpse anchors every part and clears Motor6D /
-	Animator so walk/attack rigs do not fight the tween. TipOver also tucks
-	arms along the torso so they lie flat instead of sticking out in a T-pose.
+	freezeCorpse bakes the live Motor6D pose into WeldConstraints, then
+	stops Humanoid + AnimationController animators. Overlay welds stay so
+	Toolbox meshes (goblin club / extra body chunks) do not detach. Do not
+	teleport named arm parts — that stacked duplicate limbs on compact R6s.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -21,6 +22,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+
+local MonsterProceduralGait = require(script.Parent.MonsterProceduralGait)
 
 local MonsterDeath = {}
 
@@ -45,118 +48,6 @@ end
 local function visualHeight(model: Model): number
 	local size = ModelUtil.getVisualSizeAndCenter(model)
 	return size.Y
-end
-
-local function findPart(model: Model, names: { string }): BasePart?
-	for _, name in names do
-		local child = model:FindFirstChild(name, true)
-		if child and child:IsA("BasePart") then
-			return child
-		end
-	end
-	return nil
-end
-
-local function findTorso(model: Model): BasePart?
-	return findPart(model, { "Torso", "UpperTorso", "Body" })
-end
-
--- Align a part so its longest axis follows `along`, centered at `center`.
-local function cframeAlong(center: Vector3, along: Vector3, hintRight: Vector3, size: Vector3): CFrame
-	local dir = if along.Magnitude > 1e-4 then along.Unit else Vector3.yAxis
-	local sx, sy, sz = size.X, size.Y, size.Z
-
-	local right = hintRight
-	if right:Cross(dir).Magnitude < 1e-4 then
-		right = if math.abs(dir:Dot(Vector3.zAxis)) < 0.9 then Vector3.zAxis else Vector3.xAxis
-	end
-
-	if sy >= sx and sy >= sz then
-		local up = dir
-		local look = right:Cross(up)
-		if look.Magnitude < 1e-4 then
-			look = Vector3.zAxis
-		else
-			look = look.Unit
-		end
-		right = up:Cross(look).Unit
-		return CFrame.fromMatrix(center, right, up)
-	elseif sx >= sz then
-		local r = dir
-		local up = hintRight:Cross(dir)
-		if up.Magnitude < 1e-4 then
-			up = Vector3.yAxis
-		else
-			up = up.Unit
-		end
-		local look = r:Cross(up).Unit
-		up = look:Cross(r).Unit
-		return CFrame.fromMatrix(center, r, up)
-	end
-
-	return CFrame.lookAt(center, center + dir, hintRight)
-end
-
-local function setPartAlong(arm: BasePart, center: Vector3, along: Vector3, hintRight: Vector3)
-	arm.CFrame = cframeAlong(center, along, hintRight, arm.Size)
-end
-
---[[
-	Tuck arms down along the torso (A-pose hang). Model:PivotTo later keeps this
-	relative pose, so faceplants no longer leave a floating T-pose.
-]]
-local function foldArmsToSides(model: Model)
-	local torso = findTorso(model)
-	if not torso then
-		return
-	end
-
-	local hang = -torso.CFrame.UpVector
-	local torsoRight = torso.CFrame.RightVector
-
-	local function tuck(arm: BasePart?, isLeft: boolean)
-		if not arm then
-			return
-		end
-		local length = math.max(arm.Size.X, arm.Size.Y, arm.Size.Z)
-		local thickness = math.min(arm.Size.X, arm.Size.Y, arm.Size.Z)
-		local side = if isLeft then -1 else 1
-		local shoulder = torso.CFrame:PointToWorldSpace(Vector3.new(
-			side * (torso.Size.X * 0.5 + thickness * 0.25),
-			torso.Size.Y * 0.5 - math.min(0.2, torso.Size.Y * 0.15),
-			0
-		))
-		local center = shoulder + hang * (length * 0.48)
-		setPartAlong(arm, center, hang, torsoRight * side)
-	end
-
-	tuck(findPart(model, { "Left Arm", "LeftArm", "LeftUpperArm" }), true)
-	tuck(findPart(model, { "Right Arm", "RightArm", "RightUpperArm" }), false)
-
-	local function tuckChain(upperName: string, lowerName: string, handName: string, isLeft: boolean)
-		local upper = findPart(model, { upperName })
-		local lower = findPart(model, { lowerName })
-		local hand = findPart(model, { handName })
-		if not upper then
-			return
-		end
-		local side = if isLeft then -1 else 1
-		if lower then
-			local upperLen = math.max(upper.Size.X, upper.Size.Y, upper.Size.Z)
-			local lowerLen = math.max(lower.Size.X, lower.Size.Y, lower.Size.Z)
-			local joint = upper.Position + hang * (upperLen * 0.5)
-			local center = joint + hang * (lowerLen * 0.5)
-			setPartAlong(lower, center, hang, torsoRight * side)
-			if hand then
-				local handLen = math.max(hand.Size.X, hand.Size.Y, hand.Size.Z)
-				local wrist = center + hang * (lowerLen * 0.5)
-				setPartAlong(hand, wrist + hang * (handLen * 0.5), hang, torsoRight * side)
-			end
-		end
-	end
-
-	tuckChain("LeftUpperArm", "LeftLowerArm", "LeftHand", true)
-	tuckChain("RightUpperArm", "RightLowerArm", "RightHand", false)
 end
 
 local function tweenPivot(model: Model, start: CFrame, goal: CFrame, duration: number, onDone: (() -> ())?)
@@ -229,22 +120,73 @@ local function randomTipGoal(model: Model, start: CFrame, groundY: number): CFra
 	return snapVisualToGround(model, drifted, groundY)
 end
 
+local function stopAnimator(animator: Animator)
+	for _, track in animator:GetPlayingAnimationTracks() do
+		track:Stop(0)
+		track:Destroy()
+	end
+end
+
 --[[
-	Lock the current pose into a rigid corpse before tipping. Authored monsters
-	keep Motor6D limbs free for walk/attack; leaving them unanchored makes
-	PivotTo fight the Animator and look like a standing glitch.
+	Lock the current pose into a rigid corpse before tipping. Bake Motor6Ds
+	into WeldConstraints while the animator still holds the walk/attack pose,
+	then tear down animators. Keep existing Welds so overlay meshes stay glued.
 ]]
 local function freezeCorpse(model: Model)
+	-- Stop crawl Heartbeat without snapping joints back to rest.
+	MonsterProceduralGait.unbind(model, true)
+
+	local motors: { Motor6D } = {}
+	local boneTransforms: { [Bone]: CFrame } = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Motor6D") then
+			local motor = descendant :: Motor6D
+			if motor.Part0 and motor.Part1 then
+				table.insert(motors, motor)
+			end
+		elseif descendant:IsA("Bone") then
+			local bone = descendant :: Bone
+			boneTransforms[bone] = bone.Transform
+		end
+	end
+
+	for _, motor in motors do
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = motor.Part0
+		weld.Part1 = motor.Part1
+		weld.Parent = motor.Part1
+	end
+
+	-- Drop Motor6Ds before stopping tracks so Transform reset cannot T-pose
+	-- the rig out from under the new welds.
+	for _, motor in motors do
+		if motor.Parent then
+			motor:Destroy()
+		end
+	end
+
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if animator then
+			stopAnimator(animator)
+			animator:Destroy()
+		end
+	end
+
 	local controller = model:FindFirstChildOfClass("AnimationController")
 	if controller then
 		local animator = controller:FindFirstChildOfClass("Animator")
 		if animator then
-			for _, track in animator:GetPlayingAnimationTracks() do
-				track:Stop(0)
-				track:Destroy()
-			end
+			stopAnimator(animator)
 		end
 		controller:Destroy()
+	end
+
+	for bone, transform in boneTransforms do
+		if bone.Parent then
+			bone.Transform = transform
+		end
 	end
 
 	for _, descendant in model:GetDescendants() do
@@ -253,13 +195,6 @@ local function freezeCorpse(model: Model)
 			descendant.CanCollide = false
 			descendant.AssemblyLinearVelocity = Vector3.zero
 			descendant.AssemblyAngularVelocity = Vector3.zero
-		end
-	end
-
-	-- Drop joints after anchoring so foldArms / PivotTo / part tweens own every part.
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("Motor6D") or descendant:IsA("Weld") or descendant:IsA("WeldConstraint") then
-			descendant:Destroy()
 		end
 	end
 end
@@ -275,7 +210,6 @@ end
 
 local function playTipOver(model: Model)
 	freezeCorpse(model)
-	foldArmsToSides(model)
 
 	local start = model:GetPivot()
 	local groundY = visualMinY(model)
@@ -314,8 +248,8 @@ end
 
 --[[
 	Temporary "downed" pose reusing the same randomized tip-over fall as a
-	regular death, but the rig is left intact (no freezeCorpse / arm tuck /
-	fade) so the monster can stand back up and keep walking/attacking
+	regular death, but the rig is left intact (no freezeCorpse / fade) so
+	the monster can stand back up and keep walking/attacking
 	afterward. Returns the pre-fall CFrame so the caller can restore it later
 	via `riseUp`.
 ]]

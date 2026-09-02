@@ -257,11 +257,11 @@ end
 
 local function resetJoints(state: GaitState)
 	for _, joint in state.joints do
-		if joint.kind == "Motor6D" and joint.motor then
+		if joint.kind == "Motor6D" and joint.motor and joint.motor.Parent then
 			joint.motor.Transform = joint.rest
-		elseif joint.kind == "Bone" and joint.bone then
+		elseif joint.kind == "Bone" and joint.bone and joint.bone.Parent then
 			joint.bone.Transform = joint.rest
-		elseif joint.kind == "Weld" and joint.weld then
+		elseif joint.kind == "Weld" and joint.weld and joint.weld.Parent then
 			joint.weld.C0 = joint.rest
 		end
 	end
@@ -346,13 +346,15 @@ function MonsterProceduralGait.setActive(model: Model, active: boolean)
 	end
 end
 
-function MonsterProceduralGait.unbind(model: Model)
+function MonsterProceduralGait.unbind(model: Model, keepPose: boolean?)
 	local state = states[model]
 	if not state then
 		return
 	end
 	stopConn(state)
-	resetJoints(state)
+	if not keepPose then
+		resetJoints(state)
+	end
 	states[model] = nil
 end
 

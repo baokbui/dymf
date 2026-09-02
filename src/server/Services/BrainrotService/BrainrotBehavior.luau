@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
 local EconomyConfig = require(ReplicatedStorage.Shared.Config.EconomyConfig)
+local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
@@ -21,6 +22,7 @@ local BrainrotAnimation = require(script.Parent.BrainrotAnimation)
 local BrainrotFeedback = require(script.Parent.BrainrotFeedback)
 local CoinService = require(script.Parent.Parent.CoinService)
 local CombatService = require(script.Parent.Parent.CombatService)
+local ProgressService = require(script.Parent.Parent.ProgressService)
 
 local log = Logger.new("BrainrotBehavior")
 
@@ -88,7 +90,14 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 				center.Y + size.Y * 0.5 + EconomyConfig.PRODUCER_SPIT_ORIGIN_CLEARANCE,
 				center.Z
 			)
-			CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount, origin)
+			local dropped = CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount, origin)
+			if dropped then
+				ProgressService.grantBrainrotXpForUser(
+					placement.ownerUserId,
+					placement.definition.id,
+					EvolutionConfig.COIN_XP
+				)
+			end
 		end,
 		destroySelf = function()
 			if destroyHandler then

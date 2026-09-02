@@ -32,6 +32,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
+local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local GridUtil = require(Shared.Utilities.GridUtil)
@@ -276,6 +277,15 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 	end
 	if placement.definition.ignoreMonsterChew then
 		return false
+	end
+
+	if hits > 0 and placement.definition.ability == "Wall" then
+		local ProgressService = require(script.Parent.ProgressService)
+		ProgressService.grantBrainrotXpForUser(
+			placement.ownerUserId,
+			placement.definition.id,
+			EvolutionConfig.SOAK_XP
+		)
 	end
 
 	placement.health = math.max(0, placement.health - hits)

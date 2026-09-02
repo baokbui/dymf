@@ -85,17 +85,23 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 				runtime.instanceId,
 				runtime.monsterId,
 				runtime.row,
-				runtime.column
+				runtime.column,
+				runtime.lastHitBrainrotId,
+				runtime.definition.isBoss == true
 			)
 		end
 	end
 	monsters[runtime.instanceId] = nil
-	MonsterAnimation.unbind(runtime.model)
-	MonsterFeedback.cleanup(runtime.model)
 	if silent then
+		MonsterAnimation.unbind(runtime.model)
+		MonsterFeedback.cleanup(runtime.model)
 		runtime.model:Destroy()
 	else
+		-- Freeze the live pose before unbind so stopping tracks cannot T-pose
+		-- the rig (and overlay welds stay glued).
 		MonsterDeath.play(runtime.model, runtime.definition.deathStyle)
+		MonsterAnimation.unbind(runtime.model)
+		MonsterFeedback.cleanup(runtime.model)
 		task.delay(MonsterDeath.totalLifetime(), function()
 			if runtime.model.Parent then
 				runtime.model:Destroy()
@@ -288,6 +294,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		burrowDuration = 0,
 		channelingUntil = 0,
 		footSnapOffset = nil,
+		lastHitBrainrotId = nil,
 	}
 	for key, value in MonsterStatus.createFields() do
 		(runtime :: any)[key] = value
@@ -482,13 +489,17 @@ function EnemyService.setProjectilePosition(
 	part.CFrame = CFrame.new(pos.X, worldY, pos.Z)
 end
 
-function EnemyService.damageMonster(instanceId: string, damage: number): boolean
+function EnemyService.damageMonster(instanceId: string, damage: number, sourceBrainrotId: string?): boolean
 	local runtime = monsters[instanceId]
 	if not runtime or runtime.health <= 0 then
 		return false
 	end
 	if os.clock() < runtime.invulnerableUntil then
 		return false
+	end
+
+	if type(sourceBrainrotId) == "string" then
+		runtime.lastHitBrainrotId = sourceBrainrotId
 	end
 
 	runtime.health = math.max(0, runtime.health - damage)

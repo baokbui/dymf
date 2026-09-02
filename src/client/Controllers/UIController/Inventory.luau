@@ -3,12 +3,10 @@
 	Inventory
 	Equip / unequip unlocked Brainrots for the placement shop loadout.
 
-	PvZ-style **seed packet** grid: each unlocked Brainrot renders as a packet
-	card (portrait + name plate + status ribbon) using the same
-	Assets.Brainrots preview as the Shop bar. Equipped packets sit bright /
-	selected (like a seed already in the tray); unequipped packets sit dimmed
-	with a "Tap to equip" hint. Hovering a packet opens an info tooltip with
-	the full stat block. Cartoon thick-outline look via UITheme.
+	PvZ-style **seed packet** grid: click a packet to inspect it. Stats and
+	ability copy open on a shared `BrainrotInspect` card to the **right** of
+	the modal (portrait + HP / level / XP bar, description + evolutions,
+	Equip / Equipped at the bottom). Cartoon thick-outline look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,9 +19,9 @@ local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
-local BrainrotInfo = require(script.Parent.Parent.Parent.Utilities.BrainrotInfo)
 local AudioController = require(script.Parent.Parent.AudioController)
 local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
+local BrainrotInspect = require(script.Parent.BrainrotInspect)
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -35,8 +33,11 @@ local PREVIEW_SIZE = 78
 local PLATE_HEIGHT = 30
 local RIBBON_HEIGHT = 18
 
-local TOOLTIP_WIDTH = 240
-local TOOLTIP_PORTRAIT = 96
+local INV_WIDTH = 524
+local INV_HEIGHT = 472
+local STATS_WIDTH = BrainrotInspect.CARD_WIDTH
+local STATS_GAP = 14
+local STATS_LAYOUT_SHIFT = -math.floor((INV_WIDTH + STATS_GAP + STATS_WIDTH) / 2 - INV_WIDTH / 2)
 
 type Packet = {
 	button: TextButton,
@@ -54,10 +55,10 @@ export type InventoryPanel = typeof(setmetatable(
 		loadoutLocked: boolean,
 		packets: { [string]: Packet },
 		hint: TextLabel,
-		tooltip: Frame,
-		tooltipPortraitHolder: Frame,
-		tooltipName: TextLabel,
-		tooltipStats: Frame,
+		inspect: BrainrotInspect.InspectCard,
+		selectedId: string?,
+		brainrotXp: { [string]: number },
+		evolutions: { [string]: { string } },
 	},
 	Inventory
 ))
@@ -88,94 +89,48 @@ local function isEquipped(equipped: { string }, id: string): boolean
 	return false
 end
 
--- Builds the floating info tooltip (hidden until a packet is hovered).
--- Parented to the same ScreenGui as the modal so it can float outside the
--- panel bounds and render above it.
-local function buildTooltip(screenGui: Instance): (Frame, Frame, TextLabel, Frame)
-	local tooltip = Instance.new("Frame")
-	tooltip.Name = "BrainrotTooltip"
-	tooltip.Size = UDim2.fromOffset(TOOLTIP_WIDTH, 10)
-	tooltip.AutomaticSize = Enum.AutomaticSize.Y
-	tooltip.BackgroundTransparency = 0
-	tooltip.Visible = false
-	tooltip.ZIndex = 60
-	tooltip.Parent = screenGui
-	UITheme.applyPanelLook(tooltip, 12)
+local function layoutInventory(self: InventoryPanel, statsOpen: boolean)
+	if statsOpen then
+		self.frame.Position = UDim2.new(0.5, STATS_LAYOUT_SHIFT, 0.5, 0)
+	else
+		self.frame.Position = UDim2.fromScale(0.5, 0.5)
+	end
+end
 
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 6)
-	layout.Parent = tooltip
+local function stylePacket(packet: Packet, equipped: boolean, locked: boolean, selected: boolean)
+	UITheme.applyCardLook(packet.button, equipped or selected)
+	if selected then
+		packet.button.BackgroundTransparency = 0
+	elseif locked then
+		packet.button.BackgroundTransparency = 0.45
+	elseif equipped then
+		packet.button.BackgroundTransparency = 0
+	else
+		packet.button.BackgroundTransparency = 0.3
+	end
 
-	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 10)
-	padding.PaddingBottom = UDim.new(0, 10)
-	padding.PaddingLeft = UDim.new(0, 10)
-	padding.PaddingRight = UDim.new(0, 10)
-	padding.Parent = tooltip
-
-	local header = Instance.new("Frame")
-	header.Name = "Header"
-	header.BackgroundTransparency = 1
-	header.Size = UDim2.new(1, 0, 0, TOOLTIP_PORTRAIT)
-	header.LayoutOrder = 1
-	header.Parent = tooltip
-
-	local portraitHolder = Instance.new("Frame")
-	portraitHolder.Name = "PortraitHolder"
-	portraitHolder.AnchorPoint = Vector2.new(0, 0.5)
-	portraitHolder.Position = UDim2.new(0, 0, 0.5, 0)
-	portraitHolder.Size = UDim2.fromOffset(TOOLTIP_PORTRAIT, TOOLTIP_PORTRAIT)
-	portraitHolder.BackgroundColor3 = Color3.fromRGB(235, 245, 255)
-	portraitHolder.BackgroundTransparency = 0.15
-	portraitHolder.BorderSizePixel = 0
-	portraitHolder.Parent = header
-	UITheme.styleCorner(portraitHolder, 10)
-	UITheme.applyStroke(portraitHolder, 2)
-
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Name = "Name"
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.AnchorPoint = Vector2.new(0, 0.5)
-	nameLabel.Position = UDim2.new(0, TOOLTIP_PORTRAIT + 10, 0.5, 0)
-	nameLabel.Size = UDim2.new(1, -(TOOLTIP_PORTRAIT + 10), 1, 0)
-	nameLabel.TextSize = 17
-	nameLabel.TextWrapped = true
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
-	nameLabel.Parent = header
-	UITheme.applyOutlinedTitle(nameLabel)
-
-	local divider = Instance.new("Frame")
-	divider.Name = "Divider"
-	divider.BackgroundColor3 = UITheme.OUTLINE
-	divider.BorderSizePixel = 0
-	divider.Size = UDim2.new(1, 0, 0, 2)
-	divider.LayoutOrder = 2
-	divider.Parent = tooltip
-
-	local stats = Instance.new("Frame")
-	stats.Name = "Stats"
-	stats.BackgroundTransparency = 1
-	stats.AutomaticSize = Enum.AutomaticSize.Y
-	stats.Size = UDim2.new(1, 0, 0, 0)
-	stats.LayoutOrder = 3
-	stats.Parent = tooltip
-
-	local statsLayout = Instance.new("UIListLayout")
-	statsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	statsLayout.Padding = UDim.new(0, 3)
-	statsLayout.Parent = stats
-
-	return tooltip, portraitHolder, nameLabel, stats
+	if locked then
+		packet.ribbon.Visible = true
+		packet.ribbon.BackgroundColor3 = UITheme.SUBTEXT
+		packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "LOCKED"
+	elseif equipped then
+		packet.ribbon.Visible = true
+		packet.ribbon.BackgroundColor3 = UITheme.SUCCESS
+		packet.ribbonLabel.Text = "EQUIPPED"
+	else
+		packet.ribbon.Visible = false
+	end
+	UITheme.applyOutlinedTitle(packet.ribbonLabel, UITheme.TITLE)
+	packet.ribbonLabel.TextSize = if equipped and not locked then 11 else 10
 end
 
 function Inventory.new(parent: Frame): InventoryPanel
 	parent.Visible = false
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
-	parent.Size = UDim2.fromOffset(524, 472)
+	parent.Size = UDim2.fromOffset(INV_WIDTH, INV_HEIGHT)
 	parent.ZIndex = 30
+	parent.ClipsDescendants = false
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_INVENTORY)
 
 	local title = Instance.new("TextLabel")
@@ -206,7 +161,7 @@ function Inventory.new(parent: Frame): InventoryPanel
 	hint.Position = UDim2.fromOffset(16, 48)
 	hint.TextSize = 13
 	hint.TextXAlignment = Enum.TextXAlignment.Left
-	hint.Text = string.format("Equip up to %d for the shop bar — hover a packet for details", ProgressConfig.MAX_EQUIPPED)
+	hint.Text = string.format("Equip up to %d for the shop bar — click a packet for details", ProgressConfig.MAX_EQUIPPED)
 	hint.Parent = parent
 	UITheme.applyBodyText(hint, UITheme.SUBTEXT)
 
@@ -219,9 +174,6 @@ function Inventory.new(parent: Frame): InventoryPanel
 	list.ScrollBarThickness = 6
 	list.Parent = parent
 
-	-- ScrollingFrame clips its contents — without inset padding, packets
-	-- flush against an edge have their rounded UIStroke corner (drawn half
-	-- outside the packet's bounds) chopped off flat.
 	local listPad = Instance.new("UIPadding")
 	listPad.PaddingTop = UDim.new(0, 6)
 	listPad.PaddingLeft = UDim.new(0, 6)
@@ -236,8 +188,8 @@ function Inventory.new(parent: Frame): InventoryPanel
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	layout.Parent = list
 
-	local screenGui = parent:FindFirstAncestorOfClass("ScreenGui") or parent
-	local tooltip, portraitHolder, tooltipName, tooltipStats = buildTooltip(screenGui)
+	local inspect = BrainrotInspect.new(parent)
+	inspect:dockInventory(STATS_GAP)
 
 	local self = setmetatable({
 		frame = parent,
@@ -247,11 +199,22 @@ function Inventory.new(parent: Frame): InventoryPanel
 		loadoutLocked = false,
 		packets = {},
 		hint = hint,
-		tooltip = tooltip,
-		tooltipPortraitHolder = portraitHolder,
-		tooltipName = tooltipName,
-		tooltipStats = tooltipStats,
+		inspect = inspect,
+		selectedId = nil,
+		brainrotXp = {},
+		evolutions = {},
 	}, Inventory) :: InventoryPanel
+
+	inspect:setEquipHandler(function()
+		self:onEquipClicked()
+	end)
+	inspect.onHide = function()
+		self.selectedId = nil
+		layoutInventory(self, false)
+		for id, packet in self.packets do
+			stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, false)
+		end
+	end
 
 	close.Activated:Connect(function()
 		AudioController.play("UiClick")
@@ -265,99 +228,86 @@ function Inventory.new(parent: Frame): InventoryPanel
 	return self
 end
 
-local HINT_OPEN = string.format("Equip up to %d for the shop bar — hover a packet for details", ProgressConfig.MAX_EQUIPPED)
+local HINT_OPEN = string.format("Equip up to %d for the shop bar — click a packet for details", ProgressConfig.MAX_EQUIPPED)
 local HINT_LOCKED = "Loadout is locked while the day is underway"
 
-local function stylePacket(packet: Packet, equipped: boolean, locked: boolean)
-	UITheme.applyCardLook(packet.button, equipped)
-	packet.button.BackgroundTransparency = if locked then 0.45 elseif equipped then 0 else 0.3
-
-	if locked then
-		packet.ribbon.BackgroundColor3 = UITheme.SUBTEXT
-		packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "LOCKED"
-	else
-		packet.ribbon.BackgroundColor3 = if equipped then UITheme.SUCCESS else UITheme.SUBTEXT
-		packet.ribbonLabel.Text = if equipped then "EQUIPPED" else "TAP TO EQUIP"
+function Inventory.hideStats(self: InventoryPanel)
+	if self.inspect:isOpen() then
+		self.inspect:hide()
+		return
 	end
-	UITheme.applyOutlinedTitle(packet.ribbonLabel, UITheme.TITLE)
-	packet.ribbonLabel.TextSize = if equipped and not locked then 11 else 10
+	self.selectedId = nil
+	layoutInventory(self, false)
+	for id, packet in self.packets do
+		stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, false)
+	end
 end
 
-function Inventory.showTooltip(self: InventoryPanel, packet: Packet)
-	local definition = packet.definition
-
-	for _, child in self.tooltipPortraitHolder:GetChildren() do
-		child:Destroy()
+function Inventory.syncEquipButton(self: InventoryPanel)
+	local id = self.selectedId
+	if not id or not self.inspect:isOpen() then
+		return
 	end
-	BrainrotPreview.mount(
-		self.tooltipPortraitHolder,
-		definition,
-		UDim2.fromOffset(TOOLTIP_PORTRAIT - 8, TOOLTIP_PORTRAIT - 8),
-		UDim2.new(0.5, 0, 0, 4)
-	)
+	local equipped = isEquipped(self.equipped, id)
+	self.inspect:applyEquipState({
+		equipped = equipped,
+		loadoutLocked = self.loadoutLocked,
+		loadoutFull = not equipped and #self.equipped >= ProgressConfig.MAX_EQUIPPED,
+		lastEquipped = equipped and #self.equipped <= 1,
+	})
+end
 
-	self.tooltipName.Text = definition.name
+function Inventory.showStats(self: InventoryPanel, definition: Types.BrainrotDefinition)
+	self.selectedId = definition.id
+	layoutInventory(self, true)
+	local equipped = isEquipped(self.equipped, definition.id)
+	self.inspect:show({
+		definition = definition,
+		mode = "inventory",
+		equipped = equipped,
+		loadoutLocked = self.loadoutLocked,
+		loadoutFull = not equipped and #self.equipped >= ProgressConfig.MAX_EQUIPPED,
+		lastEquipped = equipped and #self.equipped <= 1,
+		totalXp = self.brainrotXp[definition.id] or 0,
+		claimedRarities = self.evolutions[definition.id] or {},
+	})
+	for id, packet in self.packets do
+		stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, id == definition.id)
+	end
+end
 
-	for _, child in self.tooltipStats:GetChildren() do
-		if child:IsA("Frame") or child:IsA("TextLabel") then
-			child:Destroy()
+function Inventory.onEquipClicked(self: InventoryPanel)
+	local id = self.selectedId
+	if not id then
+		return
+	end
+	if self.loadoutLocked then
+		UIEvents.firePlantFailed("Unable to change loadout — the day has already started")
+		return
+	end
+	if not self.inspect.equipButton.Active then
+		return
+	end
+
+	local nextEquipped = table.clone(self.equipped)
+	if isEquipped(nextEquipped, id) then
+		if #nextEquipped <= 1 then
+			return
 		end
+		local filtered: { string } = {}
+		for _, equippedId in nextEquipped do
+			if equippedId ~= id then
+				table.insert(filtered, equippedId)
+			end
+		end
+		nextEquipped = filtered
+	else
+		if #nextEquipped >= ProgressConfig.MAX_EQUIPPED then
+			return
+		end
+		table.insert(nextEquipped, id)
 	end
-
-	local order = 0
-	for _, row in BrainrotInfo.statRows(definition) do
-		order += 1
-		local rowLabel = Instance.new("TextLabel")
-		rowLabel.Name = row.label
-		rowLabel.LayoutOrder = order
-		rowLabel.BackgroundTransparency = 1
-		rowLabel.Size = UDim2.new(1, 0, 0, 16)
-		rowLabel.TextXAlignment = Enum.TextXAlignment.Left
-		rowLabel.RichText = true
-		rowLabel.TextSize = 13
-		rowLabel.Text = string.format(
-			'<font color="rgb(200,225,255)">%s:</font> <b>%s</b>',
-			row.label,
-			row.value
-		)
-		rowLabel.Parent = self.tooltipStats
-		UITheme.applyOutlinedTitle(rowLabel)
-		rowLabel.TextSize = 13
-	end
-
-	order += 1
-	local abilityDesc = Instance.new("TextLabel")
-	abilityDesc.Name = "AbilityDescription"
-	abilityDesc.LayoutOrder = order
-	abilityDesc.BackgroundTransparency = 1
-	abilityDesc.Size = UDim2.new(1, 0, 0, 0)
-	abilityDesc.AutomaticSize = Enum.AutomaticSize.Y
-	abilityDesc.TextWrapped = true
-	abilityDesc.TextXAlignment = Enum.TextXAlignment.Left
-	abilityDesc.TextSize = 12
-	abilityDesc.Text = BrainrotInfo.abilityDescription(definition.ability)
-	abilityDesc.Parent = self.tooltipStats
-	UITheme.applyOutlinedTitle(abilityDesc)
-	abilityDesc.TextSize = 13
-
-	local button = packet.button
-	local absPos = button.AbsolutePosition
-	local absSize = button.AbsoluteSize
-	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-
-	local x = absPos.X + absSize.X + 10
-	if x + TOOLTIP_WIDTH > viewport.X then
-		x = absPos.X - TOOLTIP_WIDTH - 10
-	end
-	x = math.clamp(x, 8, math.max(8, viewport.X - TOOLTIP_WIDTH - 8))
-	local y = math.clamp(absPos.Y, 8, math.max(8, viewport.Y - 220))
-
-	self.tooltip.Position = UDim2.fromOffset(x, y)
-	self.tooltip.Visible = true
-end
-
-function Inventory.hideTooltip(self: InventoryPanel)
-	self.tooltip.Visible = false
+	Remotes.getEvent("SetEquipped"):FireServer(nextEquipped)
 end
 
 function Inventory.buildPacket(self: InventoryPanel, order: number, definition: Types.BrainrotDefinition): Packet
@@ -369,9 +319,6 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 	button.ClipsDescendants = false
 	button.Parent = self.list
 
-	-- Seed-packet frame: portrait window on top, a light name plate for
-	-- contrast against either card color, then a status ribbon inset from
-	-- the edges so it never covers the card's rounded outline.
 	local window = Instance.new("Frame")
 	window.Name = "Window"
 	window.AnchorPoint = Vector2.new(0.5, 0)
@@ -449,45 +396,15 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 		definition = definition,
 	}
 
-	button.MouseEnter:Connect(function()
-		self:showTooltip(packet)
-	end)
-	button.MouseLeave:Connect(function()
-		self:hideTooltip()
-	end)
-
 	button.Activated:Connect(function()
 		AudioController.play("UiClick")
-		if self.loadoutLocked then
-			UIEvents.firePlantFailed("Unable to change loadout — the day has already started")
-			return
-		end
-		local nextEquipped = table.clone(self.equipped)
-		if isEquipped(nextEquipped, definition.id) then
-			if #nextEquipped <= 1 then
-				return
-			end
-			local filtered: { string } = {}
-			for _, id in nextEquipped do
-				if id ~= definition.id then
-					table.insert(filtered, id)
-				end
-			end
-			nextEquipped = filtered
-		else
-			if #nextEquipped >= ProgressConfig.MAX_EQUIPPED then
-				return
-			end
-			table.insert(nextEquipped, definition.id)
-		end
-		Remotes.getEvent("SetEquipped"):FireServer(nextEquipped)
+		self:showStats(definition)
 	end)
 
 	return packet
 end
 
 function Inventory.refresh(self: InventoryPanel)
-	self:hideTooltip()
 	for _, child in self.list:GetChildren() do
 		if child:IsA("TextButton") then
 			child:Destroy()
@@ -499,8 +416,23 @@ function Inventory.refresh(self: InventoryPanel)
 	for _, definition in sortedUnlocks(self.unlocks) do
 		order += 1
 		local packet = self:buildPacket(order, definition)
-		stylePacket(packet, isEquipped(self.equipped, definition.id), self.loadoutLocked)
+		stylePacket(
+			packet,
+			isEquipped(self.equipped, definition.id),
+			self.loadoutLocked,
+			definition.id == self.selectedId
+		)
 		self.packets[definition.id] = packet
+	end
+
+	local selectedId = self.selectedId
+	if selectedId then
+		local packet = self.packets[selectedId]
+		if packet then
+			self:showStats(packet.definition)
+		else
+			self:hideStats()
+		end
 	end
 end
 
@@ -511,6 +443,31 @@ function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any }
 	if type(profile.equipped) == "table" then
 		self.equipped = profile.equipped :: { string }
 	end
+	local xp: { [string]: number } = {}
+	if type(profile.brainrotXp) == "table" then
+		for key, value in (profile.brainrotXp :: { [string]: any }) do
+			if type(key) == "string" and type(value) == "number" then
+				xp[key] = value
+			end
+		end
+	end
+	self.brainrotXp = xp
+	local evolutions: { [string]: { string } } = {}
+	if type(profile.evolutions) == "table" then
+		for key, value in (profile.evolutions :: { [string]: any }) do
+			if type(key) ~= "string" or type(value) ~= "table" then
+				continue
+			end
+			local rarities: { string } = {}
+			for _, rarity in value do
+				if type(rarity) == "string" then
+					table.insert(rarities, rarity)
+				end
+			end
+			evolutions[key] = rarities
+		end
+	end
+	self.evolutions = evolutions
 	self:refresh()
 end
 
@@ -518,14 +475,15 @@ function Inventory.setLoadoutLocked(self: InventoryPanel, locked: boolean)
 	self.loadoutLocked = locked == true
 	self.hint.Text = if self.loadoutLocked then HINT_LOCKED else HINT_OPEN
 	for id, packet in self.packets do
-		stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked)
+		stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, id == self.selectedId)
 	end
+	self:syncEquipButton()
 end
 
 function Inventory.setOpen(self: InventoryPanel, open: boolean)
 	self.frame.Visible = open
 	if not open then
-		self:hideTooltip()
+		self:hideStats()
 	end
 end
 

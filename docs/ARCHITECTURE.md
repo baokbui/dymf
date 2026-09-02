@@ -435,9 +435,12 @@ Full details in `UI.md`. Summary:
 - **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
 - **Settings** — bottom-left HUD button; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
-- **Inventory** — bottom-left HUD button (above Settings) + modal for equip/unequip loadout.
+- **Inventory** — bottom-left HUD button (above Settings) + modal; click a packet
+  for a shared inspect card on the right (portrait + HP / level / XP bar,
+  description + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
+  on your lawn opens the same card with live HP.
 - **Reward popup** — victory shows brains earned (store purchases → M18).
-- Save schema **v4** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists.
+- Save schema **v5** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists, and `brainrotXp`.
 
 ### Milestone 18 — Progression Store ✅
 
@@ -454,6 +457,19 @@ Full details in `STORE.md` / `UI.md`. Summary:
 - **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
   stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; Inventory +
   Settings bottom-left.
+
+### Milestone 19 — Brainrot leveling + evolutions 🔜
+
+Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
+
+- Each roster Brainrot has its own **Brainrot level** (XP), **not** campaign day.
+- At 10 / 20 / 30 / 40 / 50: Epic → Immortal (aura + stat / active / passive /
+  ultimate). Tiers stack; base shop id stays.
+- Persist level + XP + owned tiers via `SaveService`. Combat extras stay
+  data-driven ability ids.
+- **XP (live):** last-hit species for normal kills; boss XP split per living
+  plant on the lawn; persisted as `brainrotXp` (save v5). Inspect UI shows
+  level / XP. Tier combat bonuses still 🔜.
 
 ### Milestone 12 — Audio ✅
 

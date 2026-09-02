@@ -369,4 +369,4 @@ animations, weather, graves (M10–17)
 **Phase 4 ✅** — Progression Store (M18): per-plot mini stores, brains spends,
 Speed upgrades
 
-**Phase 5 🔜** — Retention (M19), evolve/mutate (M20), house boss collection (M21)
+**Phase 5 🔜** — Brainrot leveling + evolutions (M19), retention (M20), house boss collection (M21)

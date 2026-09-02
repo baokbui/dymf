@@ -39,7 +39,7 @@ type MonsterHandlers = {
 	getMonsterColumn: (instanceId: string) -> number?,
 	getProjectileWorldY: (plotModel: Model, row: number, startColumn: number) -> number?,
 	setProjectilePosition: (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> (),
-	damage: (instanceId: string, damage: number) -> boolean,
+	damage: (instanceId: string, damage: number, sourceBrainrotId: string?) -> boolean,
 	applyStatus: (instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?, visual: string?) -> (),
 	tickStatuses: (dt: number) -> (),
 }
@@ -169,7 +169,8 @@ function CombatService.attackFirstInRow(
 	position: Types.GridPosition,
 	rangeTiles: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	sourceBrainrotId: string?
 ): boolean
 	local targetId = CombatService.getFirstMonsterInRow(plotModel, position.row, position.column, rangeTiles)
 	if not targetId then
@@ -180,7 +181,7 @@ function CombatService.attackFirstInRow(
 		absorbGraveBlock(plotModel, position.row, position.column, targetColumn)
 		return true
 	end
-	CombatService.damageMonster(targetId, damage)
+	CombatService.damageMonster(targetId, damage, sourceBrainrotId)
 	fireCombatVisual(ownerUserId, {
 		kind = "Hit",
 		instanceId = targetId,
@@ -214,7 +215,8 @@ function CombatService.attackFirstInMeleeReach(
 	reachColumns: number,
 	damage: number,
 	ownerUserId: number,
-	muteSound: boolean?
+	muteSound: boolean?,
+	sourceBrainrotId: string?
 ): boolean
 	local targetId = if monsterHandlers
 		then monsterHandlers.queryFirstInMeleeReach(plotModel, position.row, position.column, reachColumns)
@@ -227,7 +229,7 @@ function CombatService.attackFirstInMeleeReach(
 		absorbGraveBlock(plotModel, position.row, position.column, targetColumn)
 		return true
 	end
-	CombatService.damageMonster(targetId, damage)
+	CombatService.damageMonster(targetId, damage, sourceBrainrotId)
 	CombatService.notifyHitVisual(ownerUserId, targetId, {
 		muteSound = muteSound == true,
 		soundKey = if muteSound then nil else "MeleeBat",
@@ -242,7 +244,8 @@ function CombatService.attackInRow(
 	rangeTiles: number,
 	damage: number,
 	ownerUserId: number,
-	soundKey: string?
+	soundKey: string?,
+	sourceBrainrotId: string?
 ): boolean
 	local targets = CombatService.getMonstersInRow(plotModel, position.row, position.column, rangeTiles)
 	if #targets == 0 then
@@ -257,7 +260,7 @@ function CombatService.attackInRow(
 			continue
 		end
 		hitAny = true
-		CombatService.damageMonster(monsterId, damage)
+		CombatService.damageMonster(monsterId, damage, sourceBrainrotId)
 		local payload: { [string]: any } = {
 			kind = "Hit",
 			instanceId = monsterId,
@@ -278,6 +281,7 @@ export type ProjectileLaunchOptions = {
 	statusVisual: string?,
 	-- Spawn at this world point (Skeleton bow / LArm) instead of lane center.
 	originWorld: Vector3?,
+	sourceBrainrotId: string?,
 }
 
 -- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
@@ -335,6 +339,7 @@ function CombatService.launchProjectile(
 			statusKind = if blockingColumn then nil else options.statusKind,
 			statusDuration = if blockingColumn then nil else options.statusDuration,
 			statusVisual = if blockingColumn then nil else options.statusVisual,
+			sourceBrainrotId = options.sourceBrainrotId,
 		}
 	end
 
@@ -459,7 +464,8 @@ function CombatService.dealColumnDamage(
 	row: number,
 	column: number,
 	damage: number,
-	ownerUserId: number
+	ownerUserId: number,
+	sourceBrainrotId: string?
 )
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	for _, monsterId in targets do
@@ -467,7 +473,7 @@ function CombatService.dealColumnDamage(
 		-- Match by lawn tile (not a tight fractional window) so chewing
 		-- monsters at MELEE_CLOSE_REACH standoff still take the bomb.
 		if type(monsterColumn) == "number" and GridUtil.tileAtColumn(monsterColumn) == column then
-			CombatService.damageMonster(monsterId, damage)
+			CombatService.damageMonster(monsterId, damage, sourceBrainrotId)
 			fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 		end
 	end
@@ -479,11 +485,11 @@ function CombatService.dealEntireRowDamage(
 	originColumn: number,
 	damage: number,
 	ownerUserId: number,
-	options: { skipExplosion: boolean?, explosionStagger: number?, muteExplosionSound: boolean? }?
+	options: { skipExplosion: boolean?, explosionStagger: number?, muteExplosionSound: boolean?, sourceBrainrotId: string? }?
 )
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	for _, monsterId in targets do
-		CombatService.damageMonster(monsterId, damage)
+		CombatService.damageMonster(monsterId, damage, options and options.sourceBrainrotId)
 		fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 	end
 	if not (options and options.skipExplosion) then
@@ -505,7 +511,8 @@ function CombatService.dealRowDamage(
 	row: number,
 	fromColumn: number,
 	damage: number,
-	_ownerUserId: number
+	_ownerUserId: number,
+	sourceBrainrotId: string?
 )
 	local targets = CombatService.getMonstersInRow(plotModel, row, fromColumn, FULL_LINE)
 	for _, monsterId in targets do
@@ -514,7 +521,7 @@ function CombatService.dealRowDamage(
 			absorbGraveBlock(plotModel, row, fromColumn, targetColumn)
 			continue
 		end
-		CombatService.damageMonster(monsterId, damage)
+		CombatService.damageMonster(monsterId, damage, sourceBrainrotId)
 	end
 	if #targets > 0 then
 		log:info(string.format("line damage %d on row %d (%d targets)", damage, row, #targets))
@@ -581,13 +588,13 @@ function CombatService.applyStatusAroundColumn(
 	duration: number,
 	magnitude: number?,
 	visual: string?
-): boolean
+): number
 	local ahead = math.max(0, tilesAhead)
 	local behind = math.max(0, tilesBehind)
 	local minCol = math.max(1, centerColumn - behind)
 	local maxColExclusive = math.min(GridConfig.COLUMNS, centerColumn + ahead) + 1
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
-	local applied = false
+	local applied = 0
 	for _, monsterId in targets do
 		local targetColumn = monsterColumnOf(monsterId)
 		if type(targetColumn) ~= "number" then
@@ -603,7 +610,7 @@ function CombatService.applyStatusAroundColumn(
 			continue
 		end
 		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
-		applied = true
+		applied += 1
 	end
 	return applied
 end
@@ -651,9 +658,9 @@ function CombatService.getMonstersInRow(
 	return {}
 end
 
-function CombatService.damageMonster(monsterInstanceId: string, damage: number): boolean
+function CombatService.damageMonster(monsterInstanceId: string, damage: number, sourceBrainrotId: string?): boolean
 	if monsterHandlers then
-		return monsterHandlers.damage(monsterInstanceId, damage)
+		return monsterHandlers.damage(monsterInstanceId, damage, sourceBrainrotId)
 	end
 	return false
 end
@@ -675,7 +682,9 @@ function CombatService.notifyMonsterDeath(
 	instanceId: string,
 	monsterId: string,
 	row: number,
-	column: number
+	column: number,
+	lastHitBrainrotId: string?,
+	isBoss: boolean
 )
 	fireCombatVisual(ownerUserId, {
 		kind = "Death",
@@ -688,6 +697,7 @@ function CombatService.notifyMonsterDeath(
 	if player then
 		local ProgressService = require(script.Parent.ProgressService)
 		local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
+		ProgressService.grantKillXp(player, lastHitBrainrotId, isBoss)
 		ProgressService.incrementStat(player, ProgressConfig.STAT_MONSTERS_DEFEATED)
 	end
 end
@@ -724,7 +734,7 @@ local function onProjectileImpact(
 		return killed
 	end
 
-	local killed = CombatService.damageMonster(instanceId, damage)
+	local killed = CombatService.damageMonster(instanceId, damage, if impact then impact.sourceBrainrotId else nil)
 	local payload: { [string]: any } = {
 		kind = "Hit",
 		instanceId = instanceId,

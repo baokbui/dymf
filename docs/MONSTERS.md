@@ -268,9 +268,9 @@ reaches the monster). Exception: `definition.ignoreMonsterChew` (Lirili) —
 monsters phase through and never deal chew damage.
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
-- On death, `MonsterDeath` freezes the Motor6D pose, then plays
-`deathStyle` (default tip forward / side / back), then lingers and fades —
-so authored animated models do not glitch upright.
+- On death, `MonsterDeath` bakes the live Motor6D pose into welds (overlay
+  meshes stay glued; no arm-teleport), then plays `deathStyle` (default tip
+  forward / side / back), then lingers and fades.
 
 Boss skill stubs (Goblin King speed buff) are registered and will be completed
 in a later milestone. **Werewolf** `WerewolfLifesteal` heals

@@ -20,7 +20,9 @@ Saved (player-owned progression):
 - Equipped loadout
 - Upgrades
 - Statistics
-- Future progression systems (collected bosses, evolutions, …)
+- **Brainrot XP** (per registry id — shared species pool)
+- **Claimed evolution tiers** (per Brainrot id, after brains spend)
+- Future progression systems (collected bosses, …)
 
 Not saved (transient / runtime):
 
@@ -40,7 +42,7 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number (`SAVE_VERSION` = 4)|
+| `version`      | number (`SAVE_VERSION` = 6)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
@@ -51,6 +53,8 @@ Not saved (transient / runtime):
 | `equipped`     | `{ string }` loadout order |
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
+| `brainrotXp`   | `{ [string]: number }` (per Brainrot registry id) |
+| `evolutions`   | `{ [brainrotId]: { rarity } }` claimed Epic→Immortal tiers |
 | `introducedMonsters` | `{ string }` (monster intro popups already shown) |
 | `introducedBrainrots` | `{ string }` (Brainrot intro popups already shown) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
@@ -61,7 +65,9 @@ Not saved (transient / runtime):
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 4` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 6` — bump when the schema changes; migrate older payloads.
+  **v4 → v5:** add `brainrotXp` (empty map if missing).
+  **v5 → v6:** add `evolutions` (empty map if missing).
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).
@@ -87,11 +93,11 @@ Relevant constants (`Shared.Constants`):
 - Writes via `UpdateAsync` with JSON round-trip + retries (Studio may still log
   transient Roblox-cloud `HTTP 500` lines; look for `SaveService` retry/success
   logs — enable **Studio Access to API Services** in Game Settings).
-- Coordinate restore: day/hearts via `LevelService`, unlocks/stats via
+- Coordinate restore: day/hearts via `LevelService`, unlocks/stats/XP via
   `ProgressService` (**hydrated synchronously on join** so autosave cannot wipe
   defaults over real statistics), purse via `CoinService.applyDayPurse`, lawn via
   `BrainrotService.restorePlacements` (committed list only, after plot assign).
-- Statistics are live-pushed on increment (`ProfileUpdated`); time played includes
+- Statistics and Brainrot XP are live-pushed on kill (`ProfileUpdated`); time played includes
   the current session in client payloads and is committed on save/leave.
 
 ---

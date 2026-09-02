@@ -175,6 +175,11 @@ export type SaveData = {
 	equipped: { string }, -- ordered loadout shown in the placement shop
 	upgrades: { [string]: number },
 	statistics: { [string]: number },
+	-- Shared XP pool per Brainrot registry id (all planted copies of that unit).
+	brainrotXp: { [string]: number },
+	-- Claimed evolution rarities per Brainrot id (Epic→Immortal). Level gate
+	-- is separate; claiming spends brains.
+	evolutions: { [string]: { string } }?,
 	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).
 	introducedMonsters: { string }?,
 	-- Brainrot intro popups already shown (BRAINROT_INTRO_SCHEDULE + UNLOCK_SCHEDULE).

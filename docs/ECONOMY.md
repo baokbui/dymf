@@ -2,7 +2,7 @@
 
 The single **match** currency is **Coins**. **Brains** are a separate soft
 currency for progression unlocks (Milestone 13 grants; Milestone 18 store;
-Milestone 20 evolve/mutate; Milestone 21 house boss income).
+Milestone 19 Brainrot leveling / evolution tiers; Milestone 21 house boss income).
 Only the server controls currency — clients send collection intent and display
 balances, never set them (`.cursorrules`).
 

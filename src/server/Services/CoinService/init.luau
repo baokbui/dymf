@@ -231,20 +231,20 @@ end
 	- With `spitFrom`: producer spit arc from that world position.
 	NightFog days skip fog-blocked east columns (coins land on clear lawn only).
 ]]
-function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, spitFrom: Vector3?)
+function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, spitFrom: Vector3?): boolean
 	if value <= 0 then
-		return
+		return false
 	end
 
 	local _, plotModel = resolveActivePlot(ownerUserId)
 	if not plotModel then
-		return
+		return false
 	end
 
 	local position = WeatherUtil.randomClearPlotPosition(weatherForOwner(ownerUserId))
 	local topCenter = GridService.getWorldPosition(plotModel, position)
 	if not topCenter then
-		return
+		return false
 	end
 
 	if spitFrom then
@@ -252,6 +252,7 @@ function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, 
 	else
 		spawnGroundCoin(plotModel, ownerUserId, topCenter, value, "Rain", nil)
 	end
+	return true
 end
 
 local function dropPassiveCoin(player: Player)

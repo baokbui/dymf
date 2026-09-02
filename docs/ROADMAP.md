@@ -579,7 +579,7 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 # Milestone 18 — Progression Store
 
-**Status: ✅ Complete** (moved ahead of Retention; deferred from Milestone 13)
+**Status: ✅ Complete** (moved ahead of Retention, now M20; deferred from Milestone 13)
 
 ## Add
 
@@ -603,7 +603,72 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 
 
-# Milestone 19 — Retention Systems
+# Milestone 19 — Brainrot Evolution & Mutations
+
+**Status: 🔜 Planned**
+
+## Goal
+
+Give each roster Brainrot its own **leveling track** (XP + Brainrot level),
+independent of campaign days. At Brainrot levels **10 / 20 / 30 / 40 / 50**
+unlock a cumulative **Epic → Immortal** rarity ladder (aura + stat / active /
+passive / ultimate). Server owns XP, level, and grants; client UI is display +
+intent only. Full design: **`docs/EVOLUTIONS.md`**.
+
+Do **not** treat sheet “Level 10” as campaign Day 10.
+
+## Systems
+
+- **Brainrot levels** — one meter per registry id (all planted copies share it)
+- **Five tiers** — Epic (purple, stat), Legendary (gold, active), Mythic
+  (red-orange, passive), Celestial (dark green, passive), Immortal (dark red,
+  ultimate)
+- **Authored rows** for Ballerina, Chimpanzini, Tung Tung, Tralalero,
+  Cappuccino, Lirili (Girafa / Patapim / Bombardino TBD)
+
+A separate **mutation** layer (replace the core ability, independent of this
+ladder) is still named on this milestone but is **not** on the sheet. The
+ladder already adds actives / passives / ultimates. Decide at impl whether
+mutations ship in M19 or slip later.
+
+## Tasks
+
+- Shared schema: Brainrot XP map live (`brainrotXp`); evolution rows
+  (`brainrotId` + rarity, ability ids, stat overrides) 🔜
+- XP grant rules ✅ — last-hit species for normal kills; boss XP split evenly
+  across every living plant; support jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP`)
+- Compose Epic stats + extra abilities onto the common placement runtime 🔜
+  (`BrainrotBehavior` / Abilities — no name branches)
+- Persist XP via `SaveService` (v5) and claimed tiers (v6 `evolutions`);
+  combat bonuses 🔜
+- Inventory / field inspect show portrait header (name, HP, level, XP bar)
+  plus description and evolution rows (gray until the Brainrot level gate,
+  then light rarity fill + shiny title; lock until brains claim, with a
+  confirm prompt); combat bonuses 🔜
+- Aura VFX (highest owned tier); optional prestige `modelId` later
+
+## Architecture Notes
+
+- **Data-driven only** — resolve effective stats + extra ability ids from
+  registry + owned tiers
+- Keep a single placement runtime shape (base `ability` + extras)
+- Server owns eligibility, XP, spend, and grants
+- See **`docs/EVOLUTIONS.md`** for the sheet tables
+
+## Complete When
+
+- At least one Brainrot earns XP, levels up, and persists that meter across
+  rejoin (independent of campaign day).
+- That unit’s **Epic** stat unlock + at least one **Legendary** active (or
+  later tier) work in combat, with the matching aura.
+- Remaining sheet units are data-authored even if tuning follows.
+- Exploits (client-set level, free tier, fake XP) fail server validation.
+
+---
+
+
+
+# Milestone 20 — Retention Systems
 
 **Status: 🔜 Planned**
 
@@ -668,94 +733,6 @@ UI only displays and sends intents.
 
 
 
-# Milestone 20 — Brainrot Evolution & Mutations
-
-**Status: 🔜 Planned**
-
-## Goal
-
-Add two data-driven progression layers on top of the base roster — **evolutions**
-and **mutations** — without name-based combat forks. Server owns unlocks and
-placement identity; client UI is display + intent only.
-
-## Definitions
-
-| Layer | What it changes | What it does **not** change |
-| ----- | --------------- | --------------------------- |
-| **Evolution** | **Color / look** (tint or prestige visual) and **base stats** (HP, damage, attack interval, cost, range, coin generation, etc.) | Core ability identity (still the same ability id) |
-| **Mutation** | **Ability** — replace the unit’s ability **or** add an **extra** ability | Base stat line (unless a later balance pass explicitly couples them) |
-
-Example flavor: **Diamond Tung Tung Tung Sahur** is an *evolution* of Tung Tung
-(diamond color + stronger melee stats, still `MeleeBat`). A mutation on Tung Tung
-might swap bat for a different ability, or add a secondary ability on top of bat.
-
-Evolutions and mutations can stack on the same unit if authored that way
-(e.g. Diamond Tung Tung + a mutation) — decide composition rules at impl.
-
-## Examples (authoring targets)
-
-### Evolutions (color + base stats)
-
-| Base | Evolved form (example) | Direction |
-| ---- | ---------------------- | --------- |
-| Tung Tung Tung Sahur | Diamond Tung Tung Tung Sahur | Diamond look + higher HP / damage |
-| Ballerina Cappucina | (TBD) | Prestige tint + faster / richer coin generation |
-| Cappuccino Assassino | (TBD) | Prestige tint + stronger / faster shuriken stats |
-| Other roster units | (TBD) | At least one evolution path each for this system’s launch |
-
-### Mutations (ability change / extra ability)
-
-| Base (example) | Mutation direction (example) |
-| -------------- | ---------------------------- |
-| Tung Tung | Replace `MeleeBat` **or** add a second ability (e.g. slow on hit) |
-| Ballerina | Extra ability alongside `GenerateCoins` (e.g. small heal pulse) |
-| Cappuccino | Replace / augment `ThrowKnife` (e.g. pierce, burn on hit) |
-| Other roster units | At least one mutation option each for this system’s launch |
-
-Exact names, costs, stat deltas, and ability ids are balancing / content work —
-tables above are flavor targets, not final numbers.
-
-## Tasks
-
-- Shared schema for evolution + mutation definitions (base id, costs,
-  requirements, stacking rules)
-- **Evolutions:** color / visual override + base-stat overrides on the common
-  Brainrot interface (prefer tint / material / `color` + optional prestige
-  `modelId` when a full mesh swap is needed)
-- **Mutations:** ability override and/or extra ability id list resolved by
-  `BrainrotBehavior` / Abilities (multi-ability tick without name branches)
-- Unlock / purchase / fuse flows (Brains, coins, and/or materials — decide at impl)
-- Persist owned evolutions + mutations via `SaveService` (`unlocks` /
-  `upgrades` / versioned fields)
-- Shop / Inventory / loadout show evolved + mutated variants when owned
-- Optional: evolution / mutation apply VFX + plant SFX variants
-
-## Architecture Notes
-
-- **Data-driven only** — no `if id == "DiamondTungTung"` combat trees; resolve
-  effective definition (stats + color) and ability set from registry + owned
-  modifiers
-- Evolutions compose onto base stats/color; mutations compose onto
-  `ability` / extra abilities — keep a single placement runtime shape
-- Server owns eligibility, spend, and grants (`ProgressService` or a dedicated
-  evolution/mutation API)
-- Models stay on the Milestone 15 pipeline when a prestige mesh is used
-- Save schema stays versioned; migrate players who already own bases
-
-## Complete When
-
-- At least one **evolution** path ships end-to-end (prefer **Tung Tung →
-  Diamond Tung Tung Tung Sahur**: unlock, color + stats, place, combat,
-  save/rejoin).
-- At least one **mutation** ships end-to-end (ability replaced **or** extra
-  ability active in combat, persist + rejoin).
-- Players obtain both through authored costs/requirements.
-- Exploits (free evolve/mutate, fake ownership) fail server validation.
-
----
-
-
-
 # Milestone 21 — Boss Collection House
 
 **Status: 🔜 Planned** (house shell ✅ now; collection / income later)
@@ -764,7 +741,7 @@ tables above are flavor targets, not final numbers.
 
 Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
 it for display; displayed bosses generate **brains** used for the store (M18)
-and evolutions/mutations (M20).
+and evolutions/mutations (M19).
 
 ## Prerequisites
 
@@ -880,7 +857,8 @@ and evolutions/mutations (M20).
 
 - **New Brainrots** — expand the roster beyond the launch seven (registry +
   ability handlers; additional model work as needed)
-- Brainrot evolution & mutations → **Milestone 20**
+- Brainrot evolution & mutations → **Milestone 19**
+- Retention (7-day rewards, spinner, daily quests) → **Milestone 20**
 - Boss collection house (display defeated bosses → brains income) → **Milestone 21**
 - New Monsters
 - New Maps

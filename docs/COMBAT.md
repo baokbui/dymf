@@ -30,7 +30,7 @@ column). When a Brainrot attacks a row:
 | All in range | `attackInRow` | Damages every monster in range (instant splash) |
 | Entire row | `dealEntireRowDamage` | Damages **every** monster on the row (Bombardino line bomb) |
 | Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row |
-| Column-band status | `applyStatusAroundColumn` | Status on the caster's tile plus N tiles ahead and behind (Lirili freeze = 2) |
+| Column-band status | `applyStatusAroundColumn` | Status on the caster's tile plus N tiles ahead and behind (Lirili freeze = 2). Returns how many monsters received the status. |
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
 for full-row-from-tile attacks. Tile-based `rangeTiles` covers whole cells ahead.
@@ -181,13 +181,23 @@ values remain in `CombatConfig`.
 ## Death ✅ (Milestone 7 / M12 audio)
 
 1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
+   Brainrot hits pass a `sourceBrainrotId` so the monster records last-hit
+   species. Status DoT without a source keeps the previous last hit.
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
-   `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner.
+   `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner,
+   grants Brainrot XP (`ProgressService.grantKillXp` — last-hit species for
+   normal kills; boss XP split across living plants), then increments
+   `STAT_MONSTERS_DEFEATED`. Silent destroys (house breach, `clearPlot`) skip
+   this and grant no XP. Support jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP`)
+   grant separately via `grantBrainrotXp` — coin spit, wall damage ticks,
+   freeze casts.
 3. Client plays `Death_<monsterId>` when configured (else `Death`), then a death
    particle burst. After tip-over + linger, a Thanos-style ash disintegrate
    (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.
-4. Server `MonsterDeath` plays the definition's `deathStyle` (default: tip onto
-   the ground — randomized faceplant / side flop / backfall), leaves the corpse for
+4. Server `MonsterDeath` bakes the live pose into welds (keeps overlay meshes
+   glued; does not teleport named arms), then plays the definition's
+   `deathStyle` (default: tip onto the ground — randomized faceplant / side
+   flop / backfall), leaves the corpse for
    `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
 5. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 

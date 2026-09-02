@@ -70,6 +70,8 @@ export type MonsterRuntime = {
 	channelingUntil: number,
 	-- Rest-pose pivot.Y − visual bottom (stable feet while limbs animate).
 	footSnapOffset: number?,
+	-- Last Brainrot registry id that damaged this monster (normal-kill XP).
+	lastHitBrainrotId: string?,
 } & MonsterStatus.StatusFields
 
 export type BehaviorCallbacks = {

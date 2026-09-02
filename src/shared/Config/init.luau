@@ -22,6 +22,7 @@ local Config = {
 	Player = require(script.PlayerConfig),
 	Progress = require(script.ProgressConfig),
 	Dev = require(script.DevConfig),
+	Evolution = require(script.EvolutionConfig),
 	Vfx = require(script.VfxConfig),
 	Audio = require(script.AudioConfig),
 	UI = require(script.UITheme),
