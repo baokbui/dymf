@@ -4,6 +4,8 @@
 	One-shot on place: play attack anim + cast SFX, Freeze 2 tiles ahead
 	and 2 tiles behind (plus this tile) for freezeDuration, despawn when
 	the cast animation ends, then thaw SFX when the status expires.
+	Legendary Winter's Grasp (`abilityParams.freezeEntireLane`) freezes
+	the whole row instead.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,9 +22,11 @@ local DEFAULT_CAST_FALLBACK = 1.2
 function FreezeTime.onPlaced(ctx, callbacks)
 	local freezeDuration = DEFAULT_FREEZE_DURATION
 	local freezeTiles = 2
+	local freezeEntireLane = false
 	if ctx.definition.abilityParams then
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
 		freezeTiles = ctx.definition.abilityParams.freezeTiles or freezeTiles
+		freezeEntireLane = (ctx.definition.abilityParams.freezeEntireLane or 0) >= 1
 	end
 
 	local hitDelay = 0
@@ -55,17 +59,29 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			return
 		end
 
-		local frozen = CombatService.applyStatusAroundColumn(
-			plotModel,
-			row,
-			column,
-			freezeTiles,
-			freezeTiles,
-			"Freeze",
-			freezeDuration,
-			nil,
-			"Ice"
-		)
+		local frozen = 0
+		if freezeEntireLane then
+			frozen = CombatService.applyEntireRowStatus(
+				plotModel,
+				row,
+				"Freeze",
+				freezeDuration,
+				nil,
+				"Ice"
+			)
+		else
+			frozen = CombatService.applyStatusAroundColumn(
+				plotModel,
+				row,
+				column,
+				freezeTiles,
+				freezeTiles,
+				"Freeze",
+				freezeDuration,
+				nil,
+				"Ice"
+			)
+		end
 		if frozen > 0 then
 			ProgressService.grantBrainrotXpForUser(
 				ownerUserId,

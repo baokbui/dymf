@@ -29,7 +29,7 @@ column). When a Brainrot attacks a row:
 | First in row | `attackFirstInRow` / `launchProjectile` | Damages the monster with the **lowest column** in range (closest to the house — PvZ peashooter style). Used by Cappuccino knives and Tralalero bubbles. |
 | All in range | `attackInRow` | Damages every monster in range (instant splash) |
 | Entire row | `dealEntireRowDamage` | Damages **every** monster on the row (Bombardino line bomb) |
-| Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row |
+| Entire row status | `applyEntireRowStatus` | Status on **every** monster on the row. Returns how many received it. |
 | Column-band status | `applyStatusAroundColumn` | Status on the caster's tile plus N tiles ahead and behind (Lirili freeze = 2). Returns how many monsters received the status. |
 
 Range uses `GridUtil.isColumnInRange` with `BrainrotConfig.FULL_LINE_RANGE` (-1)
@@ -40,6 +40,8 @@ a bat behind Ballerina, Lirili, Chimpanzini, etc. can still hit a monster chewin
 that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.) Optional
 `attackHitDelay` starts the swing anim first, then re-acquires the target before
 damage — if nothing is still in range, the swing misses (cooldown already spent).
+**Ranged Rampage** (`rangedUntil`) launches a full-lane `Knife` projectile
+instead of the close-range hit.
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
@@ -47,7 +49,9 @@ are **not** valid targets — Brainrots wait until the monster enters the plot.
 **Fog graves** sit on a lawn column and **block** Brainrot damage, projectiles,
 and status aimed at monsters **strictly east** of the stone (`fromColumn <
 grave < targetColumn`). Combat does not apply HP or status to those monsters
-(shurikens stop at the stone). Graves have no combat HP except **Patapim**
+(shurikens stop at the stone). **Piercing Brew** (`pierceCount`) is the
+exception: the shot flies through the grave, damages the first monster, and
+still hits the one behind. Graves have no combat HP except **Patapim**
 smashes (`hitFromPatapim`), which also **shake** the mesh. Other hits do not
 shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
@@ -77,9 +81,10 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit` |
+| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and flies through graves. Piercing shots carry a gold aura (`PiercingBrew`) so they read as Piercing Brew. |
+| Tung Tung (`MeleeBat` during Ranged Rampage) | `Knife` (legacy bolt) | Full-lane damage + `MeleeBat` |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
-| Tralalero (`BubbleTrap`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
+| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap`. Barrage fires one per lawn row from the plant’s column. |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, speed, spin, bubble size) +
@@ -169,7 +174,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
-| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX) |
+| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline + sparks |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
 | Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
 
@@ -182,15 +187,17 @@ values remain in `CombatConfig`.
 
 1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
    Brainrot hits pass a `sourceBrainrotId` so the monster records last-hit
-   species. Status DoT without a source keeps the previous last hit.
+   species. Status DoT and `BubbleTrap` bubbles omit that source, so they keep
+   the previous last hit.
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
    `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner,
    grants Brainrot XP (`ProgressService.grantKillXp` — last-hit species for
-   normal kills; boss XP split across living plants), then increments
-   `STAT_MONSTERS_DEFEATED`. Silent destroys (house breach, `clearPlot`) skip
-   this and grant no XP. Support jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP`)
-   grant separately via `grantBrainrotXp` — coin spit, wall damage ticks,
-   freeze casts.
+   normal kills, skipping `SKIP_LAST_HIT` abilities; boss XP split across living
+   plants), then increments `STAT_MONSTERS_DEFEATED`. Silent destroys (house
+   breach, `clearPlot`) skip this and grant no XP. Support jobs (`COIN_XP` /
+   `SOAK_XP` / `FREEZE_XP` / landed-hit `HIT_JOB`) grant separately via
+   `grantBrainrotXp` — coin spit, wall damage ticks, freeze casts, every N
+   landed hits (`BubbleTrap` every 2, `MeleeBat` every 3) **instead of** last-hit.
 3. Client plays `Death_<monsterId>` when configured (else `Death`), then a death
    particle burst. After tip-over + linger, a Thanos-style ash disintegrate
    (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.

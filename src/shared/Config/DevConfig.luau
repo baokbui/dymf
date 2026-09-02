@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local DevConfig = {
 	ENABLED = false,
 	COINS = 10000,
+	BRAINS = 10000,
 	UNLOCK_ALL_BRAINROTS = true,
 	-- Skip PvZ seed-packet recharge after planting (server + shop overlay).
 	ZERO_PLANT_COOLDOWNS = true,

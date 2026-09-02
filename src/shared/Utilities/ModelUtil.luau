@@ -191,7 +191,7 @@ end
 
 local function isVisualPart(part: BasePart): boolean
 	-- VFX shells parented under the model must not affect feet-snap / scale AABB.
-	if part.Name == "BubbleShell" then
+	if part.Name == "BubbleShell" or part.Name == "AuraVfx" then
 		return false
 	end
 	return part.Transparency < INVISIBLE_TRANSPARENCY

@@ -23,13 +23,16 @@ not live code. “Gold” on the sheet is **coins**.
   of that unit. Not per tile, not per match. Four Tung Tungs on the lawn share
   one meter.
 - Persist via `SaveService` (`SaveData.brainrotXp`, schema **v5**). Server owns
-  XP; the client never sets it. Combat bonuses from tiers are **not** applied
-  yet (still M19).
+  XP; the client never sets it. XP from a day is **committed on victory** only.
+  Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
+  overrides and **Legendary** extras are applied at place / restore / claim
+  (`Evolutions.applyStats` / `claimedExtras`). Mythic+ combat extras are still 🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
-    If one Tung kills a Zombie, every Tung (the shared pool) gains that XP.
-    Poison / status ticks keep the previous last hit; silent deaths (house
-    breach, plot clear) grant nothing.
+    If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
+    that XP. Poison / status ticks keep the previous last hit; silent deaths
+    (house breach, plot clear) grant nothing. `BubbleTrap` and `MeleeBat` do
+    **not** claim last-hit (they use landed-hit jobs instead).
   - **Boss** — `BOSS_XP` is split **evenly across every living plant** on the
     lawn (integer remainder on the first plants). Four Tungs + one Ballerina
     → Tung pool gets four shares, Ballerina one. Empty lawn → no XP.
@@ -38,6 +41,10 @@ not live code. “Gold” on the sheet is **coins**.
     - `GenerateCoins` — `COIN_XP` per coin actually spat onto the lawn.
     - `Wall` — `SOAK_XP` each time the plant takes a damage tick (chew / arrow).
     - `FreezeTime` — `FREEZE_XP` per monster frozen on that cast.
+    - `BubbleTrap` — `BUBBLE_XP` every `BUBBLE_XP_HITS` (2) bubbles that land
+      (**instead of** last-hit).
+    - `MeleeBat` — `MELEE_XP` every `MELEE_XP_HITS` (3) connecting hits
+      (**instead of** last-hit), including Ranged Rampage bolts.
 - Campaign days stay the PvZ loop. A player can be on Day 3 with a level-20
   Tung Tung, or Day 40 with a level-8 Ballerina.
 - Inventory + field inspect show `EvolutionConfig.formatProgress` (level and
@@ -70,9 +77,13 @@ Unlock gate is **Brainrot level** (the unit’s own meter).
 | **Celestial** | 40 | Dark green | Passive |
 | **Immortal** | 50 | Dark red | Ultimate |
 
-Visual: aura color tracks the **highest** owned tier for that Brainrot (stacked
-FX optional). Prefer tint / attachment auras over a full mesh swap unless a
-prestige `modelId` is authored later.
+Visual: aura color tracks the **highest** owned (claimed) tier for that Brainrot.
+Planted units with Epic+ claimed get a Super Saiyan column (stretched flame
+spikes, speed lines, sparkles, thin silhouette outline) tinted by
+`EvolutionConfig.worldAura` — purple at Epic, gold at Legendary
+(`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
+colors land with those tiers. Prefer tint / particle auras over a full mesh
+swap unless a prestige `modelId` is authored later.
 
 Spend (brains) to **claim** a tier after the Brainrot level gate. Reaching
 the level lights the inspect row (light rarity fill, shiny rarity title);
@@ -85,8 +96,8 @@ via `EvolveBrainrot`. Server owns unlocks; client UI is display + intent.
 
 | Type | Runtime shape |
 | ---- | ------------- |
-| **Stat boost** | Overrides on the common Brainrot definition (HP, damage, interval, plant cooldown, …). Keep core `ability` id. |
-| **Active** | Extra ability on a cooldown (player-facing “active”). |
+| **Stat boost** | Overrides on the common Brainrot definition (HP, damage, interval, plant cooldown, …). Keep core `ability` id. **Epic ✅** |
+| **Active** | Extra ability on a cooldown (player-facing “active”). **Legendary ✅** |
 | **Passive** | Always-on extra ability / proc (no press). |
 | **Ultimate** | Extra ability, long cooldown. |
 
@@ -112,7 +123,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Wallet Ballet | Coin interval **12s** (from 18s). |
-| Legendary | Golden Waltz | Every **30s**, generate 1 coin, then produce coins **2×** faster for **6s**. |
+| Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
 | Celestial | Golden Discount | When producing a coin, the next Brainrot plant costs **50%** (which plant / stacking — impl). |
 | Immortal | Jackpot | Produce coins **3×** faster; each coin during the ultimate **33%** extra coin. **30s** CD. |
@@ -122,7 +133,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Goliath | **4000** HP (from 2000). |
-| Legendary | Banana Bastion | Shield **500** HP every **10s**. |
+| Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
 | Celestial | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Cannot use active or ultimate while stone. |
 | Immortal | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. **30s** CD. |
@@ -152,7 +163,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Espresso Rush | **+50%** attack speed. |
-| Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind. **10s** CD. |
+| Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Celestial | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
 | Immortal | Shadow Requiem | Vanish to the east end of the lane, run back, stab every monster in the path for **2000%** dmg. **45s** CD. |
@@ -184,11 +195,15 @@ mutations stay in M19 or slip to a later pass.
   hardcoded in combat).
 - Persist **Brainrot XP** per id via `SaveData.brainrotXp` (save v5). Claimed
   evolution tiers via `SaveData.evolutions` (save **v6**). Do not reuse
-  campaign `currentLevel` / `highestLevel`. Combat bonuses 🔜.
+  campaign `currentLevel` / `highestLevel`. **Epic** stats compose onto
+  placements via `Evolutions.applyStats` + `BrainrotService.applyEvolutionStats`.
+  **Legendary** extras tick via `Evolutions.claimedExtras` +
+  `BrainrotBehavior.tickExtras` (ability ids, never unit names). Mythic+ 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
-  species for normal monsters; boss XP split evenly across living plants;
-  support jobs on `GenerateCoins` / `Wall` / `FreezeTime`. Never trust the
-  client.
+  species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
+  `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
+  plants; support jobs on `GenerateCoins` / `Wall` / `FreezeTime` / landed-hit
+  jobs (`BubbleTrap` every 2, `MeleeBat` every 3). Never trust the client.
 - Eligibility from that unit’s Brainrot level (+ optional spend); never trust
   the client, never gate on campaign day unless a later pass adds it.
 - Grants / composition on the server (`ProgressService` or a dedicated API).
@@ -196,8 +211,10 @@ mutations stay in M19 or slip to a later pass.
   **Current Evolution** (white Common base ability, then Epic→Immortal gray
   until the Brainrot level gate; at the gate the row uses a light rarity fill
   and a shiny rarity title, with a lock until brains claim and a confirm
-  prompt on click). Combat
-  bonuses still 🔜.
-- Aura VFX client-side; combat and unlocks server-authoritative.
+  prompt on click). **Epic** stats apply once claimed; **Legendary** extras
+  tick in combat. Mythic+ combat bonuses still 🔜.
+- Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
+  Epic purple, Legendary gold (`EvolutionConfig.worldAura`). Combat and
+  unlocks server-authoritative.
 
 See `ROADMAP.md` Milestone 19 for ship criteria.

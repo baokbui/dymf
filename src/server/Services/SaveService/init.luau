@@ -399,6 +399,7 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 	LevelService.queueJoinIntros(player)
 	CoinService.applyDayPurse(player, forcedDay or saveData.currentLevel)
 	ProgressService.applyDevRoster(player)
+	ProgressService.applyDevBrains(player)
 	CoinService.applyDevPurse(player)
 end
 
@@ -503,6 +504,7 @@ function SaveService.resetProgress(player: Player)
 	saveToStore(player.UserId, defaults)
 
 	ProgressService.reset(player)
+	ProgressService.applyDevBrains(player)
 	LevelService.applySaveProgress(player, 1, 1, LevelConfig.STARTING_PLAYER_HEALTH)
 	CoinService.resetBalance(player)
 

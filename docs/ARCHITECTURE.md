@@ -99,7 +99,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary intent signal)
-        BrainrotController/ (BrainrotAction SFX; ScaleTo pulse only if not animated)
+        BrainrotController/ (BrainrotAction SFX; ScaleTo pulse; world nameplates)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
         StoreController/  (hide other players' store Talk prompts — M18)
@@ -107,6 +107,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)
+        TextShine.luau    (shared rarity-title gleam)
 
 Workspace/
     Plots/        plot models are generated here at runtime
@@ -322,13 +323,14 @@ Full details in `BRAINROTS.md`. Summary:
 - **`BrainrotService/Abilities/`** — one handler module per ability id;
   `BrainrotBehavior` resolves handlers from `definition.ability`.
 - **`BrainrotBehavior`** — server tick loop for cooldowns; calls `tryAct` /
-  `onPlaced`; routes combat through `CombatService`, coins through
+  `onPlaced`; ticks claimed evolution extras even when `attackInterval <= 0`;
+  routes combat through `CombatService`, coins through
   `CoinService.dropCoinForOwner`.
 - **`BrainrotAnimation`** — server idle/attack Animator tracks for
   `definition.animated` units (replicates Motor6D poses; same idea as
   `MonsterAnimation`).
 - **`BrainrotFeedback`** — ScaleTo attack pulse (skipped when `animated`) +
-  replicated hit flash on damage.
+  replicated hit flash on damage + rarity-tinted Super Saiyan aura.
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
   pushes; ScaleTo pulse only for non-animated melee (gameplay stays server-side).
 - **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
@@ -467,9 +469,16 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   ultimate). Tiers stack; base shop id stays.
 - Persist level + XP + owned tiers via `SaveService`. Combat extras stay
   data-driven ability ids.
-- **XP (live):** last-hit species for normal kills; boss XP split per living
-  plant on the lawn; persisted as `brainrotXp` (save v5). Inspect UI shows
-  level / XP. Tier combat bonuses still 🔜.
+- **XP (live):** last-hit species for normal kills (`BubbleTrap` and `MeleeBat`
+  use landed-hit XP instead); boss XP split per living plant on the lawn;
+  persisted as `brainrotXp` (save v5). Inspect UI shows level / XP. XP from a
+  failed or unfinished day rewinds to the Start Day snapshot.
+- **Epic stats + Legendary extras + aura (live):** claimed Epic overlays `stats`
+  onto the registry definition (interval / HP / damage / plant cooldown).
+  Legendary extras tick from evolution `ability` ids (`CoinHaste`,
+  `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`; Lirili’s
+  `freezeEntireLane` merges into `abilityParams`). Aura is purple at Epic and
+  gold at Legendary. Mythic+ combat extras still 🔜.
 
 ### Milestone 12 — Audio ✅
 

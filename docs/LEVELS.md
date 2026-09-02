@@ -277,7 +277,8 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
 - On **Defeat**: convert leftover pocket coins the same way; clear mid-day
   Brainrots / monsters / ground coins; **keep**
   `currentLevel` on the failed day; **restore** the last victory checkpoint lawn
-  (`SaveService.restoreCommittedLawn` — do not wipe the checkpoint); hearts
+  (`SaveService.restoreCommittedLawn` — do not wipe the checkpoint); **roll back
+  Brainrot XP** to the Start Day snapshot; hearts
   refill; purse via `applyDayPurse`. Phase stays **`Defeat`** until the player
   presses **Rewind Day N** (`RewindDay` → `Preparation`). Then **Start Day** as
   usual. Passive and ability coin drops are blocked outside `Active`.
@@ -307,6 +308,7 @@ later as its own mode).
   plants on an unfinished day are **not** saved.
 - Monsters, projectiles, and level timers are never persisted.
 - If a player leaves mid-day or before Start Day: save progression + committed
-  lawn only; clear combat runtimes. The unfinished day resets to Preparation.
+  lawn only; **Brainrot XP from the unfinished day is not kept** (same snapshot
+  as defeat); clear combat runtimes. The unfinished day resets to Preparation.
 - On rejoin: restore day + hearts + brains/unlocks + committed plants; coins via
   day purse; press Start Day.

@@ -18,6 +18,14 @@ export type AbilityCallbacks = {
 	playSound: (soundKey: string) -> (),
 }
 
+export type EvolutionBuffs = {
+	coinHasteUntil: number,
+	coinHasteFactor: number,
+	rangedUntil: number,
+	pierceNext: boolean,
+	shieldHp: number,
+}
+
 export type AbilityContext = {
 	instanceId: string,
 	definition: any,
@@ -27,6 +35,8 @@ export type AbilityContext = {
 	position: any,
 	row: number,
 	column: number,
+	buffs: EvolutionBuffs,
+	extraParams: { [string]: number }?,
 }
 
 export type AbilityHandler = {
@@ -46,6 +56,11 @@ local handlers: { [string]: AbilityHandler } = {
 	Wall = require(script.Wall),
 	ClearFogRow = require(script.ClearFogRow),
 	BustGrave = require(script.BustGrave),
+	CoinHaste = require(script.CoinHaste),
+	ShieldPulse = require(script.ShieldPulse),
+	RangedRampage = require(script.RangedRampage),
+	BubbleBarrage = require(script.BubbleBarrage),
+	PierceBrew = require(script.PierceBrew),
 }
 
 function Abilities.get(abilityId: string?): AbilityHandler?

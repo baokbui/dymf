@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
@@ -25,6 +26,8 @@ export type ImpactSpec = {
 	statusDuration: number?,
 	statusVisual: string?,
 	sourceBrainrotId: string?,
+	sourceInstanceId: string?,
+	pierceCount: number?,
 }
 
 export type LaunchSpec = {
@@ -245,6 +248,51 @@ local function createShurikenModel(): (Model, BasePart)
 	return createProceduralShuriken()
 end
 
+local function applyPierceAura(model: Model, hub: BasePart)
+	model:SetAttribute("PiercingBrew", true)
+	hub:SetAttribute("PiercingBrew", true)
+
+	local gold = VfxConfig.PIERCE_SHURIKEN_AURA_COLOR
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "PierceAura"
+	highlight.Adornee = model
+	highlight.FillColor = gold
+	highlight.FillTransparency = 0.78
+	highlight.OutlineColor = gold:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
+	highlight.OutlineTransparency = 0.05
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.Parent = model
+
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Name = "PierceSparks"
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 230)),
+		ColorSequenceKeypoint.new(0.45, gold),
+		ColorSequenceKeypoint.new(1, gold:Lerp(Color3.fromRGB(255, 120, 30), 0.25)),
+	})
+	sparks.LightEmission = 1
+	sparks.Brightness = 3.4
+	sparks.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.42),
+		NumberSequenceKeypoint.new(0.55, 0.22),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	sparks.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.08),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	sparks.Lifetime = NumberRange.new(0.18, 0.4)
+	sparks.Speed = NumberRange.new(1.5, 5)
+	sparks.SpreadAngle = Vector2.new(180, 180)
+	sparks.Rate = 36
+	sparks.Rotation = NumberRange.new(0, 360)
+	sparks.RotSpeed = NumberRange.new(-120, 120)
+	sparks.Drag = 1.2
+	sparks.ZOffset = 2
+	sparks.Parent = hub
+end
+
 local function createProceduralArrow(): (Model, BasePart)
 	local model = Instance.new("Model")
 	model.Name = "ArrowProjectile"
@@ -396,6 +444,10 @@ function Projectile.launch(
 		local shurikenModel, hub = createShurikenModel()
 		model = shurikenModel
 		part = hub
+		local pierceCount = if spec.impact then spec.impact.pierceCount else nil
+		if type(pierceCount) == "number" and pierceCount > 0 then
+			applyPierceAura(shurikenModel, hub)
+		end
 		shurikenModel.Parent = folder
 	elseif kind == "Arrow" then
 		local arrowModel, hub = createArrowModel()

@@ -1,0 +1,19 @@
+--!strict
+--[[
+	RangedRampage
+	Melee plants launch lane projectiles instead of close-range hits.
+]]
+
+local RangedRampage = {}
+
+function RangedRampage.tryAct(ctx, _callbacks)
+	local params = ctx.extraParams
+	local duration = 10
+	if type(params) == "table" then
+		duration = params.duration or duration
+	end
+	ctx.buffs.rangedUntil = os.clock() + math.max(0.1, duration)
+	return true
+end
+
+return RangedRampage

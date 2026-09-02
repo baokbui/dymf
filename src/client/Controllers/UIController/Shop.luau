@@ -9,9 +9,11 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextService = game:GetService("TextService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
+local Evolutions = require(Shared.Evolutions)
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Types = require(Shared.Types)
@@ -26,10 +28,13 @@ local CARD_HEIGHT = 78
 local CARD_PADDING = 10
 local PANEL_PADDING_X = 12
 local PANEL_PADDING_Y = 8
-local SWATCH_SIZE = 42
+local SWATCH_SIZE = 36
 local CARD_STROKE = 2
 local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
 local PANEL_CORNER_RADIUS = UITheme.CORNER_PANEL
+local NAME_TEXT_SIZE = 9
+local NAME_MAX_WIDTH = CARD_WIDTH - 8
+local NAME_HEIGHT = 20
 
 local TOOL_COLUMN_WIDTH = 44
 local TOOL_GAP = 6
@@ -61,6 +66,7 @@ export type Shop = typeof(setmetatable(
 		equippedIds: { string },
 		-- brainrotId → readyAt (Workspace:GetServerTimeNow)
 		plantReadyAt: { [string]: number },
+		evolutions: { [string]: { string } },
 		shovelButton: TextButton,
 		cancelButton: TextButton,
 		callbacks: ShopCallbacks,
@@ -96,6 +102,19 @@ local function sortedDefinitions(filterIds: { string }?): { Types.BrainrotDefini
 	return list
 end
 
+-- Keep card width: if the name doesn't fit, put the rest under the first word.
+local function shopDisplayName(name: string): string
+	local bounds = TextService:GetTextSize(name, NAME_TEXT_SIZE, Enum.Font.GothamBold, Vector2.new(1000, 32))
+	if bounds.X <= NAME_MAX_WIDTH then
+		return name
+	end
+	local first, rest = string.match(name, "^(%S+)%s+(.+)$")
+	if first and rest then
+		return first .. "\n" .. rest
+	end
+	return name
+end
+
 local function resizePanel(frame: Frame, cardCount: number)
 	local cardsWidth = math.max(0, cardCount * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING)
 	local panelWidth = PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth
@@ -110,6 +129,7 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 		selectedId = nil,
 		equippedIds = {},
 		plantReadyAt = {},
+		evolutions = {},
 		callbacks = callbacks,
 	}, Shop) :: Shop
 
@@ -243,7 +263,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 		button,
 		definition,
 		UDim2.fromOffset(SWATCH_SIZE, SWATCH_SIZE),
-		UDim2.new(0.5, 0, 0, 5)
+		UDim2.new(0.5, 0, 0, 4)
 	)
 	-- Soft inset only — no second black ring inside the card.
 	UITheme.styleCorner(preview, 8)
@@ -255,15 +275,18 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.AnchorPoint = Vector2.new(0.5, 0)
-	nameLabel.Position = UDim2.new(0.5, 0, 0, 5 + SWATCH_SIZE + 2)
-	nameLabel.Size = UDim2.new(1, -8, 0, 12)
-	nameLabel.TextSize = 9
+	nameLabel.Position = UDim2.new(0.5, 0, 0, 4 + SWATCH_SIZE)
+	nameLabel.Size = UDim2.new(1, -6, 0, NAME_HEIGHT)
+	nameLabel.TextSize = NAME_TEXT_SIZE
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-	nameLabel.Text = definition.name
+	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+	nameLabel.TextWrapped = true
+	nameLabel.TextTruncate = Enum.TextTruncate.None
+	nameLabel.Text = shopDisplayName(definition.name)
 	nameLabel.Parent = button
 	UITheme.applyOutlinedTitle(nameLabel, UITheme.TITLE)
-	nameLabel.TextSize = 10
+	nameLabel.TextSize = NAME_TEXT_SIZE
+	nameLabel.TextWrapped = true
 
 	local costLabel = Instance.new("TextLabel")
 	costLabel.Name = "Cost"
@@ -337,7 +360,9 @@ function Shop.refresh(self: Shop)
 		card.costLabel.TextSize = 12
 
 		if onCooldown then
-			local duration = BrainrotConfig.plantCooldownFor(card.definition)
+			local duration = BrainrotConfig.plantCooldownFor(
+				Evolutions.applyStats(card.definition, self.evolutions[card.definition.id])
+			)
 			local fraction = if duration > 0 then math.clamp(remaining / duration, 0, 1) else 0
 			card.cooldownCover.Visible = true
 			card.cooldownCover.Size = UDim2.fromScale(1, fraction)
@@ -353,6 +378,11 @@ function Shop.refresh(self: Shop)
 			end
 		end
 	end
+end
+
+function Shop.setEvolutions(self: Shop, evolutions: { [string]: { string } }?)
+	self.evolutions = if type(evolutions) == "table" then evolutions else {}
+	self:refresh()
 end
 
 function Shop.setPlantCooldowns(self: Shop, readyAtById: { [string]: number }?)

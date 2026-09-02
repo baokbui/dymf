@@ -147,6 +147,20 @@ local VfxConfig = {
 	SHURIKEN_PROJECTILE_TRAIL_WIDTH = 0.3,
 	SHURIKEN_PROJECTILE_GLOW_BRIGHTNESS = 1.8,
 	SHURIKEN_PROJECTILE_GLOW_RANGE = 8,
+
+	-- Piercing Brew (Legendary) shuriken — gold so the extra is readable in flight.
+	PIERCE_SHURIKEN_AURA_COLOR = Color3.fromRGB(255, 196, 48),
+	PIERCE_SHURIKEN_TRAIL_COLOR = Color3.fromRGB(255, 220, 90),
+	PIERCE_SHURIKEN_TRAIL_LIFETIME = 0.28,
+	PIERCE_SHURIKEN_TRAIL_WIDTH = 0.55,
+	PIERCE_SHURIKEN_GLOW_BRIGHTNESS = 4.2,
+	PIERCE_SHURIKEN_GLOW_RANGE = 14,
+
+	-- Banana Bastion shield bubble (server-replicated on the plant).
+	SHIELD_BUBBLE_COLOR = Color3.fromRGB(70, 175, 255),
+	SHIELD_BUBBLE_TRANSPARENCY = 0.62,
+	SHIELD_BUBBLE_PADDING = 1.18,
+	SHIELD_HP_FILL = Color3.fromRGB(70, 185, 255),
 }
 
 table.freeze(VfxConfig)

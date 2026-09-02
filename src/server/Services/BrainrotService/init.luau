@@ -31,6 +31,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local Brainrots = require(Shared.Brainrots)
+local Evolutions = require(Shared.Evolutions)
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local Constants = require(Shared.Constants)
@@ -141,6 +142,56 @@ function BrainrotService.getPlantCooldowns(player: Player): { [string]: number }
 	return payload
 end
 
+local function claimedForOwner(userId: number, brainrotId: string): { string }
+	local player = Players:GetPlayerByUserId(userId)
+	if not player then
+		return {}
+	end
+	local ProgressService = require(script.Parent.ProgressService)
+	return ProgressService.getClaimedEvolutions(player, brainrotId)
+end
+
+local function evolvedDefinition(userId: number, definition: Types.BrainrotDefinition): Types.BrainrotDefinition
+	return Evolutions.applyStats(definition, claimedForOwner(userId, definition.id))
+end
+
+local function applyEvolutionAura(model: Model, userId: number, brainrotId: string)
+	local rarity = Evolutions.highestClaimedRarity(claimedForOwner(userId, brainrotId))
+	if not rarity then
+		BrainrotFeedback.clearAura(model)
+		return
+	end
+	BrainrotFeedback.applyAura(model, EvolutionConfig.worldAura(rarity), EvolutionConfig.BRAINROT_AURA_SCALE)
+end
+
+local function applyNameplateAttributes(placement: Placement)
+	local player = Players:GetPlayerByUserId(placement.ownerUserId)
+	local rarity = Evolutions.highestClaimedRarity(claimedForOwner(placement.ownerUserId, placement.brainrotId))
+		or "Common"
+	local level = 1
+	if player then
+		local ProgressService = require(script.Parent.ProgressService)
+		level = ProgressService.getBrainrotLevel(player, placement.brainrotId)
+	end
+	placement.model:SetAttribute("EvolutionRarity", rarity)
+	placement.model:SetAttribute("BrainrotLevel", level)
+end
+
+local function syncHealthDisplay(placement: Placement)
+	local definition = placement.definition
+	local maxHits = definition.health
+	local shield = math.floor(placement.buffs.shieldHp)
+	placement.model:SetAttribute("HitsRemaining", placement.health)
+	local body = 0
+	if maxHits > 0 then
+		body = math.floor(definition.maxHealth * placement.health / maxHits)
+	end
+	placement.model:SetAttribute("Health", body)
+	placement.model:SetAttribute("MaxHealth", definition.maxHealth)
+	placement.model:SetAttribute("ShieldHp", shield)
+	BrainrotFeedback.setShield(placement.model, shield > 0)
+end
+
 -- Coerces untrusted client input into a clean integer grid position, or nil.
 local function toGridPosition(raw: unknown): Types.GridPosition?
 	if type(raw) ~= "table" then
@@ -206,6 +257,7 @@ local function createPlacement(
 		displayHealth = math.floor(definition.maxHealth * clampedHealth / definition.health)
 	end
 	model:SetAttribute("Health", displayHealth)
+	model:SetAttribute("ShieldHp", 0)
 
 	local placement: Placement = {
 		instanceId = instanceId,
@@ -235,10 +287,20 @@ local function createPlacement(
 		burnNextTick = 0,
 		weakenUntil = 0,
 		weakenFactor = 0,
+		extraCooldowns = {},
+		buffs = {
+			coinHasteUntil = 0,
+			coinHasteFactor = 1,
+			rangedUntil = 0,
+			pierceNext = false,
+			shieldHp = 0,
+		},
 	}
 
 	placements[instanceId] = placement
 	BrainrotBehavior.register(placement)
+	applyEvolutionAura(model, ownerUserId, definition.id)
+	applyNameplateAttributes(placement)
 	return placement
 end
 
@@ -288,13 +350,20 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 		)
 	end
 
-	placement.health = math.max(0, placement.health - hits)
 	local maxHits = placement.definition.health
-	placement.model:SetAttribute("HitsRemaining", placement.health)
-	placement.model:SetAttribute(
-		"Health",
-		math.floor(placement.definition.maxHealth * placement.health / maxHits)
-	)
+	if hits > 0 and maxHits > 0 and placement.buffs.shieldHp > 0 then
+		local hpPerHit = placement.definition.maxHealth / maxHits
+		local incomingHp = hits * hpPerHit
+		local absorbed = math.min(placement.buffs.shieldHp, incomingHp)
+		placement.buffs.shieldHp -= absorbed
+		local leftoverHp = incomingHp - absorbed
+		hits = if leftoverHp > 0 then math.ceil(leftoverHp / hpPerHit) else 0
+	end
+
+	if hits > 0 then
+		placement.health = math.max(0, placement.health - hits)
+	end
+	syncHealthDisplay(placement)
 
 	local isFatal = placement.health <= 0
 	-- Server-owned Color replicates (same pattern as MonsterFeedback.flashHit).
@@ -339,6 +408,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		notifyPlaceFailed(player, "Unable to plant — Brainrot not available")
 		return
 	end
+	definition = evolvedDefinition(player.UserId, definition)
 
 	if isPlantOnCooldown(player, brainrotId) then
 		notifyPlaceFailed(player, "Unable to plant — still recharging")
@@ -412,7 +482,6 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		return
 	end
 
-	local ProgressService = require(script.Parent.ProgressService)
 	local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
 	startPlantCooldown(player, definition)
@@ -472,6 +541,10 @@ end
 
 function BrainrotService.getPlacement(instanceId: string): Placement?
 	return placements[instanceId]
+end
+
+function BrainrotService.noteLandedAttack(instanceId: string)
+	BrainrotBehavior.noteLandedAttack(instanceId)
 end
 
 -- Removes a living Brainrot from the lawn (Pharaoh steal). Optional yank toward
@@ -556,6 +629,7 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 		if not definition or definition.hidden == true then
 			continue
 		end
+		definition = evolvedDefinition(player.UserId, definition)
 
 		local instanceId = if type(saved.instanceId) == "string" and saved.instanceId ~= ""
 			then saved.instanceId
@@ -579,6 +653,39 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health, true) then
 			GridService.release(plot.model, position)
 		end
+	end
+end
+
+-- Re-compose Epic (and later) stats + aura on every living plant of this id.
+function BrainrotService.applyEvolutionStats(player: Player, brainrotId: string)
+	local base = Brainrots.get(brainrotId)
+	if not base then
+		return
+	end
+	local composed = Evolutions.applyStats(base, claimedForOwner(player.UserId, brainrotId))
+	for _, placement in placements do
+		if placement.ownerUserId ~= player.UserId or placement.brainrotId ~= brainrotId then
+			continue
+		end
+		placement.definition = composed
+		if composed.attackInterval > 0 then
+			placement.cooldownRemaining = math.min(placement.cooldownRemaining, composed.attackInterval)
+		end
+		syncHealthDisplay(placement)
+		applyEvolutionAura(placement.model, player.UserId, brainrotId)
+		applyNameplateAttributes(placement)
+	end
+end
+
+function BrainrotService.syncNameplates(player: Player, brainrotId: string?)
+	for _, placement in placements do
+		if placement.ownerUserId ~= player.UserId then
+			continue
+		end
+		if brainrotId and placement.brainrotId ~= brainrotId then
+			continue
+		end
+		applyNameplateAttributes(placement)
 	end
 end
 

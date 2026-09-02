@@ -237,7 +237,8 @@ under the stone (`MONSTER_RISE_DURATION`). The grave **stays** on the tile
 lands **6** smashes (`GraveConfig.PATAPIM_HITS`) or the plot is cleared.
 Other Brainrot damage and status **cannot** chip graves; lane shots stop at
 the stone for monsters **behind** it (higher column / east) without shaking.
-**Bombardino** bombs still damage those monsters. Collapse uses the same
+**Piercing Brew** shots fly through and still hit those monsters. **Bombardino**
+bombs still damage those monsters. Collapse uses the same
 fade-in-place death as monsters. **Patapim** uses `ignoreMonsterChew` so
 monsters walk through him and the grave.
 Grave production **stops** when spawn groups finish so victory can fire. Authored model:

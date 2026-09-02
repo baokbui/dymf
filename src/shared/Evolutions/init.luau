@@ -1,58 +1,150 @@
 --!strict
 --[[
 	Evolutions
-	Display catalog for the Epic→Immortal ladder. Claiming a tier costs brains
-	after the Brainrot level gate. Combat bonuses are not applied yet.
+	Epic→Immortal catalog. Claiming a tier costs brains after the Brainrot
+	level gate. Epic `stats` compose onto the shared registry definition
+	(never mutate the catalog; never branch on unit names).
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
+local Types = require(script.Parent.Types)
+
+export type StatOverrides = {
+	attackInterval: number?,
+	maxHealth: number?,
+	health: number?,
+	damage: number?,
+	plantCooldown: number?,
+}
 
 export type EvolutionRow = {
 	rarity: string,
 	level: number,
 	name: string,
 	description: string,
+	stats: StatOverrides?,
+	-- Extra ability handler id (Legendary+). Resolved by Brainrot Abilities.
+	ability: string?,
+	abilityParams: { [string]: number }?,
 }
 
 local TRACKS: { [string]: { EvolutionRow } } = {
 	BallerinaCappucina = {
-		{ rarity = "Epic", level = 10, name = "Wallet Ballet", description = "Coin interval 12s (from 18s)." },
-		{ rarity = "Legendary", level = 20, name = "Golden Waltz", description = "Every 30s, generate 1 coin, then produce coins 2× faster for 6s." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Wallet Ballet",
+			description = "Coin interval 12s (from 18s).",
+			stats = { attackInterval = 12 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Golden Waltz",
+			description = "Every 30s, produce coins 2x faster for 6s.",
+			ability = "CoinHaste",
+			abilityParams = { cooldown = 30, duration = 6, factor = 2 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Encore", description = "Each coin produced: 30% chance to produce one extra." },
 		{ rarity = "Celestial", level = 40, name = "Golden Discount", description = "When producing a coin, the next Brainrot plant costs 50%." },
 		{ rarity = "Immortal", level = 50, name = "Jackpot", description = "Produce coins 3× faster; each coin during the ultimate 33% extra. 30s cooldown." },
 	},
 	ChimpanziniBananini = {
-		{ rarity = "Epic", level = 10, name = "Goliath", description = "4000 HP (from 2000)." },
-		{ rarity = "Legendary", level = 20, name = "Banana Bastion", description = "Shield 500 HP every 10s." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Goliath",
+			description = "4000 HP (from 2000).",
+			stats = { maxHealth = 4000 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Banana Bastion",
+			description = "Shield 500 HP every 10s.",
+			ability = "ShieldPulse",
+			abilityParams = { cooldown = 10, shield = 500 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Jungle Vitality", description = "Heal 5% max HP every 5s." },
 		{ rarity = "Celestial", level = 40, name = "Stoneheart", description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone." },
 		{ rarity = "Immortal", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. 30s cooldown." },
 	},
 	TungTungSahur = {
-		{ rarity = "Epic", level = 10, name = "Tung Tung Training", description = "1500 HP / 100 dmg (from 1200 / 55)." },
-		{ rarity = "Legendary", level = 20, name = "Ranged Rampage", description = "Becomes a ranged attacker for 10s." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Tung Tung Training",
+			description = "1500 HP / 100 dmg (from 1200 / 55).",
+			stats = { maxHealth = 1500, damage = 100 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Ranged Rampage",
+			description = "Becomes a ranged attacker for 10s.",
+			ability = "RangedRampage",
+			abilityParams = { cooldown = 20, duration = 10 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Desperate Fury", description = "Once per plant: below 50% HP, +50% attack speed." },
 		{ rarity = "Celestial", level = 40, name = "Tenfold Guard", description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded." },
 		{ rarity = "Immortal", level = 50, name = "Sahur's Wrath", description = "Hit the entire lane once for 1000% of original damage. 30s cooldown." },
 	},
 	TralaleroTralala = {
-		{ rarity = "Epic", level = 10, name = "Ocean's Rhythm", description = "Attack interval 3s (from 5s)." },
-		{ rarity = "Legendary", level = 20, name = "Bubble Barrage", description = "Fire 5 bubbles at once, one per lawn row; each traps. 15s cooldown." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Ocean's Rhythm",
+			description = "Attack interval 3s (from 5s).",
+			stats = { attackInterval = 3 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Bubble Barrage",
+			description = "Fire 5 bubbles at once, one per lawn row; each traps. 15s cooldown.",
+			ability = "BubbleBarrage",
+			abilityParams = { cooldown = 15 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Double Bubble", description = "Each bubble 33% chance to spawn an extra trap bubble." },
 		{ rarity = "Celestial", level = 40, name = "Wound of the Shark", description = "Monsters leaving a bubble are slowed 40% for 3s." },
 		{ rarity = "Immortal", level = 50, name = "Tidal Cataclysm", description = "Lane tsunami: knockback + stun, then slow 30% for 3s." },
 	},
 	CappuccinoAssassino = {
-		{ rarity = "Epic", level = 10, name = "Espresso Rush", description = "+50% attack speed." },
-		{ rarity = "Legendary", level = 20, name = "Piercing Brew", description = "Attack pierces the first monster: 100% dmg to it and the one behind. 10s cooldown." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Espresso Rush",
+			description = "+50% attack speed.",
+			-- 2s base / 1.5 = ~1.333s between knives.
+			stats = { attackInterval = 2 / 1.5 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Piercing Brew",
+			description = "Attack pierces the first monster: 100% dmg to it and the one behind. 10s cooldown.",
+			ability = "PierceBrew",
+			abilityParams = { cooldown = 10 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Fifth Strike", description = "Every 5th attack deals 200% dmg." },
 		{ rarity = "Celestial", level = 40, name = "Assassin's Verdict", description = "Execute on hit if target is below 7.5% HP (2% for bosses)." },
 		{ rarity = "Immortal", level = 50, name = "Shadow Requiem", description = "Vanish to the east end of the lane, run back, stab every monster for 2000% dmg. 45s cooldown." },
 	},
 	LiriliLarila = {
-		{ rarity = "Epic", level = 10, name = "Cryocycle", description = "Plant recharge 15s (from 20s)." },
-		{ rarity = "Legendary", level = 20, name = "Winter's Grasp", description = "Freeze a whole lane." },
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Cryocycle",
+			description = "Plant recharge 15s (from 20s).",
+			stats = { plantCooldown = 15 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Winter's Grasp",
+			description = "Freeze a whole lane.",
+			abilityParams = { freezeEntireLane = 1 },
+		},
 		{ rarity = "Mythic", level = 30, name = "Permafrost", description = "Freeze duration 7s." },
 		{ rarity = "Celestial", level = 40, name = "Frostbound Neighbor", description = "Also freeze one adjacent lane." },
 		{ rarity = "Immortal", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s." },
@@ -150,6 +242,83 @@ local KIND_LABEL: { [string]: string } = {
 	Passive = "Passive",
 	Ultimate = "Ultimate",
 }
+
+function Evolutions.highestClaimedRarity(claimed: { string }?): string?
+	local set = Evolutions.claimedSet(claimed)
+	local best: string? = nil
+	for _, rarity in CLAIM_ORDER do
+		if set[rarity] then
+			best = rarity
+		end
+	end
+	return best
+end
+
+-- Overlay claimed-tier `stats` and `abilityParams` onto the registry definition.
+-- Later rarities overwrite earlier ones. Never mutates `base`.
+function Evolutions.applyStats(base: Types.BrainrotDefinition, claimed: { string }?): Types.BrainrotDefinition
+	local overlay: { [string]: any } = {}
+	local paramsOverlay: { [string]: number } = {}
+	local changed = false
+	local set = Evolutions.claimedSet(claimed)
+	if type(base.abilityParams) == "table" then
+		for key, value in base.abilityParams do
+			paramsOverlay[key] = value
+		end
+	end
+	for _, rarity in CLAIM_ORDER do
+		if not set[rarity] then
+			continue
+		end
+		local row = Evolutions.rowFor(base.id, rarity)
+		if not row then
+			continue
+		end
+		if row.stats then
+			for key, value in row.stats do
+				overlay[key] = value
+				changed = true
+			end
+		end
+		if row.abilityParams and (type(row.ability) ~= "string" or row.ability == "") then
+			for key, value in row.abilityParams do
+				paramsOverlay[key] = value
+				changed = true
+			end
+		end
+	end
+	if next(paramsOverlay) then
+		overlay.abilityParams = paramsOverlay
+	end
+	if not changed then
+		return base
+	end
+	return (setmetatable(overlay, { __index = base }) :: any) :: Types.BrainrotDefinition
+end
+
+export type ExtraAbility = {
+	ability: string,
+	params: { [string]: number },
+}
+
+function Evolutions.claimedExtras(brainrotId: string, claimed: { string }?): { ExtraAbility }
+	local extras: { ExtraAbility } = {}
+	local set = Evolutions.claimedSet(claimed)
+	for _, rarity in CLAIM_ORDER do
+		if not set[rarity] then
+			continue
+		end
+		local row = Evolutions.rowFor(brainrotId, rarity)
+		if not row or type(row.ability) ~= "string" or row.ability == "" then
+			continue
+		end
+		table.insert(extras, {
+			ability = row.ability,
+			params = row.abilityParams or {},
+		})
+	end
+	return extras
+end
 
 function Evolutions.kindFor(rarity: string): string
 	for _, tier in EvolutionConfig.TIERS do

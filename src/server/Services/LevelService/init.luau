@@ -9,9 +9,11 @@
 
 	Victory keeps planted Brainrots on the plot and commits them for rejoin.
 	Leave / autosave persist that checkpoint only — mid-day plants are discarded.
-	Coin purse is STARTING_COINS on Day 1 only; after later days end the purse
-	resets to 0. Defeat restores the last victory checkpoint on the same day
-	(Game Over → Rewind). Day Select wipes the lawn and the committed checkpoint.
+	Brainrot XP earned during an unfinished or failed day rolls back to the
+	Start Day snapshot (committed on victory). Coin purse is STARTING_COINS
+	on Day 1 only; after later days end the purse resets to 0. Defeat restores
+	the last victory checkpoint on the same day (Game Over → Rewind). Day
+	Select wipes the lawn and the committed checkpoint.
 
 	Milestone 8.
 ]]
@@ -250,6 +252,7 @@ local function onVictory(player: Player, state: PlayerState)
 	)
 
 	-- Commit lawn checkpoint, then persist (mid-day plants after this only stick on next victory).
+	ProgressService.commitBrainrotXp(player)
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.commitLawn(player)
 	SaveService.saveNow(player, "victory")
@@ -260,6 +263,8 @@ local function onDefeat(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
 	-- Stay on the failed day; restore last victory lawn (do not wipe checkpoint).
+	-- Brainrot XP from this failed day rolls back to the Start Day snapshot.
+	ProgressService.restoreBrainrotXpCheckpoint(player)
 	clearLawn(player)
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.restoreCommittedLawn(player)
@@ -409,6 +414,7 @@ local function onStartLevel(player: Player)
 	end
 
 	-- Brief 3…0 overlay, then Active so players plant while monsters march in.
+	ProgressService.checkpointBrainrotXp(player)
 	if LevelConfig.COUNTDOWN_TIME > 0 then
 		beginCountdown(player, state)
 	else

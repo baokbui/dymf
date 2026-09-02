@@ -197,6 +197,9 @@ local function applyProfile(profile: { [string]: any }?)
 		end
 	end
 	lastEvolutions = evolutions
+	if shop then
+		shop:setEvolutions(evolutions)
+	end
 	if fieldInspect and fieldInspect:isOpen() then
 		local id = fieldInspect:getBrainrotId()
 		if id then

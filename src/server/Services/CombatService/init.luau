@@ -282,6 +282,9 @@ export type ProjectileLaunchOptions = {
 	-- Spawn at this world point (Skeleton bow / LArm) instead of lane center.
 	originWorld: Vector3?,
 	sourceBrainrotId: string?,
+	sourceInstanceId: string?,
+	-- Extra monsters east of the first hit (100% damage each).
+	pierceCount: number?,
 }
 
 -- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
@@ -318,12 +321,16 @@ function CombatService.launchProjectile(
 		return false
 	end
 
-	local blockingColumn = graveService().getBlockingColumn(
-		plotModel,
-		position.row,
-		position.column,
-		targetColumn
-	)
+	local pierceCount = if options then options.pierceCount else nil
+	local pierceGraves = type(pierceCount) == "number" and pierceCount > 0
+	local blockingColumn = if pierceGraves
+		then nil
+		else graveService().getBlockingColumn(
+			plotModel,
+			position.row,
+			position.column,
+			targetColumn
+		)
 	local targetKind: string? = nil
 	local targetInstanceId = targetId
 	if blockingColumn then
@@ -340,6 +347,8 @@ function CombatService.launchProjectile(
 			statusDuration = if blockingColumn then nil else options.statusDuration,
 			statusVisual = if blockingColumn then nil else options.statusVisual,
 			sourceBrainrotId = options.sourceBrainrotId,
+			sourceInstanceId = options.sourceInstanceId,
+			pierceCount = if blockingColumn then nil else pierceCount,
 		}
 	end
 
@@ -561,9 +570,9 @@ function CombatService.applyEntireRowStatus(
 	duration: number,
 	magnitude: number?,
 	visual: string?
-): boolean
+): number
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
-	local applied = false
+	local applied = 0
 	for _, monsterId in targets do
 		local targetColumn = monsterColumnOf(monsterId)
 		if type(targetColumn) == "number" and isBehindGrave(plotModel, row, 0, targetColumn) then
@@ -571,7 +580,7 @@ function CombatService.applyEntireRowStatus(
 			continue
 		end
 		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
-		applied = true
+		applied += 1
 	end
 	return applied
 end
@@ -677,6 +686,11 @@ function CombatService.applyStatusToMonster(
 	end
 end
 
+function CombatService.noteLandedAttack(sourceInstanceId: string)
+	local BrainrotService = require(script.Parent.BrainrotService)
+	BrainrotService.noteLandedAttack(sourceInstanceId)
+end
+
 function CombatService.notifyMonsterDeath(
 	ownerUserId: number,
 	instanceId: string,
@@ -735,6 +749,9 @@ local function onProjectileImpact(
 	end
 
 	local killed = CombatService.damageMonster(instanceId, damage, if impact then impact.sourceBrainrotId else nil)
+	if impact and type(impact.sourceInstanceId) == "string" then
+		CombatService.noteLandedAttack(impact.sourceInstanceId)
+	end
 	local payload: { [string]: any } = {
 		kind = "Hit",
 		instanceId = instanceId,
@@ -750,6 +767,37 @@ local function onProjectileImpact(
 			nil,
 			impact.statusVisual
 		)
+	end
+
+	local pierceCount = if impact then impact.pierceCount else nil
+	if type(pierceCount) == "number" and pierceCount > 0 and plotModel and type(row) == "number" then
+		local searchFrom = column
+		if not killed and monsterHandlers then
+			local liveColumn = monsterHandlers.getMonsterColumn(instanceId)
+			if type(liveColumn) == "number" then
+				searchFrom = liveColumn
+			end
+		end
+		if type(searchFrom) == "number" then
+			local pierceId = CombatService.getFirstMonsterInRow(
+				plotModel,
+				row,
+				searchFrom + 0.01,
+				FULL_LINE
+			)
+			if pierceId and pierceId ~= instanceId then
+				CombatService.damageMonster(
+					pierceId,
+					damage,
+					if impact then impact.sourceBrainrotId else nil
+				)
+				fireCombatVisual(ownerUserId, {
+					kind = "Hit",
+					instanceId = pierceId,
+					soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+				})
+			end
+		end
 	end
 	return killed
 end

@@ -31,6 +31,22 @@ local EvolutionConfig = {
 	COIN_XP = 5, -- GenerateCoins: per coin actually dropped
 	SOAK_XP = 4, -- Wall: per chew / damage tick that lands
 	FREEZE_XP = 8, -- FreezeTime: per monster frozen on that cast
+	BUBBLE_XP = 8, -- BubbleTrap: per BUBBLE_XP_HITS landed attacks (not last-hit)
+	BUBBLE_XP_HITS = 2,
+	MELEE_XP = 8, -- MeleeBat: per MELEE_XP_HITS connecting hits (not last-hit)
+	MELEE_XP_HITS = 3,
+
+	-- Landed-hit XP jobs keyed by ability id. These also skip last-hit kill XP.
+	HIT_JOB = {
+		BubbleTrap = { xp = 8, hits = 2 },
+		MeleeBat = { xp = 8, hits = 3 },
+	} :: { [string]: { xp: number, hits: number } },
+
+	-- These abilities deal damage but earn XP via HIT_JOB, not last-hit.
+	SKIP_LAST_HIT = {
+		BubbleTrap = true,
+		MeleeBat = true,
+	} :: { [string]: boolean },
 
 	-- Brains to *claim* a tier after the Brainrot level gate (not auto-unlock).
 	TIER_BRAINS = {
@@ -49,6 +65,9 @@ local EvolutionConfig = {
 		{ id = "Celestial", level = 40, aura = Color3.fromRGB(40, 140, 70), kind = "Passive" },
 		{ id = "Immortal", level = 50, aura = Color3.fromRGB(160, 30, 35), kind = "Ultimate" },
 	} :: { TierDef },
+
+	-- World aura size on planted Brainrots (monsters use their own scale).
+	BRAINROT_AURA_SCALE = 1.15,
 }
 
 function EvolutionConfig.xpToNext(level: number): number
@@ -137,6 +156,24 @@ function EvolutionConfig.auraForRarity(rarity: string): Color3
 	return Color3.fromRGB(180, 180, 190)
 end
 
+function EvolutionConfig.worldAura(rarity: string): Color3
+	if rarity == "Epic" then
+		return Color3.fromRGB(155, 55, 230)
+	end
+	if rarity == "Legendary" then
+		return Color3.fromRGB(255, 196, 48)
+	end
+	return EvolutionConfig.auraForRarity(rarity)
+end
+
+function EvolutionConfig.skipsLastHit(ability: string): boolean
+	return EvolutionConfig.SKIP_LAST_HIT[ability] == true
+end
+
+function EvolutionConfig.hitJob(ability: string): { xp: number, hits: number }?
+	return EvolutionConfig.HIT_JOB[ability]
+end
+
 function EvolutionConfig.brainsCost(rarity: string): number
 	local cost = EvolutionConfig.TIER_BRAINS[rarity]
 	if type(cost) ~= "number" then
@@ -159,6 +196,8 @@ end
 
 table.freeze(EvolutionConfig.TIERS)
 table.freeze(EvolutionConfig.TIER_BRAINS)
+table.freeze(EvolutionConfig.SKIP_LAST_HIT)
+table.freeze(EvolutionConfig.HIT_JOB)
 table.freeze(EvolutionConfig)
 
 return EvolutionConfig

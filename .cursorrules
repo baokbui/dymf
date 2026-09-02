@@ -284,7 +284,9 @@ Persist:
 - Brains
 - Player health (hearts)
 - Planted Brainrots (id, tile, HP) — **victory checkpoint only** (not mid-day)
-- Unlocks, equipped loadout, upgrades, statistics, **Brainrot XP** (per registry id)
+- Unlocks, equipped loadout, upgrades, statistics, **Brainrot XP** (per registry
+  id) — XP from a failed / unfinished day is **not** committed (Start Day snapshot;
+  same idea as the lawn checkpoint)
 - Future player-owned progression (collected bosses, evolutions, …)
 
 Do NOT persist:

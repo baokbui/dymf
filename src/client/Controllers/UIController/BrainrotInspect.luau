@@ -8,17 +8,18 @@
 	light rarity fill + shiny rarity title; lock until brains claim).
 ]]
 
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UITheme = require(Shared.Config.UITheme)
 local EvolutionConfig = require(Shared.Config.EvolutionConfig)
+local VfxConfig = require(Shared.Config.VfxConfig)
 local Evolutions = require(Shared.Evolutions)
 local Types = require(Shared.Types)
 
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
 local BrainrotInfo = require(script.Parent.Parent.Parent.Utilities.BrainrotInfo)
+local TextShine = require(script.Parent.Parent.Parent.Utilities.TextShine)
 local AudioController = require(script.Parent.Parent.AudioController)
 
 local BrainrotInspect = {}
@@ -40,6 +41,9 @@ local LOCKED_TEXT = Color3.fromRGB(155, 155, 162)
 local LOCKED_FILL = Color3.fromRGB(210, 210, 216)
 local COMMON_FILL = Color3.fromRGB(255, 255, 255)
 local HEADER_BG = Color3.fromRGB(235, 245, 255)
+-- Image asset 5944134858; ImageLabel uses the texture id.
+local LOCK_ICON_TEXTURE_ID = "rbxassetid://5944134853"
+local LOCK_ICON_SIZE = 40
 
 export type InspectMode = "inventory" | "field"
 
@@ -63,8 +67,6 @@ type EvoEntry = {
 	body: TextLabel,
 	row: Evolutions.EvolutionRow,
 	lockOverlay: Frame,
-	shineConn: RBXScriptConnection?,
-	shineGradient: UIGradient?,
 }
 
 export type InspectCard = typeof(setmetatable(
@@ -76,8 +78,10 @@ export type InspectCard = typeof(setmetatable(
 		onHide: (() -> ())?,
 		brainrotId: string?,
 		healthConn: RBXScriptConnection?,
+		shieldConn: RBXScriptConnection?,
 		destroyConn: RBXScriptConnection?,
 		hpFill: Frame?,
+		hpShieldFill: Frame?,
 		hpBarLabel: TextLabel?,
 		levelLabel: TextLabel?,
 		xpFill: Frame?,
@@ -118,37 +122,61 @@ local function addLabel(parent: Instance, order: number, text: string, size: num
 	return label
 end
 
-local function hpValues(definition: Types.BrainrotDefinition, model: Model?): (number, number, boolean)
+local function hpValues(definition: Types.BrainrotDefinition, model: Model?): (number, number, boolean, number)
 	if definition.ignoreMonsterChew or definition.health <= 0 or definition.maxHealth <= 0 then
-		return 0, 0, true
+		return 0, 0, true, 0
 	end
 	local maxHp = definition.maxHealth
 	local current = maxHp
+	local shield = 0
 	if model then
 		local live = model:GetAttribute("Health")
 		local liveMax = model:GetAttribute("MaxHealth")
+		local liveShield = model:GetAttribute("ShieldHp")
 		if type(live) == "number" then
 			current = live
 		end
 		if type(liveMax) == "number" and liveMax > 0 then
 			maxHp = liveMax
 		end
+		if type(liveShield) == "number" then
+			shield = math.max(0, math.floor(liveShield))
+		end
 	end
-	return current, maxHp, false
+	return current, maxHp, false, shield
 end
 
-local function applyHpBar(fill: Frame?, label: TextLabel?, current: number, maxHp: number, empty: boolean)
+local function applyHpBar(
+	fill: Frame?,
+	shieldFill: Frame?,
+	label: TextLabel?,
+	current: number,
+	maxHp: number,
+	empty: boolean,
+	shield: number
+)
 	if empty then
 		if fill then
 			fill.Size = UDim2.fromScale(0, 1)
+		end
+		if shieldFill then
+			shieldFill.Size = UDim2.fromScale(0, 1)
+			shieldFill.Visible = false
 		end
 		if label then
 			label.Text = "—"
 		end
 		return
 	end
+	local ratio = if maxHp > 0 then math.clamp(current / maxHp, 0, 1) else 0
+	local overlay = if maxHp > 0 then math.clamp(math.min(shield, current) / maxHp, 0, 1) else 0
 	if fill then
-		fill.Size = UDim2.new(if maxHp > 0 then math.clamp(current / maxHp, 0, 1) else 0, 0, 1, 0)
+		fill.Size = UDim2.new(ratio, 0, 1, 0)
+	end
+	if shieldFill then
+		shieldFill.Position = UDim2.new(math.max(0, ratio - overlay), 0, 0, 0)
+		shieldFill.Size = UDim2.new(overlay, 0, 1, 0)
+		shieldFill.Visible = overlay > 0
 	end
 	if label then
 		label.Text = string.format("%d / %d", current, maxHp)
@@ -190,7 +218,7 @@ local function makeBar(parent: Instance, order: number, fillColor: Color3): (Fra
 	barLabel.Name = "Amount"
 	barLabel.BackgroundTransparency = 1
 	barLabel.Size = UDim2.fromScale(1, 1)
-	barLabel.ZIndex = 57
+	barLabel.ZIndex = 58
 	barLabel.TextSize = 12
 	barLabel.TextXAlignment = Enum.TextXAlignment.Center
 	barLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -217,18 +245,8 @@ local function applyXpBar(fill: Frame?, label: TextLabel?, totalXp: number)
 	end
 end
 
--- Full left-to-right pass, then immediately repeats.
-local SHINE_PERIOD = 0.5
-
 local function clearShine(entry: EvoEntry)
-	if entry.shineConn then
-		entry.shineConn:Disconnect()
-		entry.shineConn = nil
-	end
-	if entry.shineGradient then
-		entry.shineGradient:Destroy()
-		entry.shineGradient = nil
-	end
+	TextShine.clear(entry.rarityLine)
 end
 
 local function applyShine(label: TextLabel, entry: EvoEntry, dark: Color3)
@@ -238,31 +256,7 @@ local function applyShine(label: TextLabel, entry: EvoEntry, dark: Color3)
 	label.TextWrapped = false
 	label.AutomaticSize = Enum.AutomaticSize.XY
 	label.Size = UDim2.fromOffset(0, 0)
-	label.TextColor3 = Color3.new(1, 1, 1)
-	local gleam = dark:Lerp(Color3.fromRGB(255, 255, 255), 0.82)
-	local gradient = Instance.new("UIGradient")
-	gradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, dark),
-		ColorSequenceKeypoint.new(0.36, dark),
-		ColorSequenceKeypoint.new(0.44, gleam),
-		ColorSequenceKeypoint.new(0.50, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(0.56, gleam),
-		ColorSequenceKeypoint.new(0.64, dark),
-		ColorSequenceKeypoint.new(1, dark),
-	})
-	gradient.Rotation = 12
-	gradient.Offset = Vector2.new(-1, 0)
-	gradient.Parent = label
-	entry.shineGradient = gradient
-	local elapsed = 0
-	entry.shineConn = RunService.Heartbeat:Connect(function(dt)
-		if not gradient.Parent then
-			return
-		end
-		elapsed += dt
-		local t = (elapsed / SHINE_PERIOD) % 1
-		gradient.Offset = Vector2.new(-1 + 2 * t, 0)
-	end)
+	TextShine.apply(label, dark)
 end
 
 local function styleEvolutionEntry(entry: EvoEntry, brainrotLevel: number, claimed: { [string]: boolean })
@@ -428,8 +422,10 @@ function BrainrotInspect.new(parent: Instance): InspectCard
 		onHide = nil,
 		brainrotId = nil,
 		healthConn = nil,
+		shieldConn = nil,
 		destroyConn = nil,
 		hpFill = nil,
+		hpShieldFill = nil,
 		hpBarLabel = nil,
 		levelLabel = nil,
 		xpFill = nil,
@@ -509,6 +505,7 @@ function BrainrotInspect.hide(self: InspectCard)
 	self.frame.Visible = false
 	self.brainrotId = nil
 	self.hpFill = nil
+	self.hpShieldFill = nil
 	self.hpBarLabel = nil
 	self.levelLabel = nil
 	self.xpFill = nil
@@ -523,6 +520,10 @@ function BrainrotInspect.hide(self: InspectCard)
 	if self.healthConn then
 		self.healthConn:Disconnect()
 		self.healthConn = nil
+	end
+	if self.shieldConn then
+		self.shieldConn:Disconnect()
+		self.shieldConn = nil
 	end
 	if self.destroyConn then
 		self.destroyConn:Disconnect()
@@ -673,8 +674,22 @@ local function mountHeader(
 	hpTrack.Name = "HpBar"
 	self.hpFill = hpFill
 	self.hpBarLabel = hpLabel
-	local current, maxHp, empty = hpValues(definition, healthModel)
-	applyHpBar(hpFill, hpLabel, current, maxHp, empty)
+
+	local shieldFill = Instance.new("Frame")
+	shieldFill.Name = "ShieldFill"
+	shieldFill.BackgroundColor3 = VfxConfig.SHIELD_HP_FILL
+	shieldFill.BorderSizePixel = 0
+	shieldFill.Size = UDim2.fromScale(0, 1)
+	shieldFill.ZIndex = 57
+	shieldFill.Visible = false
+	local clip = hpTrack:FindFirstChild("Clip")
+	if clip and clip:IsA("Frame") then
+		shieldFill.Parent = clip
+	end
+	self.hpShieldFill = shieldFill
+
+	local current, maxHp, empty, shield = hpValues(definition, healthModel)
+	applyHpBar(hpFill, shieldFill, hpLabel, current, maxHp, empty, shield)
 
 	local gap = Instance.new("Frame")
 	gap.Name = "LevelGap"
@@ -742,42 +757,29 @@ local function addEvolutionRow(
 	overlay.Name = "LockOverlay"
 	overlay.BackgroundTransparency = 1
 	overlay.BorderSizePixel = 0
-	overlay.Size = UDim2.fromScale(1, 1)
+	-- Offset height matching the text column — a Y scale of 1 on an
+	-- AutomaticSize row stretches the tab to the ScrollingFrame viewport.
+	overlay.Size = UDim2.new(1, 0, 0, 0)
 	overlay.ZIndex = 58
 	overlay.Visible = false
 	overlay.Parent = frame
 
-	local shackle = Instance.new("Frame")
-	shackle.Name = "Shackle"
-	shackle.AnchorPoint = Vector2.new(0.5, 1)
-	shackle.Position = UDim2.new(0.5, 0, 0.5, 2)
-	shackle.Size = UDim2.fromOffset(20, 16)
-	shackle.BackgroundTransparency = 1
-	shackle.ZIndex = 59
-	shackle.Parent = overlay
-	UITheme.styleCorner(shackle, 10)
-	UITheme.applyStroke(shackle, 3, Color3.fromRGB(72, 68, 78))
+	local function fitLockOverlay()
+		overlay.Size = UDim2.new(1, 0, 0, col.AbsoluteSize.Y)
+	end
+	col:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitLockOverlay)
+	fitLockOverlay()
 
-	local lockBody = Instance.new("Frame")
-	lockBody.Name = "LockBody"
-	lockBody.AnchorPoint = Vector2.new(0.5, 0.5)
-	lockBody.Position = UDim2.new(0.5, 0, 0.5, 10)
-	lockBody.Size = UDim2.fromOffset(30, 24)
-	lockBody.BackgroundColor3 = Color3.fromRGB(46, 42, 52)
-	lockBody.ZIndex = 59
-	lockBody.Parent = overlay
-	UITheme.styleCorner(lockBody, 5)
-	UITheme.applyStroke(lockBody, 2)
-
-	local keyhole = Instance.new("Frame")
-	keyhole.Name = "Keyhole"
-	keyhole.AnchorPoint = Vector2.new(0.5, 0.5)
-	keyhole.Position = UDim2.fromScale(0.5, 0.42)
-	keyhole.Size = UDim2.fromOffset(6, 6)
-	keyhole.BackgroundColor3 = Color3.fromRGB(18, 16, 22)
-	keyhole.ZIndex = 60
-	keyhole.Parent = lockBody
-	UITheme.styleCorner(keyhole, 3)
+	local lock = Instance.new("ImageLabel")
+	lock.Name = "Lock"
+	lock.BackgroundTransparency = 1
+	lock.AnchorPoint = Vector2.new(0.5, 0.5)
+	lock.Position = UDim2.fromScale(0.5, 0.5)
+	lock.Size = UDim2.fromOffset(LOCK_ICON_SIZE, LOCK_ICON_SIZE)
+	lock.Image = LOCK_ICON_TEXTURE_ID
+	lock.ScaleType = Enum.ScaleType.Fit
+	lock.ZIndex = 59
+	lock.Parent = overlay
 
 	local hit = Instance.new("TextButton")
 	hit.Name = "Claim"
@@ -795,8 +797,6 @@ local function addEvolutionRow(
 		body = body,
 		row = row,
 		lockOverlay = overlay,
-		shineConn = nil,
-		shineGradient = nil,
 	}
 
 	hit.MouseButton1Click:Connect(function()
@@ -849,11 +849,16 @@ function BrainrotInspect.show(self: InspectCard, opts: ShowOptions)
 		self.healthConn:Disconnect()
 		self.healthConn = nil
 	end
+	if self.shieldConn then
+		self.shieldConn:Disconnect()
+		self.shieldConn = nil
+	end
 	if self.destroyConn then
 		self.destroyConn:Disconnect()
 		self.destroyConn = nil
 	end
 	self.hpFill = nil
+	self.hpShieldFill = nil
 	self.hpBarLabel = nil
 	self.levelLabel = nil
 	self.xpFill = nil
@@ -865,7 +870,7 @@ function BrainrotInspect.show(self: InspectCard, opts: ShowOptions)
 	self.claimedRarities = opts.claimedRarities or {}
 	self:hideEvolveConfirm()
 
-	local definition = opts.definition
+	local definition = Evolutions.applyStats(opts.definition, self.claimedRarities)
 	local totalXp = opts.totalXp or 0
 	self.brainrotId = definition.id
 	self.brainrotLevel = EvolutionConfig.parseXp(totalXp).level
@@ -899,10 +904,12 @@ function BrainrotInspect.show(self: InspectCard, opts: ShowOptions)
 
 	local healthModel = opts.healthModel
 	if opts.mode == "field" and healthModel then
-		self.healthConn = healthModel:GetAttributeChangedSignal("Health"):Connect(function()
-			local current, maxHp, empty = hpValues(definition, healthModel)
-			applyHpBar(self.hpFill, self.hpBarLabel, current, maxHp, empty)
-		end)
+		local function refreshHp()
+			local current, maxHp, empty, shield = hpValues(definition, healthModel)
+			applyHpBar(self.hpFill, self.hpShieldFill, self.hpBarLabel, current, maxHp, empty, shield)
+		end
+		self.healthConn = healthModel:GetAttributeChangedSignal("Health"):Connect(refreshHp)
+		self.shieldConn = healthModel:GetAttributeChangedSignal("ShieldHp"):Connect(refreshHp)
 		self.destroyConn = healthModel.Destroying:Connect(function()
 			self:hide()
 		end)

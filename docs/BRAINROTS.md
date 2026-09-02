@@ -257,7 +257,8 @@ impact they despawn into a tile explosion + column damage. Tune
 `LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`. Lirili stays on its
 tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to monsters
 on its tile and **2 tiles ahead and 2 behind** (`abilityParams.freezeTiles`)
-for `abilityParams.freezeDuration` (7s).
+for `abilityParams.freezeDuration` (7s). Claimed **Winter's Grasp** sets
+`abilityParams.freezeEntireLane` and freezes the **whole row** instead.
 `ignoreMonsterChew` means monsters walk through and never chew it. The plant
 **despawns when the cast animation ends** (not when freeze expires); thaw SFX
 plays when the freeze duration ends.
@@ -324,7 +325,11 @@ levels 10 / 20 / 30 / 40 / 50 they unlock Epic → Immortal (aura + stat / activ
 passive / ultimate). Tiers stack; core shop id and base ability stay the same.
 
 Full sheet + architecture: **`docs/EVOLUTIONS.md`**. XP is live (shared per
-registry id; last-hit normal kills; boss XP split across plants on the lawn;
-coin / soak / freeze jobs for producer, wall, and freeze abilities). Claiming
-an evolution after the level gate spends brains (`evolutions` save v6).
+registry id; last-hit normal kills except `BubbleTrap` / `MeleeBat`; boss XP
+split across plants on the lawn; coin / soak / freeze / bubble-every-2 /
+melee-every-3 jobs). Claiming an evolution after the level gate spends
+brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
+/ claim; planted Epic+ units get a rarity-tinted aura (purple / gold).
+**Legendary** extras tick in combat from evolution ability ids. Mythic+
+combat extras still 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

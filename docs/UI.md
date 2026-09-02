@@ -88,7 +88,8 @@ hardcode a second palette in new UI.
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
   stroke on the viewport) so the row stays readable. Names and costs use
-  outlined title text (same as HUD) so they stay readable on the yellow cards. Framing uses visual AABB
+  outlined title text (same as HUD) so they stay readable on the yellow cards.
+  Long names wrap the rest under the first word (card width unchanged). Framing uses visual AABB
   + optional `previewFocusOffset`; animated rigs stay posed (no idle playback
   in the ViewportFrame). After planting, the card
   shows a **recharge overlay** (`PlantCooldownsUpdated`; cheaper units recharge
@@ -127,16 +128,23 @@ hardcode a second palette in new UI.
   name / kind / description are a **lighter rarity color**. Until the player
   spends brains to claim (`EvolveBrainrot`, costs in `TIER_BRAINS`), a
   **lock** sits on that row. Click it to open a confirm prompt (Evolve /
-  Cancel). Claimed rows drop the lock. Combat bonuses still 🔜
+  Cancel). Claimed rows drop the lock. **Epic** stats apply on claim (HP bar
+  / plant recharge); **Legendary** extras tick in combat. Planted Epic+ units
+  get a rarity-tinted aura (purple / gold). Mythic+ combat extras still 🔜
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted
   Brainrot on your lawn** opens the same inspect card on the right of the
   screen, with live **HP** (`Health` / `MaxHealth`; updates as it takes
-  hits). No Equip button on the field card. No close X — dismiss by clicking
+  hits). Remaining **Banana Bastion** shield (`ShieldHp`) **paints the
+  rightmost 500 of the current green fill blue** (body HP is unchanged;
+  when the shield drops that slice is green again). A translucent blue
+  ForceField bubble wraps the plant while the shield is up. No Equip button on the field card. No close X — dismiss by clicking
   empty lawn, shovel, a shop seed, or closing Inventory. Server validates
   equip changes via `SetEquipped`. Loadout **cannot** change while the day is
   **Active** (server reject + inventory packets / Equip button locked).
+  Every planted Brainrot shows a world nameplate (full name, claimed
+  rarity with shine on Epic+, `Lv. N`) via `BrainrotController/Nameplate`.
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
   a Brainrot is introduced (portrait, name, stat summary, ability blurb,
   dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) on first

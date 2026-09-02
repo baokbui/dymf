@@ -151,7 +151,8 @@ Monsters spawn in the forest and walk toward the plot (setup time).
 
 **`RewindDay`** — client fires from the Game Over overlay while phase is
 `Defeat`. Server validates phase, enters `Preparation` on the same failed day
-(lawn already restored from the victory checkpoint on defeat).
+(lawn already restored from the victory checkpoint on defeat; Brainrot XP
+already rolled back to the Start Day snapshot).
 
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
 whenever phase, progress, or big-wave warning changes. The client

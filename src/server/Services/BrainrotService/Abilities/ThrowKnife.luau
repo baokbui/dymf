@@ -16,6 +16,12 @@ function ThrowKnife.tryAct(ctx, callbacks)
 
 	callbacks.pulseAttack()
 
+	local pierceCount = 0
+	if ctx.buffs.pierceNext then
+		pierceCount = 1
+		ctx.buffs.pierceNext = false
+	end
+
 	local hitDelay = ctx.definition.attackHitDelay
 	local function launch()
 		CombatService.launchProjectile(
@@ -28,6 +34,7 @@ function ThrowKnife.tryAct(ctx, callbacks)
 				kind = "Shuriken",
 				soundKey = "ThrowKnifeHit",
 				sourceBrainrotId = ctx.definition.id,
+				pierceCount = if pierceCount > 0 then pierceCount else nil,
 			}
 		)
 	end

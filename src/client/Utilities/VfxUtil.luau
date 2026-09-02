@@ -632,8 +632,14 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	local kind = part:GetAttribute("ProjectileKind")
 	local isBubble = kind == "Bubble"
 	local isShuriken = kind == "Shuriken"
-	local trailColor = if isBubble
-		then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR
+	local piercing = isShuriken
+		and (
+			part:GetAttribute("PiercingBrew") == true
+			or (part.Parent ~= nil and part.Parent:GetAttribute("PiercingBrew") == true)
+		)
+	local trailColor = if piercing
+		then VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR
+		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_COLOR
 		else VfxConfig.PROJECTILE_TRAIL_COLOR
 	local trailOffset = if isBubble
@@ -653,12 +659,14 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = attachment0
 	trail.Attachment1 = attachment1
-	trail.Lifetime = if isShuriken
-		then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_LIFETIME
+	trail.Lifetime = if piercing
+		then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIFETIME
+		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_LIFETIME
 		else VfxConfig.PROJECTILE_TRAIL_LIFETIME
 	trail.WidthScale = NumberSequence.new(
-		if isBubble
-			then 0.55
+		if piercing
+			then VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH
+			elseif isBubble then 0.55
 			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_WIDTH
 			else VfxConfig.PROJECTILE_TRAIL_WIDTH
 	)
@@ -668,12 +676,14 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	trail.Parent = part
 
 	local glow = Instance.new("PointLight")
-	glow.Brightness = if isBubble
-		then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
+	glow.Brightness = if piercing
+		then VfxConfig.PIERCE_SHURIKEN_GLOW_BRIGHTNESS
+		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_BRIGHTNESS
 		else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
-	glow.Range = if isBubble
-		then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
+	glow.Range = if piercing
+		then VfxConfig.PIERCE_SHURIKEN_GLOW_RANGE
+		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
 		else VfxConfig.PROJECTILE_GLOW_RANGE
 	glow.Color = trailColor

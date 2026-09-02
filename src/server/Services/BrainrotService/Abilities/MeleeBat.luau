@@ -19,6 +19,7 @@ local function applyHit(ctx, callbacks, targetId: string)
 	-- from CombatVisual when damage is fatal.
 	callbacks.playSound("MeleeBat")
 	local killed = CombatService.damageMonster(targetId, ctx.definition.damage, ctx.definition.id)
+	CombatService.noteLandedAttack(ctx.instanceId)
 	if not killed then
 		CombatService.notifyHitVisual(ctx.ownerUserId, targetId, { muteSound = true })
 	end
@@ -28,8 +29,12 @@ function MeleeBat.tryAct(ctx, callbacks)
 	-- Tile-based reach from `rangeTiles` (Tung Tung = 1): own tile + one ahead.
 	-- Friendly Brainrots never block — a bat behind Ballerina, Lirili, a wall,
 	-- etc. can still hit a monster chewing that unit on the next tile.
+	-- Ranged Rampage swaps that for a full-lane projectile for `rangedUntil`.
+	local ranged = os.clock() < ctx.buffs.rangedUntil
 	local rangeTiles = ctx.definition.rangeTiles
-	if rangeTiles <= 0 then
+	if ranged then
+		rangeTiles = BrainrotConfig.FULL_LINE_RANGE
+	elseif rangeTiles <= 0 then
 		rangeTiles = BrainrotConfig.MELEE_BAT_REACH_TILES
 	end
 
@@ -47,9 +52,29 @@ function MeleeBat.tryAct(ctx, callbacks)
 	-- the impact frame can line up with the authored clip.
 	callbacks.pulseAttack()
 
+	local function strike(foundId: string)
+		if ranged then
+			CombatService.launchProjectile(
+				ctx.plotModel,
+				ctx.position,
+				BrainrotConfig.FULL_LINE_RANGE,
+				ctx.definition.damage,
+				ctx.ownerUserId,
+				{
+					kind = "Knife",
+					soundKey = "MeleeBat",
+					sourceBrainrotId = ctx.definition.id,
+					sourceInstanceId = ctx.instanceId,
+				}
+			)
+			return
+		end
+		applyHit(ctx, callbacks, foundId)
+	end
+
 	local hitDelay = resolveHitDelay(ctx.definition)
 	if hitDelay <= 0 then
-		applyHit(ctx, callbacks, targetId)
+		strike(targetId)
 		return true
 	end
 
@@ -66,7 +91,7 @@ function MeleeBat.tryAct(ctx, callbacks)
 		if not stillTarget then
 			return
 		end
-		applyHit(ctx, callbacks, stillTarget)
+		strike(stillTarget)
 	end)
 
 	return true

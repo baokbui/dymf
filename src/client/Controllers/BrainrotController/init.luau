@@ -99,6 +99,7 @@ end
 
 function BrainrotController.start()
 	Remotes.getEvent("BrainrotAction").OnClientEvent:Connect(onBrainrotAction)
+	require(script.Nameplate).start()
 	log:info("started")
 end
 

@@ -3,8 +3,10 @@
 	ProgressService
 	Owns brains, unlocks, equipped loadout, player upgrades, statistics,
 	per-species Brainrot XP, and claimed evolution tiers (brains spend after
-	the level gate). The physical Progression Store spends brains here
-	(Milestone 18).
+	the level gate). Brainrot XP from an unfinished / failed day is held as a
+	Start Day snapshot and is not committed until victory (defeat / rewind /
+	leave persist the snapshot). The physical Progression Store spends brains
+	here (Milestone 18).
 
 	Statistics update live via ProfileUpdated. Time played includes the current
 	session in client payloads; it is committed into the saved total on flush
@@ -49,6 +51,9 @@ type Profile = {
 }
 
 local profiles: { [number]: Profile } = {}
+-- Day-start XP snapshot. Live grants during Countdown/Active are not
+-- committed until victory; defeat / autosave / leave restore or persist this.
+local dayStartXp: { [number]: { [string]: number } } = {}
 
 local function copyList(source: { string }): { string }
 	local result: { string } = {}
@@ -372,7 +377,7 @@ function ProgressService.getSaveSlice(player: Player): {
 		equipped = copyList(profile.equipped),
 		upgrades = copyUpgrades(profile.upgrades),
 		statistics = copyStats(profile.statistics),
-		brainrotXp = copyXp(profile.brainrotXp),
+		brainrotXp = copyXp(dayStartXp[player.UserId] or profile.brainrotXp),
 		evolutions = copyEvolutions(profile.evolutions),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
@@ -428,11 +433,13 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	end
 	profile.sessionStartedAt = os.clock()
 	profile.hydrated = true
+	dayStartXp[player.UserId] = nil
 	broadcast(player)
 	ProgressService.applyMovement(player)
 end
 
 function ProgressService.reset(player: Player)
+	dayStartXp[player.UserId] = nil
 	profiles[player.UserId] = {
 		brains = ProgressConfig.STARTING_BRAINS,
 		unlocks = defaultUnlocks(),
@@ -448,6 +455,30 @@ function ProgressService.reset(player: Player)
 	}
 	broadcast(player)
 	ProgressService.applyMovement(player)
+end
+
+function ProgressService.checkpointBrainrotXp(player: Player)
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
+		return
+	end
+	dayStartXp[player.UserId] = copyXp(profile.brainrotXp)
+end
+
+function ProgressService.commitBrainrotXp(player: Player)
+	dayStartXp[player.UserId] = nil
+end
+
+function ProgressService.restoreBrainrotXpCheckpoint(player: Player)
+	local profile = profiles[player.UserId]
+	local snapshot = dayStartXp[player.UserId]
+	if not profile or not profile.hydrated or not snapshot then
+		return
+	end
+	profile.brainrotXp = copyXp(snapshot)
+	local BrainrotService = require(script.Parent.BrainrotService)
+	BrainrotService.syncNameplates(player)
+	broadcast(player)
 end
 
 function ProgressService.isUnlocked(player: Player, brainrotId: string): boolean
@@ -502,6 +533,19 @@ function ProgressService.applyDevRoster(player: Player)
 	table.sort(allIds)
 	profile.unlocks = sanitizeIdList(allIds)
 	profile.equipped = sanitizeIdList(allIds, unlockSet(profile.unlocks), ProgressConfig.MAX_EQUIPPED)
+	broadcast(player)
+end
+
+-- TEMP Studio cheat: force playtest brains (see DevConfig).
+function ProgressService.applyDevBrains(player: Player)
+	if not DevConfig.isActive() then
+		return
+	end
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	profile.brains = math.max(0, math.floor(DevConfig.BRAINS))
 	broadcast(player)
 end
 
@@ -792,22 +836,31 @@ function ProgressService.grantKillXp(player: Player, lastHitBrainrotId: string?,
 		for index, entry in living do
 			addXp(profile, entry.brainrotId, base + (if index <= remainder then 1 else 0))
 		end
+		BrainrotService.syncNameplates(player)
 		return
 	end
 	if type(lastHitBrainrotId) ~= "string" then
 		return
 	end
+	local definition = Brainrots.get(lastHitBrainrotId)
+	if definition and EvolutionConfig.skipsLastHit(definition.ability) then
+		return
+	end
 	addXp(profile, lastHitBrainrotId, EvolutionConfig.KILL_XP)
+	local BrainrotService = require(script.Parent.BrainrotService)
+	BrainrotService.syncNameplates(player, lastHitBrainrotId)
 end
 
--- Broadcasts so inspect XP bars update (coin / soak / freeze are not paired
--- with a statistic increment).
+-- Broadcasts so inspect XP bars update (coin / soak / freeze / landed-hit
+-- jobs are not paired with a statistic increment).
 function ProgressService.grantBrainrotXp(player: Player, brainrotId: string, amount: number)
 	local profile = ensureProfile(player)
 	if not profile.hydrated then
 		return
 	end
 	addXp(profile, brainrotId, amount)
+	local BrainrotService = require(script.Parent.BrainrotService)
+	BrainrotService.syncNameplates(player, brainrotId)
 	broadcast(player)
 end
 
@@ -817,6 +870,22 @@ function ProgressService.grantBrainrotXpForUser(userId: number, brainrotId: stri
 		return
 	end
 	ProgressService.grantBrainrotXp(player, brainrotId, amount)
+end
+
+function ProgressService.getClaimedEvolutions(player: Player, brainrotId: string): { string }
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
+		return {}
+	end
+	return Evolutions.sanitizeClaimed(brainrotId, profile.evolutions[brainrotId])
+end
+
+function ProgressService.getBrainrotLevel(player: Player, brainrotId: string): number
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
+		return 1
+	end
+	return EvolutionConfig.parseXp(profile.brainrotXp[brainrotId] or 0).level
 end
 
 local function onSetEquipped(player: Player, raw: unknown)
@@ -900,6 +969,8 @@ local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unkno
 	profile.brains -= cost
 	table.insert(claimed, rarity)
 	profile.evolutions[brainrotId] = claimed
+	local BrainrotService = require(script.Parent.BrainrotService)
+	BrainrotService.applyEvolutionStats(player, brainrotId)
 	broadcast(player)
 	Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, cost)
 end

@@ -42,7 +42,8 @@ function BubbleTrap.tryAct(ctx, callbacks)
 				statusKind = "Freeze",
 				statusDuration = trapDuration,
 				statusVisual = "Bubble",
-				sourceBrainrotId = ctx.definition.id,
+				-- Count landed hits for BubbleTrap XP; do not claim last-hit.
+				sourceInstanceId = ctx.instanceId,
 			}
 		)
 	end

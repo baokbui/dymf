@@ -14,6 +14,7 @@ local EconomyConfig = require(ReplicatedStorage.Shared.Config.EconomyConfig)
 local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Evolutions = require(ReplicatedStorage.Shared.Evolutions)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 
@@ -46,11 +47,14 @@ export type RuntimePlacement = {
 	burnNextTick: number,
 	weakenUntil: number,
 	weakenFactor: number,
+	extraCooldowns: { [string]: number },
+	buffs: Abilities.EvolutionBuffs,
 }
 
 local BrainrotBehavior = {}
 
 local active: { [string]: RuntimePlacement } = {}
+local bubbleHits: { [string]: number } = {}
 local destroyHandler: ((placement: RuntimePlacement) -> ())?
 local detachHandler: ((placement: RuntimePlacement) -> Model?)?
 
@@ -59,11 +63,20 @@ local detachHandler: ((placement: RuntimePlacement) -> Model?)?
 -- `ctx.definition.damage`, so overriding it once here (via `__index` fallback
 -- to the real definition for every other field) applies everywhere for free.
 local function effectiveDefinition(placement: RuntimePlacement): Types.BrainrotDefinition
-	if os.clock() >= placement.weakenUntil then
-		return placement.definition
-	end
+	local now = os.clock()
 	local base = placement.definition
-	local scaled = setmetatable({ damage = base.damage * (1 - placement.weakenFactor) }, { __index = base })
+	local damage = base.damage
+	local interval = base.attackInterval
+	if now < placement.weakenUntil then
+		damage = damage * (1 - placement.weakenFactor)
+	end
+	if now < placement.buffs.coinHasteUntil and placement.buffs.coinHasteFactor > 1 then
+		interval = interval / placement.buffs.coinHasteFactor
+	end
+	if damage == base.damage and interval == base.attackInterval then
+		return base
+	end
+	local scaled = setmetatable({ damage = damage, attackInterval = interval }, { __index = base })
 	return (scaled :: any) :: Types.BrainrotDefinition
 end
 
@@ -77,6 +90,7 @@ local function buildContext(placement: RuntimePlacement)
 		position = placement.position,
 		row = placement.position.row,
 		column = placement.position.column,
+		buffs = placement.buffs,
 	}
 end
 
@@ -160,6 +174,14 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.burnNextTick = 0
 	placement.weakenUntil = 0
 	placement.weakenFactor = 0
+	placement.extraCooldowns = {}
+	placement.buffs = {
+		coinHasteUntil = 0,
+		coinHasteFactor = 1,
+		rangedUntil = 0,
+		pierceNext = false,
+		shieldHp = 0,
+	}
 	active[placement.instanceId] = placement
 	BrainrotAnimation.bind(placement.model, placement.definition)
 
@@ -188,8 +210,65 @@ function BrainrotBehavior.unregister(placement: RuntimePlacement)
 		handler.onRemoved(buildContext(placement), buildCallbacks(placement))
 	end
 	active[placement.instanceId] = nil
+	bubbleHits[placement.instanceId] = nil
 	BrainrotAnimation.unbind(placement.model)
 	BrainrotFeedback.cleanup(placement.model)
+end
+
+local function tickExtras(placement: RuntimePlacement, dt: number)
+	local player = Players:GetPlayerByUserId(placement.ownerUserId)
+	if not player then
+		return
+	end
+	local extras = Evolutions.claimedExtras(
+		placement.brainrotId,
+		ProgressService.getClaimedEvolutions(player, placement.brainrotId)
+	)
+	for _, extra in extras do
+		local remaining = (placement.extraCooldowns[extra.ability] or 0) - dt
+		if remaining > 0 then
+			placement.extraCooldowns[extra.ability] = remaining
+			continue
+		end
+		local handler = Abilities.get(extra.ability)
+		if not handler or not handler.tryAct then
+			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
+			continue
+		end
+		local ctx = buildContext(placement)
+		ctx.extraParams = extra.params
+		local ok, acted = pcall(handler.tryAct, ctx, buildCallbacks(placement))
+		if not ok then
+			log:warn("extra ability error", extra.ability, acted)
+			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
+			continue
+		end
+		if acted then
+			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
+		end
+	end
+end
+
+-- Landed-hit XP jobs (BubbleTrap, MeleeBat): every N connecting hits instead of last-hit.
+function BrainrotBehavior.noteLandedAttack(instanceId: string)
+	local placement = active[instanceId]
+	if not placement then
+		return
+	end
+	local job = EvolutionConfig.hitJob(placement.definition.ability)
+	if not job then
+		return
+	end
+	local hits = (bubbleHits[instanceId] or 0) + 1
+	bubbleHits[instanceId] = hits
+	if hits % job.hits ~= 0 then
+		return
+	end
+	ProgressService.grantBrainrotXpForUser(
+		placement.ownerUserId,
+		placement.definition.id,
+		job.xp
+	)
 end
 
 function BrainrotBehavior.tick(dt: number)
@@ -219,10 +298,6 @@ function BrainrotBehavior.tick(dt: number)
 			continue
 		end
 
-		if now < placement.frozenUntil then
-			continue
-		end
-
 		-- Lazy require avoids LevelService ↔ BrainrotService cycle.
 		local LevelService = require(script.Parent.Parent.LevelService)
 		local owner = Players:GetPlayerByUserId(placement.ownerUserId)
@@ -230,7 +305,13 @@ function BrainrotBehavior.tick(dt: number)
 			continue
 		end
 
-		local interval = placement.definition.attackInterval
+		tickExtras(placement, dt)
+
+		if now < placement.frozenUntil then
+			continue
+		end
+
+		local interval = effectiveDefinition(placement).attackInterval
 		if interval <= 0 then
 			continue
 		end
