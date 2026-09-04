@@ -1,7 +1,7 @@
 --!strict
 --[[
 	RangedRampage
-	Melee plants launch lane projectiles instead of close-range hits.
+	Melee plants throw a spinning bat down the lane instead of close-range hits.
 ]]
 
 local RangedRampage = {}

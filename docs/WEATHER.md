@@ -24,7 +24,7 @@ Status: ✅ `Night` (Days 21–24) · ✅ `NightFog` (Days 25–34) · ✅ `Nigh
 
 | Effect | Owner | Behavior |
 | ------ | ----- | -------- |
-| Visible fog banks | Client `WeatherController` | Soft particle mist (no box mesh): heavy deep forest → medium near forest → light on fog lawn columns; monsters stay fully visible. Lawn bank width follows `WeatherConfig.fogStartColumn(weather)`. |
+| Visible fog banks | Client `WeatherController` | Lighting Fog + Atmosphere carry the look. Three particle volumes (one lawn bank + near/deep forest) add local mist; monsters stay fully visible. Lawn bank width follows `WeatherConfig.fogStartColumn(weather)`. Giraffa hides all three banks for the timed clear. |
 | Unplantable fog columns | Server `BrainrotService` + client placement | Easternmost `fogPlotColumns(weather)` lawn columns reject **permanent** plants unless those **rows** are cleared (`FogRowsChanged`). **Giraffa Celeste** (`ClearFogRow`) is a one-shot: after her gust anim, wind VFX lifts fog on **the whole plot** for 7s then fog returns. **One-shot** Brainrots (`triggersOnPlace`) and **grave-busters** (`plantOnGrave`) may still be placed on fog tiles. Other plants on fog columns are cleared on prep / lawn restore unless the row is fog-cleared |
 | Fog graves | Server `GraveService` | From Day 31, random fog tiles get graves at Start Day; a Zombie or Skeleton emerges later; monsters phase through graves **and** Patapim. Graves **block Brainrot shots and status** aimed at monsters **east** of the stone (invulnerable except to Patapim). **Piercing Brew** knives fly through. **Bombardino** column bombs still hit those monsters and do not shake or damage the grave. Only **Patapim** smashes shake the stone. **Brr Brr Patapim** (`BustGrave`, `ignoreMonsterChew`) must be planted on a grave; it smashes until **6 hits** collapse it, then both fade like a monster death |
 | No fog-tile hover | Client `GridController` | Fog columns do not show a hover highlight |
@@ -90,8 +90,10 @@ through the player margin + full enemy-column forest (aligned with
 ## Client rules
 
 - `WeatherController` applies night Lighting for `Night`, `NightFog`, and
-  `NightFogReceded`; fog banks for both fog weathers (lawn band respects
-  that weather's column count).
+  `NightFogReceded`; **three** particle fog banks for both fog weathers (one
+  lawn volume + near/deep forest; lawn width follows that weather's column
+  count). Lighting Fog + Atmosphere do most of the look so particle rates stay
+  low.
 - `AudioController` crossfades BGM from weather (`Default` / `Night` / `Desert`;
   see `AUDIO.md`).
 - Desert: desert Lighting + `DesertVisuals` (hide forest, spawn pyramids).

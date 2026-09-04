@@ -177,7 +177,7 @@ export type SaveData = {
 	statistics: { [string]: number },
 	-- Shared XP pool per Brainrot registry id (all planted copies of that unit).
 	brainrotXp: { [string]: number },
-	-- Claimed evolution rarities per Brainrot id (Epic→Immortal). Level gate
+	-- Claimed evolution rarities per Brainrot id (Epic→God). Level gate
 	-- is separate; claiming spends brains.
 	evolutions: { [string]: { string } }?,
 	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).

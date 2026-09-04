@@ -321,7 +321,7 @@ plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).
 ## Planned evolution (Milestone 19)
 
 Each roster Brainrot has its own **Brainrot level** (not campaign day). At
-levels 10 / 20 / 30 / 40 / 50 they unlock Epic → Immortal (aura + stat / active /
+levels 10 / 20 / 30 / 40 / 50 they unlock Epic → God (aura + stat / active /
 passive / ultimate). Tiers stack; core shop id and base ability stay the same.
 
 Full sheet + architecture: **`docs/EVOLUTIONS.md`**. XP is live (shared per
@@ -331,5 +331,5 @@ melee-every-3 jobs). Claiming an evolution after the level gate spends
 brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
 / claim; planted Epic+ units get a rarity-tinted aura (purple / gold /
 red-orange). **Legendary** extras and **Mythic** passives tick in combat from
-evolution ability ids / `abilityParams`. Celestial+ combat extras still 🔜.
+evolution ability ids / `abilityParams`. Immortal+ combat extras still 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

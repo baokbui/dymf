@@ -2,9 +2,24 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
+local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local MeleeBat = {}
+
+local LEFT_ATTACH_NAMES = { "LeftGrip", "LeftWrist", "LeftHand", "LHand" }
+local LEFT_HAND_NAMES = {
+	"LeftHand",
+	"LHand",
+	"Left Hand",
+	"LeftLowerArm",
+	"LArm",
+	"LeftArm",
+	"Left Arm",
+	"LeftUpperArm",
+}
 
 local function resolveHitDelay(definition: any): number
 	local delay = definition.attackHitDelay
@@ -12,6 +27,42 @@ local function resolveHitDelay(definition: any): number
 		return 0
 	end
 	return math.max(0, delay)
+end
+
+local function namedLeftHand(model: Model): Vector3?
+	for _, name in LEFT_ATTACH_NAMES do
+		local inst = model:FindFirstChild(name, true)
+		if inst and inst:IsA("Attachment") then
+			return inst.WorldPosition
+		end
+		if inst and inst:IsA("Bone") then
+			return inst.WorldPosition
+		end
+	end
+	for _, name in LEFT_HAND_NAMES do
+		local inst = model:FindFirstChild(name, true)
+		if inst and inst:IsA("Attachment") then
+			return inst.WorldPosition
+		end
+		if inst and inst:IsA("Bone") then
+			return inst.WorldPosition
+		end
+		if inst and inst:IsA("BasePart") then
+			-- Units face +X (enemy). Nudge to the east tip so the bat leaves the palm.
+			return inst.Position + Vector3.new(inst.Size.X * 0.35, 0, 0)
+		end
+	end
+	return nil
+end
+
+function MeleeBat.leftHandWorld(model: Model): Vector3
+	local named = namedLeftHand(model)
+	if named then
+		return named
+	end
+	-- Facing +X, left is −Z. Sit the throw on the left-front of the visual AABB.
+	local size, center = ModelUtil.getVisualSizeAndCenter(model)
+	return Vector3.new(center.X + size.X * 0.28, center.Y + size.Y * 0.08, center.Z - size.Z * 0.32)
 end
 
 local function applyHit(ctx, callbacks, targetId: string)
@@ -29,7 +80,7 @@ function MeleeBat.tryAct(ctx, callbacks)
 	-- Tile-based reach from `rangeTiles` (Tung Tung = 1): own tile + one ahead.
 	-- Friendly Brainrots never block — a bat behind Ballerina, Lirili, a wall,
 	-- etc. can still hit a monster chewing that unit on the next tile.
-	-- Ranged Rampage swaps that for a full-lane projectile for `rangedUntil`.
+	-- Ranged Rampage swaps that for a full-lane spinning bat for `rangedUntil`.
 	local ranged = os.clock() < ctx.buffs.rangedUntil
 	local rangeTiles = ctx.definition.rangeTiles
 	if ranged then
@@ -61,10 +112,14 @@ function MeleeBat.tryAct(ctx, callbacks)
 				ctx.definition.damage,
 				ctx.ownerUserId,
 				{
-					kind = "Knife",
+					kind = "Bat",
 					soundKey = "MeleeBat",
+					statusKind = "Knockback",
+					statusDuration = 0,
+					statusMagnitude = CombatConfig.BAT_KNOCKBACK_TILES,
 					sourceBrainrotId = ctx.definition.id,
 					sourceInstanceId = ctx.instanceId,
+					originWorld = MeleeBat.leftHandWorld(ctx.model),
 				}
 			)
 			return

@@ -95,11 +95,15 @@ local function refresh(model: Model, plate: Plate)
 	if type(rarity) ~= "string" or rarity == "" then
 		rarity = "Common"
 	end
-	plate.rarityLabel.Text = rarity
+	plate.rarityLabel.Text = EvolutionConfig.displayName(rarity)
 	TextShine.clear(plate.rarityLabel)
 	if rarity == "Common" then
 		UITheme.applyOutlinedTitle(plate.rarityLabel, UITheme.TITLE)
 		plate.rarityLabel.TextSize = RARITY_SIZE
+	elseif EvolutionConfig.isRainbow(rarity) then
+		UITheme.applyOutlinedTitle(plate.rarityLabel, Color3.new(1, 1, 1))
+		plate.rarityLabel.TextSize = RARITY_SIZE
+		TextShine.applyRainbow(plate.rarityLabel)
 	else
 		local dark = EvolutionConfig.darkText(rarity)
 		UITheme.applyOutlinedTitle(plate.rarityLabel, dark)

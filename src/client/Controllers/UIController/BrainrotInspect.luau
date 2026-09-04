@@ -4,7 +4,7 @@
 	Shared stats / evolution card used by Inventory (with Equip) and by clicking a
 	planted Brainrot on the lawn. Header: inset portrait with name, HP bar,
 	level, and XP bar. Body: Stats (cost, damage, atk. speed, range, …) + Current Evolution (white
-	Common base ability, then Epic→Immortal: gray until the level gate, then
+	Common base ability, then Epic→God: gray until the level gate, then
 	light rarity fill + shiny rarity title; lock until brains claim).
 	Card chrome: white until a rarity is claimed, then that rarity’s title
 	color with a diagonal gleam.
@@ -282,17 +282,24 @@ local function applyXpBar(fill: Frame?, label: TextLabel?, totalXp: number)
 end
 
 local function clearShine(entry: EvoEntry)
+	TextShine.clear(entry.frame)
 	TextShine.clear(entry.rarityLine)
+	TextShine.clear(entry.title)
+	TextShine.clear(entry.kindLabel)
+	TextShine.clear(entry.body)
 end
 
-local function applyShine(label: TextLabel, entry: EvoEntry, dark: Color3)
-	clearShine(entry)
+local function applyShine(label: TextLabel, _entry: EvoEntry, dark: Color3, rainbow: boolean)
 	-- Gradient is mapped to the label rect; size to the glyphs so the pass
 	-- actually hits the words instead of empty space to the right.
 	label.TextWrapped = false
 	label.AutomaticSize = Enum.AutomaticSize.XY
 	label.Size = UDim2.fromOffset(0, 0)
-	TextShine.apply(label, dark)
+	if rainbow then
+		TextShine.applyRainbow(label)
+	else
+		TextShine.apply(label, dark)
+	end
 end
 
 local function applyCardChrome(self: InspectCard)
@@ -300,6 +307,10 @@ local function applyCardChrome(self: InspectCard)
 	TextShine.clear(self.frame)
 	if not rarity then
 		self.frame.BackgroundColor3 = STATS_FILL
+		return
+	end
+	if EvolutionConfig.isRainbow(rarity) then
+		TextShine.applyRainbowPanel(self.frame)
 		return
 	end
 	TextShine.applyPanel(self.frame, EvolutionConfig.darkText(rarity))
@@ -326,11 +337,16 @@ local function styleEvolutionEntry(entry: EvoEntry, brainrotLevel: number, claim
 			UITheme.applyOutlinedTitle(label, LOCKED_TEXT)
 		end
 	else
-		entry.frame.BackgroundColor3 = light
+		local rainbow = EvolutionConfig.isRainbow(entry.row.rarity)
+		if rainbow then
+			TextShine.applyRainbowPanel(entry.frame)
+		else
+			entry.frame.BackgroundColor3 = light
+		end
 		UITheme.applyOutlinedTitle(entry.rarityLine, dark)
-		applyShine(entry.rarityLine, entry, dark)
+		applyShine(entry.rarityLine, entry, dark, rainbow)
 		for _, label in { entry.title, entry.kindLabel, entry.body } do
-			UITheme.applyOutlinedTitle(label, bodyColor)
+			UITheme.applyOutlinedTitle(label, if rainbow then Color3.new(1, 1, 1) else bodyColor)
 		end
 	end
 	entry.rarityLine.TextSize = 12
@@ -538,7 +554,7 @@ end
 function BrainrotInspect.showEvolveConfirm(self: InspectCard, row: Evolutions.EvolutionRow)
 	local cost = EvolutionConfig.brainsCost(row.rarity)
 	self.pendingRow = row
-	self.confirmTitle.Text = string.format("Evolve to %s?", row.rarity)
+	self.confirmTitle.Text = string.format("Evolve to %s?", EvolutionConfig.displayName(row.rarity))
 	self.confirmBody.Text = string.format(
 		"Spend %d brains to unlock %s?",
 		cost,
@@ -795,7 +811,7 @@ local function addEvolutionRow(
 	colLayout.Padding = UDim.new(0, 2)
 	colLayout.Parent = col
 
-	local rarityLine = addLabel(col, 1, string.format("%s - level %d", row.rarity, row.level), 12, nil, false)
+	local rarityLine = addLabel(col, 1, string.format("%s - level %d", EvolutionConfig.displayName(row.rarity), row.level), 12, nil, false)
 	rarityLine.AutomaticSize = Enum.AutomaticSize.XY
 	rarityLine.Size = UDim2.fromOffset(0, 0)
 	local title = addLabel(col, 2, row.name, 14)

@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Evolutions
-	Epic→Immortal catalog. Claiming a tier costs brains after the Brainrot
+	Epic→God catalog. Claiming a tier costs brains after the Brainrot
 	level gate. 	Epic `stats` compose onto the shared registry definition. Legendary extras
 	and Mythic passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names).
@@ -53,8 +53,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Each coin produced: 30% chance to produce one extra.",
 			abilityParams = { extraCoinChance = 30 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Golden Discount", description = "When producing a coin, the next Brainrot plant costs 50%." },
-		{ rarity = "Immortal", level = 50, name = "Jackpot", description = "Produce coins 3× faster; each coin during the ultimate 33% extra. 30s cooldown." },
+		{ rarity = "Immortal", level = 40, name = "Golden Discount", description = "When producing a coin, the next Brainrot plant costs 50%." },
+		{ rarity = "God", level = 50, name = "Jackpot", description = "Produce coins 3× faster; each coin during the ultimate 33% extra. 30s cooldown." },
 	},
 	ChimpanziniBananini = {
 		{
@@ -80,8 +80,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			ability = "RegenPulse",
 			abilityParams = { cooldown = 5, healPercent = 5 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Stoneheart", description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone." },
-		{ rarity = "Immortal", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. 30s cooldown." },
+		{ rarity = "Immortal", level = 40, name = "Stoneheart", description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone." },
+		{ rarity = "God", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. 30s cooldown." },
 	},
 	TungTungSahur = {
 		{
@@ -95,7 +95,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Legendary",
 			level = 20,
 			name = "Ranged Rampage",
-			description = "Becomes a ranged attacker for 10s.",
+			description = "Throws a spinning bat from the left hand down the whole row for 10s. Hits on the lawn knock monsters back half a tile.",
 			ability = "RangedRampage",
 			abilityParams = { cooldown = 20, duration = 10 },
 		},
@@ -107,8 +107,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			ability = "DesperateFury",
 			abilityParams = { healthPercent = 50, factor = 1.5 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Tenfold Guard", description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded." },
-		{ rarity = "Immortal", level = 50, name = "Sahur's Wrath", description = "Hit the entire lane once for 1000% of original damage. 30s cooldown." },
+		{ rarity = "Immortal", level = 40, name = "Tenfold Guard", description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded." },
+		{ rarity = "God", level = 50, name = "Sahur's Wrath", description = "Hit the entire lane once for 1000% of original damage. 30s cooldown." },
 	},
 	TralaleroTralala = {
 		{
@@ -133,8 +133,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Each bubble 33% chance to spawn an extra trap bubble.",
 			abilityParams = { extraBubbleChance = 33 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Wound of the Shark", description = "Monsters leaving a bubble are slowed 40% for 3s." },
-		{ rarity = "Immortal", level = 50, name = "Tidal Cataclysm", description = "Lane tsunami: knockback + stun, then slow 30% for 3s." },
+		{ rarity = "Immortal", level = 40, name = "Wound of the Shark", description = "Monsters leaving a bubble are slowed 40% for 3s." },
+		{ rarity = "God", level = 50, name = "Tidal Cataclysm", description = "Lane tsunami: knockback + stun, then slow 30% for 3s." },
 	},
 	CappuccinoAssassino = {
 		{
@@ -160,8 +160,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Every 5th attack deals 200% dmg.",
 			abilityParams = { fifthStrikeEvery = 5, fifthStrikeFactor = 2 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Assassin's Verdict", description = "Execute on hit if target is below 7.5% HP (2% for bosses)." },
-		{ rarity = "Immortal", level = 50, name = "Shadow Requiem", description = "Vanish to the east end of the lane, run back, stab every monster for 2000% dmg. 45s cooldown." },
+		{ rarity = "Immortal", level = 40, name = "Assassin's Verdict", description = "Execute on hit if target is below 7.5% HP (2% for bosses)." },
+		{ rarity = "God", level = 50, name = "Shadow Requiem", description = "Vanish to the east end of the lane, run back, stab every monster for 2000% dmg. 45s cooldown." },
 	},
 	LiriliLarila = {
 		{
@@ -185,14 +185,14 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Freeze duration 7s.",
 			abilityParams = { freezeDuration = 7 },
 		},
-		{ rarity = "Celestial", level = 40, name = "Frostbound Neighbor", description = "Also freeze one adjacent lane." },
-		{ rarity = "Immortal", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s." },
+		{ rarity = "Immortal", level = 40, name = "Frostbound Neighbor", description = "Also freeze one adjacent lane." },
+		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s." },
 	},
 }
 
 local Evolutions = {}
 
-local CLAIM_ORDER = { "Epic", "Legendary", "Mythic", "Celestial", "Immortal" }
+local CLAIM_ORDER = { "Epic", "Legendary", "Mythic", "Immortal", "God" }
 
 local function rarityIndex(rarity: string): number?
 	for index, id in CLAIM_ORDER do
@@ -253,11 +253,32 @@ function Evolutions.sanitizeClaimed(brainrotId: string, raw: { string }?): { str
 	for _, row in rows do
 		allowed[row.rarity] = true
 	end
+	-- Pre-rename saves: Celestial (40) + Immortal (50) → Immortal + God.
+	local hasLegacyCelestial = false
+	if type(raw) == "table" then
+		for _, rarity in raw do
+			if rarity == "Celestial" then
+				hasLegacyCelestial = true
+				break
+			end
+		end
+	end
 	local picked: { [string]: boolean } = {}
 	if type(raw) == "table" then
 		for _, rarity in raw do
-			if type(rarity) == "string" and allowed[rarity] then
-				picked[rarity] = true
+			if type(rarity) ~= "string" then
+				continue
+			end
+			local mapped = rarity
+			if hasLegacyCelestial then
+				if rarity == "Immortal" then
+					mapped = "God"
+				elseif rarity == "Celestial" then
+					mapped = "Immortal"
+				end
+			end
+			if allowed[mapped] then
+				picked[mapped] = true
 			end
 		end
 	end

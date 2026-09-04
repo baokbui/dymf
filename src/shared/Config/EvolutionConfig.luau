@@ -53,8 +53,8 @@ local EvolutionConfig = {
 		Epic = 25,
 		Legendary = 50,
 		Mythic = 100,
-		Celestial = 200,
-		Immortal = 400,
+		Immortal = 200,
+		God = 400,
 	} :: { [string]: number },
 
 	TIERS = {
@@ -62,8 +62,8 @@ local EvolutionConfig = {
 		{ id = "Epic", level = 10, aura = Color3.fromRGB(168, 85, 247), kind = "Stat" },
 		{ id = "Legendary", level = 20, aura = Color3.fromRGB(245, 190, 40), kind = "Active" },
 		{ id = "Mythic", level = 30, aura = Color3.fromRGB(255, 110, 50), kind = "Passive" },
-		{ id = "Celestial", level = 40, aura = Color3.fromRGB(40, 140, 70), kind = "Passive" },
-		{ id = "Immortal", level = 50, aura = Color3.fromRGB(160, 30, 35), kind = "Ultimate" },
+		{ id = "Immortal", level = 40, aura = Color3.fromRGB(160, 30, 35), kind = "Passive" },
+		{ id = "God", level = 50, aura = Color3.fromRGB(255, 70, 180), kind = "Ultimate" },
 	} :: { TierDef },
 
 	-- World aura size on planted Brainrots (monsters use their own scale).
@@ -166,7 +166,38 @@ function EvolutionConfig.worldAura(rarity: string): Color3
 	if rarity == "Mythic" then
 		return Color3.fromRGB(255, 110, 50)
 	end
+	if rarity == "Immortal" then
+		return Color3.fromRGB(175, 28, 38)
+	end
 	return EvolutionConfig.auraForRarity(rarity)
+end
+
+function EvolutionConfig.isRainbow(rarity: string): boolean
+	return rarity == "God"
+end
+
+function EvolutionConfig.rainbowSequence(): ColorSequence
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 70)),
+		ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 150, 30)),
+		ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 230, 50)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(50, 220, 90)),
+		ColorSequenceKeypoint.new(0.66, Color3.fromRGB(40, 180, 255)),
+		ColorSequenceKeypoint.new(0.83, Color3.fromRGB(150, 70, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 40, 70)),
+	})
+end
+
+function EvolutionConfig.rainbowFillSequence(): ColorSequence
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 170, 190)),
+		ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 210, 160)),
+		ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 245, 180)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 245, 200)),
+		ColorSequenceKeypoint.new(0.66, Color3.fromRGB(175, 220, 255)),
+		ColorSequenceKeypoint.new(0.83, Color3.fromRGB(215, 185, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 170, 190)),
+	})
 end
 
 function EvolutionConfig.skipsLastHit(ability: string): boolean
@@ -185,15 +216,31 @@ function EvolutionConfig.brainsCost(rarity: string): number
 	return math.max(0, math.floor(cost))
 end
 
+function EvolutionConfig.displayName(rarity: string): string
+	if rarity == "God" then
+		return "GOD"
+	end
+	return rarity
+end
+
 function EvolutionConfig.lightFill(rarity: string): Color3
+	if EvolutionConfig.isRainbow(rarity) then
+		return Color3.fromRGB(255, 236, 248)
+	end
 	return EvolutionConfig.auraForRarity(rarity):Lerp(Color3.fromRGB(255, 250, 255), 0.62)
 end
 
 function EvolutionConfig.darkText(rarity: string): Color3
+	if EvolutionConfig.isRainbow(rarity) then
+		return Color3.fromRGB(70, 20, 90)
+	end
 	return EvolutionConfig.auraForRarity(rarity):Lerp(Color3.fromRGB(18, 8, 28), 0.45)
 end
 
 function EvolutionConfig.lightText(rarity: string): Color3
+	if EvolutionConfig.isRainbow(rarity) then
+		return Color3.fromRGB(255, 230, 250)
+	end
 	return EvolutionConfig.auraForRarity(rarity):Lerp(Color3.fromRGB(255, 236, 255), 0.32)
 end
 

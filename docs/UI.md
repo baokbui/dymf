@@ -142,7 +142,7 @@ hardcode a second palette in new UI.
   range, coins / trap / freeze / recharge, ability — `BrainrotInfo.statRows`,
   Epic numbers after claim) and
   **Current Evolution** sit below: a white **Common** row (always unlocked,
-  the unit’s current ability) then Epic → Immortal. Rows below the Brainrot
+  the unit’s current ability) then Epic → God. Rows below the Brainrot
   level gate stay gray. At the gate the tab uses a **light rarity fill**, the
   `Epic - level 10` (etc.) line is a **shiny dark rarity color**, and the
   name / kind / description are a **lighter rarity color**. Until the player
@@ -151,7 +151,7 @@ hardcode a second palette in new UI.
   Cancel). Claimed rows drop the lock. **Epic** stats apply on claim (HP bar
   / plant recharge); **Legendary** extras and **Mythic** passives tick in
   combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
-  red-orange). Celestial+ combat extras still 🔜
+  red-orange / dark red / rainbow). Immortal+ combat extras still 🔜
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted

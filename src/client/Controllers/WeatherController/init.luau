@@ -3,7 +3,9 @@
 	WeatherController
 	Client-only weather presentation for the local player's current day:
 	night lighting + a cheap, always-visible fog bank over the east lawn and
-	forest (NightFog). Desert days swap that for sand lighting, hidden forest,
+	forest (NightFog). Three particle volumes (lawn + near/deep forest) sit on
+	top of Lighting Fog / Atmosphere — keep rates low; the engine fog does the
+	heavy lifting. Desert days swap that for sand lighting, hidden forest,
 	and pyramids (DesertVisuals). Planting rules are enforced on the server.
 ]]
 
@@ -152,13 +154,14 @@ local function addLightMist(part: BasePart, rate: number, densityScale: number)
 		WeatherConfig.FOG_PARTICLE_LIFETIME * 0.7,
 		WeatherConfig.FOG_PARTICLE_LIFETIME
 	)
-	emitter.Speed = NumberRange.new(0.05, 0.35)
-	emitter.RotSpeed = NumberRange.new(-8, 8)
+	emitter.Speed = NumberRange.new(0.02, 0.18)
+	emitter.RotSpeed = NumberRange.new(-6, 6)
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.Rate = rate
+	emitter.Drag = 2
 	emitter.LightEmission = WeatherConfig.FOG_PARTICLE_LIGHT_EMISSION
 	emitter.LightInfluence = WeatherConfig.FOG_PARTICLE_LIGHT_INFLUENCE
-	emitter.LockedToPart = false
+	emitter.LockedToPart = true
 	emitter.Shape = Enum.ParticleEmitterShape.Box
 	emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
 	emitter.Orientation = Enum.ParticleOrientation.FacingCamera
@@ -199,27 +202,24 @@ local function fogBankRate(name: string): number
 	return WeatherConfig.FOG_LAWN_PARTICLE_RATE
 end
 
+local function allLawnRowsCleared(): boolean
+	if plotFogCleared then
+		return true
+	end
+	for row = 1, GridConfig.ROWS do
+		if clearedFogRows[row] ~= true then
+			return false
+		end
+	end
+	return true
+end
+
 local function applyClearedLawnFog()
 	if not fogFolder then
 		return
 	end
+	local hide = allLawnRowsCleared()
 	for _, child in fogFolder:GetChildren() do
-		local hide = plotFogCleared
-		local rowText = string.match(child.Name, "^LawnFog_(%d+)$")
-		if not hide and rowText then
-			hide = clearedFogRows[tonumber(rowText) :: number] == true
-		elseif child.Name == "ForestFogNear" or child.Name == "ForestFogDeep" then
-			hide = plotFogCleared
-			if not hide then
-				hide = true
-				for row = 1, GridConfig.ROWS do
-					if clearedFogRows[row] ~= true then
-						hide = false
-						break
-					end
-				end
-			end
-		end
 		local emitter = child:FindFirstChild("FogMist")
 		if child:IsA("BasePart") and emitter and emitter:IsA("ParticleEmitter") then
 			if hide then
@@ -255,7 +255,14 @@ local function buildFogVolumes(plotModel: Model)
 	local height = WeatherConfig.FOG_HEIGHT_STUDS
 	local centerHeight = WeatherConfig.FOG_CENTER_HEIGHT_STUDS
 
-	-- Light mist over fog lawn columns, one bank per row so Giraffa can clear a lane.
+	-- One lawn volume (Giraffa clears the whole plot). Per-row banks were 5×
+	-- the fill-rate cost for the same look.
+	local lawnMinX: number? = nil
+	local lawnMaxX: number? = nil
+	local lawnMinZ: number? = nil
+	local lawnMaxZ: number? = nil
+	local lawnGroundY = 0
+	local lawnSamples = 0
 	for row = 1, GridConfig.ROWS do
 		local west = PlotUtil.getTileTopCenter(plotModel, row, startCol)
 		local east = PlotUtil.getTileTopCenter(plotModel, row, GridConfig.COLUMNS)
@@ -264,18 +271,30 @@ local function buildFogVolumes(plotModel: Model)
 			local maxX = math.max(west.X, east.X) + tileSize * 0.5
 			local minZ = math.min(west.Z, east.Z) - tileSize * 0.5
 			local maxZ = math.max(west.Z, east.Z) + tileSize * 0.5
-			local groundY = (west.Y + east.Y) * 0.5
-			local size = Vector3.new(maxX - minX, height, maxZ - minZ)
-			local center = Vector3.new((minX + maxX) * 0.5, groundY + centerHeight, (minZ + maxZ) * 0.5)
-			makeFogBank(
-				string.format("LawnFog_%d", row),
-				CFrame.new(center),
-				size,
-				folder,
-				WeatherConfig.FOG_LAWN_PARTICLE_RATE,
-				0.8
-			)
+			lawnMinX = if lawnMinX then math.min(lawnMinX, minX) else minX
+			lawnMaxX = if lawnMaxX then math.max(lawnMaxX, maxX) else maxX
+			lawnMinZ = if lawnMinZ then math.min(lawnMinZ, minZ) else minZ
+			lawnMaxZ = if lawnMaxZ then math.max(lawnMaxZ, maxZ) else maxZ
+			lawnGroundY += (west.Y + east.Y) * 0.5
+			lawnSamples += 1
 		end
+	end
+	if lawnSamples > 0 and lawnMinX and lawnMaxX and lawnMinZ and lawnMaxZ then
+		local groundY = lawnGroundY / lawnSamples
+		local size = Vector3.new(lawnMaxX - lawnMinX, height, lawnMaxZ - lawnMinZ)
+		local center = Vector3.new(
+			(lawnMinX + lawnMaxX) * 0.5,
+			groundY + centerHeight,
+			(lawnMinZ + lawnMaxZ) * 0.5
+		)
+		makeFogBank(
+			"LawnFog",
+			CFrame.new(center),
+			size,
+			folder,
+			WeatherConfig.FOG_LAWN_PARTICLE_RATE,
+			0.8
+		)
 	end
 
 	-- Forest: denser deep east, lighter near the lawn edge.

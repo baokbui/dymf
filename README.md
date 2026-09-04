@@ -64,4 +64,4 @@ Studio sync via `$ignoreUnknownInstances`.
 | [`docs/LEVELS.md`](docs/LEVELS.md) | Campaign days, victory / defeat / rewind |
 | [`docs/BRAINROTS.md`](docs/BRAINROTS.md) / [`docs/MONSTERS.md`](docs/MONSTERS.md) | Unit registries |
 | [`docs/STORE.md`](docs/STORE.md) | Per-plot shops and brains spends |
-| [`docs/EVOLUTIONS.md`](docs/EVOLUTIONS.md) | Brainrot leveling + Epic→Immortal tiers (M19) |
+| [`docs/EVOLUTIONS.md`](docs/EVOLUTIONS.md) | Brainrot leveling + Epic→God tiers (M19) |

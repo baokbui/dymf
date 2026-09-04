@@ -18,11 +18,14 @@ local Projectile = {}
 
 local log = Logger.new("Projectile")
 local missingShurikenLogged = false
+local missingBatLogged = false
+local missingArrowLogged = false
 
 export type ImpactSpec = {
 	soundKey: string?,
 	statusKind: Types.StatusEffectKind?,
 	statusDuration: number?,
+	statusMagnitude: number?,
 	statusVisual: string?,
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
@@ -45,7 +48,7 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
-	-- "Knife" (legacy bolt), "Shuriken" (Cappuccino), "Bubble", or "Arrow"
+	-- "Knife" (legacy bolt), "Shuriken", "Bat" (Ranged Rampage), "Bubble", or "Arrow"
 	kind: string?,
 	impact: ImpactSpec?,
 	-- Default "Monster". "Brainrot" = westbound shots (Skeleton arrows).
@@ -264,6 +267,120 @@ local function createShurikenModel(): (Model, BasePart)
 	return createProceduralShuriken()
 end
 
+local function prepareAuthoredBat(model: Model): BasePart?
+	stripScripts(model)
+	local primary = pickPrimary(model)
+	if not primary then
+		return nil
+	end
+	model.PrimaryPart = primary
+
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			if descendant == primary then
+				hardenRoot(descendant)
+			else
+				weldAccessory(primary, descendant)
+			end
+		end
+	end
+
+	local size = select(1, ModelUtil.getVisualSizeAndCenter(model))
+	local extent = math.max(size.X, size.Y, size.Z)
+	local target = CombatConfig.BAT_TARGET_EXTENT
+	if extent > 0.01 and target > 0.01 then
+		local scale = math.clamp(target / extent, 0.05, 20)
+		model:ScaleTo(model:GetScale() * scale)
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				if descendant == model.PrimaryPart then
+					hardenRoot(descendant)
+				else
+					descendant.Anchored = false
+					descendant.CanCollide = false
+					descendant.CanTouch = false
+					descendant.CanQuery = false
+					descendant.Massless = true
+				end
+			end
+		end
+	end
+
+	model.Name = "BatProjectile"
+	model:SetAttribute("ProjectileKind", "Bat")
+	primary:SetAttribute("ProjectileKind", "Bat")
+	return primary
+end
+
+local function createProceduralBat(): (Model, BasePart)
+	local model = Instance.new("Model")
+	model.Name = "BatProjectile"
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = CombatConfig.BAT_FALLBACK_HANDLE_SIZE
+	handle.Material = Enum.Material.Wood
+	handle.Color = CombatConfig.BAT_FALLBACK_HANDLE_COLOR
+	handle.Parent = model
+	hardenRoot(handle)
+
+	local head = Instance.new("Part")
+	head.Name = "Head"
+	head.Size = CombatConfig.BAT_FALLBACK_HEAD_SIZE
+	head.Material = Enum.Material.Wood
+	head.Color = CombatConfig.BAT_FALLBACK_HEAD_COLOR
+	head.CFrame = CFrame.new(handle.Size.X * 0.38, 0, 0)
+	head.Parent = model
+	weldAccessory(handle, head)
+
+	model.PrimaryPart = handle
+	model:SetAttribute("ProjectileKind", "Bat")
+	handle:SetAttribute("ProjectileKind", "Bat")
+	return model, handle
+end
+
+local function createBatModel(): (Model, BasePart)
+	local folder = ModelUtil.getProjectileTemplatesFolder()
+	local child = if folder then folder:FindFirstChild(CombatConfig.BAT_MODEL_ID) else nil
+
+	if child and child:IsA("Model") then
+		local model = child:Clone()
+		local primary = prepareAuthoredBat(model)
+		if primary then
+			return model, primary
+		end
+		model:Destroy()
+		log:warn("Assets.Projectiles." .. CombatConfig.BAT_MODEL_ID .. " has no BasePart — using procedural")
+	elseif child and child:IsA("BasePart") then
+		local model = Instance.new("Model")
+		model.Name = "BatProjectile"
+		local part = child:Clone()
+		part.Name = "Bat"
+		part.Parent = model
+		model.PrimaryPart = part
+		local primary = prepareAuthoredBat(model)
+		if primary then
+			return model, primary
+		end
+		model:Destroy()
+		log:warn("Assets.Projectiles." .. CombatConfig.BAT_MODEL_ID .. " clone failed — using procedural")
+	elseif not missingBatLogged then
+		missingBatLogged = true
+		log:warn(string.format(
+			"missing Assets.Projectiles.%s — using procedural bat (move your model there in Studio)",
+			CombatConfig.BAT_MODEL_ID
+		))
+	end
+	return createProceduralBat()
+end
+
+local function batFlightCFrame(position: Vector3, spinRadians: number): CFrame
+	local o = CombatConfig.BAT_MODEL_ORIENTATION_DEGREES
+	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
+	-- End-over-end along +X (lane). Tune BAT_MODEL_ORIENTATION_DEGREES if the mesh tumbles on the wrong axis.
+	return CFrame.new(position) * CFrame.fromAxisAngle(Vector3.zAxis, spinRadians) * orient
+end
+
 local function applyPierceAura(model: Model, hub: BasePart)
 	model:SetAttribute("PiercingBrew", true)
 	hub:SetAttribute("PiercingBrew", true)
@@ -360,8 +477,6 @@ local function createProceduralArrow(): (Model, BasePart)
 	shaft:SetAttribute("ProjectileKind", "Arrow")
 	return model, shaft
 end
-
-local missingArrowLogged = false
 
 local function prepareAuthoredArrow(model: Model): BasePart?
 	stripScripts(model)
@@ -565,6 +680,11 @@ function Projectile.launch(
 			applyPierceAura(shurikenModel, hub)
 		end
 		shurikenModel.Parent = folder
+	elseif kind == "Bat" then
+		local batModel, hub = createBatModel()
+		model = batModel
+		part = hub
+		batModel.Parent = folder
 	elseif kind == "Arrow" then
 		local arrowModel, hub = createArrowModel()
 		model = arrowModel
@@ -595,6 +715,8 @@ function Projectile.launch(
 			part.CFrame = arrowFlightCFrame(held, dir)
 		elseif kind == "Bubble" then
 			part.CFrame = CFrame.new(if spec.originWorld then spec.originWorld else held)
+		elseif kind == "Bat" then
+			part.CFrame = batFlightCFrame(if spec.originWorld then spec.originWorld else held, 0)
 		else
 			part.CFrame = shurikenFlightCFrame(held, 0)
 		end
@@ -663,6 +785,9 @@ function Projectile.tick(
 				projectile.part.CFrame = arrowFlightCFrame(held, dir)
 			elseif kind == "Bubble" then
 				projectile.part.CFrame = CFrame.new(held)
+			elseif kind == "Bat" then
+				projectile.spinRadians += CombatConfig.BAT_SPIN_RADIANS_PER_SECOND * dt
+				projectile.part.CFrame = batFlightCFrame(held, projectile.spinRadians)
 			else
 				projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
 				projectile.part.CFrame = shurikenFlightCFrame(held, projectile.spinRadians)

@@ -578,6 +578,9 @@ function EnemyService.applyStatusToMonster(
 	if (kind == "Freeze" or kind == "Stun") and os.clock() < runtime.downedUntil then
 		return
 	end
+	if kind == "Knockback" and not GridUtil.isOnPlotColumn(runtime.column) then
+		return
+	end
 	MonsterStatus.apply(runtime, kind, duration, magnitude)
 	if kind == "Freeze" or kind == "Stun" then
 		local style = if visual == "Bubble" then "Bubble" else "Ice"

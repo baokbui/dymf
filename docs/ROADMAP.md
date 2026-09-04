@@ -611,7 +611,7 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 Give each roster Brainrot its own **leveling track** (XP + Brainrot level),
 independent of campaign days. At Brainrot levels **10 / 20 / 30 / 40 / 50**
-unlock a cumulative **Epic → Immortal** rarity ladder (aura + stat / active /
+unlock a cumulative **Epic → God** rarity ladder (aura + stat / active /
 passive / ultimate). Server owns XP, level, and grants; client UI is display +
 intent only. Full design: **`docs/EVOLUTIONS.md`**.
 
@@ -621,7 +621,7 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
 
 - **Brainrot levels** — one meter per registry id (all planted copies share it)
 - **Five tiers** — Epic (purple, stat), Legendary (gold, active), Mythic
-  (red-orange, passive), Celestial (dark green, passive), Immortal (dark red,
+  (red-orange, passive), Immortal (dark red, passive), God (rainbow,
   ultimate)
 - **Authored rows** for Ballerina, Chimpanzini, Tung Tung, Tralalero,
   Cappuccino, Lirili (Girafa / Patapim / Bombardino TBD)
@@ -635,7 +635,7 @@ mutations ship in M19 or slip later.
 
 - Shared schema: Brainrot XP map live (`brainrotXp`); evolution rows
   (`brainrotId` + rarity, ability ids, **Epic `stats`**, **Legendary extras**,
-  **Mythic passives**) ✅; Celestial+ extras 🔜
+  **Mythic passives**) ✅; Immortal+ extras 🔜
 - XP grant rules ✅ — last-hit species for normal kills (`BubbleTrap` /
   `MeleeBat` skipped); boss XP split evenly across every living plant; support
   jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP` / `BUBBLE_XP` every 2 landed
@@ -645,13 +645,13 @@ mutations ship in M19 or slip later.
   (`claimedExtras` + `tickExtras`). Mythic passives ✅
 - Persist XP via `SaveService` (v5) and claimed tiers (v6 `evolutions`);
   Epic combat stats ✅; Legendary combat extras ✅; Mythic passives ✅;
-  Celestial+ 🔜
+  Immortal+ 🔜
 - Inventory / field inspect show portrait header (name, HP bar, level, XP bar)
   plus Stats and evolution rows (gray until the Brainrot level gate,
   then light rarity fill + shiny title; lock until brains claim, with a
   confirm prompt); Epic stats live in the HP bar / plant cooldown
 - Aura VFX (highest owned tier) ✅ Epic dark purple, Legendary gold, Mythic
-  red-orange; later colors 🔜
+  red-orange, Immortal dark red, GOD rainbow
 
 ## Architecture Notes
 

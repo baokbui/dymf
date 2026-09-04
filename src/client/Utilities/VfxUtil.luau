@@ -662,6 +662,7 @@ function VfxUtil.decorateProjectile(part: BasePart)
 
 	local kind = part:GetAttribute("ProjectileKind")
 	local isBubble = kind == "Bubble"
+	local isBat = kind == "Bat"
 	local isShuriken = kind == "Shuriken"
 	local piercing = isShuriken
 		and (
@@ -709,7 +710,7 @@ function VfxUtil.decorateProjectile(part: BasePart)
 		end
 	end
 
-	if (not isBubble or barrage) and part:FindFirstChildOfClass("Trail") == nil then
+	if (not isBubble or barrage) and not isBat and part:FindFirstChildOfClass("Trail") == nil then
 		local attachment0 = Instance.new("Attachment")
 		attachment0.Name = "TrailStart"
 		attachment0.Position = Vector3.new(0, halfWidth, 0)
@@ -749,19 +750,21 @@ function VfxUtil.decorateProjectile(part: BasePart)
 		trail.Parent = part
 	end
 
-	local glow = Instance.new("PointLight")
-	glow.Brightness = if piercing
-		then VfxConfig.PIERCE_SHURIKEN_GLOW_BRIGHTNESS
-		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
-		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_BRIGHTNESS
-		else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
-	glow.Range = if piercing
-		then VfxConfig.PIERCE_SHURIKEN_GLOW_RANGE
-		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
-		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
-		else VfxConfig.PROJECTILE_GLOW_RANGE
-	glow.Color = if isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR else trailColor
-	glow.Parent = part
+	if not isBat then
+		local glow = Instance.new("PointLight")
+		glow.Brightness = if piercing
+			then VfxConfig.PIERCE_SHURIKEN_GLOW_BRIGHTNESS
+			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
+			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_BRIGHTNESS
+			else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
+		glow.Range = if piercing
+			then VfxConfig.PIERCE_SHURIKEN_GLOW_RANGE
+			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
+			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
+			else VfxConfig.PROJECTILE_GLOW_RANGE
+		glow.Color = if isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR else trailColor
+		glow.Parent = part
+	end
 end
 
 local function sandSequence(): ColorSequence
@@ -1094,7 +1097,7 @@ function VfxUtil.playWindGust(plotModel: Model)
 			emitter.LightEmission = 0.55
 			emitter.LockedToPart = false
 			emitter.Parent = anchor
-			emitter:Emit(48)
+			emitter:Emit(VfxConfig.WIND_GUST_BURST)
 		end
 	end
 

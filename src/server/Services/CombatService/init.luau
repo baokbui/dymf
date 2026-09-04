@@ -292,6 +292,7 @@ export type ProjectileLaunchOptions = {
 	soundKey: string?,
 	statusKind: Types.StatusEffectKind?,
 	statusDuration: number?,
+	statusMagnitude: number?,
 	statusVisual: string?,
 	-- Spawn at this world point (Skeleton bow / LArm / Tralalero mouth) instead of lane center.
 	originWorld: Vector3?,
@@ -361,6 +362,7 @@ function CombatService.launchProjectile(
 			soundKey = options.soundKey,
 			statusKind = if blockingColumn then nil else options.statusKind,
 			statusDuration = if blockingColumn then nil else options.statusDuration,
+			statusMagnitude = if blockingColumn then nil else options.statusMagnitude,
 			statusVisual = if blockingColumn then nil else options.statusVisual,
 			sourceBrainrotId = options.sourceBrainrotId,
 			sourceInstanceId = options.sourceInstanceId,
@@ -370,19 +372,25 @@ function CombatService.launchProjectile(
 
 	local startColumn = position.column
 	local originWorld = if options then options.originWorld else nil
+	local worldZ: number? = nil
 	local worldZEnd: number? = nil
 	local zLerpColumns: number? = nil
-	if originWorld and options and options.kind == "Bubble" then
-		worldY = originWorld.Y
+	if originWorld and options then
 		local GridService = require(script.Parent.GridService)
-		local lanePos = GridService.getWorldPositionAtColumn(plotModel, position.row, position.column)
-		if lanePos then
-			worldZEnd = lanePos.Z
-			zLerpColumns = 0.7
-		end
 		local fromX = GridService.worldXToColumn(plotModel, originWorld.X)
 		if type(fromX) == "number" then
 			startColumn = fromX
+		end
+		if options.kind == "Bubble" then
+			worldY = originWorld.Y
+			local lanePos = GridService.getWorldPositionAtColumn(plotModel, position.row, position.column)
+			if lanePos then
+				worldZEnd = lanePos.Z
+				zLerpColumns = 0.7
+			end
+		elseif options.kind == "Bat" then
+			worldY = originWorld.Y
+			worldZ = originWorld.Z
 		end
 	end
 
@@ -399,6 +407,7 @@ function CombatService.launchProjectile(
 			impact = impact,
 			targetKind = targetKind,
 			originWorld = originWorld,
+			worldZ = worldZ,
 			zLerpColumns = zLerpColumns,
 			worldZEnd = worldZEnd,
 		},
@@ -1019,14 +1028,18 @@ local function onProjectileImpact(
 	}
 	fireCombatVisual(ownerUserId, payload)
 
-	if not killed and impact and impact.statusKind and impact.statusDuration then
-		CombatService.applyStatusToMonster(
-			instanceId,
-			impact.statusKind,
-			impact.statusDuration,
-			nil,
-			impact.statusVisual
-		)
+	if not killed and impact and impact.statusKind then
+		local duration = impact.statusDuration
+		local isKnockback = impact.statusKind == "Knockback"
+		if isKnockback or (type(duration) == "number" and duration > 0) then
+			CombatService.applyStatusToMonster(
+				instanceId,
+				impact.statusKind,
+				if type(duration) == "number" then duration else 0,
+				impact.statusMagnitude,
+				impact.statusVisual
+			)
+		end
 	end
 
 	local pierceCount = if impact then impact.pierceCount else nil

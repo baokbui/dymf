@@ -40,8 +40,7 @@ a bat behind Ballerina, Lirili, Chimpanzini, etc. can still hit a monster chewin
 that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.) Optional
 `attackHitDelay` starts the swing anim first, then re-acquires the target before
 damage — if nothing is still in range, the swing misses (cooldown already spent).
-**Ranged Rampage** (`rangedUntil`) launches a full-lane `Knife` projectile
-instead of the close-range hit.
+**Ranged Rampage** (`rangedUntil`) throws a spinning `Bat` projectile (`Assets.Projectiles["Tung Bat"]`) from the left hand down the full lane instead of the close-range hit. Connecting hits on the lawn apply **half-tile** knockback (`CombatConfig.BAT_KNOCKBACK_TILES`). A bat that still lands after the monster has left the plot (forest / east of the last tile) deals damage only — no knockback.
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
@@ -82,14 +81,15 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and flies through graves. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
-| Tung Tung (`MeleeBat` during Ranged Rampage) | `Knife` (legacy bolt) | Full-lane damage + `MeleeBat` |
+| Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
 | Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — gold soap sphere from the mouth. **BubbleTrap** has no trail. **Bubble Barrage** fires one seed that splits into 5 lane bubbles, each with a gold light-streak trail (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
-`SHURIKEN_MODEL_ORIENTATION_DEGREES`, speed, spin, bubble size) +
+`SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
+`BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, speed, spin, bubble size) +
 `VfxConfig` gold bubble colors. Client trail/glow branches on the `ProjectileKind`
-attribute (`VfxUtil`); normal bubbles skip trails. Bubble Barrage adds a gold light-streak.
+attribute (`VfxUtil`); normal bubbles and thrown bats skip trails. Bubble Barrage adds a gold light-streak.
 
 ### Studio: Cappuccino shuriken model
 
@@ -99,6 +99,14 @@ attribute (`VfxUtil`); normal bubbles skip trails. Bubble Barrage adds a gold li
 4. Set a `PrimaryPart` if possible; strip Tools/Scripts.
 5. If it flies edge-on, tweak `SHURIKEN_MODEL_ORIENTATION_DEGREES` (often
    `Vector3.new(90, 0, 0)` or similar).
+
+### Studio: Tung Tung thrown bat
+
+1. Rojo-sync so `ReplicatedStorage.Assets.Projectiles` exists.
+2. Move your bat **Model** (or Part) into that folder.
+3. Rename it to **`Tung Bat`** (or set `CombatConfig.BAT_MODEL_ID`).
+4. Set a `PrimaryPart` if possible; strip Tools/Scripts.
+5. If it tumbles on the wrong axis, tweak `BAT_MODEL_ORIENTATION_DEGREES`.
 
 ---
 
@@ -112,7 +120,7 @@ Applied only through `CombatService.applyStatusToMonster` or
 | Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
 | Slow | Reduces movement speed | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
-| Knockback | Pushes column east (+X) | — |
+| Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.5). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
 **Queen Spider** ✅ — **laneSpan 3** (random valid placement among anchors that
@@ -174,7 +182,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
-| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, sparks, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). |
+| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, sparks, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
 | Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
 

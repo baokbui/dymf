@@ -26,6 +26,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Melee Bat",
 		description = "Bats monsters on its own tile or the tile ahead.",
 	},
+	RangedRampage = {
+		label = "Ranged Rampage",
+		description = "Throws a spinning bat from the left hand down the whole row. Hits on the lawn knock monsters back half a tile.",
+	},
 	BubbleTrap = {
 		label = "Bubble Trap",
 		description = "Launches a bubble that traps the closest monster in the row.",

@@ -8,6 +8,10 @@
 
 local RunService = game:GetService("RunService")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
+
 local TextShine = {}
 
 local TITLE_PERIOD = 2.0
@@ -133,6 +137,33 @@ function TextShine.applyPanel(gui: GuiObject, dark: Color3)
 	gradient.Offset = PANEL_HIDDEN
 	gradient.Parent = gui
 	panelActive[gradient] = true
+	ensureHeartbeat()
+end
+
+-- GOD: scrolling rainbow (same Heartbeat as title gleam).
+function TextShine.applyRainbow(label: TextLabel)
+	TextShine.clear(label)
+	label.TextColor3 = Color3.new(1, 1, 1)
+	local gradient = Instance.new("UIGradient")
+	gradient.Name = GRADIENT_NAME
+	gradient.Color = EvolutionConfig.rainbowSequence()
+	gradient.Rotation = 0
+	gradient.Offset = Vector2.new(-1, 0)
+	gradient.Parent = label
+	titleActive[gradient] = true
+	ensureHeartbeat()
+end
+
+function TextShine.applyRainbowPanel(gui: GuiObject)
+	TextShine.clear(gui)
+	gui.BackgroundColor3 = Color3.new(1, 1, 1)
+	local gradient = Instance.new("UIGradient")
+	gradient.Name = GRADIENT_NAME
+	gradient.Color = EvolutionConfig.rainbowFillSequence()
+	gradient.Rotation = 18
+	gradient.Offset = Vector2.new(-1, 0)
+	gradient.Parent = gui
+	titleActive[gradient] = true
 	ensureHeartbeat()
 end
 

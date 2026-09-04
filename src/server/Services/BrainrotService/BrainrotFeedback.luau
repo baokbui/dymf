@@ -12,6 +12,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
+local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
@@ -269,9 +270,10 @@ local function discEmitter(parent: BasePart, name: string): ParticleEmitter
 	return emitter
 end
 
--- Super Saiyan column: stretched flame spikes, dark speed lines, sparkles,
--- thin rarity-colored silhouette. No mesh fill, no orbiting trails.
-function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?)
+-- Super Saiyan column: stretched flame spikes + thin rarity silhouette.
+-- Flames only — no sparkles or speed lines. Rate controls density; size and
+-- speed stay fixed so the column does not grow taller or thicker.
+function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?, rainbow: boolean?)
 	BrainrotFeedback.clearAura(model)
 	if not auraColor then
 		return
@@ -305,26 +307,28 @@ function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale:
 	discWeld.Part1 = disc
 	discWeld.Parent = disc
 
-	local hot = auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.38)
-	local spikeColor = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, hot),
-		ColorSequenceKeypoint.new(0.4, auraColor),
-		ColorSequenceKeypoint.new(1, auraColor:Lerp(Color3.fromRGB(20, 10, 5), 0.28)),
-	})
+	local hot = auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.55)
+	local spikeColor = if rainbow
+		then EvolutionConfig.rainbowSequence()
+		else ColorSequence.new({
+			ColorSequenceKeypoint.new(0, hot),
+			ColorSequenceKeypoint.new(0.4, auraColor),
+			ColorSequenceKeypoint.new(1, auraColor:Lerp(Color3.fromRGB(20, 10, 5), 0.28)),
+		})
 
 	local spikes = discEmitter(disc, "AuraSpikes")
 	spikes.Color = spikeColor
 	spikes.Texture = "rbxasset://textures/particles/fire_main.dds"
-	spikes.LightEmission = 0.85
-	spikes.Brightness = 3.2
+	spikes.LightEmission = 1
+	spikes.Brightness = 6.5
 	spikes.Size = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.95 * scale),
 		NumberSequenceKeypoint.new(0.45, 1.55 * scale),
 		NumberSequenceKeypoint.new(1, 0.4 * scale),
 	})
 	spikes.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.12),
-		NumberSequenceKeypoint.new(0.55, 0.4),
+		NumberSequenceKeypoint.new(0, 0.02),
+		NumberSequenceKeypoint.new(0.55, 0.22),
 		NumberSequenceKeypoint.new(1, 1),
 	})
 	spikes.Lifetime = NumberRange.new(0.35, 0.7)
@@ -336,83 +340,14 @@ function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale:
 	spikes.Squash = NumberSequence.new(-1.35)
 	spikes.ZOffset = 2
 
-	local outer = discEmitter(disc, "AuraOuter")
-	outer.Color = spikeColor
-	outer.Texture = "rbxasset://textures/particles/fire_main.dds"
-	outer.LightEmission = 0.7
-	outer.Brightness = 2.2
-	outer.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1.2 * scale),
-		NumberSequenceKeypoint.new(0.5, 2.15 * scale),
-		NumberSequenceKeypoint.new(1, 0.75 * scale),
-	})
-	outer.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.28),
-		NumberSequenceKeypoint.new(0.5, 0.55),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	outer.Lifetime = NumberRange.new(0.4, 0.85)
-	outer.Speed = NumberRange.new(8 * scale, 14 * scale)
-	outer.SpreadAngle = Vector2.new(62, 80)
-	outer.Rate = VfxConfig.BRAINROT_AURA_OUTER_RATE
-	outer.Acceleration = Vector3.new(0, 20 * scale, 0)
-	outer.Drag = 0.7
-	outer.Squash = NumberSequence.new(-1.15)
-	outer.ZOffset = 1.5
-
-	local lines = discEmitter(disc, "AuraLines")
-	lines.Color = ColorSequence.new(auraColor:Lerp(Color3.fromRGB(18, 8, 6), 0.72))
-	lines.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	lines.LightEmission = 0.15
-	lines.Brightness = 0.4
-	lines.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.05 * scale),
-		NumberSequenceKeypoint.new(1, 0.02 * scale),
-	})
-	lines.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.35),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	lines.Lifetime = NumberRange.new(0.25, 0.5)
-	lines.Speed = NumberRange.new(12 * scale, 20 * scale)
-	lines.SpreadAngle = Vector2.new(6, 10)
-	lines.Rate = VfxConfig.BRAINROT_AURA_LINES_RATE
-	lines.Acceleration = Vector3.new(0, 32 * scale, 0)
-	lines.Drag = 0.3
-	lines.Squash = NumberSequence.new(-2)
-	lines.ZOffset = 3
-
-	local sparkles = discEmitter(disc, "AuraSparkles")
-	sparkles.Color = ColorSequence.new(hot:Lerp(Color3.fromRGB(255, 255, 255), 0.45))
-	sparkles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	sparkles.LightEmission = 1
-	sparkles.Brightness = 2.8
-	sparkles.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.18 * scale),
-		NumberSequenceKeypoint.new(0.5, 0.28 * scale),
-		NumberSequenceKeypoint.new(1, 0),
-	})
-	sparkles.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.05),
-		NumberSequenceKeypoint.new(0.65, 0.35),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	sparkles.Lifetime = NumberRange.new(0.35, 0.8)
-	sparkles.Speed = NumberRange.new(2 * scale, 6 * scale)
-	sparkles.SpreadAngle = Vector2.new(40, 50)
-	sparkles.Rate = VfxConfig.BRAINROT_AURA_SPARKLES_RATE
-	sparkles.Acceleration = Vector3.new(0, 8 * scale, 0)
-	sparkles.Drag = 1.2
-	sparkles.Squash = NumberSequence.new(0)
-	sparkles.Orientation = Enum.ParticleOrientation.FacingCamera
-	sparkles.ZOffset = 4
-
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "AuraHighlight"
 	highlight.Adornee = model
 	highlight.FillColor = auraColor
 	highlight.FillTransparency = 1
-	highlight.OutlineColor = auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)
+	highlight.OutlineColor = if rainbow
+		then Color3.fromRGB(255, 255, 255)
+		else auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)
 	highlight.OutlineTransparency = 0.15
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model

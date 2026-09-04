@@ -24,10 +24,10 @@ local VfxConfig = {
 
 	-- Thanos-style ash when the corpse fades / disappears.
 	DISINTEGRATE_EMIT_DURATION = 0.55,
-	DISINTEGRATE_PARTICLE_LIFETIME = 1.4,
-	DISINTEGRATE_BURST_PER_PART = 10,
-	DISINTEGRATE_RATE = 16,
-	DISINTEGRATE_MAX_PARTS = 8,
+	DISINTEGRATE_PARTICLE_LIFETIME = 1.1,
+	DISINTEGRATE_BURST_PER_PART = 6,
+	DISINTEGRATE_RATE = 10,
+	DISINTEGRATE_MAX_PARTS = 6,
 	DISINTEGRATE_SPEED = 1.8,
 	DISINTEGRATE_SIZE = 0.28,
 	DISINTEGRATE_ACCELERATION = Vector3.new(0, 3.5, 0),
@@ -136,7 +136,8 @@ local VfxConfig = {
 
 	-- Giraffa plot-wide gust that blows Night Fog off the lawn.
 	WIND_GUST_DURATION = 1.5,
-	WIND_GUST_RATE = 90,
+	WIND_GUST_RATE = 28,
+	WIND_GUST_BURST = 14,
 	WIND_GUST_SPEED = 72,
 	WIND_GUST_LIFETIME = NumberRange.new(0.9, 1.4),
 	WIND_GUST_SIZE = NumberSequence.new({
@@ -172,12 +173,10 @@ local VfxConfig = {
 	SHIELD_BUBBLE_PADDING = 1.18,
 	SHIELD_HP_FILL = Color3.fromRGB(70, 185, 255),
 
-	-- Planted evolution aura (server-replicated). Modest rates — every
-	-- evolved plant runs these for the whole day.
-	BRAINROT_AURA_SPIKES_RATE = 28,
-	BRAINROT_AURA_OUTER_RATE = 14,
-	BRAINROT_AURA_LINES_RATE = 8,
-	BRAINROT_AURA_SPARKLES_RATE = 10,
+	-- Planted evolution aura: flame spikes only (no sparkles / speed lines).
+	-- Rate = how many flames; size/speed stay in BrainrotFeedback so the
+	-- column does not grow taller or thicker.
+	BRAINROT_AURA_SPIKES_RATE = 36,
 
 	-- Magnet pull: translucent purple rings that spawn at the outer
 	-- pull range and collapse inward toward the player.

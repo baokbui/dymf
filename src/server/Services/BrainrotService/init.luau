@@ -161,7 +161,12 @@ local function applyEvolutionAura(model: Model, userId: number, brainrotId: stri
 		BrainrotFeedback.clearAura(model)
 		return
 	end
-	BrainrotFeedback.applyAura(model, EvolutionConfig.worldAura(rarity), EvolutionConfig.BRAINROT_AURA_SCALE)
+	BrainrotFeedback.applyAura(
+		model,
+		EvolutionConfig.worldAura(rarity),
+		EvolutionConfig.BRAINROT_AURA_SCALE,
+		EvolutionConfig.isRainbow(rarity)
+	)
 end
 
 local function applyNameplateAttributes(placement: Placement)

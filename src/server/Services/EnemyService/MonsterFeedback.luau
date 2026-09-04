@@ -185,7 +185,7 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: 
 	wisps.Lifetime = NumberRange.new(1.4, 2.2)
 	wisps.Speed = NumberRange.new(1 * scale, 2.4 * scale)
 	wisps.SpreadAngle = Vector2.new(180, 180)
-	wisps.Rate = 28
+	wisps.Rate = 12
 	wisps.LightEmission = 0.6
 	wisps.LightInfluence = 0
 	wisps.Parent = attachment
@@ -207,7 +207,7 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: 
 	haze.Lifetime = NumberRange.new(1.8, 2.6)
 	haze.Speed = NumberRange.new(0.2 * scale, 0.6 * scale)
 	haze.SpreadAngle = Vector2.new(180, 180)
-	haze.Rate = 6
+	haze.Rate = 3
 	haze.LightEmission = 0.3
 	haze.LightInfluence = 0
 	haze.Parent = attachment
@@ -215,8 +215,8 @@ function MonsterFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: 
 	local glow = Instance.new("PointLight")
 	glow.Name = "AuraGlow"
 	glow.Color = auraColor
-	glow.Brightness = 4
-	glow.Range = 20 * scale
+	glow.Brightness = 1.6
+	glow.Range = 12 * scale
 	glow.Shadows = false
 	glow.Parent = attachment
 end

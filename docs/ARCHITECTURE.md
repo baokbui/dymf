@@ -466,7 +466,7 @@ Full details in `STORE.md` / `UI.md`. Summary:
 Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
 
 - Each roster Brainrot has its own **Brainrot level** (XP), **not** campaign day.
-- At 10 / 20 / 30 / 40 / 50: Epic → Immortal (aura + stat / active / passive /
+- At 10 / 20 / 30 / 40 / 50: Epic → God (aura + stat / active / passive /
   ultimate). Tiers stack; base shop id stays.
 - Persist level + XP + owned tiers via `SaveService`. Combat extras stay
   data-driven ability ids.
@@ -480,7 +480,8 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
   `RegenPulse`, `DesperateFury`; Lirili’s `freezeEntireLane` / `freezeDuration`
   and other params-only rows merge into `abilityParams`). Aura is purple at
-  Epic, gold at Legendary, and red-orange at Mythic. Celestial+ combat extras
+  Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
+  at GOD. Immortal+ combat extras
   still 🔜.
 
 ### Milestone 12 — Audio ✅

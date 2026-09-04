@@ -11,6 +11,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 
 local MonsterStatus = {}
 
@@ -64,6 +65,11 @@ function MonsterStatus.apply(runtime: StatusRuntime, kind: Types.StatusEffectKin
 			runtime.burnNextTick = now + CombatConfig.BURN_TICK_INTERVAL
 		end
 	elseif kind == "Knockback" then
+		-- Forest / east of the lawn: damage may still land (in-flight shots),
+		-- but never push a monster that is already off the plot.
+		if not GridUtil.isOnPlotColumn(runtime.column) then
+			return
+		end
 		local tiles = magnitude or CombatConfig.KNOCKBACK_TILES
 		runtime.column = math.min(GridConfig.COLUMNS + MonsterConfig.SPAWN_COLUMN_OFFSET, runtime.column + tiles)
 	end

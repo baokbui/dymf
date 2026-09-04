@@ -32,7 +32,6 @@ type LegJoint = {
 
 type GaitState = {
 	joints: { LegJoint },
-	conn: RBXScriptConnection?,
 	elapsed: number,
 	active: boolean,
 	modelName: string,
@@ -40,6 +39,7 @@ type GaitState = {
 
 local states: { [Model]: GaitState } = {}
 local loggedEmpty: { [string]: boolean } = {}
+local sharedConn: RBXScriptConnection? = nil
 
 local SKIP_NAME_FRAGMENT = {
 	"root",
@@ -267,37 +267,44 @@ local function resetJoints(state: GaitState)
 	end
 end
 
-local function stopConn(state: GaitState)
-	if state.conn then
-		state.conn:Disconnect()
-		state.conn = nil
+local function stopSharedHeartbeat()
+	if sharedConn then
+		sharedConn:Disconnect()
+		sharedConn = nil
 	end
 end
 
-local function ensureHeartbeat(model: Model, state: GaitState)
-	if state.conn then
+local function ensureSharedHeartbeat()
+	if sharedConn then
 		return
 	end
-	state.conn = RunService.Heartbeat:Connect(function(dt)
-		if not model.Parent then
-			MonsterProceduralGait.unbind(model)
-			return
-		end
-		if not state.active or #state.joints == 0 then
-			return
-		end
-
-		state.elapsed += dt
+	sharedConn = RunService.Heartbeat:Connect(function(dt)
 		local hz = MonsterConfig.PROCEDURAL_WALK_HZ
 		local pitch = MonsterConfig.PROCEDURAL_WALK_PITCH
 		local roll = MonsterConfig.PROCEDURAL_WALK_ROLL
-		local t = state.elapsed * hz * math.pi * 2
-
-		for _, joint in state.joints do
-			local wave = math.sin(t + joint.phase)
-			local lift = math.cos(t + joint.phase)
-			local delta = CFrame.Angles(wave * pitch, 0, lift * roll)
-			applyDelta(joint, delta)
+		local twoPi = math.pi * 2
+		local dead: { Model } = {}
+		for model, state in states do
+			if not model.Parent then
+				table.insert(dead, model)
+				continue
+			end
+			if not state.active or #state.joints == 0 then
+				continue
+			end
+			state.elapsed += dt
+			local t = state.elapsed * hz * twoPi
+			for _, joint in state.joints do
+				local wave = math.sin(t + joint.phase)
+				local lift = math.cos(t + joint.phase)
+				applyDelta(joint, CFrame.Angles(wave * pitch, 0, lift * roll))
+			end
+		end
+		for _, model in dead do
+			MonsterProceduralGait.unbind(model)
+		end
+		if next(states) == nil then
+			stopSharedHeartbeat()
 		end
 	end)
 end
@@ -323,13 +330,12 @@ function MonsterProceduralGait.bind(model: Model)
 
 	local state: GaitState = {
 		joints = joints,
-		conn = nil,
 		elapsed = 0,
 		active = true,
 		modelName = model.Name,
 	}
 	states[model] = state
-	ensureHeartbeat(model, state)
+	ensureSharedHeartbeat()
 	log:info(string.format("procedural walk bound (%d joints) on %s", #joints, model.Name))
 end
 
@@ -342,7 +348,7 @@ function MonsterProceduralGait.setActive(model: Model, active: boolean)
 	if not active then
 		resetJoints(state)
 	else
-		ensureHeartbeat(model, state)
+		ensureSharedHeartbeat()
 	end
 end
 
@@ -351,11 +357,13 @@ function MonsterProceduralGait.unbind(model: Model, keepPose: boolean?)
 	if not state then
 		return
 	end
-	stopConn(state)
 	if not keepPose then
 		resetJoints(state)
 	end
 	states[model] = nil
+	if next(states) == nil then
+		stopSharedHeartbeat()
+	end
 end
 
 return MonsterProceduralGait

@@ -12,7 +12,7 @@ Sheet labels “Level 10” mean **Brainrot level 10**.
 
 Status: 🔜 Milestone 19
 
-Authoring source: design sheet (Epic → Immortal). Numbers below are targets,
+Authoring source: design sheet (Epic → God). Numbers below are targets,
 not live code. “Gold” on the sheet is **coins**.
 
 ---
@@ -27,7 +27,7 @@ not live code. “Gold” on the sheet is **coins**.
   Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
   overrides and **Legendary** extras are applied at place / restore / claim
   (`Evolutions.applyStats` / `claimedExtras`). **Mythic** passives compose the
-  same way (params merge or extra ability ids). Celestial+ combat extras 🔜.
+  same way (params merge or extra ability ids). Immortal+ combat extras 🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -45,7 +45,7 @@ not live code. “Gold” on the sheet is **coins**.
     - `BubbleTrap` — `BUBBLE_XP` every `BUBBLE_XP_HITS` (2) bubbles that land
       (**instead of** last-hit).
     - `MeleeBat` — `MELEE_XP` every `MELEE_XP_HITS` (3) connecting hits
-      (**instead of** last-hit), including Ranged Rampage bolts.
+      (**instead of** last-hit), including Ranged Rampage bats.
 - Campaign days stay the PvZ loop. A player can be on Day 3 with a level-20
   Tung Tung, or Day 40 with a level-8 Ballerina.
 - Inventory + field inspect show `EvolutionConfig.formatProgress` (level and
@@ -60,8 +60,8 @@ not live code. “Gold” on the sheet is **coins**.
   | 9 → 10 (Epic) | 199 | 15 |
   | 19 → 20 (Legendary) | 843 | 61 |
   | 29 → 30 (Mythic) | 3,128 | 224 |
-  | 39 → 40 (Celestial) | 11,598 | 829 |
-  | 49 → 50 (Immortal) | 37,716 | 2,694 |
+  | 39 → 40 (Immortal) | 11,598 | 829 |
+  | 49 → 50 (GOD) | 37,716 | 2,694 |
 
 ---
 
@@ -75,14 +75,14 @@ Unlock gate is **Brainrot level** (the unit’s own meter).
 | **Epic** | 10 | Purple | Stat boost |
 | **Legendary** | 20 | Gold | Active |
 | **Mythic** | 30 | Red-orange | Passive |
-| **Celestial** | 40 | Dark green | Passive |
-| **Immortal** | 50 | Dark red | Ultimate |
+| **Immortal** | 40 | Dark red | Passive |
+| **GOD** | 50 | Rainbow | Ultimate |
 
 Visual: aura color tracks the **highest** owned (claimed) tier for that Brainrot.
 Planted units with Epic+ claimed get a Super Saiyan column (stretched flame
-spikes, speed lines, sparkles, thin silhouette outline) tinted by
+spikes, thin silhouette outline) tinted by
 `EvolutionConfig.worldAura` — purple at Epic, gold at Legendary, red-orange
-at Mythic (`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
+at Mythic, dark red at Immortal, rainbow at GOD (`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
 colors land with those tiers. Prefer tint / particle auras over a full mesh
 swap unless a prestige `modelId` is authored later.
 
@@ -125,8 +125,8 @@ on the sheet (TBD).
 | Epic | Wallet Ballet | Coin interval **12s** (from 18s). |
 | Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
-| Celestial | Golden Discount | When producing a coin, the next Brainrot plant costs **50%** (which plant / stacking — impl). |
-| Immortal | Jackpot | Produce coins **3×** faster; each coin during the ultimate **33%** extra coin. **30s** CD. |
+| Immortal | Golden Discount | When producing a coin, the next Brainrot plant costs **50%** (which plant / stacking — impl). |
+| GOD | Jackpot | Produce coins **3×** faster; each coin during the ultimate **33%** extra coin. **30s** CD. |
 
 ### Chimpanzini Bananini
 
@@ -135,18 +135,18 @@ on the sheet (TBD).
 | Epic | Goliath | **4000** HP (from 2000). |
 | Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
-| Celestial | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Cannot use active or ultimate while stone. |
-| Immortal | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. **30s** CD. |
+| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Cannot use active or ultimate while stone. |
+| GOD | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. **30s** CD. |
 
 ### Tung Tung Sahur
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Tung Tung Training | **1500** HP / **100** dmg (from 1200 / 55). |
-| Legendary | Ranged Rampage | Ranged attacker for **10s**. |
+| Legendary | Ranged Rampage | Throws a spinning bat from the **left hand** down the **whole row** for **10s**. Hits on the lawn knock monsters back **half a tile** (off-plot / forest: damage only). **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
-| Celestial | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. |
-| Immortal | Sahur's Wrath | Hit the **entire lane** once for **1000%** of original damage. **30s** CD. |
+| Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. |
+| GOD | Sahur's Wrath | Hit the **entire lane** once for **1000%** of original damage. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -155,8 +155,8 @@ on the sheet (TBD).
 | Epic | Ocean's Rhythm | Attack interval **3s** (from 5s). |
 | Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
-| Celestial | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
-| Immortal | Tidal Cataclysm | Lane tsunami: knockback + stun, then slow **30%** for **3s**. |
+| Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
+| GOD | Tidal Cataclysm | Lane tsunami: knockback + stun, then slow **30%** for **3s**. |
 
 ### Cappuccino Assassino
 
@@ -165,8 +165,8 @@ on the sheet (TBD).
 | Epic | Espresso Rush | **+50%** attack speed. |
 | Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
-| Celestial | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| Immortal | Shadow Requiem | Vanish to the east end of the lane, run back, stab every monster in the path for **2000%** dmg. **45s** CD. |
+| Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
+| GOD | Shadow Requiem | Vanish to the east end of the lane, run back, stab every monster in the path for **2000%** dmg. **45s** CD. |
 
 ### Lirili Larila
 
@@ -175,8 +175,8 @@ on the sheet (TBD).
 | Epic | Cryocycle | Plant recharge **15s** (from 20s). |
 | Legendary | Winter's Grasp | Freeze a **whole lane**. |
 | Mythic | Permafrost | Freeze duration **7s**. |
-| Celestial | Frostbound Neighbor | Also freeze **one adjacent** lane. |
-| Immortal | Glacial Dominion | Freeze the **whole lawn** and apply **25%** slow for **3s**. |
+| Immortal | Frostbound Neighbor | Also freeze **one adjacent** lane. |
+| GOD | Glacial Dominion | Freeze the **whole lawn** and apply **25%** slow for **3s**. |
 
 ---
 
@@ -200,7 +200,7 @@ mutations stay in M19 or slip to a later pass.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
   `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
   passives use the same path (`RegenPulse`, `DesperateFury`, or params-only
-  overlays). Celestial+ 🔜.
+  overlays). Immortal+ 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -211,15 +211,15 @@ mutations stay in M19 or slip to a later pass.
 - Grants / composition on the server (`ProgressService` or a dedicated API).
 - Inventory / field inspect: portrait header (name, HP bar, level, XP bar) plus
   **Stats** (`BrainrotInfo.statRows`: cost, damage, atk. speed, range, …) and
-  **Current Evolution** (white Common base ability, then Epic→Immortal gray
+  **Current Evolution** (white Common base ability, then Epic→God gray
   until the Brainrot level gate; at the gate the row uses a light rarity fill
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed; **Legendary** extras
-  and **Mythic** passives tick / overlay in combat. Celestial+ still 🔜.
+  and **Mythic** passives tick / overlay in combat. Immortal+ still 🔜.
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
-  Epic purple, Legendary gold, Mythic red-orange (`EvolutionConfig.worldAura`).
-  Particle rates live in `VfxConfig.BRAINROT_AURA_*` — keep them modest; every
-  evolved plant runs them for the whole day. Combat and
+  Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
+  Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed
+  stay fixed so the column does not grow. Combat and
   unlocks server-authoritative.
 
 See `ROADMAP.md` Milestone 19 for ship criteria.

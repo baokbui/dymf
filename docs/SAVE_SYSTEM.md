@@ -54,7 +54,7 @@ Not saved (transient / runtime):
 | `upgrades`     | `{ [string]: number }`     |
 | `statistics`   | `{ [string]: number }`     |
 | `brainrotXp`   | `{ [string]: number }` (per Brainrot registry id) |
-| `evolutions`   | `{ [brainrotId]: { rarity } }` claimed Epic→Immortal tiers |
+| `evolutions`   | `{ [brainrotId]: { rarity } }` claimed Epic→God tiers |
 | `introducedMonsters` | `{ string }` (monster intro popups already shown) |
 | `introducedBrainrots` | `{ string }` (Brainrot intro popups already shown) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |

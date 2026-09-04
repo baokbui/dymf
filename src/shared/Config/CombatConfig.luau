@@ -39,8 +39,18 @@ local CombatConfig = {
 	-- Child bubbles ease Z from the split point into each lawn row.
 	BUBBLE_BARRAGE_Z_LERP_TILES = 1.7,
 
-	-- Ranged Rampage (Tung Tung Legendary) bolt tint.
-	RAMPAGE_BOLT_COLOR = Color3.fromRGB(255, 196, 48),
+	-- Ranged Rampage (Tung Tung Legendary): spinning bat from the left hand.
+	-- Prefer Assets.Projectiles[BAT_MODEL_ID]; procedural club is the fallback.
+	BAT_MODEL_ID = "Tung Bat",
+	BAT_TARGET_EXTENT = 3.8, -- max axis after clone ScaleTo
+	-- Local Euler applied each frame before +Z tumble (tune if the mesh faces wrong).
+	BAT_MODEL_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
+	BAT_SPIN_RADIANS_PER_SECOND = math.pi * 8, -- 4 turns/sec end-over-end
+	BAT_KNOCKBACK_TILES = 0.5, -- east push on a connecting hit (on-plot only)
+	BAT_FALLBACK_HANDLE_SIZE = Vector3.new(2.6, 0.22, 0.22),
+	BAT_FALLBACK_HEAD_SIZE = Vector3.new(0.9, 0.48, 0.48),
+	BAT_FALLBACK_HANDLE_COLOR = Color3.fromRGB(139, 90, 43),
+	BAT_FALLBACK_HEAD_COLOR = Color3.fromRGB(90, 55, 28),
 
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,
