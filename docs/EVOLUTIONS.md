@@ -26,7 +26,8 @@ not live code. “Gold” on the sheet is **coins**.
   XP; the client never sets it. XP from a day is **committed on victory** only.
   Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
   overrides and **Legendary** extras are applied at place / restore / claim
-  (`Evolutions.applyStats` / `claimedExtras`). Mythic+ combat extras are still 🔜.
+  (`Evolutions.applyStats` / `claimedExtras`). **Mythic** passives compose the
+  same way (params merge or extra ability ids). Celestial+ combat extras 🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -37,7 +38,7 @@ not live code. “Gold” on the sheet is **coins**.
     lawn (integer remainder on the first plants). Four Tungs + one Ballerina
     → Tung pool gets four shares, Ballerina one. Empty lawn → no XP.
   - **Support jobs** (ability id, not unit name; `grantBrainrotXp` broadcasts
-    so inspect bars update):
+    so inspect bars update; broadcasts are coalesced):
     - `GenerateCoins` — `COIN_XP` per coin actually spat onto the lawn.
     - `Wall` — `SOAK_XP` each time the plant takes a damage tick (chew / arrow).
     - `FreezeTime` — `FREEZE_XP` per monster frozen on that cast.
@@ -80,8 +81,8 @@ Unlock gate is **Brainrot level** (the unit’s own meter).
 Visual: aura color tracks the **highest** owned (claimed) tier for that Brainrot.
 Planted units with Epic+ claimed get a Super Saiyan column (stretched flame
 spikes, speed lines, sparkles, thin silhouette outline) tinted by
-`EvolutionConfig.worldAura` — purple at Epic, gold at Legendary
-(`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
+`EvolutionConfig.worldAura` — purple at Epic, gold at Legendary, red-orange
+at Mythic (`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
 colors land with those tiers. Prefer tint / particle auras over a full mesh
 swap unless a prestige `modelId` is authored later.
 
@@ -98,7 +99,7 @@ via `EvolveBrainrot`. Server owns unlocks; client UI is display + intent.
 | ---- | ------------- |
 | **Stat boost** | Overrides on the common Brainrot definition (HP, damage, interval, plant cooldown, …). Keep core `ability` id. **Epic ✅** |
 | **Active** | Extra ability on a cooldown (player-facing “active”). **Legendary ✅** |
-| **Passive** | Always-on extra ability / proc (no press). |
+| **Passive** | Always-on extra ability / proc (no press). **Mythic ✅** |
 | **Ultimate** | Extra ability, long cooldown. |
 
 Resolve extras from **ability ids** on the evolution rows — never
@@ -111,9 +112,8 @@ Abilities. Combat math stays in `CombatService`.
 
 Live base stats today (for Epic deltas): Ballerina interval **18s**; Chimpanzini
 **2000** HP; Tung Tung **1200** HP / **55** dmg; Tralalero interval **5s**;
-Cappuccino interval **2s**; Lirili plant cooldown **20s**, freeze **7s** / 2
-tiles. Lirili Mythic “freeze 7s” already matches live freeze duration — retune
-the base or the row at impl.
+Cappuccino interval **2s**; Lirili plant cooldown **20s**, freeze **5s** / 2
+tiles. Mythic Permafrost overlays freeze duration to **7s**.
 
 **Girafa Celestre**, **Brr Brr Patapim**, and **Bombardino Crocodilo** are not
 on the sheet (TBD).
@@ -153,7 +153,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Ocean's Rhythm | Attack interval **3s** (from 5s). |
-| Legendary | Bubble Barrage | Fire **5** bubbles at once, **one per lawn row**; each traps. **15s** CD. |
+| Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Celestial | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
 | Immortal | Tidal Cataclysm | Lane tsunami: knockback + stun, then slow **30%** for **3s**. |
@@ -198,7 +198,9 @@ mutations stay in M19 or slip to a later pass.
   campaign `currentLevel` / `highestLevel`. **Epic** stats compose onto
   placements via `Evolutions.applyStats` + `BrainrotService.applyEvolutionStats`.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
-  `BrainrotBehavior.tickExtras` (ability ids, never unit names). Mythic+ 🔜.
+  `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
+  passives use the same path (`RegenPulse`, `DesperateFury`, or params-only
+  overlays). Celestial+ 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -208,13 +210,16 @@ mutations stay in M19 or slip to a later pass.
   the client, never gate on campaign day unless a later pass adds it.
 - Grants / composition on the server (`ProgressService` or a dedicated API).
 - Inventory / field inspect: portrait header (name, HP bar, level, XP bar) plus
+  **Stats** (`BrainrotInfo.statRows`: cost, damage, atk. speed, range, …) and
   **Current Evolution** (white Common base ability, then Epic→Immortal gray
   until the Brainrot level gate; at the gate the row uses a light rarity fill
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed; **Legendary** extras
-  tick in combat. Mythic+ combat bonuses still 🔜.
-- Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
-  Epic purple, Legendary gold (`EvolutionConfig.worldAura`). Combat and
+  and **Mythic** passives tick / overlay in combat. Celestial+ still 🔜.
+-   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
+  Epic purple, Legendary gold, Mythic red-orange (`EvolutionConfig.worldAura`).
+  Particle rates live in `VfxConfig.BRAINROT_AURA_*` — keep them modest; every
+  evolved plant runs them for the whole day. Combat and
   unlocks server-authoritative.
 
 See `ROADMAP.md` Milestone 19 for ship criteria.

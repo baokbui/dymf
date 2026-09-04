@@ -29,6 +29,7 @@ local log = Logger.new(CombatService.Name)
 local FULL_LINE = BrainrotConfig.FULL_LINE_RANGE
 
 local brainrotDamageHandler: ((instanceId: string, hits: number) -> boolean)?
+local brainrotHealHandler: ((instanceId: string, hits: number) -> ())?
 local brainrotStatusHandler: ((instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?) -> ())?
 
 type MonsterHandlers = {
@@ -78,6 +79,10 @@ function CombatService.setBrainrotDamageHandler(handler: (instanceId: string, hi
 	brainrotDamageHandler = handler
 end
 
+function CombatService.setBrainrotHealHandler(handler: (instanceId: string, hits: number) -> ())
+	brainrotHealHandler = handler
+end
+
 function CombatService.setBrainrotStatusHandler(
 	handler: (instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?) -> ()
 )
@@ -93,6 +98,15 @@ function CombatService.damageBrainrot(instanceId: string, hits: number): boolean
 		return brainrotDamageHandler(instanceId, hits)
 	end
 	return false
+end
+
+function CombatService.healBrainrot(instanceId: string, hits: number)
+	if hits <= 0 then
+		return
+	end
+	if brainrotHealHandler then
+		brainrotHealHandler(instanceId, hits)
+	end
 end
 
 function CombatService.applyStatusToBrainrot(
@@ -279,12 +293,14 @@ export type ProjectileLaunchOptions = {
 	statusKind: Types.StatusEffectKind?,
 	statusDuration: number?,
 	statusVisual: string?,
-	-- Spawn at this world point (Skeleton bow / LArm) instead of lane center.
+	-- Spawn at this world point (Skeleton bow / LArm / Tralalero mouth) instead of lane center.
 	originWorld: Vector3?,
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
 	-- Extra monsters east of the first hit (100% damage each).
 	pierceCount: number?,
+	-- Bubble Barrage / Double Bubble extras after the seed splits.
+	extraBubbleChance: number?,
 }
 
 -- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
@@ -352,11 +368,29 @@ function CombatService.launchProjectile(
 		}
 	end
 
+	local startColumn = position.column
+	local originWorld = if options then options.originWorld else nil
+	local worldZEnd: number? = nil
+	local zLerpColumns: number? = nil
+	if originWorld and options and options.kind == "Bubble" then
+		worldY = originWorld.Y
+		local GridService = require(script.Parent.GridService)
+		local lanePos = GridService.getWorldPositionAtColumn(plotModel, position.row, position.column)
+		if lanePos then
+			worldZEnd = lanePos.Z
+			zLerpColumns = 0.7
+		end
+		local fromX = GridService.worldXToColumn(plotModel, originWorld.X)
+		if type(fromX) == "number" then
+			startColumn = fromX
+		end
+	end
+
 	Projectile.launch(
 		{
 			plotModel = plotModel,
 			row = position.row,
-			startColumn = position.column,
+			startColumn = startColumn,
 			targetInstanceId = targetInstanceId,
 			targetColumn = targetColumn,
 			damage = if blockingColumn then 0 else damage,
@@ -364,8 +398,180 @@ function CombatService.launchProjectile(
 			kind = if options then options.kind else nil,
 			impact = impact,
 			targetKind = targetKind,
+			originWorld = originWorld,
+			zLerpColumns = zLerpColumns,
+			worldZEnd = worldZEnd,
 		},
 		worldY,
+		monsterHandlers.setProjectilePosition
+	)
+	return true
+end
+
+-- One bubble per lawn row for Bubble Barrage: spawn at the plant's mouth and
+-- ease Z into that row while flying +X. Empty rows still get a bubble (flies
+-- to the east edge and pops).
+function CombatService.launchSpreadingBubble(
+	plotModel: Model,
+	plantColumn: number,
+	targetRow: number,
+	rangeTiles: number,
+	damage: number,
+	ownerUserId: number,
+	originWorld: Vector3,
+	options: ProjectileLaunchOptions?
+): boolean
+	if not monsterHandlers then
+		return false
+	end
+
+	local GridService = require(script.Parent.GridService)
+	local lanePos = GridService.getWorldPositionAtColumn(plotModel, targetRow, plantColumn)
+	if not lanePos then
+		return false
+	end
+
+	local targetId = CombatService.getFirstMonsterInRow(plotModel, targetRow, plantColumn, rangeTiles)
+	local targetColumn = GridConfig.COLUMNS
+	local targetKind: string? = "LaneEnd"
+	local targetInstanceId = "LaneEnd"
+	local impactDamage = 0
+	if targetId then
+		local live = monsterHandlers.getMonsterColumn(targetId)
+		if type(live) == "number" then
+			targetColumn = live
+			targetKind = nil
+			targetInstanceId = targetId
+			impactDamage = damage
+		end
+	end
+
+	local blockingColumn = graveService().getBlockingColumn(
+		plotModel,
+		targetRow,
+		plantColumn,
+		targetColumn
+	)
+	if blockingColumn then
+		targetKind = "Grave"
+		targetInstanceId = "Grave"
+		targetColumn = blockingColumn
+		impactDamage = 0
+	end
+
+	local skipStatus = targetKind == "LaneEnd" or targetKind == "Grave"
+	local impact: Projectile.ImpactSpec? = nil
+	if options then
+		impact = {
+			soundKey = options.soundKey,
+			statusKind = if skipStatus then nil else options.statusKind,
+			statusDuration = if skipStatus then nil else options.statusDuration,
+			statusVisual = if skipStatus then nil else options.statusVisual,
+			sourceBrainrotId = options.sourceBrainrotId,
+			sourceInstanceId = options.sourceInstanceId,
+		}
+	end
+
+	local startColumn = plantColumn
+	local fromX = GridService.worldXToColumn(plotModel, originWorld.X)
+	if type(fromX) == "number" then
+		startColumn = fromX
+	end
+
+	-- Leave the mouth already slightly fanned so all five aren't stacked on frame 0.
+	local spawnZ = originWorld.Z + (lanePos.Z - originWorld.Z) * 0.14
+	local spawn = Vector3.new(originWorld.X, originWorld.Y, spawnZ)
+	local travel = math.abs(targetColumn - startColumn)
+	local zLerp = math.max(CombatConfig.BUBBLE_BARRAGE_Z_LERP_TILES, travel * 0.45)
+
+	Projectile.launch(
+		{
+			plotModel = plotModel,
+			row = targetRow,
+			startColumn = startColumn,
+			targetInstanceId = targetInstanceId,
+			targetColumn = targetColumn,
+			damage = impactDamage,
+			ownerUserId = ownerUserId,
+			kind = "Bubble",
+			impact = impact,
+			targetKind = targetKind,
+			originWorld = spawn,
+			zLerpColumns = zLerp,
+			worldZEnd = lanePos.Z,
+			streak = true,
+		},
+		spawn.Y,
+		monsterHandlers.setProjectilePosition
+	)
+	return true
+end
+
+-- One seed bubble from the mouth; on Split it fans into every lawn row.
+function CombatService.launchBarrageSeed(
+	plotModel: Model,
+	plantRow: number,
+	plantColumn: number,
+	rangeTiles: number,
+	damage: number,
+	ownerUserId: number,
+	originWorld: Vector3,
+	options: ProjectileLaunchOptions?
+): boolean
+	if not monsterHandlers then
+		return false
+	end
+
+	local GridService = require(script.Parent.GridService)
+	local startColumn = plantColumn
+	local fromX = GridService.worldXToColumn(plotModel, originWorld.X)
+	if type(fromX) == "number" then
+		startColumn = fromX
+	end
+
+	local splitAt = startColumn + CombatConfig.BUBBLE_BARRAGE_SPLIT_TILES
+	local nearbyId = CombatService.getFirstMonsterInRow(plotModel, plantRow, plantColumn, rangeTiles)
+	if nearbyId then
+		local live = monsterHandlers.getMonsterColumn(nearbyId)
+		if type(live) == "number" and live < splitAt then
+			splitAt = math.max(startColumn + 0.35, live - 0.25)
+		end
+	end
+	splitAt = math.clamp(splitAt, startColumn + 0.35, GridConfig.COLUMNS)
+
+	local extraChance = if options then (options.extraBubbleChance or 0) else 0
+	local impact: Projectile.ImpactSpec = {
+		soundKey = if options then options.soundKey else nil,
+		statusKind = if options then options.statusKind else nil,
+		statusDuration = if options then options.statusDuration else nil,
+		statusVisual = if options then options.statusVisual else nil,
+		sourceBrainrotId = if options then options.sourceBrainrotId else nil,
+		sourceInstanceId = if options then options.sourceInstanceId else nil,
+		splitBarrage = {
+			rangeTiles = rangeTiles,
+			plantColumn = plantColumn,
+			extraChance = extraChance,
+			worldY = originWorld.Y,
+			damage = damage,
+		},
+	}
+
+	Projectile.launch(
+		{
+			plotModel = plotModel,
+			row = plantRow,
+			startColumn = startColumn,
+			targetInstanceId = "Split",
+			targetColumn = splitAt,
+			damage = 0,
+			ownerUserId = ownerUserId,
+			kind = "Bubble",
+			impact = impact,
+			targetKind = "Split",
+			originWorld = originWorld,
+			streak = true,
+		},
+		originWorld.Y,
 		monsterHandlers.setProjectilePosition
 	)
 	return true
@@ -655,6 +861,15 @@ function CombatService.getAllMonstersInRow(plotModel: Model, row: number): { str
 	return {}
 end
 
+function CombatService.hasMonsterOnPlot(plotModel: Model): boolean
+	for row = 1, GridConfig.ROWS do
+		if #CombatService.getAllMonstersInRow(plotModel, row) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 function CombatService.getMonstersInRow(
 	plotModel: Model,
 	row: number,
@@ -730,11 +945,56 @@ local function onProjectileImpact(
 	row: number?,
 	column: number?
 ): boolean
-	if targetKind == "Grave" then
-		fireCombatVisual(ownerUserId, {
-			kind = "Hit",
-			soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
-		})
+	if targetKind == "Grave" or targetKind == "LaneEnd" or targetKind == "Split" then
+		if targetKind == "Split" and plotModel and type(row) == "number" and type(column) == "number" then
+			local split = if impact then impact.splitBarrage else nil
+			if split then
+				local GridService = require(script.Parent.GridService)
+				local pos = GridService.getWorldPositionAtColumn(plotModel, row, column)
+				if pos then
+					local origin = Vector3.new(pos.X, split.worldY, pos.Z)
+					local childOptions: ProjectileLaunchOptions = {
+						kind = "Bubble",
+						soundKey = if impact then impact.soundKey else nil,
+						statusKind = if impact then impact.statusKind else nil,
+						statusDuration = if impact then impact.statusDuration else nil,
+						statusVisual = if impact then impact.statusVisual else nil,
+						sourceBrainrotId = if impact then impact.sourceBrainrotId else nil,
+						sourceInstanceId = if impact then impact.sourceInstanceId else nil,
+					}
+					for childRow = 1, GridConfig.ROWS do
+						CombatService.launchSpreadingBubble(
+							plotModel,
+							split.plantColumn,
+							childRow,
+							split.rangeTiles,
+							split.damage,
+							ownerUserId,
+							origin,
+							childOptions
+						)
+						if split.extraChance > 0 and math.random() * 100 < split.extraChance then
+							CombatService.launchSpreadingBubble(
+								plotModel,
+								split.plantColumn,
+								childRow,
+								split.rangeTiles,
+								split.damage,
+								ownerUserId,
+								origin + Vector3.new(0.45, 0.18, 0),
+								childOptions
+							)
+						end
+					end
+				end
+			end
+		end
+		if targetKind == "Grave" then
+			fireCombatVisual(ownerUserId, {
+				kind = "Hit",
+				soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+			})
+		end
 		return false
 	end
 

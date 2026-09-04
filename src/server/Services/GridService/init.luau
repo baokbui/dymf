@@ -214,6 +214,23 @@ function GridService.worldXToColumn(plotModel: Model, worldX: number): number?
 	return (worldX - cornerX) / size + 0.5
 end
 
+-- Tile under a world point, or nil if off the lawn.
+function GridService.worldToGrid(plotModel: Model, worldPos: Vector3): Types.GridPosition?
+	local base = plotModel.PrimaryPart
+	local anchor = base and base:FindFirstChild("GridCenter")
+	if not anchor or not anchor:IsA("Attachment") then
+		return nil
+	end
+	local dims = GridUtil.dimensions()
+	local cornerX = anchor.WorldPosition.X - dims.X / 2
+	local cornerZ = anchor.WorldPosition.Z - dims.Z / 2
+	local position = GridUtil.fromLocalOffset(Vector3.new(worldPos.X - cornerX, 0, worldPos.Z - cornerZ))
+	if not GridUtil.isInBounds(position) then
+		return nil
+	end
+	return position
+end
+
 -- Top-center of a random grid tile on the plot (for passive coin drops).
 function GridService.getRandomWorldPosition(plotModel: Model): Vector3?
 	local position = GridUtil.randomPosition()

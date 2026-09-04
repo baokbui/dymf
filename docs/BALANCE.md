@@ -79,7 +79,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Ballerina | 50 | 5 | Economy (25 / 18s) |
 | Chimpanzini | 50 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
-| Lirili | 75 | — | One-shot freeze 2 tiles ahead + behind (7s); uneatable; plant cooldown 20s |
+| Lirili | 75 | — | One-shot freeze 2 tiles ahead + behind (5s; Mythic 7s); uneatable; plant cooldown 20s |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
 | Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
@@ -154,6 +154,9 @@ is worth buying. Twenty levels add **+1 WalkSpeed** each (noticeable over a
 couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 41 / 52 / 65 / 80 / 98 / 118 / 142 / 170 / 204 / 245 / 294 / 353 / 424 / 509**.
 
+Magnet starts at **level 1** (everyone has it). Four paid ranks (**15 / 25 /
+40 / 65** brains) cut cooldown **45s → 10s** at max. Duration stays **5s**.
+
 ---
 
 ## Where to tune
@@ -168,3 +171,4 @@ couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |
+| Magnet cooldown / duration | `MagnetConfig`, Magnet row in `UPGRADE_CATALOG` |

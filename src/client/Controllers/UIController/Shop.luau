@@ -102,6 +102,38 @@ local function sortedDefinitions(filterIds: { string }?): { Types.BrainrotDefini
 	return list
 end
 
+local function sameIdList(a: { string }, b: { string }): boolean
+	if #a ~= #b then
+		return false
+	end
+	for index, id in a do
+		if b[index] ~= id then
+			return false
+		end
+	end
+	return true
+end
+
+local function sameEvolutions(a: { [string]: { string } }, b: { [string]: { string } }): boolean
+	local count = 0
+	for key, rarities in a do
+		count += 1
+		local other = b[key]
+		if type(other) ~= "table" or not sameIdList(rarities, other) then
+			return false
+		end
+	end
+	local otherCount = 0
+	for _ in b do
+		otherCount += 1
+	end
+	return count == otherCount
+end
+
+local function passthrough(gui: GuiObject)
+	gui.Active = false
+end
+
 -- Keep card width: if the name doesn't fit, put the rest under the first word.
 local function shopDisplayName(name: string): string
 	local bounds = TextService:GetTextSize(name, NAME_TEXT_SIZE, Enum.Font.GothamBold, Vector2.new(1000, 32))
@@ -270,6 +302,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	if preview:IsA("ViewportFrame") or preview:IsA("Frame") then
 		preview.BackgroundTransparency = 0.45
 	end
+	passthrough(preview)
 
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
@@ -284,6 +317,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.TextTruncate = Enum.TextTruncate.None
 	nameLabel.Text = shopDisplayName(definition.name)
 	nameLabel.Parent = button
+	passthrough(nameLabel)
 	UITheme.applyOutlinedTitle(nameLabel, UITheme.TITLE)
 	nameLabel.TextSize = NAME_TEXT_SIZE
 	nameLabel.TextWrapped = true
@@ -298,6 +332,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	costLabel.TextXAlignment = Enum.TextXAlignment.Center
 	costLabel.Text = tostring(definition.cost)
 	costLabel.Parent = button
+	passthrough(costLabel)
 	UITheme.applyOutlinedTitle(costLabel, UITheme.GOLD_TEXT)
 	costLabel.Font = Enum.Font.GothamBold
 	costLabel.TextSize = 12
@@ -312,6 +347,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	cooldownCover.BorderSizePixel = 0
 	cooldownCover.ZIndex = 5
 	cooldownCover.Visible = false
+	cooldownCover.Active = false
 	cooldownCover.Parent = button
 	UITheme.styleCorner(cooldownCover, UITheme.CORNER_CARD)
 
@@ -323,6 +359,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	cooldownLabel.Text = ""
 	cooldownLabel.ZIndex = 6
 	cooldownLabel.Visible = false
+	cooldownLabel.Active = false
 	cooldownLabel.Parent = button
 	UITheme.applyOutlinedTitle(cooldownLabel, UITheme.TITLE)
 	cooldownLabel.TextSize = 16
@@ -381,7 +418,11 @@ function Shop.refresh(self: Shop)
 end
 
 function Shop.setEvolutions(self: Shop, evolutions: { [string]: { string } }?)
-	self.evolutions = if type(evolutions) == "table" then evolutions else {}
+	local nextEvo: { [string]: { string } } = if type(evolutions) == "table" then evolutions else {}
+	if sameEvolutions(self.evolutions, nextEvo) then
+		return
+	end
+	self.evolutions = nextEvo
 	self:refresh()
 end
 
@@ -403,7 +444,12 @@ function Shop.isOnCooldown(self: Shop, brainrotId: string): boolean
 end
 
 function Shop.setEquipped(self: Shop, ids: { string })
-	self.equippedIds = ids
+	-- ProfileUpdated used to remount every card (ViewportFrames included) on
+	-- XP / kill ticks. Destroying the TextButton mid-click drops Activated.
+	if sameIdList(self.equippedIds, ids) then
+		return
+	end
+	self.equippedIds = table.clone(ids)
 	for _, child in self.list:GetChildren() do
 		if child:IsA("TextButton") then
 			child:Destroy()

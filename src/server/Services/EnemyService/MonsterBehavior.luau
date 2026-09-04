@@ -444,9 +444,15 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 
 		applyPendingHeal(runtime)
 
-		for _, handler in Abilities.iterate(runtime.definition) do
-			if handler.onTick then
-				handler.onTick(abilityContext(runtime), runtime.abilityState, dt, abilityCallbacks(runtime, callbacks))
+		local frozen = now < runtime.frozenUntil
+		-- Last-stand (Duke) must keep ticking while downed even if Freeze is
+		-- still on the clock. Offensive onTick (Terrify, steal, summon, …)
+		-- does not run while Ice / Bubble / Stun frozen.
+		if not frozen or now < runtime.downedUntil then
+			for _, handler in Abilities.iterate(runtime.definition) do
+				if handler.onTick then
+					handler.onTick(abilityContext(runtime), runtime.abilityState, dt, abilityCallbacks(runtime, callbacks))
+				end
 			end
 		end
 
@@ -469,16 +475,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			continue
 		end
 
-		if now < runtime.channelingUntil then
-			syncTransform(runtime)
-			continue
-		end
-		if runtime.channelingUntil > 0 then
-			runtime.channelingUntil = 0
-			MonsterAnimation.resumeWalk(runtime.model)
-		end
-
-		if now < runtime.frozenUntil then
+		if frozen then
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			if runtime.freezeVisual == "Bubble" then
 				local bob = MonsterConfig.BUBBLE_FLOAT_OFFSET
@@ -489,15 +486,48 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				MonsterFeedback.setFrozen(runtime.model, true)
 				syncTransform(runtime)
 			end
+		else
+			if runtime.freezeVisual ~= nil then
+				runtime.freezeVisual = nil
+				MonsterFeedback.setFrozen(runtime.model, false)
+				MonsterFeedback.setBubbled(runtime.model, false)
+			end
+			MonsterAnimation.setLocomotionPaused(runtime.model, false)
+		end
+
+		if now < runtime.channelingUntil then
+			syncTransform(runtime)
+			continue
+		end
+		if runtime.channelingUntil > 0 then
+			runtime.channelingUntil = 0
+			if not frozen then
+				MonsterAnimation.resumeWalk(runtime.model)
+			end
+		end
+
+		-- Freeze / Stun lock movement, chew, shoot, and specials for every
+		-- unit — including bosses (Lirili Ice freeze).
+		if frozen then
 			continue
 		end
 
-		if runtime.freezeVisual ~= nil then
-			runtime.freezeVisual = nil
-			MonsterFeedback.setFrozen(runtime.model, false)
-			MonsterFeedback.setBubbled(runtime.model, false)
+		local function moveWest(minColumn: number?)
+			if frozen then
+				return
+			end
+			local speed = runtime.definition.secondsPerGrid
+			if speed <= 0 then
+				return
+			end
+			local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
+			local nextColumn = runtime.column - (dt / speed) * speedMult
+			if type(minColumn) == "number" then
+				runtime.column = math.max(nextColumn, minColumn)
+			else
+				runtime.column = nextColumn
+			end
 		end
-		MonsterAnimation.setLocomotionPaused(runtime.model, false)
 
 		-- Movement / attack never considers other monsters — units phase through
 		-- each other and only stop for Brainrots (or the house). Jumpers vault
@@ -508,19 +538,17 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				-- First vaultable plant: approach until jump range, then leap.
 				local triggerReach = jumpParam(runtime, "jumpTriggerReach", MonsterConfig.JUMP_TRIGGER_REACH)
 				if closeEnoughToJump(runtime.column, brainrotColumn, triggerReach) then
-					beginJumpOver(runtime, brainrotId, brainrotColumn)
-					updateJump(runtime, now)
+					if not frozen then
+						beginJumpOver(runtime, brainrotId, brainrotColumn)
+						updateJump(runtime, now)
+					else
+						syncTransform(runtime)
+					end
 					continue
 				end
 				-- Still east of the plant — walk in, but never chew it.
 				setAttacking(runtime, false)
-				local speed = runtime.definition.secondsPerGrid
-				if speed > 0 then
-					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-					local minColumn = brainrotColumn + triggerReach
-					local nextColumn = runtime.column - (dt / speed) * speedMult
-					runtime.column = math.max(nextColumn, minColumn)
-				end
+				moveWest(brainrotColumn + triggerReach)
 				syncTransform(runtime)
 				continue
 			end
@@ -535,12 +563,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				local stopAt = brainrotColumn + rangedTiles
 				if runtime.column > stopAt then
 					setAttacking(runtime, false)
-					local speed = runtime.definition.secondsPerGrid
-					if speed > 0 then
-						local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-						local nextColumn = runtime.column - (dt / speed) * speedMult
-						runtime.column = math.max(nextColumn, stopAt)
-					end
+					moveWest(stopAt)
 					syncTransform(runtime)
 					continue
 				end
@@ -570,7 +593,9 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				continue
 			end
 
-			clampToPlantCenter(runtime, brainrotColumn)
+			if not frozen then
+				clampToPlantCenter(runtime, brainrotColumn)
+			end
 
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then
 				setAttacking(runtime, true)
@@ -578,12 +603,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				-- Keep closing to standoff stop while already on the tile (still chewing).
 				local stopAt = meleeStopColumn(brainrotColumn)
 				if runtime.column > stopAt then
-					local speed = runtime.definition.secondsPerGrid
-					if speed > 0 then
-						local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-						local nextColumn = runtime.column - (dt / speed) * speedMult
-						runtime.column = math.max(nextColumn, stopAt)
-					end
+					moveWest(stopAt)
 				end
 				syncTransform(runtime)
 
@@ -617,23 +637,12 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				end
 			else
 				setAttacking(runtime, false)
-				local speed = runtime.definition.secondsPerGrid
-				if speed > 0 then
-					local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-					-- Walk onto the plant tile and stop at the standoff column.
-					local minColumn = meleeStopColumn(brainrotColumn)
-					local nextColumn = runtime.column - (dt / speed) * speedMult
-					runtime.column = math.max(nextColumn, minColumn)
-				end
+				moveWest(meleeStopColumn(brainrotColumn))
 				syncTransform(runtime)
 			end
 		else
 			setAttacking(runtime, false)
-			local speed = runtime.definition.secondsPerGrid
-			if speed > 0 then
-				local speedMult = MonsterStatus.movementSpeedMultiplier(runtime, now)
-				runtime.column -= (dt / speed) * speedMult
-			end
+			moveWest(nil)
 			syncTransform(runtime)
 
 			if runtime.column <= MonsterConfig.HOUSE_BREACH_COLUMN then

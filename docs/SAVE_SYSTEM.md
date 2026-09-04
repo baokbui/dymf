@@ -18,7 +18,7 @@ Saved (player-owned progression):
 - **Planted Brainrots** (id, tile, remaining HP)
 - Unlocks
 - Equipped loadout
-- Upgrades
+- Upgrades (`WalkSpeed` ranks, **Magnet** 1–5)
 - Statistics
 - **Brainrot XP** (per registry id — shared species pool)
 - **Claimed evolution tiers** (per Brainrot id, after brains spend)

@@ -5,6 +5,7 @@
 ]]
 
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
@@ -102,7 +103,7 @@ function VfxUtil.playDeathDisintegrate(model: Model)
 		NumberSequenceKeypoint.new(1, 1),
 	})
 
-	local anchors: { BasePart } = {}
+	local candidates: { { part: BasePart, volume: number } } = {}
 	for _, descendant in model:GetDescendants() do
 		if not descendant:IsA("BasePart") then
 			continue
@@ -110,6 +111,22 @@ function VfxUtil.playDeathDisintegrate(model: Model)
 		if descendant.Transparency >= 0.95 or descendant.Name == "BubbleShell" then
 			continue
 		end
+		local size = descendant.Size
+		table.insert(candidates, {
+			part = descendant,
+			volume = size.X * size.Y * size.Z,
+		})
+	end
+	table.sort(candidates, function(a, b)
+		return a.volume > b.volume
+	end)
+	local maxParts = VfxConfig.DISINTEGRATE_MAX_PARTS
+	local anchors: { BasePart } = {}
+	for index, candidate in candidates do
+		if index > maxParts then
+			break
+		end
+		local descendant = candidate.part
 
 		local anchor = Instance.new("Part")
 		anchor.Name = "DisintegrateAsh"
@@ -305,7 +322,14 @@ function VfxUtil.playTileExplosion(position: Vector3)
 end
 
 -- Thin neon segment between two world points (used to build curved soundwaves).
-local function createWaveSegment(a: Vector3, b: Vector3, color: Color3, thickness: number): BasePart
+local function createWaveSegment(
+	a: Vector3,
+	b: Vector3,
+	color: Color3,
+	thickness: number,
+	transparency: number?,
+	material: Enum.Material?
+): BasePart
 	local mid = (a + b) * 0.5
 	local delta = b - a
 	local length = math.max(delta.Magnitude, 0.05)
@@ -316,9 +340,9 @@ local function createWaveSegment(a: Vector3, b: Vector3, color: Color3, thicknes
 	part.CanQuery = false
 	part.CanTouch = false
 	part.CastShadow = false
-	part.Material = Enum.Material.Neon
+	part.Material = material or Enum.Material.Neon
 	part.Color = color
-	part.Transparency = 0.05
+	part.Transparency = if type(transparency) == "number" then transparency else 0.05
 	part.Size = Vector3.new(thickness, thickness, length)
 	part.CFrame = CFrame.lookAt(mid, b)
 	part.Parent = effectsFolder()
@@ -453,9 +477,13 @@ function VfxUtil.playDizzy(model: Model, duration: number)
 		table.insert(stars, star)
 	end
 
-	local RunService = game:GetService("RunService")
 	local angle = 0
-	local spinConnection = RunService.Heartbeat:Connect(function(dt)
+	local spinConnection: RBXScriptConnection
+	spinConnection = RunService.Heartbeat:Connect(function(dt)
+		if not gui.Parent then
+			spinConnection:Disconnect()
+			return
+		end
 		angle += dt * (math.pi * 2 / VfxConfig.DIZZY_SPIN_SECONDS)
 		local radius = VfxConfig.DIZZY_ORBIT_RADIUS
 		local flatten = VfxConfig.DIZZY_ORBIT_FLATTEN
@@ -467,6 +495,9 @@ function VfxUtil.playDizzy(model: Model, duration: number)
 			-- Tip each star as it orbits so they feel like spinning, not sliding.
 			star.Rotation = math.deg(a)
 		end
+	end)
+	gui.Destroying:Connect(function()
+		spinConnection:Disconnect()
 	end)
 
 	task.delay(duration, function()
@@ -637,43 +668,86 @@ function VfxUtil.decorateProjectile(part: BasePart)
 			part:GetAttribute("PiercingBrew") == true
 			or (part.Parent ~= nil and part.Parent:GetAttribute("PiercingBrew") == true)
 		)
+	local barrage = isBubble
+		and (
+			part:GetAttribute("BubbleBarrage") == true
+			or (part.Parent ~= nil and part.Parent:GetAttribute("BubbleBarrage") == true)
+		)
 	local trailColor = if piercing
 		then VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR
-		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_TRAIL_COLOR
+		elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_COLOR
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_COLOR
 		else VfxConfig.PROJECTILE_TRAIL_COLOR
-	local trailOffset = if isBubble
-		then Vector3.new(-0.9, 0, 0)
-		elseif isShuriken then Vector3.new(-1.1, 0, 0)
-		else Vector3.new(-0.6, 0, 0)
+	local pierceSequence = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR),
+		ColorSequenceKeypoint.new(1, VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR_TAIL),
+	})
+	-- Segment must be perpendicular to travel (+X) or the ribbon has no area.
+	local halfWidth = if piercing
+		then VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH * 0.55
+		elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH * 0.55
+		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_WIDTH * 0.55
+		else VfxConfig.PROJECTILE_TRAIL_WIDTH * 0.55
 
-	local attachment0 = Instance.new("Attachment")
-	attachment0.Name = "TrailStart"
-	attachment0.Parent = part
+	local function paintGold(root: Instance)
+		for _, inst in root:GetDescendants() do
+			if inst:IsA("Trail") then
+				inst.Color = pierceSequence
+				inst.LightEmission = VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION
+			end
+		end
+		if root:IsA("Trail") then
+			root.Color = pierceSequence
+			root.LightEmission = VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION
+		end
+	end
 
-	local attachment1 = Instance.new("Attachment")
-	attachment1.Name = "TrailEnd"
-	attachment1.Position = trailOffset
-	attachment1.Parent = part
+	if piercing then
+		paintGold(part)
+		if part.Parent then
+			paintGold(part.Parent)
+		end
+	end
 
-	local trail = Instance.new("Trail")
-	trail.Attachment0 = attachment0
-	trail.Attachment1 = attachment1
-	trail.Lifetime = if piercing
-		then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIFETIME
-		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_LIFETIME
-		else VfxConfig.PROJECTILE_TRAIL_LIFETIME
-	trail.WidthScale = NumberSequence.new(
-		if piercing
-			then VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH
-			elseif isBubble then 0.55
-			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_WIDTH
-			else VfxConfig.PROJECTILE_TRAIL_WIDTH
-	)
-	trail.Color = ColorSequence.new(trailColor)
-	trail.LightEmission = 1
-	trail.Transparency = if isBubble then NumberSequence.new(0.35, 1) else NumberSequence.new(0, 1)
-	trail.Parent = part
+	if (not isBubble or barrage) and part:FindFirstChildOfClass("Trail") == nil then
+		local attachment0 = Instance.new("Attachment")
+		attachment0.Name = "TrailStart"
+		attachment0.Position = Vector3.new(0, halfWidth, 0)
+		attachment0.Parent = part
+
+		local attachment1 = Instance.new("Attachment")
+		attachment1.Name = "TrailEnd"
+		attachment1.Position = Vector3.new(0, -halfWidth, 0)
+		attachment1.Parent = part
+
+		local trail = Instance.new("Trail")
+		trail.Attachment0 = attachment0
+		trail.Attachment1 = attachment1
+		trail.Lifetime = if piercing
+			then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIFETIME
+			elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_LIFETIME
+			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_LIFETIME
+			else VfxConfig.PROJECTILE_TRAIL_LIFETIME
+		trail.WidthScale = NumberSequence.new(
+			if piercing
+				then VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH
+				elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH
+				elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_WIDTH
+				else VfxConfig.PROJECTILE_TRAIL_WIDTH
+		)
+		local barrageSequence = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, VfxConfig.BUBBLE_BARRAGE_STREAK_COLOR),
+			ColorSequenceKeypoint.new(1, VfxConfig.BUBBLE_BARRAGE_STREAK_COLOR_TAIL),
+		})
+		trail.Color = if piercing
+			then pierceSequence
+			elseif barrage then barrageSequence
+			else ColorSequence.new(trailColor)
+		trail.LightEmission = if piercing then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION else 1
+		trail.FaceCamera = true
+		trail.Transparency = NumberSequence.new(0, 1)
+		trail.Parent = part
+	end
 
 	local glow = Instance.new("PointLight")
 	glow.Brightness = if piercing
@@ -686,7 +760,7 @@ function VfxUtil.decorateProjectile(part: BasePart)
 		elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
 		else VfxConfig.PROJECTILE_GLOW_RANGE
-	glow.Color = trailColor
+	glow.Color = if isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR else trailColor
 	glow.Parent = part
 end
 
@@ -1034,6 +1108,161 @@ function VfxUtil.playWindGust(plotModel: Model)
 	end)
 	task.delay(VfxConfig.WIND_GUST_DURATION + 1.4, function()
 		root:Destroy()
+	end)
+end
+
+local magnetWaveToken = 0
+
+type MagnetRing = {
+	token: number,
+	root: BasePart,
+	parts: { BasePart },
+	born: number,
+	startRadius: number,
+	endRadius: number,
+	speed: number,
+	lift: number,
+	thickness: number,
+	startTrans: number,
+}
+
+local magnetRings: { MagnetRing } = {}
+local magnetHeartbeat: RBXScriptConnection? = nil
+
+local function destroyMagnetRing(ring: MagnetRing)
+	for _, part in ring.parts do
+		if part.Parent then
+			part:Destroy()
+		end
+	end
+	table.clear(ring.parts)
+end
+
+local function stopMagnetHeartbeat()
+	if magnetHeartbeat then
+		magnetHeartbeat:Disconnect()
+		magnetHeartbeat = nil
+	end
+end
+
+local function ensureMagnetHeartbeat()
+	if magnetHeartbeat then
+		return
+	end
+	magnetHeartbeat = RunService.Heartbeat:Connect(function()
+		local index = 1
+		while index <= #magnetRings do
+			local ring = magnetRings[index]
+			if magnetWaveToken ~= ring.token or not ring.root.Parent then
+				destroyMagnetRing(ring)
+				table.remove(magnetRings, index)
+				continue
+			end
+			local radius = ring.startRadius - ring.speed * (os.clock() - ring.born)
+			if radius <= ring.endRadius then
+				destroyMagnetRing(ring)
+				table.remove(magnetRings, index)
+				continue
+			end
+			local count = #ring.parts
+			local nowCf = ring.root.CFrame * CFrame.new(0, ring.lift, 0)
+			local step = (math.pi * 2) / math.max(count, 1)
+			for i, part in ring.parts do
+				if not part.Parent then
+					continue
+				end
+				local yaw0 = (i - 1) * step
+				local yaw1 = i * step
+				local p0 = Vector3.new(math.sin(yaw0) * radius, 0, math.cos(yaw0) * radius)
+				local p1 = Vector3.new(math.sin(yaw1) * radius, 0, math.cos(yaw1) * radius)
+				local mid = (p0 + p1) * 0.5
+				local delta = p1 - p0
+				part.Size = Vector3.new(ring.thickness, ring.thickness, math.max(delta.Magnitude, 0.05))
+				part.Transparency = ring.startTrans
+				local worldMid = nowCf:PointToWorldSpace(mid)
+				part.CFrame = CFrame.lookAt(worldMid, worldMid + nowCf:VectorToWorldSpace(delta))
+			end
+			index += 1
+		end
+		if #magnetRings == 0 then
+			stopMagnetHeartbeat()
+		end
+	end)
+end
+
+local function spawnMagnetCircle(root: BasePart, token: number)
+	if magnetWaveToken ~= token or not root.Parent then
+		return
+	end
+
+	local count = VfxConfig.MAGNET_WAVE_SEGMENTS
+	local thickness = VfxConfig.MAGNET_WAVE_THICKNESS
+	local color = VfxConfig.MAGNET_WAVE_COLOR
+	local startTrans = VfxConfig.MAGNET_WAVE_TRANSPARENCY
+	local startRadius = VfxConfig.MAGNET_WAVE_START_RADIUS
+	local endRadius = math.max(0.05, VfxConfig.MAGNET_WAVE_END_RADIUS)
+	local speed = VfxConfig.MAGNET_WAVE_SPEED
+	local lift = VfxConfig.MAGNET_WAVE_LIFT
+
+	local parts: { BasePart } = {}
+	for _ = 1, count do
+		local part = Instance.new("Part")
+		part.Name = "MagnetWaveSeg"
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.CastShadow = false
+		part.Material = Enum.Material.Neon
+		part.Color = color
+		part.Transparency = startTrans
+		part.Size = Vector3.new(thickness, thickness, 1)
+		part.Parent = effectsFolder()
+		table.insert(parts, part)
+	end
+
+	table.insert(magnetRings, {
+		token = token,
+		root = root,
+		parts = parts,
+		born = os.clock(),
+		startRadius = startRadius,
+		endRadius = endRadius,
+		speed = speed,
+		lift = lift,
+		thickness = thickness,
+		startTrans = startTrans,
+	})
+	ensureMagnetHeartbeat()
+end
+
+--[[
+	Translucent purple circular soundwaves around the local character: each
+	pulse starts at the outer pull range and collapses inward. High
+	frequency. A new call cancels the previous loop.
+]]
+function VfxUtil.playMagnetWaves(character: Model, duration: number)
+	magnetWaveToken += 1
+	local token = magnetWaveToken
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then
+		return
+	end
+
+	local interval = VfxConfig.MAGNET_WAVE_INTERVAL
+	local remaining = math.max(0.1, duration)
+	local pulses = math.max(1, math.ceil(remaining / interval))
+
+	task.spawn(function()
+		for pulse = 1, pulses do
+			if magnetWaveToken ~= token then
+				return
+			end
+			spawnMagnetCircle(root, token)
+			if pulse < pulses then
+				task.wait(interval)
+			end
+		end
 	end)
 end
 

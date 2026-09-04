@@ -12,7 +12,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 | System | Role |
 | ------ | ---- |
-| `CombatService` | Damage, death routing, target acquisition, projectiles, status effects |
+| `CombatService` | Damage, healing, death routing, target acquisition, projectiles, status effects |
 | `EnemyService` | Monster runtime state, movement, status fields, death cleanup |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
 | `CombatController` (client) | Hit/death/explosion VFX, projectile trails (`CombatVisual` + plot watcher) |
@@ -81,15 +81,15 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and flies through graves. Piercing shots carry a gold aura (`PiercingBrew`) so they read as Piercing Brew. |
+| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and flies through graves. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Knife` (legacy bolt) | Full-lane damage + `MeleeBat` |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
-| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` (ForceField ball) | Damage + Freeze/`Bubble` shell + `BubbleTrap`. Barrage fires one per lawn row from the plant’s column. |
+| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — gold soap sphere from the mouth. **BubbleTrap** has no trail. **Bubble Barrage** fires one seed that splits into 5 lane bubbles, each with a gold light-streak trail (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, speed, spin, bubble size) +
-`MonsterConfig.BUBBLE_COLOR`. Client trail/glow branches on the `ProjectileKind`
-attribute (`VfxUtil`).
+`VfxConfig` gold bubble colors. Client trail/glow branches on the `ProjectileKind`
+attribute (`VfxUtil`); normal bubbles skip trails. Bubble Barrage adds a gold light-streak.
 
 ### Studio: Cappuccino shuriken model
 
@@ -109,7 +109,7 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`); visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release) | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
+| Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
 | Slow | Reduces movement speed | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
 | Knockback | Pushes column east (+X) | — |
@@ -174,7 +174,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
-| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline + sparks |
+| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, sparks, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
 | Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
 
@@ -185,7 +185,7 @@ values remain in `CombatConfig`.
 
 ## Death ✅ (Milestone 7 / M12 audio)
 
-1. `CombatService.damageMonster` / `damageBrainrot` routes to the owning service.
+1. `CombatService.damageMonster` / `damageBrainrot` / `healBrainrot` routes to the owning service.
    Brainrot hits pass a `sourceBrainrotId` so the monster records last-hit
    species. Status DoT and `BubbleTrap` bubbles omit that source, so they keep
    the previous last hit.
@@ -235,7 +235,7 @@ See `NETWORKING.md` for the full catalog.
 ```
 BrainrotBehavior.tryAct
        → Abilities/<id>
-       → CombatService (attack / projectile / status)
+       → CombatService (attack / projectile / status / healBrainrot)
 
 MonsterBehavior.attackBrainrot
        → CombatService.damageBrainrot

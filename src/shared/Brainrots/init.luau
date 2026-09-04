@@ -114,7 +114,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		attackInterval = 0,
 		rangeTiles = 2,
 		ability = "FreezeTime",
-		abilityParams = { freezeDuration = 7, freezeTiles = 2 },
+		abilityParams = { freezeDuration = 5, freezeTiles = 2 },
 		triggersOnPlace = true,
 		ignoreMonsterChew = true,
 		plantCooldown = 20,

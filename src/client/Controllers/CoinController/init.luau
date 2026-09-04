@@ -62,7 +62,7 @@ local function onCoinRemoved(instance: Instance)
 		return
 	end
 
-	if pendingPickup[instance] then
+	if pendingPickup[instance] or instance:GetAttribute("Collected") == true then
 		VfxUtil.playCoinPickup(instance.Position)
 		AudioController.play("CoinCollect")
 		local value = instance:GetAttribute("Value")

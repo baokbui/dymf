@@ -1,11 +1,13 @@
 --!strict
 --[[
 	BrainrotInspect
-	Shared stats / desc card used by Inventory (with Equip) and by clicking a
+	Shared stats / evolution card used by Inventory (with Equip) and by clicking a
 	planted Brainrot on the lawn. Header: inset portrait with name, HP bar,
-	level, and XP bar. Body: ability description + Current Evolution (white
+	level, and XP bar. Body: Stats (cost, damage, atk. speed, range, …) + Current Evolution (white
 	Common base ability, then Epic→Immortal: gray until the level gate, then
 	light rarity fill + shiny rarity title; lock until brains claim).
+	Card chrome: white until a rarity is claimed, then that rarity’s title
+	color with a diagonal gleam.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,7 +35,7 @@ local PORTRAIT_INSET = 8
 -- UIStroke sits outside the rect; clippers (ScrollingFrame, ClipsDescendants)
 -- shear it unless content is inset by at least this much.
 local STROKE_GUTTER = 4
-local STATS_FILL = Color3.fromRGB(255, 248, 220)
+local STATS_FILL = Color3.fromRGB(255, 255, 255)
 local XP_TRACK = Color3.fromRGB(55, 50, 48)
 local XP_FILL = Color3.fromRGB(255, 200, 55)
 local HP_FILL = Color3.fromRGB(90, 210, 90)
@@ -120,6 +122,40 @@ local function addLabel(parent: Instance, order: number, text: string, size: num
 	UITheme.applyOutlinedTitle(label, color or UITheme.TITLE)
 	label.TextSize = size
 	return label
+end
+
+local function addStatRow(parent: Instance, order: number, name: string, value: string)
+	local row = Instance.new("Frame")
+	row.Name = name
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, 0, 0, 18)
+	row.LayoutOrder = order
+	row.Parent = parent
+
+	local key = Instance.new("TextLabel")
+	key.BackgroundTransparency = 1
+	key.Size = UDim2.new(0.46, 0, 1, 0)
+	key.Text = name
+	key.TextSize = 13
+	key.TextXAlignment = Enum.TextXAlignment.Left
+	key.TextYAlignment = Enum.TextYAlignment.Center
+	key.TextTruncate = Enum.TextTruncate.AtEnd
+	key.Parent = row
+	UITheme.applyOutlinedTitle(key, UITheme.TITLE)
+	key.TextSize = 13
+
+	local val = Instance.new("TextLabel")
+	val.BackgroundTransparency = 1
+	val.Position = UDim2.new(0.46, 0, 0, 0)
+	val.Size = UDim2.new(0.54, 0, 1, 0)
+	val.Text = value
+	val.TextSize = 13
+	val.TextXAlignment = Enum.TextXAlignment.Right
+	val.TextYAlignment = Enum.TextYAlignment.Center
+	val.TextTruncate = Enum.TextTruncate.AtEnd
+	val.Parent = row
+	UITheme.applyOutlinedTitle(val, UITheme.GOLD_TEXT)
+	val.TextSize = 13
 end
 
 local function hpValues(definition: Types.BrainrotDefinition, model: Model?): (number, number, boolean, number)
@@ -257,6 +293,16 @@ local function applyShine(label: TextLabel, entry: EvoEntry, dark: Color3)
 	label.AutomaticSize = Enum.AutomaticSize.XY
 	label.Size = UDim2.fromOffset(0, 0)
 	TextShine.apply(label, dark)
+end
+
+local function applyCardChrome(self: InspectCard)
+	local rarity = Evolutions.highestClaimedRarity(self.claimedRarities)
+	TextShine.clear(self.frame)
+	if not rarity then
+		self.frame.BackgroundColor3 = STATS_FILL
+		return
+	end
+	TextShine.applyPanel(self.frame, EvolutionConfig.darkText(rarity))
 end
 
 local function styleEvolutionEntry(entry: EvoEntry, brainrotLevel: number, claimed: { [string]: boolean })
@@ -516,6 +562,8 @@ function BrainrotInspect.hide(self: InspectCard)
 	self.evoEntries = {}
 	self.claimedRarities = {}
 	self.brainrotLevel = 1
+	TextShine.clear(self.frame)
+	self.frame.BackgroundColor3 = STATS_FILL
 	self:hideEvolveConfirm()
 	if self.healthConn then
 		self.healthConn:Disconnect()
@@ -557,6 +605,7 @@ end
 
 function BrainrotInspect.setClaimedRarities(self: InspectCard, rarities: { string })
 	self.claimedRarities = rarities
+	applyCardChrome(self)
 	local claimed = Evolutions.claimedSet(rarities)
 	for _, entry in self.evoEntries do
 		styleEvolutionEntry(entry, self.brainrotLevel, claimed)
@@ -868,6 +917,7 @@ function BrainrotInspect.show(self: InspectCard, opts: ShowOptions)
 	end
 	self.evoEntries = {}
 	self.claimedRarities = opts.claimedRarities or {}
+	applyCardChrome(self)
 	self:hideEvolveConfirm()
 
 	local definition = Evolutions.applyStats(opts.definition, self.claimedRarities)
@@ -879,12 +929,15 @@ function BrainrotInspect.show(self: InspectCard, opts: ShowOptions)
 	mountHeader(self, self.body, definition, opts.healthModel, totalXp)
 
 	local order = 2
-	addLabel(self.body, order, "Description", 15)
+	addLabel(self.body, order, "Stats", 15)
 	order += 1
-	local abilityName = BrainrotInfo.abilityLabel(definition.ability)
-	local abilityDesc = BrainrotInfo.abilityDescription(definition.ability)
-	addLabel(self.body, order, string.format("%s — %s", abilityName, abilityDesc), 14)
-	order += 1
+	for _, row in BrainrotInfo.statRows(definition) do
+		-- HP is already in the header bar.
+		if row.label ~= "Health" then
+			addStatRow(self.body, order, row.label, row.value)
+			order += 1
+		end
+	end
 
 	local level = EvolutionConfig.parseXp(totalXp).level
 	mountEvolutions(self, self.body, definition, level, order)

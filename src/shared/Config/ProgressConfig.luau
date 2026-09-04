@@ -42,6 +42,10 @@ local ProgressConfig = {
 		{ day = 9, brainrotId = "BombardinoCrocodilo" },
 	},
 
+	-- Support-job XP (coins, wall soaks, freeze, landed hits) coalesces into
+	-- one ProfileUpdated so Inventory ViewportFrames are not remounted per tick.
+	XP_BROADCAST_INTERVAL = 0.35,
+
 	-- Grant on first *reach* of `day` (Preparation / Day Select / rejoin),
 	-- not on clear. Catch-up: any entry with day <= current not yet unlocked.
 	REACH_UNLOCK_SCHEDULE = {
@@ -90,6 +94,20 @@ local ProgressConfig = {
 			},
 			walkSpeedBonusPerLevel = 1,
 		},
+		{
+			id = "Magnet",
+			name = "Magnet",
+			description = "Press 1 to pull coins from tiles around you for 5 seconds. Higher levels shorten the cooldown.",
+			maxLevel = 5,
+			defaultLevel = 1,
+			-- Cost to reach levels 2–5 (players start at level 1).
+			brainsCosts = {
+				15,
+				25,
+				40,
+				65,
+			},
+		},
 	},
 
 	-- Reach-day intros for Brainrots that never go through UNLOCK_SCHEDULE
@@ -133,6 +151,49 @@ local ProgressConfig = {
 	STAT_TIME_PLAYED = "timePlayedSeconds",
 	STAT_BRAINS_EARNED = "brainsEarned",
 }
+
+function ProgressConfig.upgradeById(upgradeId: string): any?
+	for _, entry in ProgressConfig.UPGRADE_CATALOG do
+		if entry.id == upgradeId then
+			return entry
+		end
+	end
+	return nil
+end
+
+function ProgressConfig.upgradeLevel(def: any, stored: number?): number
+	local maxLevel = if type(def.maxLevel) == "number" then def.maxLevel else 0
+	local defaultLevel = 0
+	if type(def.defaultLevel) == "number" then
+		defaultLevel = math.max(0, math.floor(def.defaultLevel))
+	end
+	local value = if type(stored) == "number" then math.floor(stored) else 0
+	local level = math.max(defaultLevel, value)
+	return math.clamp(level, defaultLevel, maxLevel)
+end
+
+function ProgressConfig.nextUpgradeCost(def: any, currentLevel: number): number?
+	if currentLevel >= def.maxLevel then
+		return nil
+	end
+	local costs = def.brainsCosts
+	if type(costs) ~= "table" then
+		return nil
+	end
+	local defaultLevel = 0
+	if type(def.defaultLevel) == "number" then
+		defaultLevel = math.max(0, math.floor(def.defaultLevel))
+	end
+	local index = (currentLevel + 1) - defaultLevel
+	local cost = costs[index]
+	if type(cost) ~= "number" then
+		cost = costs[#costs]
+	end
+	if type(cost) ~= "number" then
+		return nil
+	end
+	return math.max(0, math.floor(cost))
+end
 
 table.freeze(ProgressConfig)
 

@@ -35,8 +35,11 @@ local GameOverPopup = require(script.GameOverPopup)
 local ProgressionStore = require(script.ProgressionStore)
 local PlantToast = require(script.PlantToast)
 local BrainrotInspect = require(script.BrainrotInspect)
+local MagnetHud = require(script.MagnetHud)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
+local InputController = require(script.Parent.InputController)
+local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
 
 local UIController = {}
 UIController.Name = "UIController"
@@ -47,6 +50,7 @@ local localPlayer = Players.LocalPlayer
 local coinCounter: CoinCounter.CoinCounter? = nil
 local brainsCounter: BrainsCounter.BrainsCounter? = nil
 local speedHud: SpeedHud.SpeedHud? = nil
+local magnetHud: MagnetHud.MagnetHud? = nil
 local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local heartsHud: Hearts.HeartsHud? = nil
@@ -69,6 +73,7 @@ local spendPending = false
 local lastLevelPhase: string? = nil
 local lastCountdownCeil: number? = nil
 local lastBigWaveWarning = false
+local lastMagnetActiveUntil = 0
 
 type IntroItem = { kind: string, id: string }
 local introQueue: { IntroItem } = {}
@@ -142,16 +147,19 @@ local function applyProfile(profile: { [string]: any }?)
 	if brainsCounter and type(profile.brains) == "number" then
 		brainsCounter:setBalance(profile.brains)
 	end
-	if speedHud then
-		local upgrades: { [string]: number } = {}
-		if type(profile.upgrades) == "table" then
-			for key, value in (profile.upgrades :: { [string]: any }) do
-				if type(key) == "string" and type(value) == "number" then
-					upgrades[key] = value
-				end
+	local upgrades: { [string]: number } = {}
+	if type(profile.upgrades) == "table" then
+		for key, value in (profile.upgrades :: { [string]: any }) do
+			if type(key) == "string" and type(value) == "number" then
+				upgrades[key] = value
 			end
 		end
+	end
+	if speedHud then
 		speedHud:applyUpgrades(upgrades)
+	end
+	if magnetHud then
+		magnetHud:applyUpgrades(upgrades)
 	end
 	if shop and type(profile.equipped) == "table" then
 		local equipped = profile.equipped :: { string }
@@ -233,6 +241,45 @@ end
 local function buildSpeedHud(): SpeedHud.SpeedHud
 	local frame = buildMain():WaitForChild("Speed") :: Frame
 	return SpeedHud.new(frame)
+end
+
+local function applyMagnetState(state: { [string]: any }?)
+	if magnetHud then
+		magnetHud:applyState(state)
+	end
+	if type(state) ~= "table" or type(state.activeUntil) ~= "number" then
+		return
+	end
+	local untilTime = state.activeUntil
+	if untilTime <= lastMagnetActiveUntil then
+		return
+	end
+	lastMagnetActiveUntil = untilTime
+	local remaining = untilTime - workspace:GetServerTimeNow()
+	if remaining < 0.15 then
+		return
+	end
+	local character = localPlayer.Character
+	if character then
+		VfxUtil.playMagnetWaves(character, remaining)
+	end
+end
+
+local function requestMagnet()
+	if lastLevelPhase ~= Constants.PHASE.Active then
+		return
+	end
+	if magnetHud and not magnetHud:isReady() then
+		return
+	end
+	AudioController.play("UiClick")
+	Remotes.getEvent("ActivateMagnet"):FireServer()
+end
+
+local function buildMagnetHud(): MagnetHud.MagnetHud
+	local hud = MagnetHud.new(buildMain())
+	hud.onActivate = requestMagnet
+	return hud
 end
 
 local function buildShop(): Shop.Shop
@@ -476,6 +523,7 @@ function UIController.init()
 	coinCounter = buildCoinCounter()
 	brainsCounter = buildBrainsCounter()
 	speedHud = buildSpeedHud()
+	magnetHud = buildMagnetHud()
 	shop = buildShop()
 	plantToast = PlantToast.new(buildMain())
 	fieldInspect = BrainrotInspect.new(buildMain())
@@ -659,6 +707,12 @@ function UIController.start()
 		end
 	end)
 
+	InputController.magnetAction:Connect(requestMagnet)
+
+	Remotes.getEvent("MagnetStateChanged").OnClientEvent:Connect(function(payload: unknown)
+		applyMagnetState(payload :: any)
+	end)
+
 	local ok, state = pcall(function()
 		return Remotes.getFunction("RequestState"):InvokeServer()
 	end)
@@ -680,6 +734,9 @@ function UIController.start()
 				shop:setPlantCooldowns(map)
 			end
 		end
+		if type(state.magnet) == "table" then
+			applyMagnetState(state.magnet)
+		end
 	end
 
 	task.spawn(function()
@@ -687,6 +744,9 @@ function UIController.start()
 			task.wait(0.1)
 			if shop then
 				shop:refresh()
+			end
+			if magnetHud then
+				magnetHud:tick()
 			end
 		end
 	end)

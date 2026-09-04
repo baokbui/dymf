@@ -53,6 +53,11 @@ level (`6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80 / 98 / 118 / 142 /
 170 / 204 / 245 / 294 / 353 / 424 / 509` brains). Persisted in
 `SaveData.upgrades`.
 
+**Magnet**: starts at **level 1** (max **5**). Each rank shortens the post-use
+cooldown from **45s** to **10s** (linear). Active pull lasts **5s**. Costs to
+reach 2 / 3 / 4 / 5: **15 / 25 / 40 / 65** brains. Press **1** (or the HUD
+chip) on an Active day. See `MagnetConfig`.
+
 ---
 
 ## Architecture
@@ -62,6 +67,7 @@ level (`6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80 / 98 / 118 / 142 /
 | `StoreConfig` | Template names, yard offsets, prompt copy, close distance |
 | `StoreService` | Clone beside house; owner-only ProximityPrompt → `OpenProgressionStore` (kind + mascot position) |
 | `ProgressService` | Validate `BuyStoreItem` (own plot + in range, brains, catalog) |
+| `MagnetService` | Activate magnet, cooldown, pull adjacent coins |
 | `UIController/ProgressionStore` | List rows open a stats card (desc + buy) |
 | `StoreController` | Hide Talk prompts on other players' stalls |
 | `PlotService` | Applies `ProgressService.getWalkSpeed` on spawn |

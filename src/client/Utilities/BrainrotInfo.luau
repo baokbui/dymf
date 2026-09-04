@@ -72,6 +72,14 @@ function BrainrotInfo.abilityDescription(abilityId: string?): string
 	return if info then info.description else "—"
 end
 
+local function formatSeconds(seconds: number): string
+	local rounded = math.floor(seconds * 10 + 0.5) / 10
+	if rounded == math.floor(rounded) then
+		return string.format("%ds", rounded)
+	end
+	return string.format("%.1fs", rounded)
+end
+
 local function formatRange(definition: Types.BrainrotDefinition): string?
 	local range = definition.rangeTiles
 	if range == nil or range == 0 then
@@ -92,14 +100,18 @@ function BrainrotInfo.statRows(definition: Types.BrainrotDefinition): { StatRow 
 	if definition.ignoreMonsterChew or definition.health <= 0 then
 		table.insert(rows, { label = "Health", value = "—" })
 	else
-		table.insert(rows, { label = "Health", value = string.format("%d hits", definition.health) })
+		table.insert(rows, { label = "Health", value = string.format("%d HP", definition.maxHealth) })
 	end
 
 	if definition.damage > 0 then
 		table.insert(rows, { label = "Damage", value = tostring(definition.damage) })
-		if definition.attackInterval > 0 then
-			table.insert(rows, { label = "Attack Speed", value = string.format("every %.1fs", definition.attackInterval) })
-		end
+	end
+
+	if definition.attackInterval > 0 then
+		table.insert(rows, {
+			label = "Atk. Speed",
+			value = string.format("every %s", formatSeconds(definition.attackInterval)),
+		})
 	end
 
 	local range = formatRange(definition)
@@ -109,9 +121,26 @@ function BrainrotInfo.statRows(definition: Types.BrainrotDefinition): { StatRow 
 
 	if definition.coinGeneration and definition.coinGeneration > 0 then
 		table.insert(rows, {
-			label = "Coin Generation",
-			value = string.format("%d coins / %.0fs", definition.coinGeneration, definition.attackInterval),
+			label = "Coins",
+			value = string.format("%d / cycle", definition.coinGeneration),
 		})
+	end
+
+	local params = definition.abilityParams
+	if params then
+		local trap = params.trapDuration
+		if type(trap) == "number" and trap > 0 then
+			table.insert(rows, { label = "Trap", value = formatSeconds(trap) })
+		end
+		local freeze = params.freezeDuration
+		if type(freeze) == "number" and freeze > 0 then
+			table.insert(rows, { label = "Freeze", value = formatSeconds(freeze) })
+		end
+	end
+
+	local recharge = BrainrotConfig.plantCooldownFor(definition)
+	if recharge > 0 then
+		table.insert(rows, { label = "Recharge", value = formatSeconds(recharge) })
 	end
 
 	table.insert(rows, { label = "Ability", value = BrainrotInfo.abilityLabel(definition.ability) })

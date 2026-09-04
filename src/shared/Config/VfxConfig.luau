@@ -25,8 +25,9 @@ local VfxConfig = {
 	-- Thanos-style ash when the corpse fades / disappears.
 	DISINTEGRATE_EMIT_DURATION = 0.55,
 	DISINTEGRATE_PARTICLE_LIFETIME = 1.4,
-	DISINTEGRATE_BURST_PER_PART = 18,
-	DISINTEGRATE_RATE = 40,
+	DISINTEGRATE_BURST_PER_PART = 10,
+	DISINTEGRATE_RATE = 16,
+	DISINTEGRATE_MAX_PARTS = 8,
 	DISINTEGRATE_SPEED = 1.8,
 	DISINTEGRATE_SIZE = 0.28,
 	DISINTEGRATE_ACCELERATION = Vector3.new(0, 3.5, 0),
@@ -76,9 +77,15 @@ local VfxConfig = {
 	EXPLOSION_COLOR = Color3.fromRGB(255, 170, 60),
 	COIN_COLOR = Color3.fromRGB(255, 215, 70),
 	PROJECTILE_TRAIL_COLOR = Color3.fromRGB(230, 230, 255),
-	BUBBLE_PROJECTILE_TRAIL_COLOR = Color3.fromRGB(170, 230, 255),
-	BUBBLE_PROJECTILE_GLOW_BRIGHTNESS = 1.2,
-	BUBBLE_PROJECTILE_GLOW_RANGE = 7,
+	BUBBLE_PROJECTILE_COLOR = Color3.fromRGB(255, 196, 64),
+	BUBBLE_PROJECTILE_INNER_COLOR = Color3.fromRGB(255, 236, 170),
+	BUBBLE_PROJECTILE_GLOW_BRIGHTNESS = 1.1,
+	BUBBLE_PROJECTILE_GLOW_RANGE = 9,
+	-- Bubble Barrage only: bright gold light-streak behind the seed / split bubbles.
+	BUBBLE_BARRAGE_STREAK_COLOR = Color3.fromRGB(255, 236, 140),
+	BUBBLE_BARRAGE_STREAK_COLOR_TAIL = Color3.fromRGB(255, 170, 40),
+	BUBBLE_BARRAGE_STREAK_LIFETIME = 0.4,
+	BUBBLE_BARRAGE_STREAK_WIDTH = 0.9,
 
 	-- Duke Vampire's Terrify scream: curved red soundwave lines scaled to the
 	-- lawn tile size so they visibly span ~3 rows and several columns.
@@ -150,9 +157,12 @@ local VfxConfig = {
 
 	-- Piercing Brew (Legendary) shuriken — gold so the extra is readable in flight.
 	PIERCE_SHURIKEN_AURA_COLOR = Color3.fromRGB(255, 196, 48),
-	PIERCE_SHURIKEN_TRAIL_COLOR = Color3.fromRGB(255, 220, 90),
-	PIERCE_SHURIKEN_TRAIL_LIFETIME = 0.28,
-	PIERCE_SHURIKEN_TRAIL_WIDTH = 0.55,
+	-- Saturated gold (keep LightEmission low on the Trail or this reads as white).
+	PIERCE_SHURIKEN_TRAIL_COLOR = Color3.fromRGB(255, 176, 28),
+	PIERCE_SHURIKEN_TRAIL_COLOR_TAIL = Color3.fromRGB(255, 120, 16),
+	PIERCE_SHURIKEN_TRAIL_LIFETIME = 0.55,
+	PIERCE_SHURIKEN_TRAIL_WIDTH = 0.95,
+	PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION = 0.22,
 	PIERCE_SHURIKEN_GLOW_BRIGHTNESS = 4.2,
 	PIERCE_SHURIKEN_GLOW_RANGE = 14,
 
@@ -161,6 +171,25 @@ local VfxConfig = {
 	SHIELD_BUBBLE_TRANSPARENCY = 0.62,
 	SHIELD_BUBBLE_PADDING = 1.18,
 	SHIELD_HP_FILL = Color3.fromRGB(70, 185, 255),
+
+	-- Planted evolution aura (server-replicated). Modest rates — every
+	-- evolved plant runs these for the whole day.
+	BRAINROT_AURA_SPIKES_RATE = 28,
+	BRAINROT_AURA_OUTER_RATE = 14,
+	BRAINROT_AURA_LINES_RATE = 8,
+	BRAINROT_AURA_SPARKLES_RATE = 10,
+
+	-- Magnet pull: translucent purple rings that spawn at the outer
+	-- pull range and collapse inward toward the player.
+	MAGNET_WAVE_COLOR = Color3.fromRGB(170, 70, 255),
+	MAGNET_WAVE_INTERVAL = 0.14,
+	MAGNET_WAVE_SPEED = 26, -- studs / second
+	MAGNET_WAVE_START_RADIUS = TILE * 0.85,
+	MAGNET_WAVE_END_RADIUS = 1.4,
+	MAGNET_WAVE_SEGMENTS = 24,
+	MAGNET_WAVE_THICKNESS = 0.72,
+	MAGNET_WAVE_TRANSPARENCY = 0.85,
+	MAGNET_WAVE_LIFT = 0.2,
 }
 
 table.freeze(VfxConfig)

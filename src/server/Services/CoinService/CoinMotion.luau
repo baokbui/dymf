@@ -110,4 +110,33 @@ function CoinMotion.spitFromOrigin(part: BasePart, fromPosition: Vector3, landPo
 	)
 end
 
+--[[
+	Slide a landed coin toward a moving target (magnet pull).
+]]
+function CoinMotion.pullToward(part: BasePart, getTarget: () -> Vector3?, duration: number, onDone: () -> ())
+	part.CanTouch = false
+	local start = part.Position
+	tweenAlpha(
+		duration,
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out,
+		function(t)
+			if not part.Parent then
+				return
+			end
+			local target = getTarget()
+			if not target then
+				return
+			end
+			local goal = Vector3.new(target.X, start.Y, target.Z)
+			part.CFrame = flatCFrame(start:Lerp(goal, t))
+		end,
+		function()
+			if onDone then
+				onDone()
+			end
+		end
+	)
+end
+
 return CoinMotion

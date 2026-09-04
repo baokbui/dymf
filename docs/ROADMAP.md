@@ -634,22 +634,24 @@ mutations ship in M19 or slip later.
 ## Tasks
 
 - Shared schema: Brainrot XP map live (`brainrotXp`); evolution rows
-  (`brainrotId` + rarity, ability ids, **Epic `stats`**, **Legendary extras**) ✅;
-  Mythic+ extras 🔜
+  (`brainrotId` + rarity, ability ids, **Epic `stats`**, **Legendary extras**,
+  **Mythic passives**) ✅; Celestial+ extras 🔜
 - XP grant rules ✅ — last-hit species for normal kills (`BubbleTrap` /
   `MeleeBat` skipped); boss XP split evenly across every living plant; support
   jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP` / `BUBBLE_XP` every 2 landed
   bubbles / `MELEE_XP` every 3 connecting hits)
 - Compose Epic stats onto the common placement runtime ✅
   (`Evolutions.applyStats` — no name branches). Legendary extras ✅
-  (`claimedExtras` + `tickExtras`)
+  (`claimedExtras` + `tickExtras`). Mythic passives ✅
 - Persist XP via `SaveService` (v5) and claimed tiers (v6 `evolutions`);
-  Epic combat stats ✅; Legendary combat extras ✅; Mythic+ 🔜
+  Epic combat stats ✅; Legendary combat extras ✅; Mythic passives ✅;
+  Celestial+ 🔜
 - Inventory / field inspect show portrait header (name, HP bar, level, XP bar)
-  plus description and evolution rows (gray until the Brainrot level gate,
+  plus Stats and evolution rows (gray until the Brainrot level gate,
   then light rarity fill + shiny title; lock until brains claim, with a
   confirm prompt); Epic stats live in the HP bar / plant cooldown
-- Aura VFX (highest owned tier) ✅ Epic dark purple, Legendary gold; later colors 🔜
+- Aura VFX (highest owned tier) ✅ Epic dark purple, Legendary gold, Mythic
+  red-orange; later colors 🔜
 
 ## Architecture Notes
 

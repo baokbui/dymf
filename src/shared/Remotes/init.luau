@@ -45,6 +45,9 @@ local EVENT_NAMES = {
 	"StorePurchaseFailed",
 	"StorePurchaseSucceeded",
 	"EvolveBrainrot",
+	-- Magnet (player upgrade)
+	"ActivateMagnet",
+	"MagnetStateChanged",
 	-- Brainrots (Milestone 5)
 	"BrainrotAction",
 	-- Fog-cleared lawn rows (Giraffa Celeste) — owner-only

@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
 local PlayerConfig = require(Shared.Config.PlayerConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local MagnetConfig = require(Shared.Config.MagnetConfig)
 local StoreConfig = require(Shared.Config.StoreConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
@@ -83,6 +84,36 @@ local function horizontalDistance(a: Vector3, b: Vector3): number
 	return math.sqrt(dx * dx + dz * dz)
 end
 
+local function sameBoolMap(a: { [string]: boolean }, b: { [string]: boolean }): boolean
+	local count = 0
+	for key, value in a do
+		count += 1
+		if b[key] ~= value then
+			return false
+		end
+	end
+	local otherCount = 0
+	for _ in b do
+		otherCount += 1
+	end
+	return count == otherCount
+end
+
+local function sameNumberMap(a: { [string]: number }, b: { [string]: number }): boolean
+	local count = 0
+	for key, value in a do
+		count += 1
+		if b[key] ~= value then
+			return false
+		end
+	end
+	local otherCount = 0
+	for _ in b do
+		otherCount += 1
+	end
+	return count == otherCount
+end
+
 local function styleRow(row: GuiObject, owned: boolean?, selected: boolean?)
 	if owned then
 		row.BackgroundColor3 = SOLD_FILL
@@ -129,23 +160,11 @@ local function dimPortrait(portrait: Frame)
 end
 
 local function findUpgrade(upgradeId: string): any?
-	for _, entry in ProgressConfig.UPGRADE_CATALOG do
-		if entry.id == upgradeId then
-			return entry
-		end
-	end
-	return nil
+	return ProgressConfig.upgradeById(upgradeId)
 end
 
 local function nextUpgradeCost(def: any, level: number): number?
-	if level >= def.maxLevel then
-		return nil
-	end
-	local cost = def.brainsCosts[level + 1] or def.brainsCosts[#def.brainsCosts]
-	if type(cost) ~= "number" then
-		return nil
-	end
-	return cost
+	return ProgressConfig.nextUpgradeCost(def, level)
 end
 
 function ProgressionStore.new(parent: Frame): ProgressionStoreHud
@@ -323,26 +342,36 @@ function ProgressionStore.isOpen(self: ProgressionStoreHud): boolean
 end
 
 function ProgressionStore.setProfile(self: ProgressionStoreHud, profile: { [string]: any })
+	local brains = self.brains
 	if type(profile.brains) == "number" then
-		self.brains = profile.brains
+		brains = profile.brains
 	end
-	self.unlocks = {}
+	local unlocks: { [string]: boolean } = {}
 	if type(profile.unlocks) == "table" then
 		for _, id in profile.unlocks :: { any } do
 			if type(id) == "string" then
-				self.unlocks[id] = true
+				unlocks[id] = true
 			end
 		end
 	end
-	self.upgrades = {}
+	local upgrades: { [string]: number } = {}
 	if type(profile.upgrades) == "table" then
 		for key, value in profile.upgrades :: { [string]: any } do
 			if type(key) == "string" and type(value) == "number" then
-				self.upgrades[key] = value
+				upgrades[key] = value
 			end
 		end
 	end
-	if self.shopKind then
+
+	local catalogChanged = self.brains ~= brains
+		or not sameBoolMap(self.unlocks, unlocks)
+		or not sameNumberMap(self.upgrades, upgrades)
+	self.brains = brains
+	self.unlocks = unlocks
+	self.upgrades = upgrades
+	-- XP ticks also send ProfileUpdated. Remounting shop ViewportFrames on
+	-- every coin would hitch while the overlay is open.
+	if self.shopKind and catalogChanged then
 		self:rebuild()
 	end
 end
@@ -623,12 +652,15 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 			self:hideStats()
 			return
 		end
-		local level = self.upgrades[id] or 0
+		local level = ProgressConfig.upgradeLevel(def, self.upgrades[id])
 		local atMax = level >= def.maxLevel
 		local nextCost = nextUpgradeCost(def, level)
 		local bonus = if type(def.walkSpeedBonusPerLevel) == "number" then def.walkSpeedBonusPerLevel else 0
 		local currentSpeed = PlayerConfig.WALK_SPEED + level * bonus
 		local nextSpeed = PlayerConfig.WALK_SPEED + math.min(level + 1, def.maxLevel) * bonus
+		local isMagnet = def.id == MagnetConfig.ID
+		local currentCooldown = MagnetConfig.cooldownFor(level)
+		local nextCooldown = MagnetConfig.cooldownFor(math.min(level + 1, def.maxLevel))
 
 		local name = Instance.new("TextLabel")
 		name.BackgroundTransparency = 1
@@ -662,7 +694,23 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		stats.TextYAlignment = Enum.TextYAlignment.Top
 		stats.TextSize = 14
 		if atMax then
-			stats.Text = string.format("Walk speed: %d  (maxed)", currentSpeed)
+			if isMagnet then
+				stats.Text = string.format(
+					"Duration: %s\nCooldown: %s  (maxed)",
+					MagnetConfig.formatSeconds(MagnetConfig.DURATION),
+					MagnetConfig.formatSeconds(currentCooldown)
+				)
+			else
+				stats.Text = string.format("Walk speed: %d  (maxed)", currentSpeed)
+			end
+		elseif isMagnet then
+			stats.Text = string.format(
+				"Duration: %s\nCooldown: %s\nNext level: %s\nCost: %d brains",
+				MagnetConfig.formatSeconds(MagnetConfig.DURATION),
+				MagnetConfig.formatSeconds(currentCooldown),
+				MagnetConfig.formatSeconds(nextCooldown),
+				nextCost or 0
+			)
 		else
 			stats.Text = string.format(
 				"Walk speed: %d\nNext level: %d  (+%d)\nCost: %d brains",
@@ -790,7 +838,7 @@ function ProgressionStore.rebuildList(self: ProgressionStoreHud)
 			row.Parent = self.list
 			styleRow(row, false, selected)
 
-			local level = self.upgrades[def.id] or 0
+			local level = ProgressConfig.upgradeLevel(def, self.upgrades[def.id])
 			local name = Instance.new("TextLabel")
 			name.BackgroundTransparency = 1
 			name.Position = UDim2.fromOffset(16, 0)

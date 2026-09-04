@@ -23,6 +23,7 @@ StarterGui/
         LevelUI      (Frame)   ✅ M8
         Settings     (Frame)   ✅ M13
         Inventory    (Frame)   ✅ M13 (loadout)
+        MagnetEntry  (created in MagnetHud) ✅
         RewardPopup  (Frame)   ✅ M13
         UnlockPopup  (Frame)   ✅ M13
         MonsterIntroPopup (Frame) ✅
@@ -43,7 +44,7 @@ All HUD panels share a **cartoon thick-outline** look from
   geometry everywhere, but each HUD piece gets its own saturated "candy" color
   so the screen doesn't read as one wall of blue: Day/Start Day panel and Shop
   dock stay cool blue (the reference look), Coins / Brains / Speed are bare
-  glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip), Inventory is leafy green, Settings is orange,
+  glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip),   Inventory is leafy green, Settings is orange, Magnet is red,
   RewardPopup is gold, UnlockPopup is purple, ProgressionStore is teal,
   MonsterIntroPopup is orange, GameOverPopup is dark defeat crimson.
 - Black `UIStroke` borders (thick on panels, slightly thinner on cards)
@@ -62,7 +63,7 @@ hardcode a second palette in new UI.
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Rewards, Unlock / Monster intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
+| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Rewards, Unlock / Monster intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
@@ -70,7 +71,7 @@ hardcode a second palette in new UI.
 | `GridController`      | Hover highlight + tile resolver for previews | ✅ M2  |
 | `PlacementController` | Selection, ghost preview, placement intent   | ✅ M4  |
 | `CameraController`    | Default 3rd-person camera (reserved for juice)| ✅ M1  |
-| `InputController`     | Centralized mouse/touch/keyboard intent      | ✅ M4  |
+| `InputController`     | Centralized mouse/touch/keyboard intent (magnet **1**) | ✅ M4  |
 
 ---
 
@@ -82,9 +83,12 @@ hardcode a second palette in new UI.
 - **Speed** ✅ M18 — glyph + WalkSpeed under Brains on the left edge.
 - **Hearts** ✅ M13 — five house hearts at top-left (no chip).
   Left-edge HUD order: Hearts (top) → gap → Coins / Brains / Speed (mid-left) →
-  gap → Inventory above Settings (bottom-left). Day / Start Day stays bottom-right.
+  gap → Inventory above Settings (bottom-left), **Magnet** square to the right
+  of that stack. Day / Start Day stays bottom-right.
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
-  only (loadout from `ProfileUpdated` / `SetEquipped`). Each card mounts a
+  only (loadout from `ProfileUpdated` / `SetEquipped`). Cards remount only when
+  the equipped list changes — XP / kill `ProfileUpdated` ticks restyle in place
+  so a click is not dropped. Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
   stroke on the viewport) so the row stays readable. Names and costs use
@@ -108,19 +112,35 @@ hardcode a second palette in new UI.
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time
   played stays current. Day Select is deferred to a future dedicated UI.
+- **Magnet** ✅ — square HUD chip to the **right** of Inventory / Settings
+  (magnet icon, **Lv. N**, hotkey **1**). Starts at level **1** (max **5**).
+  Press **1** or click the chip during an **Active** day to pull landed coins
+  from the **8 tiles** around the player (left / right / up / down / diagonal)
+  for **5s**, then cooldown (**45s** at level 1 → **10s** at level 5, linear).
+  While active, translucent purple circular soundwaves pulse around the player
+  (rings spawn at the outer pull range and collapse inward; `VfxUtil.playMagnetWaves`). Server owns cooldown (`ActivateMagnet` /
+  `MagnetStateChanged`). Upgrade ranks
+  at the red mini store (`ProgressConfig.UPGRADE_CATALOG` Magnet).
 - **Inventory** ✅ M13 — bottom-left HUD button (above Settings) opens the
   loadout modal; a
   PvZ-style **seed packet grid** (portrait + name plate + status ribbon) for
   unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only unlocked
   entries appear — locked starter-roster Brainrots are simply absent until
-  their unlock day clears (see `BRAINROTS.md`).   **Click** a packet to inspect
-  it: stats and ability copy open on a card to the **right** of the modal
+  their unlock day clears (see `BRAINROTS.md`). Packet ViewportFrames remount
+  only when unlocks change — XP ticks update inspect bars in place.   **Click** a packet to inspect
+  it: stats and evolution rows open on a card to the **right** of the modal
   (same layout as the field inspect card), with **Equip** /
   **Equipped** at the bottom. Equipped packets keep a green ribbon; clicking
   Equipped unequips unless it is the last unit in the loadout. The inspect
   header puts **name, an HP bar** (`current / max` inside the bar), **current
   Brainrot level, and an XP bar** (`current / needed` for the next level,
-  inside the bar) beside the portrait. **Description** (base ability) and
+  inside the bar) beside the portrait. The card fill is **white** until a
+  rarity is claimed; then it uses that rarity’s title color with a
+  top-left → bottom-right gleam (`TextShine.applyPanel`: quick slash, then 3s
+  rest; shared Heartbeat).
+  **Stats** (cost, damage, atk. speed,
+  range, coins / trap / freeze / recharge, ability — `BrainrotInfo.statRows`,
+  Epic numbers after claim) and
   **Current Evolution** sit below: a white **Common** row (always unlocked,
   the unit’s current ability) then Epic → Immortal. Rows below the Brainrot
   level gate stay gray. At the gate the tab uses a **light rarity fill**, the
@@ -129,8 +149,9 @@ hardcode a second palette in new UI.
   spends brains to claim (`EvolveBrainrot`, costs in `TIER_BRAINS`), a
   **lock** sits on that row. Click it to open a confirm prompt (Evolve /
   Cancel). Claimed rows drop the lock. **Epic** stats apply on claim (HP bar
-  / plant recharge); **Legendary** extras tick in combat. Planted Epic+ units
-  get a rarity-tinted aura (purple / gold). Mythic+ combat extras still 🔜
+  / plant recharge); **Legendary** extras and **Mythic** passives tick in
+  combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
+  red-orange). Celestial+ combat extras still 🔜
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted
@@ -190,7 +211,8 @@ See `docs/STORE.md`.
 
 ## Placement flow (Milestone 4) ✅
 
-- **`InputController`** → `primaryAction` (ignores GUI-processed input).
+- **`InputController`** → `primaryAction` (ignores GUI-processed input);
+  `magnetAction` on key **1**.
 - **`PlacementController`** → ghost + `PlaceBrainrot` / shovel remove. Client
   pre-checks coins/occupancy and shows a plant toast on failure; the server still
   validates and may fire `PlaceBrainrotFailed`.

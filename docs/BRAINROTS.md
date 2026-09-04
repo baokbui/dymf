@@ -196,7 +196,7 @@ one exists (`MAX_EQUIPPED` is still 7).
 | Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 325  | — (1)         | 1000   | —        | Full row | Line bomb on place  | 30s   |
-| Lirili Larila        | 75   | —             | 0      | —        | 2 ahead + 2 behind | Freeze 7s on place; despawn after cast anim | 20s |
+| Lirili Larila        | 75   | —             | 0      | —        | 2 ahead + 2 behind | Freeze 5s on place; despawn after cast anim | 20s |
 | Cappuccino Assassino | 100  | 500 (5)       | 50     | 2.0s     | Full row | Throw spinning shuriken | —     |
 | Chimpanzini Bananini | 50   | 2000 (20)     | 0      | —        | —        | Wall                | —     |
 | Girafa Celestre      | 50   | — (immune)    | 0      | —        | —        | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | ~7.5s CD |
@@ -257,7 +257,7 @@ impact they despawn into a tile explosion + column damage. Tune
 `LINE_BOMB_DROP_ORIENTATION_DEGREES` in `BrainrotConfig`. Lirili stays on its
 tile, plays attack anim + cast SFX, then applies `Freeze` (`Ice`) to monsters
 on its tile and **2 tiles ahead and 2 behind** (`abilityParams.freezeTiles`)
-for `abilityParams.freezeDuration` (7s). Claimed **Winter's Grasp** sets
+for `abilityParams.freezeDuration` (5s; Mythic Permafrost overlays 7s). Claimed **Winter's Grasp** sets
 `abilityParams.freezeEntireLane` and freezes the **whole row** instead.
 `ignoreMonsterChew` means monsters walk through and never chew it. The plant
 **despawns when the cast animation ends** (not when freeze expires); thaw SFX
@@ -329,7 +329,7 @@ registry id; last-hit normal kills except `BubbleTrap` / `MeleeBat`; boss XP
 split across plants on the lawn; coin / soak / freeze / bubble-every-2 /
 melee-every-3 jobs). Claiming an evolution after the level gate spends
 brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
-/ claim; planted Epic+ units get a rarity-tinted aura (purple / gold).
-**Legendary** extras tick in combat from evolution ability ids. Mythic+
-combat extras still 🔜.
+/ claim; planted Epic+ units get a rarity-tinted aura (purple / gold /
+red-orange). **Legendary** extras and **Mythic** passives tick in combat from
+evolution ability ids / `abilityParams`. Celestial+ combat extras still 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

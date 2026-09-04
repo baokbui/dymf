@@ -582,6 +582,9 @@ function EnemyService.applyStatusToMonster(
 	if kind == "Freeze" or kind == "Stun" then
 		local style = if visual == "Bubble" then "Bubble" else "Ice"
 		;(runtime :: any).freezeVisual = style
+		-- Cut a mid-cast channel so Pharaoh / similar cannot finish after freeze.
+		runtime.channelingUntil = 0
+		MonsterAnimation.setLocomotionPaused(runtime.model, true)
 		if style == "Bubble" then
 			MonsterFeedback.setFrozen(runtime.model, false)
 			MonsterFeedback.setBubbled(runtime.model, true)

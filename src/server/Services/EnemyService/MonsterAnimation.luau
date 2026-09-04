@@ -344,20 +344,29 @@ function MonsterAnimation.resumeWalk(model: Model)
 end
 
 -- Pause locomotion while status-frozen / bubbled; resume walk when cleared.
-function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
+-- Stops melee and ability tracks so a frozen boss cannot keep casting.
+function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean, keepCombatAnims: boolean?)
 	MonsterProceduralGait.setActive(model, not paused)
 	local state = states[model]
 	if not state then
 		return
 	end
 	if paused then
-		if state.attack and state.attack.IsPlaying then
-			state.attack:Stop(0.05)
-		end
-		for _, track in state.ability do
-			if track.IsPlaying then
-				track:Stop(0.05)
+		if not keepCombatAnims then
+			if state.attack and state.attack.IsPlaying then
+				state.attack:Stop(0.05)
 			end
+			for _, track in state.ability do
+				if track.IsPlaying then
+					track:Stop(0.05)
+				end
+			end
+		end
+		if keepCombatAnims and state.mode == "Attack" then
+			if state.walk and state.walk.IsPlaying then
+				state.walk:AdjustSpeed(0)
+			end
+			return
 		end
 		if state.walk then
 			state.walk:AdjustSpeed(0)
@@ -366,7 +375,9 @@ function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean)
 				state.walk:AdjustSpeed(0)
 			end
 		end
-		state.mode = "Idle"
+		if not keepCombatAnims then
+			state.mode = "Idle"
+		end
 	else
 		if state.mode == "Attack" then
 			return

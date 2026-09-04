@@ -12,7 +12,8 @@
 
 	Server authority: the client only sends a CollectCoin *intent* for a coin id;
 	this service re-checks ownership, existence, distance, and Landed before
-	crediting. Balances are never set from client input.
+	crediting. Magnet pulls (`pullAdjacentCoins`) collect adjacent landed coins
+	after MagnetService validates the ability. Balances are never set from client input.
 
 	Milestone 3.
 ]]
@@ -43,6 +44,8 @@ type GroundCoinEntry = {
 	part: BasePart,
 	ownerUserId: number,
 	value: number,
+	gridPosition: Types.GridPosition,
+	pulling: boolean,
 }
 
 export type DropStyle = "Rain" | "Spit"
@@ -77,6 +80,7 @@ end
 local function spawnGroundCoin(
 	plotModel: Model,
 	ownerUserId: number,
+	gridPosition: Types.GridPosition,
 	landTopCenter: Vector3,
 	value: number,
 	style: DropStyle,
@@ -95,6 +99,8 @@ local function spawnGroundCoin(
 		part = part,
 		ownerUserId = ownerUserId,
 		value = value,
+		gridPosition = gridPosition,
+		pulling = false,
 	}
 
 	if style == "Spit" and spitFrom then
@@ -222,7 +228,7 @@ function CoinService.dropCoinForOwner(
 		return
 	end
 
-	spawnGroundCoin(plotModel, ownerUserId, topCenter, value, "Rain", nil)
+	spawnGroundCoin(plotModel, ownerUserId, gridPosition, topCenter, value, "Rain", nil)
 end
 
 --[[
@@ -248,15 +254,26 @@ function CoinService.dropRandomCoinForOwner(ownerUserId: number, value: number, 
 	end
 
 	if spitFrom then
-		spawnGroundCoin(plotModel, ownerUserId, topCenter, value, "Spit", spitFrom)
+		spawnGroundCoin(plotModel, ownerUserId, position, topCenter, value, "Spit", spitFrom)
 	else
-		spawnGroundCoin(plotModel, ownerUserId, topCenter, value, "Rain", nil)
+		spawnGroundCoin(plotModel, ownerUserId, position, topCenter, value, "Rain", nil)
 	end
 	return true
 end
 
 local function dropPassiveCoin(player: Player)
 	CoinService.dropRandomCoinForOwner(player.UserId, EconomyConfig.PASSIVE_DROP_AMOUNT)
+end
+
+local function creditCoin(player: Player, coinId: string)
+	local entry = groundCoins[coinId]
+	if not entry then
+		return
+	end
+	entry.part:SetAttribute("Collected", true)
+	local value = entry.value
+	removeCoin(coinId)
+	CoinService.addCoins(player, value)
 end
 
 local function onCollectCoin(player: Player, coinId: unknown)
@@ -269,6 +286,9 @@ local function onCollectCoin(player: Player, coinId: unknown)
 		return
 	end
 	if entry.ownerUserId ~= player.UserId then
+		return
+	end
+	if entry.pulling then
 		return
 	end
 	if entry.part:GetAttribute("Landed") ~= true then
@@ -284,8 +304,45 @@ local function onCollectCoin(player: Player, coinId: unknown)
 		return
 	end
 
-	removeCoin(coinId)
-	CoinService.addCoins(player, entry.value)
+	creditCoin(player, coinId)
+end
+
+-- Chebyshev distance 1: tiles left / right / up / down / diagonal of `origin`.
+function CoinService.pullAdjacentCoins(player: Player, origin: Types.GridPosition)
+	local MagnetConfig = require(ReplicatedStorage.Shared.Config.MagnetConfig)
+	local range = MagnetConfig.RANGE_TILES
+	for coinId, entry in groundCoins do
+		if entry.ownerUserId ~= player.UserId then
+			continue
+		end
+		if entry.pulling then
+			continue
+		end
+		if entry.part:GetAttribute("Landed") ~= true then
+			continue
+		end
+		local dRow = math.abs(entry.gridPosition.row - origin.row)
+		local dCol = math.abs(entry.gridPosition.column - origin.column)
+		if math.max(dRow, dCol) ~= range then
+			continue
+		end
+
+		entry.pulling = true
+		local part = entry.part
+		CoinMotion.pullToward(part, function()
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then
+				return root.Position
+			end
+			return nil
+		end, MagnetConfig.PULL_DURATION, function()
+			if groundCoins[coinId] ~= entry then
+				return
+			end
+			creditCoin(player, coinId)
+		end)
+	end
 end
 
 local function onPlayerAdded(player: Player)

@@ -51,6 +51,7 @@ type Profile = {
 }
 
 local profiles: { [number]: Profile } = {}
+local xpBroadcastThreads: { [number]: thread } = {}
 -- Day-start XP snapshot. Live grants during Countdown/Active are not
 -- committed until victory; defeat / autosave / leave restore or persist this.
 local dayStartXp: { [number]: { [string]: number } } = {}
@@ -144,12 +145,7 @@ local function findStoreBrainrot(brainrotId: string): { brainrotId: string, brai
 end
 
 local function findUpgrade(upgradeId: string): any?
-	for _, entry in ProgressConfig.UPGRADE_CATALOG do
-		if entry.id == upgradeId then
-			return entry
-		end
-	end
-	return nil
+	return ProgressConfig.upgradeById(upgradeId)
 end
 
 local function sanitizeUpgrades(raw: { [string]: number }?): { [string]: number }
@@ -168,21 +164,6 @@ local function sanitizeUpgrades(raw: { [string]: number }?): { [string]: number 
 		result[key] = math.clamp(math.floor(value), 0, def.maxLevel)
 	end
 	return result
-end
-
-local function upgradeCost(def: any, nextLevel: number): number?
-	local costs = def.brainsCosts
-	if type(costs) ~= "table" or nextLevel < 1 then
-		return nil
-	end
-	local cost = costs[nextLevel]
-	if type(cost) ~= "number" then
-		cost = costs[#costs]
-	end
-	if type(cost) ~= "number" then
-		return nil
-	end
-	return math.max(0, math.floor(cost))
 end
 
 local function applyWalkSpeedToCharacter(player: Player, speed: number)
@@ -315,12 +296,40 @@ local function buildPayload(profile: Profile): { [string]: any }
 	}
 end
 
+local function cancelXpBroadcast(userId: number)
+	local pending = xpBroadcastThreads[userId]
+	if pending then
+		task.cancel(pending)
+		xpBroadcastThreads[userId] = nil
+	end
+end
+
 local function broadcast(player: Player)
 	local profile = profiles[player.UserId]
 	if not profile or not profile.hydrated then
 		return
 	end
+	cancelXpBroadcast(player.UserId)
 	Remotes.getEvent("ProfileUpdated"):FireClient(player, buildPayload(profile))
+end
+
+-- Coin / soak / freeze ticks are frequent (Encore Ballerina especially).
+-- Coalesce so the client is not rebuilt dozens of times per second.
+local function scheduleXpBroadcast(player: Player)
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
+		return
+	end
+	local userId = player.UserId
+	if xpBroadcastThreads[userId] then
+		return
+	end
+	xpBroadcastThreads[userId] = task.delay(ProgressConfig.XP_BROADCAST_INTERVAL, function()
+		xpBroadcastThreads[userId] = nil
+		if player.Parent then
+			broadcast(player)
+		end
+	end)
 end
 
 local function flushSessionTime(profile: Profile)
@@ -697,6 +706,16 @@ function ProgressService.getWalkSpeed(player: Player): number
 	return speed + level * bonus
 end
 
+function ProgressService.getMagnetLevel(player: Player): number
+	local def = findUpgrade("Magnet")
+	if not def then
+		return 1
+	end
+	local profile = profiles[player.UserId]
+	local stored = if profile then profile.upgrades["Magnet"] else nil
+	return ProgressConfig.upgradeLevel(def, stored)
+end
+
 function ProgressService.applyMovement(player: Player)
 	applyWalkSpeedToCharacter(player, ProgressService.getWalkSpeed(player))
 end
@@ -743,12 +762,13 @@ local function tryBuyUpgrade(player: Player, upgradeId: string)
 		failPurchase(player, "That upgrade is not for sale")
 		return
 	end
-	local current = profile.upgrades[upgradeId] or 0
+	local stored = profile.upgrades[upgradeId] or 0
+	local current = ProgressConfig.upgradeLevel(def, stored)
 	if current >= def.maxLevel then
 		failPurchase(player, "Already at max level")
 		return
 	end
-	local cost = upgradeCost(def, current + 1)
+	local cost = ProgressConfig.nextUpgradeCost(def, current)
 	if not cost then
 		failPurchase(player, "That upgrade is not for sale")
 		return
@@ -858,10 +878,14 @@ function ProgressService.grantBrainrotXp(player: Player, brainrotId: string, amo
 	if not profile.hydrated then
 		return
 	end
+	local before = EvolutionConfig.parseXp(profile.brainrotXp[brainrotId] or 0).level
 	addXp(profile, brainrotId, amount)
-	local BrainrotService = require(script.Parent.BrainrotService)
-	BrainrotService.syncNameplates(player, brainrotId)
-	broadcast(player)
+	local after = EvolutionConfig.parseXp(profile.brainrotXp[brainrotId] or 0).level
+	if after ~= before then
+		local BrainrotService = require(script.Parent.BrainrotService)
+		BrainrotService.syncNameplates(player, brainrotId)
+	end
+	scheduleXpBroadcast(player)
 end
 
 function ProgressService.grantBrainrotXpForUser(userId: number, brainrotId: string, amount: number)
@@ -985,6 +1009,7 @@ function ProgressService.start()
 	-- Profiles are created on demand / by SaveService.applySaveSlice. Do not
 	-- broadcast join defaults — that races restore and shows empty statistics.
 	Players.PlayerRemoving:Connect(function(player)
+		cancelXpBroadcast(player.UserId)
 		local profile = profiles[player.UserId]
 		if profile and profile.hydrated then
 			flushSessionTime(profile)

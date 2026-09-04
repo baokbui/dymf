@@ -30,6 +30,7 @@ local Config = {
 	Grave = require(script.GraveConfig),
 	House = require(script.HouseConfig),
 	Store = require(script.StoreConfig),
+	Magnet = require(script.MagnetConfig),
 }
 
 table.freeze(Config)

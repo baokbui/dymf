@@ -1,13 +1,12 @@
 --!strict
 --[[
 	BubbleBarrage
-	One trap bubble per lawn row, launched from this plant's column.
+	One gold bubble from the mouth that splits into one trap bubble per lawn row.
 ]]
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
+
+local BubbleShot = require(script.Parent.BubbleShot)
 
 local BubbleBarrage = {}
 
@@ -17,33 +16,56 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 		trapDuration = ctx.definition.abilityParams.trapDuration or trapDuration
 	end
 
-	local launched = false
-	for row = 1, GridConfig.ROWS do
-		local position = { row = row, column = ctx.position.column }
-		local fired = CombatService.launchProjectile(
+	local extraChance = 0
+	if ctx.definition.abilityParams then
+		extraChance = ctx.definition.abilityParams.extraBubbleChance or 0
+	end
+
+	-- Don't spend the volley (or the 15s CD) when the lawn is empty.
+	if not CombatService.hasMonsterOnPlot(ctx.plotModel) then
+		return false
+	end
+
+	callbacks.pulseAttack()
+
+	local options = {
+		kind = "Bubble",
+		soundKey = "BubbleTrap",
+		statusKind = "Freeze",
+		statusDuration = trapDuration,
+		statusVisual = "Bubble",
+		sourceInstanceId = ctx.instanceId,
+		extraBubbleChance = extraChance,
+	}
+
+	local function fire()
+		if not ctx.model.Parent then
+			return
+		end
+		CombatService.launchBarrageSeed(
 			ctx.plotModel,
-			position,
+			ctx.position.row,
+			ctx.position.column,
 			ctx.definition.rangeTiles,
 			ctx.definition.damage,
 			ctx.ownerUserId,
-			{
-				kind = "Bubble",
-				soundKey = "BubbleTrap",
-				statusKind = "Freeze",
-				statusDuration = trapDuration,
-				statusVisual = "Bubble",
-				sourceInstanceId = ctx.instanceId,
-			}
+			BubbleShot.mouthWorld(ctx.model),
+			options
 		)
-		if fired then
-			launched = true
-		end
 	end
 
-	if not launched then
-		return false
+	local hitDelay = ctx.definition.attackHitDelay
+	if type(hitDelay) == "number" and hitDelay > 0 then
+		local model = ctx.model
+		task.delay(hitDelay, function()
+			if model.Parent then
+				fire()
+			end
+		end)
+	else
+		fire()
 	end
-	callbacks.pulseAttack()
+
 	return true
 end
 

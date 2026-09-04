@@ -291,9 +291,13 @@ local function createPlacement(
 		buffs = {
 			coinHasteUntil = 0,
 			coinHasteFactor = 1,
+			attackHasteUntil = 0,
+			attackHasteFactor = 1,
 			rangedUntil = 0,
 			pierceNext = false,
 			shieldHp = 0,
+			attackCount = 0,
+			furyTriggered = false,
 		},
 	}
 
@@ -375,6 +379,22 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 		return true
 	end
 	return false
+end
+
+local function applyBrainrotHeal(instanceId: string, hits: number)
+	local placement = placements[instanceId]
+	if not placement then
+		return
+	end
+	if hits <= 0 then
+		return
+	end
+	local maxHits = placement.definition.health
+	if maxHits <= 0 then
+		return
+	end
+	placement.health = math.min(maxHits, placement.health + hits)
+	syncHealthDisplay(placement)
 end
 
 -- ===== Remote handlers (untrusted input) =====
@@ -796,6 +816,7 @@ function BrainrotService.init()
 	BrainrotBehavior.setDestroyHandler(destroyPlacement)
 	BrainrotBehavior.setDetachHandler(detachPlacement)
 	CombatService.setBrainrotDamageHandler(applyBrainrotDamage)
+	CombatService.setBrainrotHealHandler(applyBrainrotHeal)
 	CombatService.setBrainrotStatusHandler(applyBrainrotStatus)
 end
 

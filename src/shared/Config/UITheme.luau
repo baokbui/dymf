@@ -28,6 +28,7 @@ UITheme.CHIP_BG_SPEED = Color3.fromRGB(70, 205, 220) -- cyan
 UITheme.CHIP_BG_HEARTS = Color3.fromRGB(255, 120, 150) -- rosy red
 UITheme.CHIP_BG_INVENTORY_BUTTON = Color3.fromRGB(90, 210, 140) -- leafy green
 UITheme.CHIP_BG_SETTINGS_BUTTON = Color3.fromRGB(255, 150, 70) -- orange
+UITheme.CHIP_BG_MAGNET = Color3.fromRGB(235, 75, 85) -- magnet red
 UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
 UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
 UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold

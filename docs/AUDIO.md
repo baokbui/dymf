@@ -85,7 +85,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
 | `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |
 | `FreezeTime` | Lirili Larila cast on place (with attack anim) |
-| `FreezeTimeEnd` | Lirili Larila thaw when the 7s lane freeze ends |
+| `FreezeTimeEnd` | Lirili Larila thaw when freeze duration ends |
 | `BubbleTrap` | Tralalero bubble impact via `CombatVisual.soundKey` |
 | `LineBomb` | Bombardino place / bombing run (`BrainrotAction`) |
 | Other ability keys | `BrainrotAction.action` when the ability calls `playSound` |

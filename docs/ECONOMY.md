@@ -71,7 +71,8 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
   (`Landed` attribute).
 - Validates `CollectCoin` intents — ownership, existence, and distance (against
   the authoritative `HumanoidRootPart` position, within `COIN_COLLECT_RADIUS`) —
-  before crediting. The coin's value is server-side; client-supplied amounts are
+  before crediting. Magnet pulls (`MagnetService`) skip the walk radius after a
+  server-side adjacent-tile check. The coin's value is server-side; client-supplied amounts are
   never trusted.
 - Pushes balances to clients via `CoinsUpdated`. The initial `RequestState` pull
   is answered by `LevelService` with `{ coins, level }` (see `NETWORKING.md`).
@@ -88,6 +89,7 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4) ✅  |
 | `dropCoinForOwner(userId, plotModel, gridPosition, amount)` | spawn a coin on a specific grid tile ✅ |
 | `dropRandomCoinForOwner(userId, amount, spitFrom?)` | Rain (no origin) or spit-from-origin onto a random tile ✅ |
+| `pullAdjacentCoins(player, origin)` | Magnet: tween + collect landed coins Chebyshev **1** from the player tile ✅ |
 
 Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
 with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**

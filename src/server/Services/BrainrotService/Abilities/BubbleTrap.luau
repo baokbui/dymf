@@ -7,6 +7,8 @@
 
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
+local BubbleShot = require(script.Parent.BubbleShot)
+
 local BubbleTrap = {}
 
 function BubbleTrap.tryAct(ctx, callbacks)
@@ -30,22 +32,7 @@ function BubbleTrap.tryAct(ctx, callbacks)
 
 	local hitDelay = ctx.definition.attackHitDelay
 	local function launch()
-		CombatService.launchProjectile(
-			ctx.plotModel,
-			ctx.position,
-			ctx.definition.rangeTiles,
-			ctx.definition.damage,
-			ctx.ownerUserId,
-			{
-				kind = "Bubble",
-				soundKey = "BubbleTrap",
-				statusKind = "Freeze",
-				statusDuration = trapDuration,
-				statusVisual = "Bubble",
-				-- Count landed hits for BubbleTrap XP; do not claim last-hit.
-				sourceInstanceId = ctx.instanceId,
-			}
-		)
+		BubbleShot.launch(ctx, ctx.position, trapDuration)
 	end
 
 	if type(hitDelay) == "number" and hitDelay > 0 then

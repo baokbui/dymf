@@ -82,6 +82,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         PlotService/      (init + Plot + PlotBuilder)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
+        MagnetService/    (player magnet pull + cooldown)
         BrainrotService/  (init + BrainrotModel, BrainrotBehavior, BrainrotAnimation, Abilities, BrainrotFeedback)
         EnemyService/     (init + MonsterModel, MonsterBehavior, Abilities, MonsterFeedback)
         CombatService/
@@ -98,7 +99,7 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
-        InputController/  (primary intent signal)
+        InputController/  (primary intent + magnet 1)
         BrainrotController/ (BrainrotAction SFX; ScaleTo pulse; world nameplates)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
@@ -292,8 +293,8 @@ Full details in `NETWORKING.md` / `UI.md` / `BRAINROTS.md`. Summary:
   Removal
   is owner-checked and frees the tile **without a refund**. It clears a leaving
   player's instances. Public: `getPlacements(plotModel)`.
-- **InputController** (client) centralizes input into `primaryAction`
-  intent signals (ignoring GUI-consumed input).
+- **InputController** (client) centralizes input into `primaryAction` and
+  `magnetAction` (key **1**) intent signals (ignoring GUI-consumed input).
 - **PlacementController** (client) owns selection, the cosmetic ghost preview
   (reusing `GridController.resolveTileAt`; clones Assets templates when present),
   and forwarding place/remove intent.
@@ -428,7 +429,7 @@ Full details in `UI.md`. Summary:
 
 - **`ProgressService`** + **`ProgressConfig`** — brains, unlocks, equipped loadout,
   statistics; `ProfileUpdated` / `SetEquipped` remotes. Stats increment broadcasts
-  immediately; time played includes the live session in client payloads. Join
+  immediately; support-job XP coalesces (`XP_BROADCAST_INTERVAL`). Time played includes the live session in client payloads. Join
   hydrate is synchronous from `SaveService` so defaults cannot wipe saved stats.
   Starter roster unlocks only 3 Brainrots by default (`DEFAULT_UNLOCKS`); the
   rest of the launch seven unlock via `UNLOCK_SCHEDULE`
@@ -439,7 +440,7 @@ Full details in `UI.md`. Summary:
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
 - **Inventory** — bottom-left HUD button (above Settings) + modal; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
-  description + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
+  stats + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
   on your lawn opens the same card with live HP.
 - **Reward popup** — victory shows brains earned (store purchases → M18).
 - Save schema **v5** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists, and `brainrotXp`.
@@ -454,11 +455,11 @@ Full details in `STORE.md` / `UI.md`. Summary:
   their own stall.
 - **`ProgressService`** validates `BuyStoreItem` (own shop range, brains spend, catalog, owned /
   max level). Catalogs in `ProgressConfig.STORE_CATALOG` (Girafa Celestre) and
-  `UPGRADE_CATALOG` (WalkSpeed, 20 ranks). Speed applied on spawn / rejoin via
+  `UPGRADE_CATALOG` (WalkSpeed, 20 ranks; Magnet 1–5). Speed applied on spawn / rejoin via
   `PlotService` + `ProgressService.getWalkSpeed`.
 - **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
   stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; Inventory +
-  Settings bottom-left.
+  Settings bottom-left with Magnet square to the right.
 
 ### Milestone 19 — Brainrot leveling + evolutions 🔜
 
@@ -473,12 +474,14 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   use landed-hit XP instead); boss XP split per living plant on the lawn;
   persisted as `brainrotXp` (save v5). Inspect UI shows level / XP. XP from a
   failed or unfinished day rewinds to the Start Day snapshot.
-- **Epic stats + Legendary extras + aura (live):** claimed Epic overlays `stats`
+- **Epic stats + Legendary extras + Mythic passives + aura (live):** claimed Epic overlays `stats`
   onto the registry definition (interval / HP / damage / plant cooldown).
-  Legendary extras tick from evolution `ability` ids (`CoinHaste`,
-  `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`; Lirili’s
-  `freezeEntireLane` merges into `abilityParams`). Aura is purple at Epic and
-  gold at Legendary. Mythic+ combat extras still 🔜.
+  Legendary extras and Mythic passives tick from evolution `ability` ids
+  (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
+  `RegenPulse`, `DesperateFury`; Lirili’s `freezeEntireLane` / `freezeDuration`
+  and other params-only rows merge into `abilityParams`). Aura is purple at
+  Epic, gold at Legendary, and red-orange at Mythic. Celestial+ combat extras
+  still 🔜.
 
 ### Milestone 12 — Audio ✅
 

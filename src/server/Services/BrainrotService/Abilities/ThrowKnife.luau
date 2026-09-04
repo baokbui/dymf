@@ -22,13 +22,23 @@ function ThrowKnife.tryAct(ctx, callbacks)
 		ctx.buffs.pierceNext = false
 	end
 
+	ctx.buffs.attackCount += 1
+	local damage = ctx.definition.damage
+	local params = ctx.definition.abilityParams
+	if params then
+		local every = params.fifthStrikeEvery
+		if type(every) == "number" and every > 0 and ctx.buffs.attackCount % every == 0 then
+			damage = damage * (params.fifthStrikeFactor or 2)
+		end
+	end
+
 	local hitDelay = ctx.definition.attackHitDelay
 	local function launch()
 		CombatService.launchProjectile(
 			ctx.plotModel,
 			ctx.position,
 			ctx.definition.rangeTiles,
-			ctx.definition.damage,
+			damage,
 			ctx.ownerUserId,
 			{
 				kind = "Shuriken",

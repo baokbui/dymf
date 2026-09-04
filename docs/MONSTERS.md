@@ -244,7 +244,7 @@ monsters walk through him and the grave.
 Grave production **stops** when spawn groups finish so victory can fire. Authored model:
 `Assets.Graves.Grave` (Model or MeshPart; procedural tombstone fallback). Graves are not saved.
 
-- Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement.
+- Movement decreases `column` toward the house; **Freeze** / **Stun** pause movement, chewing, shooting, and ability casts (**including bosses** — Lirili Ice freeze fully locks Duke Terrify, Pharaoh steal/summon, etc.).
 - Monsters **phase through each other** on the same row (no blocking — all parts
 `CanCollide = false`). Player characters also **phase through monsters** via
 `CollisionUtil` (`BvmPlayers` / `BvmMonsters` collision groups). They walk the

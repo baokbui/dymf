@@ -163,6 +163,9 @@ function EvolutionConfig.worldAura(rarity: string): Color3
 	if rarity == "Legendary" then
 		return Color3.fromRGB(255, 196, 48)
 	end
+	if rarity == "Mythic" then
+		return Color3.fromRGB(255, 110, 50)
+	end
 	return EvolutionConfig.auraForRarity(rarity)
 end
 

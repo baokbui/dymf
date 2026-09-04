@@ -73,6 +73,9 @@ local function effectiveDefinition(placement: RuntimePlacement): Types.BrainrotD
 	if now < placement.buffs.coinHasteUntil and placement.buffs.coinHasteFactor > 1 then
 		interval = interval / placement.buffs.coinHasteFactor
 	end
+	if now < placement.buffs.attackHasteUntil and placement.buffs.attackHasteFactor > 1 then
+		interval = interval / placement.buffs.attackHasteFactor
+	end
 	if damage == base.damage and interval == base.attackInterval then
 		return base
 	end
@@ -91,6 +94,7 @@ local function buildContext(placement: RuntimePlacement)
 		row = placement.position.row,
 		column = placement.position.column,
 		buffs = placement.buffs,
+		health = placement.health,
 	}
 end
 
@@ -104,13 +108,26 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 				center.Y + size.Y * 0.5 + EconomyConfig.PRODUCER_SPIT_ORIGIN_CLEARANCE,
 				center.Z
 			)
-			local dropped = CoinService.dropRandomCoinForOwner(placement.ownerUserId, amount, origin)
-			if dropped then
-				ProgressService.grantBrainrotXpForUser(
-					placement.ownerUserId,
-					placement.definition.id,
-					EvolutionConfig.COIN_XP
-				)
+			local function spit(value: number): boolean
+				local dropped = CoinService.dropRandomCoinForOwner(placement.ownerUserId, value, origin)
+				if dropped then
+					ProgressService.grantBrainrotXpForUser(
+						placement.ownerUserId,
+						placement.definition.id,
+						EvolutionConfig.COIN_XP
+					)
+				end
+				return dropped
+			end
+			if not spit(amount) then
+				return
+			end
+			local chance = 0
+			if placement.definition.abilityParams then
+				chance = placement.definition.abilityParams.extraCoinChance or 0
+			end
+			if chance > 0 and math.random() * 100 < chance then
+				spit(amount)
 			end
 		end,
 		destroySelf = function()
@@ -178,9 +195,13 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.buffs = {
 		coinHasteUntil = 0,
 		coinHasteFactor = 1,
+		attackHasteUntil = 0,
+		attackHasteFactor = 1,
 		rangedUntil = 0,
 		pierceNext = false,
 		shieldHp = 0,
+		attackCount = 0,
+		furyTriggered = false,
 	}
 	active[placement.instanceId] = placement
 	BrainrotAnimation.bind(placement.model, placement.definition)

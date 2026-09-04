@@ -5,7 +5,7 @@
 
 	PvZ-style **seed packet** grid: click a packet to inspect it. Stats and
 	ability copy open on a shared `BrainrotInspect` card to the **right** of
-	the modal (portrait + HP / level / XP bar, description + evolutions,
+  the modal (portrait + HP / level / XP bar, stats + evolutions,
 	Equip / Equipped at the bottom). Cartoon thick-outline look via UITheme.
 ]]
 
@@ -87,6 +87,18 @@ local function isEquipped(equipped: { string }, id: string): boolean
 		end
 	end
 	return false
+end
+
+local function sameStringList(a: { string }, b: { string }): boolean
+	if #a ~= #b then
+		return false
+	end
+	for index, value in a do
+		if b[index] ~= value then
+			return false
+		end
+	end
+	return true
 end
 
 local function layoutInventory(self: InventoryPanel, statsOpen: boolean)
@@ -437,11 +449,13 @@ function Inventory.refresh(self: InventoryPanel)
 end
 
 function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any })
+	local nextUnlocks = self.unlocks
 	if type(profile.unlocks) == "table" then
-		self.unlocks = profile.unlocks :: { string }
+		nextUnlocks = profile.unlocks :: { string }
 	end
+	local nextEquipped = self.equipped
 	if type(profile.equipped) == "table" then
-		self.equipped = profile.equipped :: { string }
+		nextEquipped = profile.equipped :: { string }
 	end
 	local xp: { [string]: number } = {}
 	if type(profile.brainrotXp) == "table" then
@@ -451,7 +465,6 @@ function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any }
 			end
 		end
 	end
-	self.brainrotXp = xp
 	local evolutions: { [string]: { string } } = {}
 	if type(profile.evolutions) == "table" then
 		for key, value in (profile.evolutions :: { [string]: any }) do
@@ -467,8 +480,34 @@ function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any }
 			evolutions[key] = rarities
 		end
 	end
+
+	-- ProfileUpdated also fires on every coin / soak XP tick. Remounting
+	-- ViewportFrame packets each time is what made long sessions hitch.
+	local unlocksChanged = not sameStringList(self.unlocks, nextUnlocks)
+	local equippedChanged = not sameStringList(self.equipped, nextEquipped)
+	self.unlocks = nextUnlocks
+	self.equipped = nextEquipped
+	self.brainrotXp = xp
 	self.evolutions = evolutions
-	self:refresh()
+
+	if unlocksChanged then
+		self:refresh()
+		return
+	end
+	if equippedChanged then
+		for id, packet in self.packets do
+			stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, id == self.selectedId)
+		end
+		self:syncEquipButton()
+	end
+	if self.inspect:isOpen() then
+		local id = self.inspect:getBrainrotId()
+		if id then
+			self.inspect:setTotalXp(xp[id] or 0)
+			self.inspect:setClaimedRarities(evolutions[id] or {})
+			self:syncEquipButton()
+		end
+	end
 end
 
 function Inventory.setLoadoutLocked(self: InventoryPanel, locked: boolean)

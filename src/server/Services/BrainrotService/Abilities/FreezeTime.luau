@@ -5,7 +5,7 @@
 	and 2 tiles behind (plus this tile) for freezeDuration, despawn when
 	the cast animation ends, then thaw SFX when the status expires.
 	Legendary Winter's Grasp (`abilityParams.freezeEntireLane`) freezes
-	the whole row instead.
+	the whole row instead. Mythic Permafrost overlays `freezeDuration`.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,7 +16,7 @@ local ProgressService = require(script.Parent.Parent.Parent.ProgressService)
 
 local FreezeTime = {}
 
-local DEFAULT_FREEZE_DURATION = 7
+local DEFAULT_FREEZE_DURATION = 5
 local DEFAULT_CAST_FALLBACK = 1.2
 
 function FreezeTime.onPlaced(ctx, callbacks)

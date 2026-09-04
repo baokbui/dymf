@@ -30,9 +30,17 @@ local CombatConfig = {
 	-- Flat disc needs less clearance than the old cartwheeling sword.
 	SHURIKEN_PROJECTILE_HEIGHT_OFFSET = 3.2,
 
-	-- Tralalero bubble projectile (Ball + ForceField; color from MonsterConfig.BUBBLE_COLOR).
-	BUBBLE_PROJECTILE_SIZE = Vector3.new(1.6, 1.6, 1.6),
-	BUBBLE_PROJECTILE_TRANSPARENCY = 0.35,
+	-- Tralalero bubble projectile (gold soap bubble; no trail streaks).
+	BUBBLE_PROJECTILE_SIZE = Vector3.new(2.6, 2.6, 2.6),
+	BUBBLE_PROJECTILE_SEED_SIZE = Vector3.new(3.5, 3.5, 3.5),
+	BUBBLE_PROJECTILE_TRANSPARENCY = 0.22,
+	-- Bubble Barrage: one seed flies this far, then splits into 5 lane bubbles.
+	BUBBLE_BARRAGE_SPLIT_TILES = 1.15,
+	-- Child bubbles ease Z from the split point into each lawn row.
+	BUBBLE_BARRAGE_Z_LERP_TILES = 1.7,
+
+	-- Ranged Rampage (Tung Tung Legendary) bolt tint.
+	RAMPAGE_BOLT_COLOR = Color3.fromRGB(255, 196, 48),
 
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,

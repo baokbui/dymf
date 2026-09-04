@@ -21,9 +21,13 @@ export type AbilityCallbacks = {
 export type EvolutionBuffs = {
 	coinHasteUntil: number,
 	coinHasteFactor: number,
+	attackHasteUntil: number,
+	attackHasteFactor: number,
 	rangedUntil: number,
 	pierceNext: boolean,
 	shieldHp: number,
+	attackCount: number,
+	furyTriggered: boolean,
 }
 
 export type AbilityContext = {
@@ -37,6 +41,7 @@ export type AbilityContext = {
 	column: number,
 	buffs: EvolutionBuffs,
 	extraParams: { [string]: number }?,
+	health: number,
 }
 
 export type AbilityHandler = {
@@ -61,6 +66,8 @@ local handlers: { [string]: AbilityHandler } = {
 	RangedRampage = require(script.RangedRampage),
 	BubbleBarrage = require(script.BubbleBarrage),
 	PierceBrew = require(script.PierceBrew),
+	RegenPulse = require(script.RegenPulse),
+	DesperateFury = require(script.DesperateFury),
 }
 
 function Abilities.get(abilityId: string?): AbilityHandler?

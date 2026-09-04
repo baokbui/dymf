@@ -51,13 +51,15 @@ Remotes module. That is the only required step.
 | `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day |
 | `ContinueVictory`  | client → server | ✅     | Reward Continue → Preparation (next day) |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
-| `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats, Brainrot XP, claimed evolutions |
+| `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats, Brainrot XP, claimed evolutions. Support-job XP (`grantBrainrotXp`) is coalesced (`ProgressConfig.XP_BROADCAST_INTERVAL`) so coin / soak ticks do not remount Inventory ViewportFrames. Kills / purchases still push immediately. |
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
 | `OpenProgressionStore` | server → client | ✅ M18 | Owner talks to own Tung / 67 mascot → open overlay (`shopKind`, mascot `Vector3`) |
 | `BuyStoreItem`     | client → server | ✅ M18 | Spend brains (`shop` + `id`); server validates own stall range + catalog |
 | `StorePurchaseSucceeded` | server → client | ✅ M18 | Authoritative spend (`cost`); client kaching + brains delta |
 | `StorePurchaseFailed` | server → client | ✅ M18 | Rejected buy (broke / owned / max) |
 | `EvolveBrainrot`   | client → server | ✅ M19 | Claim an evolution (`brainrotId`, `rarity`); server checks level, previous tier, brains |
+| `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown |
+| `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt }` (`GetServerTimeNow`) |
 
 ### RemoteFunctions
 
@@ -65,8 +67,9 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` returns `{ coins, level, profile, plantCooldowns }` — handled by `LevelService.start()`
-(`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI).
+`RequestState` returns `{ coins, level, profile, plantCooldowns, magnet }` — handled by `LevelService.start()`
+(`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI;
+`magnet` is `{ level, activeUntil, readyAt }`).
 using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClientState`.
 
 ---

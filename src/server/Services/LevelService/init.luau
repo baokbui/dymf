@@ -629,11 +629,13 @@ function LevelService.start()
 	(LevelService :: any)._started = true
 
 	Remotes.getFunction("RequestState").OnServerInvoke = function(player: Player)
+		local MagnetService = require(script.Parent.MagnetService)
 		return {
 			coins = CoinService.getBalance(player),
 			level = LevelService.getClientState(player),
 			profile = ProgressService.getClientState(player),
 			plantCooldowns = BrainrotService.getPlantCooldowns(player),
+			magnet = MagnetService.getClientState(player),
 		}
 	end
 

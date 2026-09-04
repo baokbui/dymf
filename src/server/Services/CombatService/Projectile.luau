@@ -9,7 +9,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
-local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
@@ -28,6 +27,14 @@ export type ImpactSpec = {
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
 	pierceCount: number?,
+	-- Bubble Barrage: this projectile is the seed; on Split, spawn one child per row.
+	splitBarrage: {
+		rangeTiles: number,
+		plantColumn: number,
+		extraChance: number,
+		worldY: number,
+		damage: number,
+	}?,
 }
 
 export type LaunchSpec = {
@@ -47,6 +54,12 @@ export type LaunchSpec = {
 	columnDirection: number?,
 	-- Keep this Z for the whole flight (bow / arm spawn). Nil = lane-center Z.
 	worldZ: number?,
+	-- Fan from mouth (originWorld.Z) into the target lane over zLerpColumns of travel.
+	originWorld: Vector3?,
+	zLerpColumns: number?,
+	worldZEnd: number?,
+	-- Bubble Barrage only: gold light-streak trail (normal BubbleTrap stays trail-less).
+	streak: boolean?,
 }
 
 export type ActiveProjectile = {
@@ -58,6 +71,9 @@ export type ActiveProjectile = {
 	spinRadians: number,
 	worldY: number,
 	worldZ: number?,
+	zStart: number?,
+	zEnd: number?,
+	zLerpColumns: number?,
 }
 
 type ImpactCallback = (
@@ -291,6 +307,41 @@ local function applyPierceAura(model: Model, hub: BasePart)
 	sparks.Drag = 1.2
 	sparks.ZOffset = 2
 	sparks.Parent = hub
+
+	-- Ribbon perpendicular to +X travel so the gold trail actually has area.
+	-- Authored shurikens often ship a silver Trail — replace it so only gold shows.
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Trail") then
+			descendant:Destroy()
+		end
+	end
+
+	local gold = VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR
+	local tail = VfxConfig.PIERCE_SHURIKEN_TRAIL_COLOR_TAIL
+	local att0 = Instance.new("Attachment")
+	att0.Name = "PierceTrailA"
+	att0.Position = Vector3.new(0, 0.42, 0)
+	att0.Parent = hub
+	local att1 = Instance.new("Attachment")
+	att1.Name = "PierceTrailB"
+	att1.Position = Vector3.new(0, -0.42, 0)
+	att1.Parent = hub
+	local trail = Instance.new("Trail")
+	trail.Name = "PierceTrail"
+	trail.Attachment0 = att0
+	trail.Attachment1 = att1
+	trail.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, gold),
+		ColorSequenceKeypoint.new(1, tail),
+	})
+	trail.Lifetime = VfxConfig.PIERCE_SHURIKEN_TRAIL_LIFETIME
+	trail.WidthScale = NumberSequence.new(VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH)
+	trail.LightEmission = VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION
+	trail.Transparency = NumberSequence.new(0, 1)
+	trail.FaceCamera = true
+	trail.MinLength = 0.4
+	trail.MaxLength = 32
+	trail.Parent = hub
 end
 
 local function createProceduralArrow(): (Model, BasePart)
@@ -392,17 +443,82 @@ local function createBoltPart(): BasePart
 	return part
 end
 
-local function createBubblePart(): BasePart
-	local part = Instance.new("Part")
-	part.Name = "Projectile"
-	part.Shape = Enum.PartType.Ball
-	part.Size = CombatConfig.BUBBLE_PROJECTILE_SIZE
-	part.Material = Enum.Material.ForceField
-	part.Color = MonsterConfig.BUBBLE_COLOR
-	part.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
-	hardenRoot(part)
-	part:SetAttribute("ProjectileKind", "Bubble")
-	return part
+local function createBubbleModel(isSeed: boolean): (Model, BasePart)
+	local size = if isSeed then CombatConfig.BUBBLE_PROJECTILE_SEED_SIZE else CombatConfig.BUBBLE_PROJECTILE_SIZE
+	local gold = VfxConfig.BUBBLE_PROJECTILE_COLOR
+	local innerColor = VfxConfig.BUBBLE_PROJECTILE_INNER_COLOR
+
+	local model = Instance.new("Model")
+	model.Name = if isSeed then "BubbleSeed" else "BubbleProjectile"
+
+	local hub = Instance.new("Part")
+	hub.Name = "Bubble"
+	hub.Shape = Enum.PartType.Ball
+	hub.Size = size
+	hub.Material = Enum.Material.ForceField
+	hub.Color = gold
+	hub.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
+	hub.Parent = model
+	hardenRoot(hub)
+	model.PrimaryPart = hub
+
+	local inner = Instance.new("Part")
+	inner.Name = "BubbleCore"
+	inner.Shape = Enum.PartType.Ball
+	inner.Size = size * 0.62
+	inner.Material = Enum.Material.Glass
+	inner.Color = innerColor
+	inner.Transparency = 0.42
+	inner.Reflectance = 0.35
+	inner.CFrame = hub.CFrame
+	inner.Parent = model
+	weldAccessory(hub, inner)
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "BubbleRim"
+	highlight.Adornee = model
+	highlight.FillColor = gold
+	highlight.FillTransparency = 0.82
+	highlight.OutlineColor = gold:Lerp(Color3.fromRGB(255, 255, 220), 0.35)
+	highlight.OutlineTransparency = 0.05
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.Parent = model
+
+	model:SetAttribute("ProjectileKind", "Bubble")
+	hub:SetAttribute("ProjectileKind", "Bubble")
+	return model, hub
+end
+
+local function applyBarrageStreak(model: Model, hub: BasePart)
+	model:SetAttribute("BubbleBarrage", true)
+	hub:SetAttribute("BubbleBarrage", true)
+
+	local gold = VfxConfig.BUBBLE_BARRAGE_STREAK_COLOR
+	local tail = VfxConfig.BUBBLE_BARRAGE_STREAK_COLOR_TAIL
+	local att0 = Instance.new("Attachment")
+	att0.Name = "BarrageStreakA"
+	att0.Position = Vector3.new(0, 0.4, 0)
+	att0.Parent = hub
+	local att1 = Instance.new("Attachment")
+	att1.Name = "BarrageStreakB"
+	att1.Position = Vector3.new(0, -0.4, 0)
+	att1.Parent = hub
+	local trail = Instance.new("Trail")
+	trail.Name = "BarrageStreak"
+	trail.Attachment0 = att0
+	trail.Attachment1 = att1
+	trail.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, gold),
+		ColorSequenceKeypoint.new(1, tail),
+	})
+	trail.Lifetime = VfxConfig.BUBBLE_BARRAGE_STREAK_LIFETIME
+	trail.WidthScale = NumberSequence.new(VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH)
+	trail.LightEmission = 1
+	trail.Transparency = NumberSequence.new(0.05, 1)
+	trail.FaceCamera = true
+	trail.MinLength = 0.5
+	trail.MaxLength = 36
+	trail.Parent = hub
 end
 
 local function destroyProjectile(projectile: ActiveProjectile)
@@ -455,19 +571,30 @@ function Projectile.launch(
 		part = hub
 		arrowModel.Parent = folder
 	elseif kind == "Bubble" then
-		part = createBubblePart()
-		part.Parent = folder
+		local isSeed = spec.targetKind == "Split"
+		local bubbleModel, hub = createBubbleModel(isSeed)
+		model = bubbleModel
+		part = hub
+		if spec.streak then
+			applyBarrageStreak(bubbleModel, hub)
+		end
+		bubbleModel.Parent = folder
 	else
 		part = createBoltPart()
 		part.Parent = folder
 	end
 
 	setWorldPosition(part, spec.plotModel, spec.row, spec.startColumn, worldY)
-	local held = applyHeldZ(part, worldY, spec.worldZ)
+	if spec.originWorld then
+		part.CFrame = CFrame.new(spec.originWorld)
+	end
+	local held = applyHeldZ(part, worldY, spec.worldZ or (if spec.originWorld then spec.originWorld.Z else nil))
 	if model then
 		local dir = spec.columnDirection or 1
 		if kind == "Arrow" then
 			part.CFrame = arrowFlightCFrame(held, dir)
+		elseif kind == "Bubble" then
+			part.CFrame = CFrame.new(if spec.originWorld then spec.originWorld else held)
 		else
 			part.CFrame = shurikenFlightCFrame(held, 0)
 		end
@@ -484,6 +611,9 @@ function Projectile.launch(
 		spinRadians = 0,
 		worldY = worldY,
 		worldZ = spec.worldZ,
+		zStart = if spec.originWorld then spec.originWorld.Z else nil,
+		zEnd = spec.worldZEnd,
+		zLerpColumns = spec.zLerpColumns,
 	}
 	return id
 end
@@ -496,6 +626,8 @@ function Projectile.tick(
 )
 	for id, projectile in active do
 		local liveColumn = if projectile.spec.targetKind == "Grave"
+			or projectile.spec.targetKind == "LaneEnd"
+			or projectile.spec.targetKind == "Split"
 			then projectile.spec.targetColumn
 			else getColumn(projectile.spec.targetInstanceId, projectile.spec.targetKind)
 		if not liveColumn then
@@ -514,16 +646,28 @@ function Projectile.tick(
 			projectile.worldY
 		)
 
-		local held = applyHeldZ(projectile.part, projectile.worldY, projectile.worldZ)
+		local travelZ = projectile.worldZ
+		local zStart = projectile.zStart
+		local zEnd = projectile.zEnd
+		local zLerp = projectile.zLerpColumns
+		if type(zStart) == "number" and type(zEnd) == "number" and type(zLerp) == "number" and zLerp > 0 then
+			local traveled = math.abs(projectile.column - projectile.spec.startColumn)
+			local alpha = math.clamp(traveled / zLerp, 0, 1)
+			alpha = alpha * alpha * (3 - 2 * alpha)
+			travelZ = zStart + (zEnd - zStart) * alpha
+		end
+		local held = applyHeldZ(projectile.part, projectile.worldY, travelZ)
 		local kind = projectile.spec.kind or "Knife"
 		if projectile.model then
 			if kind == "Arrow" then
 				projectile.part.CFrame = arrowFlightCFrame(held, dir)
+			elseif kind == "Bubble" then
+				projectile.part.CFrame = CFrame.new(held)
 			else
 				projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
 				projectile.part.CFrame = shurikenFlightCFrame(held, projectile.spinRadians)
 			end
-		elseif projectile.worldZ ~= nil then
+		elseif travelZ ~= nil then
 			projectile.part.CFrame = CFrame.new(held)
 		end
 
