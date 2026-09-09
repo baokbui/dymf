@@ -3,6 +3,7 @@
 	MagnetService
 	Server-owned magnet ability. Client sends ActivateMagnet; this service
 	validates cooldown / plot / active day, then ticks CoinService pulls.
+	Cooldown pauses when the day ends and resumes on Start Day.
 ]]
 
 local Players = game:GetService("Players")
@@ -22,6 +23,8 @@ local log = Logger.new(MagnetService.Name)
 type Runtime = {
 	activeUntil: number,
 	readyAt: number,
+	-- Remaining cooldown seconds while the day is over. 0 = not paused.
+	pausedRemaining: number,
 }
 
 local runtimes: { [number]: Runtime } = {}
@@ -38,6 +41,7 @@ local function getRuntime(userId: number): Runtime
 	runtime = {
 		activeUntil = 0,
 		readyAt = 0,
+		pausedRemaining = 0,
 	}
 	runtimes[userId] = runtime
 	return runtime
@@ -49,6 +53,7 @@ local function payload(player: Player, runtime: Runtime): { [string]: number }
 		level = ProgressService.getMagnetLevel(player),
 		activeUntil = runtime.activeUntil,
 		readyAt = runtime.readyAt,
+		pausedRemaining = runtime.pausedRemaining,
 	}
 end
 
@@ -74,6 +79,9 @@ local function onActivate(player: Player)
 
 	local clock = now()
 	local runtime = getRuntime(player.UserId)
+	if runtime.pausedRemaining > 0 then
+		return
+	end
 	if clock < runtime.activeUntil or clock < runtime.readyAt then
 		return
 	end
@@ -87,6 +95,9 @@ local function onActivate(player: Player)
 end
 
 local function tickPlayer(player: Player, runtime: Runtime)
+	if runtime.pausedRemaining > 0 then
+		return
+	end
 	local clock = now()
 	if clock >= runtime.activeUntil then
 		return
@@ -112,6 +123,35 @@ local function tickPlayer(player: Player, runtime: Runtime)
 
 	local CoinService = require(script.Parent.CoinService)
 	CoinService.pullAdjacentCoins(player, origin)
+end
+
+function MagnetService.pauseCooldown(player: Player)
+	local runtime = getRuntime(player.UserId)
+	if runtime.pausedRemaining > 0 then
+		return
+	end
+	local clock = now()
+	if clock < runtime.activeUntil then
+		-- Day ended mid-pull: drop the active window, keep the post-use cooldown.
+		runtime.pausedRemaining = math.max(0, runtime.readyAt - runtime.activeUntil)
+	elseif clock < runtime.readyAt then
+		runtime.pausedRemaining = runtime.readyAt - clock
+	else
+		return
+	end
+	runtime.activeUntil = 0
+	runtime.readyAt = 0
+	broadcast(player)
+end
+
+function MagnetService.resumeCooldown(player: Player)
+	local runtime = getRuntime(player.UserId)
+	if runtime.pausedRemaining <= 0 then
+		return
+	end
+	runtime.readyAt = now() + runtime.pausedRemaining
+	runtime.pausedRemaining = 0
+	broadcast(player)
 end
 
 function MagnetService.init()

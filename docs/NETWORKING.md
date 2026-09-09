@@ -58,8 +58,8 @@ Remotes module. That is the only required step.
 | `StorePurchaseSucceeded` | server → client | ✅ M18 | Authoritative spend (`cost`); client kaching + brains delta |
 | `StorePurchaseFailed` | server → client | ✅ M18 | Rejected buy (broke / owned / max) |
 | `EvolveBrainrot`   | client → server | ✅ M19 | Claim an evolution (`brainrotId`, `rarity`); server checks level, previous tier, brains |
-| `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown |
-| `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt }` (`GetServerTimeNow`) |
+| `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown (rejects while paused) |
+| `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt, pausedRemaining }` (`GetServerTimeNow`; remaining seconds frozen between days) |
 
 ### RemoteFunctions
 
@@ -69,7 +69,7 @@ Remotes module. That is the only required step.
 
 `RequestState` returns `{ coins, level, profile, plantCooldowns, magnet }` — handled by `LevelService.start()`
 (`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI;
-`magnet` is `{ level, activeUntil, readyAt }`).
+`magnet` is `{ level, activeUntil, readyAt, pausedRemaining }`).
 using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClientState`.
 
 ---

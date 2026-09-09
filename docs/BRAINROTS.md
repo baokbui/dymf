@@ -161,9 +161,9 @@ is economy + melee + wall only, matched against the Day 1–4 Zombie-only ramp
 time (`ProgressConfig.UNLOCK_SCHEDULE`, granted server-side in
 `LevelService.onVictory` → `ProgressService.grantUnlockForLevel`), auto-equipped
 when there's an open loadout slot, and shown via a center-screen
-`UnlockPopup` (client, display-only). The Day 1 starter trio also gets the
-same popup the first time the player reaches Day 1
-(`ProgressConfig.BRAINROT_INTRO_SCHEDULE`):
+`UnlockPopup` (client, display-only). Day 1 starters do **not** get an intro
+popup (they are already equipped). Reach-unlock units use
+`ProgressConfig.BRAINROT_INTRO_SCHEDULE`:
 
 | Clear Day | Unlocks |
 | --------- | ------- |

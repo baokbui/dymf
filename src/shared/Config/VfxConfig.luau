@@ -77,15 +77,19 @@ local VfxConfig = {
 	EXPLOSION_COLOR = Color3.fromRGB(255, 170, 60),
 	COIN_COLOR = Color3.fromRGB(255, 215, 70),
 	PROJECTILE_TRAIL_COLOR = Color3.fromRGB(230, 230, 255),
-	BUBBLE_PROJECTILE_COLOR = Color3.fromRGB(255, 196, 64),
-	BUBBLE_PROJECTILE_INNER_COLOR = Color3.fromRGB(255, 236, 170),
-	BUBBLE_PROJECTILE_GLOW_BRIGHTNESS = 1.1,
-	BUBBLE_PROJECTILE_GLOW_RANGE = 9,
-	-- Bubble Barrage only: bright gold light-streak behind the seed / split bubbles.
-	BUBBLE_BARRAGE_STREAK_COLOR = Color3.fromRGB(255, 236, 140),
-	BUBBLE_BARRAGE_STREAK_COLOR_TAIL = Color3.fromRGB(255, 170, 40),
+	-- BubbleTrap: cyan soap sphere (no trail). Barrage uses the gold set below.
+	BUBBLE_PROJECTILE_COLOR = Color3.fromRGB(170, 230, 255),
+	BUBBLE_PROJECTILE_INNER_COLOR = Color3.fromRGB(230, 250, 255),
+	BUBBLE_PROJECTILE_GLOW_BRIGHTNESS = 0.85,
+	BUBBLE_PROJECTILE_GLOW_RANGE = 7,
+	-- Bubble Barrage seed + 5 lane bubbles: gold body and gold light-streaks.
+	BUBBLE_BARRAGE_COLOR = Color3.fromRGB(255, 196, 64),
+	BUBBLE_BARRAGE_INNER_COLOR = Color3.fromRGB(255, 236, 170),
+	BUBBLE_BARRAGE_STREAK_COLOR = Color3.fromRGB(255, 196, 48),
+	BUBBLE_BARRAGE_STREAK_COLOR_TAIL = Color3.fromRGB(255, 140, 20),
 	BUBBLE_BARRAGE_STREAK_LIFETIME = 0.4,
 	BUBBLE_BARRAGE_STREAK_WIDTH = 0.9,
+	BUBBLE_BARRAGE_STREAK_LIGHT_EMISSION = 0.35,
 
 	-- Duke Vampire's Terrify scream: curved red soundwave lines scaled to the
 	-- lawn tile size so they visibly span ~3 rows and several columns.

@@ -203,10 +203,10 @@ Introduction cadence:
 - The first time a player **reaches** an intro day (or skips ahead via Day
   Select), `LevelService` queues **MonsterIntroPopup**s for every
   `MONSTER_INTRO_SCHEDULE` entry with `day` ≤ current that has not been
-  shown — Zombie on Day 1, then Goblin / bosses / Skeleton / desert units as
+  shown — Goblin from Day 5, then bosses / Skeleton / desert units as
   listed in `ProgressConfig`. Same idea as Brainrot intros, persisted on
-  `introducedMonsters`. Starter Brainrots use `BRAINROT_INTRO_SCHEDULE` on
-  Day 1 (`introducedBrainrots`).
+  `introducedMonsters`. **Zombie** has no intro (Day 1 already uses them).
+  Girafa / Patapim use `BRAINROT_INTRO_SCHEDULE` on reach (`introducedBrainrots`).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**

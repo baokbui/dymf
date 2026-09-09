@@ -744,7 +744,10 @@ function VfxUtil.decorateProjectile(part: BasePart)
 			then pierceSequence
 			elseif barrage then barrageSequence
 			else ColorSequence.new(trailColor)
-		trail.LightEmission = if piercing then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION else 1
+		trail.LightEmission = if piercing
+			then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION
+			elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_LIGHT_EMISSION
+			else 1
 		trail.FaceCamera = true
 		trail.Transparency = NumberSequence.new(0, 1)
 		trail.Parent = part
@@ -762,7 +765,10 @@ function VfxUtil.decorateProjectile(part: BasePart)
 			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
 			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
 			else VfxConfig.PROJECTILE_GLOW_RANGE
-		glow.Color = if isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR else trailColor
+		glow.Color = if barrage
+			then VfxConfig.BUBBLE_BARRAGE_COLOR
+			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR
+			else trailColor
 		glow.Parent = part
 	end
 end
@@ -1237,6 +1243,10 @@ local function spawnMagnetCircle(root: BasePart, token: number)
 		startTrans = startTrans,
 	})
 	ensureMagnetHeartbeat()
+end
+
+function VfxUtil.stopMagnetWaves()
+	magnetWaveToken += 1
 end
 
 --[[

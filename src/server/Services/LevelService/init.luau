@@ -156,6 +156,8 @@ local function beginPreparation(player: Player, state: PlayerState)
 	state.bigWaveWarning = false
 	queueIntros(player, state)
 	applyWeatherRules(player, state)
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.pauseCooldown(player)
 	setPhase(player, state, PHASE.Preparation)
 end
 
@@ -222,6 +224,8 @@ local function onVictory(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.phase = PHASE.Victory
 	state.bigWaveWarning = false
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.pauseCooldown(player)
 	local nextDef = getDefinition(state.currentLevel)
 	Remotes.getEvent("LevelStateChanged"):FireClient(player, {
 		phase = PHASE.Victory,
@@ -271,6 +275,8 @@ local function onDefeat(player: Player, state: PlayerState)
 	local leftoverBrains = grantLeftoverCoinBrains(player)
 	CoinService.applyDayPurse(player, failedLevel)
 	applyWeatherRules(player, state)
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.pauseCooldown(player)
 	setPhase(player, state, PHASE.Defeat)
 	if leftoverBrains > 0 then
 		log:info(
@@ -357,6 +363,8 @@ end
 local function beginCountdown(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.countdownEnd = os.clock() + LevelConfig.COUNTDOWN_TIME
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.resumeCooldown(player)
 	setPhase(player, state, PHASE.Countdown)
 end
 
@@ -370,6 +378,8 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 
 	state.countdownEnd = 0
 	state.activeRun = LevelRun.new(definition)
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.resumeCooldown(player)
 	setPhase(player, state, PHASE.Active)
 
 	-- Fresh seed-packet recharges each Start Day (PvZ-style).

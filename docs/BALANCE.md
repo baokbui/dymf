@@ -157,6 +157,7 @@ couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 
 Magnet starts at **level 1** (everyone has it). Four paid ranks (**30 / 55 /
 90 / 150** brains) cut cooldown **90s → 20s** at max. Duration stays **5s**.
+Cooldown remaining when a day ends is frozen until the next Start Day.
 
 ---
 

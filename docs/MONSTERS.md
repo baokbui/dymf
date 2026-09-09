@@ -353,8 +353,8 @@ silently never render.
 The roster is introduced **one monster at a time** through campaign levels
 (spawn counts assume **lawn carry-over** after victory — see `LEVELS.md`).
 Each campaign type also gets a **MonsterIntroPopup** the first time the
-player reaches its intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`,
-including **Zombie** on Day 1).
+player reaches its intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`).
+**Zombie** has no intro popup.
 
 - Levels 1–4: same `Zombie` profile, with rising counts/pacing (Day 1 empty board).
 - **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).

@@ -558,10 +558,10 @@ local function createBoltPart(): BasePart
 	return part
 end
 
-local function createBubbleModel(isSeed: boolean): (Model, BasePart)
+local function createBubbleModel(isSeed: boolean, isBarrage: boolean): (Model, BasePart)
 	local size = if isSeed then CombatConfig.BUBBLE_PROJECTILE_SEED_SIZE else CombatConfig.BUBBLE_PROJECTILE_SIZE
-	local gold = VfxConfig.BUBBLE_PROJECTILE_COLOR
-	local innerColor = VfxConfig.BUBBLE_PROJECTILE_INNER_COLOR
+	local shell = if isBarrage then VfxConfig.BUBBLE_BARRAGE_COLOR else VfxConfig.BUBBLE_PROJECTILE_COLOR
+	local innerColor = if isBarrage then VfxConfig.BUBBLE_BARRAGE_INNER_COLOR else VfxConfig.BUBBLE_PROJECTILE_INNER_COLOR
 
 	local model = Instance.new("Model")
 	model.Name = if isSeed then "BubbleSeed" else "BubbleProjectile"
@@ -571,7 +571,7 @@ local function createBubbleModel(isSeed: boolean): (Model, BasePart)
 	hub.Shape = Enum.PartType.Ball
 	hub.Size = size
 	hub.Material = Enum.Material.ForceField
-	hub.Color = gold
+	hub.Color = shell
 	hub.Transparency = CombatConfig.BUBBLE_PROJECTILE_TRANSPARENCY
 	hub.Parent = model
 	hardenRoot(hub)
@@ -592,9 +592,9 @@ local function createBubbleModel(isSeed: boolean): (Model, BasePart)
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "BubbleRim"
 	highlight.Adornee = model
-	highlight.FillColor = gold
+	highlight.FillColor = shell
 	highlight.FillTransparency = 0.82
-	highlight.OutlineColor = gold:Lerp(Color3.fromRGB(255, 255, 220), 0.35)
+	highlight.OutlineColor = shell:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
 	highlight.OutlineTransparency = 0.05
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model
@@ -628,7 +628,7 @@ local function applyBarrageStreak(model: Model, hub: BasePart)
 	})
 	trail.Lifetime = VfxConfig.BUBBLE_BARRAGE_STREAK_LIFETIME
 	trail.WidthScale = NumberSequence.new(VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH)
-	trail.LightEmission = 1
+	trail.LightEmission = VfxConfig.BUBBLE_BARRAGE_STREAK_LIGHT_EMISSION
 	trail.Transparency = NumberSequence.new(0.05, 1)
 	trail.FaceCamera = true
 	trail.MinLength = 0.5
@@ -692,10 +692,11 @@ function Projectile.launch(
 		arrowModel.Parent = folder
 	elseif kind == "Bubble" then
 		local isSeed = spec.targetKind == "Split"
-		local bubbleModel, hub = createBubbleModel(isSeed)
+		local isBarrage = spec.streak == true
+		local bubbleModel, hub = createBubbleModel(isSeed, isBarrage)
 		model = bubbleModel
 		part = hub
-		if spec.streak then
+		if isBarrage then
 			applyBarrageStreak(bubbleModel, hub)
 		end
 		bubbleModel.Parent = folder

@@ -693,9 +693,9 @@ function ProgressService.consumeReachUnlocksForDay(player: Player, dayNumber: nu
 	end
 end
 
--- Reach-day Brainrot intros (starters + reach-unlocks). Catch-up: every BRAINROT_INTRO_SCHEDULE
+-- Reach-day Brainrot intros (reach-unlocks). Catch-up: every BRAINROT_INTRO_SCHEDULE
 -- entry with day <= dayNumber not yet persisted. Unlock-schedule units are
--- marked introduced in grantUnlockForLevel instead.
+-- marked introduced in grantUnlockForLevel instead. Day 1 starters are not scheduled.
 function ProgressService.consumeBrainrotIntrosForDay(player: Player, dayNumber: number): { string }
 	local profile = ensureProfile(player)
 	if not profile.hydrated then

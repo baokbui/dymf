@@ -247,7 +247,14 @@ local function applyMagnetState(state: { [string]: any }?)
 	if magnetHud then
 		magnetHud:applyState(state)
 	end
-	if type(state) ~= "table" or type(state.activeUntil) ~= "number" then
+	if type(state) ~= "table" then
+		return
+	end
+	if type(state.pausedRemaining) == "number" and state.pausedRemaining > 0 then
+		VfxUtil.stopMagnetWaves()
+		return
+	end
+	if type(state.activeUntil) ~= "number" then
 		return
 	end
 	local untilTime = state.activeUntil

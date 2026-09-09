@@ -30,7 +30,7 @@ local CombatConfig = {
 	-- Flat disc needs less clearance than the old cartwheeling sword.
 	SHURIKEN_PROJECTILE_HEIGHT_OFFSET = 3.2,
 
-	-- Tralalero bubble projectile (gold soap bubble; no trail streaks).
+	-- Tralalero bubble projectile (cyan soap bubble; no trail streaks).
 	BUBBLE_PROJECTILE_SIZE = Vector3.new(2.6, 2.6, 2.6),
 	BUBBLE_PROJECTILE_SEED_SIZE = Vector3.new(3.5, 3.5, 3.5),
 	BUBBLE_PROJECTILE_TRANSPARENCY = 0.22,

@@ -2,6 +2,7 @@
 --[[
 	BubbleBarrage
 	One gold bubble from the mouth that splits into one trap bubble per lawn row.
+	Each lane bubble carries a gold light-streak trail.
 ]]
 
 local CombatService = require(script.Parent.Parent.Parent.CombatService)

@@ -111,12 +111,10 @@ local ProgressConfig = {
 	},
 
 	-- Reach-day intros for Brainrots that never go through UNLOCK_SCHEDULE
-	-- (Day 1 starters + reach-unlocks). Catch-up: any entry with `day` <=
-	-- current day that is not yet in SaveData.introducedBrainrots.
+	-- (reach-unlocks). Catch-up: any entry with `day` <= current day that is
+	-- not yet in SaveData.introducedBrainrots. Day 1 starters are already on
+	-- the board — no UnlockPopup.
 	BRAINROT_INTRO_SCHEDULE = {
-		{ day = 1, brainrotId = "BallerinaCappucina" },
-		{ day = 1, brainrotId = "TungTungSahur" },
-		{ day = 1, brainrotId = "ChimpanziniBananini" },
 		{ day = 25, brainrotId = "GiraffaCeleste" },
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
 	},
@@ -126,8 +124,8 @@ local ProgressConfig = {
 	-- popup. Catch-up grants every schedule entry with `day` <= current that
 	-- is not yet in `introducedMonsters` (Day Select / Studio FORCE_DAY).
 	-- Campaign units only — Necromancer / GoblinKing are not in Days 1–50.
+	-- Zombie is the Day 1 grunt; no intro popup (the player already sees them).
 	MONSTER_INTRO_SCHEDULE = {
-		{ day = 1, monsterId = "Zombie" },
 		{ day = 5, monsterId = "Goblin" },
 		{ day = 10, monsterId = "GoblinElite" },
 		{ day = 15, monsterId = "Vampire" },

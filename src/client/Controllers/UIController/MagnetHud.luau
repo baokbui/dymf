@@ -29,6 +29,7 @@ export type MagnetHud = typeof(setmetatable(
 		level: number,
 		activeUntil: number,
 		readyAt: number,
+		pausedRemaining: number,
 		onActivate: (() -> ())?,
 	},
 	MagnetHud
@@ -123,6 +124,7 @@ function MagnetHud.new(parent: Frame): MagnetHud
 		level = MagnetConfig.DEFAULT_LEVEL,
 		activeUntil = 0,
 		readyAt = 0,
+		pausedRemaining = 0,
 		onActivate = nil,
 	}, MagnetHud)
 
@@ -162,11 +164,30 @@ function MagnetHud.applyState(self: MagnetHud, state: { [string]: any }?)
 	if type(state.readyAt) == "number" then
 		self.readyAt = state.readyAt
 	end
+	if type(state.pausedRemaining) == "number" then
+		self.pausedRemaining = math.max(0, state.pausedRemaining)
+	end
 end
 
 function MagnetHud.isReady(self: MagnetHud): boolean
+	if self.pausedRemaining > 0 then
+		return false
+	end
 	local clock = workspace:GetServerTimeNow()
 	return clock >= self.activeUntil and clock >= self.readyAt
+end
+
+local function showCooldown(self: MagnetHud, remaining: number)
+	local window = MagnetConfig.cooldownFor(self.level)
+	local alpha = 0
+	if window > 0 then
+		alpha = math.clamp(remaining / window, 0, 1)
+	end
+	self.overlay.Visible = true
+	self.overlay.Size = UDim2.fromScale(1, alpha)
+	self.timerLabel.Visible = true
+	self.timerLabel.Text = MagnetConfig.formatSeconds(remaining)
+	self.timerLabel.TextColor3 = UITheme.TITLE
 end
 
 function MagnetHud.tick(self: MagnetHud)
@@ -179,18 +200,12 @@ function MagnetHud.tick(self: MagnetHud)
 		self.timerLabel.TextColor3 = Color3.fromRGB(120, 255, 140)
 		return
 	end
+	if self.pausedRemaining > 0 then
+		showCooldown(self, self.pausedRemaining)
+		return
+	end
 	if clock < self.readyAt then
-		local remaining = self.readyAt - clock
-		local window = MagnetConfig.cooldownFor(self.level)
-		local alpha = 0
-		if window > 0 then
-			alpha = math.clamp(remaining / window, 0, 1)
-		end
-		self.overlay.Visible = true
-		self.overlay.Size = UDim2.fromScale(1, alpha)
-		self.timerLabel.Visible = true
-		self.timerLabel.Text = MagnetConfig.formatSeconds(remaining)
-		self.timerLabel.TextColor3 = UITheme.TITLE
+		showCooldown(self, self.readyAt - clock)
 		return
 	end
 	self.overlay.Visible = false

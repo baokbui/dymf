@@ -118,6 +118,10 @@ hardcode a second palette in new UI.
   Press **1** or click the chip during an **Active** day to pull landed coins
   from the **8 tiles** around the player (left / right / up / down / diagonal)
   for **5s**, then cooldown (**90s** at level 1 → **20s** at level 5, linear).
+  If the day ends while the magnet is on cooldown (or still in its 5s window),
+  the remaining cooldown **pauses** — the HUD timer does not tick during
+  Victory / Defeat / Preparation — and **resumes** when the player starts the
+  next day (Countdown or Active). Rejoin still drops in-memory cooldown.
   While active, translucent purple circular soundwaves pulse around the player
   (rings spawn at the outer pull range and collapse inward; `VfxUtil.playMagnetWaves`). Server owns cooldown (`ActivateMagnet` /
   `MagnetStateChanged`). Upgrade ranks
@@ -170,15 +174,15 @@ hardcode a second palette in new UI.
   rarity with shine on Epic+, `Lv. N`) via `BrainrotController/Nameplate`.
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
   a Brainrot is introduced (portrait, name, stat summary, ability blurb,
-  dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) on first
-  **reach** of Day 1 (`ProgressConfig.BRAINROT_INTRO_SCHEDULE`). The other
-  four after first **clear** of their unlock day (`UNLOCK_SCHEDULE` →
-  `reward.unlockedBrainrotId`). Queued so several intros play one after
+  dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) has **no**
+  intro. The other four after first **clear** of their unlock day
+  (`UNLOCK_SCHEDULE` → `reward.unlockedBrainrotId`); Girafa / Patapim on
+  **reach** (`BRAINROT_INTRO_SCHEDULE`). Queued so several intros play one after
   another. Server-decided; UI is display-only.
 - **MonsterIntroPopup** ✅ — same cartoon modal for every campaign monster /
   boss the first time the player **reaches** its intro day (or catch-up if
-  they skip ahead). `ProgressConfig.MONSTER_INTRO_SCHEDULE`: Zombie 1, Goblin
-  5, Goblin Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
+  they skip ahead). `ProgressConfig.MONSTER_INTRO_SCHEDULE`: Goblin 5, Goblin
+  Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
   Skeleton 31, Werewolf 35, Small Mummy 41, Scorpion 45, Pharaoh Mummy 50.
   Driven by `introducedMonsterIds` on `LevelStateChanged`; portrait via
   `MonsterPreview`, stats/abilities via `MonsterInfo`. Persisted in
