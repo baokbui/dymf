@@ -29,6 +29,7 @@ export type ImpactSpec = {
 	statusVisual: string?,
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
+	sourceMonsterId: string?,
 	pierceCount: number?,
 	-- Bubble Barrage: this projectile is the seed; on Split, spawn one child per row.
 	splitBarrage: {

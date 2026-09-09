@@ -101,7 +101,7 @@ function Level.new(parent: Frame): LevelPanel
 	progressBackground.BorderSizePixel = 0
 	progressBackground.Visible = false
 	progressBackground.Parent = parent
-	UITheme.styleCorner(progressBackground, 8)
+	UITheme.styleCorner(progressBackground, 7)
 	UITheme.applyStroke(progressBackground, UITheme.STROKE_CARD)
 
 	local progressFill = Instance.new("Frame")
@@ -110,7 +110,7 @@ function Level.new(parent: Frame): LevelPanel
 	progressFill.BackgroundColor3 = UITheme.SUCCESS
 	progressFill.BorderSizePixel = 0
 	progressFill.Parent = progressBackground
-	UITheme.styleCorner(progressFill, 8)
+	UITheme.styleCorner(progressFill, 7)
 
 	local startButton = Instance.new("TextButton")
 	startButton.Name = "StartButton"

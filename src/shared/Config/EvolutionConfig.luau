@@ -30,7 +30,7 @@ local EvolutionConfig = {
 	-- Support jobs (ability id, not unit name). Smaller than a last-hit kill.
 	COIN_XP = 5, -- GenerateCoins: per coin actually dropped
 	SOAK_XP = 4, -- Wall: per chew / damage tick that lands
-	FREEZE_XP = 8, -- FreezeTime: per monster frozen on that cast
+	FREEZE_XP = 20, -- FreezeTime: per monster frozen on that cast (Lirili is one-shot; no last-hit)
 	BUBBLE_XP = 8, -- BubbleTrap: per BUBBLE_XP_HITS landed attacks (not last-hit)
 	BUBBLE_XP_HITS = 2,
 	MELEE_XP = 8, -- MeleeBat: per MELEE_XP_HITS connecting hits (not last-hit)
@@ -45,6 +45,7 @@ local EvolutionConfig = {
 	-- These abilities deal damage but earn XP via HIT_JOB, not last-hit.
 	SKIP_LAST_HIT = {
 		BubbleTrap = true,
+		BubbleBarrage = true,
 		MeleeBat = true,
 	} :: { [string]: boolean },
 

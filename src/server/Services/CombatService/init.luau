@@ -28,7 +28,7 @@ local log = Logger.new(CombatService.Name)
 
 local FULL_LINE = BrainrotConfig.FULL_LINE_RANGE
 
-local brainrotDamageHandler: ((instanceId: string, hits: number) -> boolean)?
+local brainrotDamageHandler: ((instanceId: string, hits: number, sourceMonsterId: string?) -> boolean)?
 local brainrotHealHandler: ((instanceId: string, hits: number) -> ())?
 local brainrotStatusHandler: ((instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?) -> ())?
 
@@ -75,7 +75,9 @@ local function fireCombatVisual(ownerUserId: number, payload: { [string]: any })
 	Remotes.getEvent("CombatVisual"):FireClient(player, payload)
 end
 
-function CombatService.setBrainrotDamageHandler(handler: (instanceId: string, hits: number) -> boolean)
+function CombatService.setBrainrotDamageHandler(
+	handler: (instanceId: string, hits: number, sourceMonsterId: string?) -> boolean
+)
 	brainrotDamageHandler = handler
 end
 
@@ -93,9 +95,9 @@ function CombatService.setMonsterHandlers(handlers: MonsterHandlers)
 	monsterHandlers = handlers
 end
 
-function CombatService.damageBrainrot(instanceId: string, hits: number): boolean
+function CombatService.damageBrainrot(instanceId: string, hits: number, sourceMonsterId: string?): boolean
 	if brainrotDamageHandler then
-		return brainrotDamageHandler(instanceId, hits)
+		return brainrotDamageHandler(instanceId, hits, sourceMonsterId)
 	end
 	return false
 end
@@ -298,6 +300,7 @@ export type ProjectileLaunchOptions = {
 	originWorld: Vector3?,
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
+	sourceMonsterId: string?,
 	-- Extra monsters east of the first hit (100% damage each).
 	pierceCount: number?,
 	-- Bubble Barrage / Double Bubble extras after the seed splits.
@@ -366,6 +369,7 @@ function CombatService.launchProjectile(
 			statusVisual = if blockingColumn then nil else options.statusVisual,
 			sourceBrainrotId = options.sourceBrainrotId,
 			sourceInstanceId = options.sourceInstanceId,
+			sourceMonsterId = options.sourceMonsterId,
 			pierceCount = if blockingColumn then nil else pierceCount,
 		}
 	end
@@ -641,6 +645,10 @@ function CombatService.launchTowardBrainrot(
 			targetKind = "Brainrot",
 			columnDirection = -1,
 			worldZ = worldZ,
+			impact = {
+				sourceMonsterId = if options then options.sourceMonsterId else nil,
+				soundKey = if options then options.soundKey else nil,
+			},
 		},
 		worldY,
 		monsterHandlers.setProjectilePosition
@@ -1043,7 +1051,11 @@ local function onProjectileImpact(
 	end
 
 	if targetKind == "Brainrot" then
-		local killed = CombatService.damageBrainrot(instanceId, damage)
+		local killed = CombatService.damageBrainrot(
+			instanceId,
+			damage,
+			if impact then impact.sourceMonsterId else nil
+		)
 		fireCombatVisual(ownerUserId, {
 			kind = "Hit",
 			instanceId = instanceId,

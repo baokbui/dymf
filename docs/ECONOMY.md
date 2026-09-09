@@ -20,7 +20,8 @@ From `GAME_DESIGN.md`:
   Day 1 gets `STARTING_COINS` (125). Leftover **pocket** coins convert to
   brains first (`COINS_PER_LEFTOVER_BRAIN`), then the
   purse applies. Defeat uses the same conversion + day-purse rules for the
-  failed day. Victory keeps plants; coin purse does not carry between days.
+  failed day. **Rewind** then sets the retry purse to `REWIND_COINS` (200).
+  Victory keeps plants; coin purse does not carry between days.
 - Future achievements / events
 
 ---
@@ -32,6 +33,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 | Key                    | Value | Meaning                                  |
 | ---------------------- | ----- | ---------------------------------------- |
 | `STARTING_COINS`       | 125   | Day 1 opening purse only (Ballerina + Tung Tung) |
+| `REWIND_COINS`         | 200   | Game Over → Rewind retry purse (any day) |
 | `PASSIVE_DROP_INTERVAL`| 25    | Seconds between passive drops            |
 | `PASSIVE_DROP_AMOUNT`  | 25    | Coins per passive drop                   |
 | `PASSIVE_RAIN_HEIGHT`  | 42    | Studs above the tile for passive rain    |
@@ -61,7 +63,8 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 `CoinService` (server) is the **sole authority** over currency:
 
 - Holds each player's authoritative coin balance (`applyDayPurse` on join /
-  day end: Day 1 → `STARTING_COINS`, later days → 0). `CoinService` does **not**
+  day end: Day 1 → `STARTING_COINS`, later days → 0; `applyRewindPurse` after
+  Game Over). `CoinService` does **not**
   default joiners to 125 — that raced save hydrate and wrongly granted Day 1
   coins on rejoin.
 - Grants passive drops on `PASSIVE_DROP_INTERVAL` as **collectible ground
@@ -85,6 +88,7 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 | `getBalance(player) -> number`    | read a balance (placement pre-check, M4)     |
 | `resetBalance(player)`            | set balance to `STARTING_COINS` (Reset Progress) ✅ |
 | `applyDayPurse(player, level)`    | Day 1 → 125; else → 0 ✅ |
+| `applyRewindPurse(player)`        | Game Over Rewind → `REWIND_COINS` (200) ✅ |
 | `clearPlot(plotModel)`            | despawn all ground coins on a plot ✅          |
 | `addCoins(player, amount)`        | credit rewards/income                        |
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4) ✅  |
@@ -99,7 +103,8 @@ with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
 **Brains** are spent at the Progression Stores (Milestone 18): `ProgressService`
 validates `BuyStoreItem` and deducts brains. See `docs/STORE.md`. Leftover
 match coins convert to brains at victory / defeat via
-`ProgressService.brainsFromLeftoverCoins` (then `applyDayPurse`). Day Select
+`ProgressService.brainsFromLeftoverCoins` (then `applyDayPurse`). Rewind then
+applies `REWIND_COINS`. Day Select
 and leave do **not** convert.
 
 ### Implementation
@@ -116,5 +121,5 @@ onto a random tile.
 ## Persistence (see `SAVE_SYSTEM.md`)
 
 - The coin **balance** is **not** saved. Join / day end apply the day purse
-  (Day 1 → `STARTING_COINS`; later days → 0).
+  (Day 1 → `STARTING_COINS`; later days → 0). Rewind applies `REWIND_COINS`.
 - **Ground coins** (uncollected pickups) are **not** saved.

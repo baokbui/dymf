@@ -12,8 +12,8 @@
 	Brainrot XP earned during an unfinished or failed day rolls back to the
 	Start Day snapshot (committed on victory). Coin purse is STARTING_COINS
 	on Day 1 only; after later days end the purse resets to 0. Defeat restores
-	the last victory checkpoint on the same day (Game Over → Rewind). Day
-	Select wipes the lawn and the committed checkpoint.
+	the last victory checkpoint on the same day; Rewind grants REWIND_COINS.
+	Day Select wipes the lawn and the committed checkpoint.
 
 	Milestone 8.
 ]]
@@ -299,6 +299,7 @@ local function onRewindDay(player: Player)
 	if not state or state.phase ~= PHASE.Defeat then
 		return
 	end
+	CoinService.applyRewindPurse(player)
 	beginPreparation(player, state)
 	local SaveService = require(script.Parent.SaveService)
 	SaveService.saveNow(player, "rewind")
@@ -380,6 +381,8 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	state.activeRun = LevelRun.new(definition)
 	local MagnetService = require(script.Parent.MagnetService)
 	MagnetService.resumeCooldown(player)
+	local DamageMeterService = require(script.Parent.DamageMeterService)
+	DamageMeterService.reset(player)
 	setPhase(player, state, PHASE.Active)
 
 	-- Fresh seed-packet recharges each Start Day (PvZ-style).
@@ -536,6 +539,14 @@ function LevelService.applyWeatherRulesForPlayer(player: Player)
 	end
 end
 
+function LevelService.getCurrentDayForUser(userId: number): number
+	local state = states[userId]
+	if not state then
+		return 1
+	end
+	return state.currentLevel
+end
+
 function LevelService.getSaveProgress(player: Player): (number, number, number)
 	local state = states[player.UserId]
 	if not state then
@@ -640,12 +651,14 @@ function LevelService.start()
 
 	Remotes.getFunction("RequestState").OnServerInvoke = function(player: Player)
 		local MagnetService = require(script.Parent.MagnetService)
+		local DamageMeterService = require(script.Parent.DamageMeterService)
 		return {
 			coins = CoinService.getBalance(player),
 			level = LevelService.getClientState(player),
 			profile = ProgressService.getClientState(player),
 			plantCooldowns = BrainrotService.getPlantCooldowns(player),
 			magnet = MagnetService.getClientState(player),
+			damageMeter = DamageMeterService.getClientState(player),
 		}
 	end
 

@@ -84,6 +84,7 @@ Services (current):
 - SaveService
 - LevelService
 - CombatService
+- DamageMeterService
 - EnemyService
 - BrainrotService
 - CoinService
@@ -146,7 +147,7 @@ registries (`Shared.Brainrots` / `Monsters` / `Levels`).
 Examples:
 
 - Cost, health, damage, range, cooldown, attack interval
-- Coin generation / day purse (`EconomyConfig.STARTING_COINS`)
+- Coin generation / day purse (`EconomyConfig.STARTING_COINS`, `REWIND_COINS`)
 - Player walk speed (`PlayerConfig.WALK_SPEED`) and store catalogs (`ProgressConfig`)
 - Mini-store yard placement (`StoreConfig`)
 - Monster spawn column / forest march (`MonsterConfig`)
@@ -238,8 +239,9 @@ Lawn / purse (see `LEVELS.md`):
 - **Victory** — keep planted Brainrots (commit checkpoint); coins via day purse
   (Day 1 → `STARTING_COINS`; later days → 0).
 - **Defeat** — stay on the failed day; restore the **last victory checkpoint**
-  lawn; hearts refill; Game Over → **Rewind** (`RewindDay`) returns to
-  Preparation on that same day (`highestUnlocked` kept for Day Select).
+  lawn; hearts refill; leftover coins convert; day purse applies. Game Over →
+  **Rewind** (`RewindDay`) returns to Preparation on that same day with
+  `REWIND_COINS` (200) (`highestUnlocked` kept for Day Select).
 - **Day Select** — clears the lawn and the committed checkpoint; apply purse
   for the selected day.
 - **Rejoin** — restore the committed lawn (not mid-day plants). Player presses
@@ -291,7 +293,7 @@ Persist:
 
 Do NOT persist:
 
-- Coins (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse`)
+- Coins (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse`; Rewind → `REWIND_COINS`)
 - Monsters / positions
 - Projectiles
 - Ground coins

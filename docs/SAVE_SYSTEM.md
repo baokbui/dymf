@@ -27,7 +27,7 @@ Saved (player-owned progression):
 Not saved (transient / runtime):
 
 - **Coins** (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse` on
-  join / day end — never persisted as a balance)
+  join / day end; Rewind → `REWIND_COINS` — never persisted as a balance)
 - Active monsters & their positions
 - Active projectiles
 - Ground coins
@@ -150,7 +150,7 @@ On rejoin:
 | ----- | -------------- | -------------------------- | ----- | ----------------------- | ----------- |
 | Victory → next day | **Keep** (current HP) | **Commit** then save | Day 1 → 125; else **0** | Cleared | **Commit** live XP |
 | Defeat | Mid-day cleared; **restore checkpoint**; **same day** | **Unchanged** (restored to plot) | Day purse (Day 1 → 125; else **0**) | Cleared | **Restore** Start Day snapshot |
-| Rewind (`RewindDay`) | Checkpoint already on plot | Unchanged | Unchanged | — | Already restored on defeat |
+| Rewind (`RewindDay`) | Checkpoint already on plot | Unchanged | **`REWIND_COINS` (200)** | — | Already restored on defeat |
 | Day Select | Cleared | **Empty** then save | Day 1 → 125; else **0** | Cleared | Unchanged (no day in progress) |
 | Leave / Rejoin | Cleared on leave | **Checkpoint** restored | Day purse (not saved) | Cleared | Unfinished-day XP **not** kept |
 | Mid-day place / damage | Live only | Unchanged until victory | Session purse | — | Live only until victory |

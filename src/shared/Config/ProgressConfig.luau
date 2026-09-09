@@ -150,6 +150,17 @@ local ProgressConfig = {
 	STAT_BRAINS_EARNED = "brainsEarned",
 }
 
+-- First campaign day this species appears. Zombie (and any unit not on the
+-- intro popup schedule) debuts on Day 1.
+function ProgressConfig.monsterIntroDay(monsterId: string): number
+	for _, entry in ProgressConfig.MONSTER_INTRO_SCHEDULE do
+		if entry.monsterId == monsterId then
+			return entry.day
+		end
+	end
+	return 1
+end
+
 function ProgressConfig.upgradeById(upgradeId: string): any?
 	for _, entry in ProgressConfig.UPGRADE_CATALOG do
 		if entry.id == upgradeId then

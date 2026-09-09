@@ -49,6 +49,7 @@ function BubbleShot.launch(ctx, position, trapDuration: number): boolean
 		statusDuration = trapDuration,
 		statusVisual = "Bubble",
 		sourceInstanceId = ctx.instanceId,
+		sourceBrainrotId = ctx.definition.id,
 		originWorld = BubbleShot.mouthWorld(ctx.model),
 	}
 

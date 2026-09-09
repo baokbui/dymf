@@ -17,6 +17,7 @@ API:
 ```lua
 local Monsters = require(ReplicatedStorage.Shared.Monsters)
 Monsters.get(id)     -- MonsterDefinition?  (nil if unknown)
+Monsters.scaledForDay(id, dayNumber)  -- spawn HP aged; bosses / damage unchanged
 Monsters.exists(id)  -- boolean
 Monsters.getAll()    -- { [id]: MonsterDefinition }  (do not mutate)
 ```
@@ -34,9 +35,9 @@ From `Shared.Types.MonsterDefinition`:
 | ------------------------- | ----------------------- | ---------------------------------------------------------------------- |
 | `id`                      | string                  | Unique key                                                             |
 | `name`                    | string                  | Display name                                                           |
-| `health`                  | number                  | Starting HP                                                            |
-| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower)            |
-| `damage`                  | number                  | Damage per attack (0 when abilities handle damage)                     |
+| `health`                  | number                  | Starting HP (authored **base**; non-boss spawn may scale — see Campaign aging) |
+| `secondsPerGrid`          | number                  | Seconds to move one tile toward the house (higher = slower; does **not** scale) |
+| `damage`                  | number                  | Damage per attack (0 when abilities handle damage; does **not** scale) |
 | `attackInterval`          | number                  | Seconds between attacks while chewing a tile                           |
 | `isBoss`                  | boolean?                | Boss flag (larger model, authored into levels)                         |
 | `abilities`               | `{ string }?`           | Ability handler ids (`EnemyService/Abilities`)                         |
@@ -227,7 +228,7 @@ MonsterBehavior (movement + attack tick)
 ### Graves (Day 31+)
 
 `GraveService` + `GraveConfig` + optional `LevelDefinition.graves`. At
-Start Day, **5–8** graves occupy random **fog** tiles (`occupied`, no Brainrot id —
+Start Day, **3–5** graves occupy random **fog** tiles (`occupied`, no Brainrot id —
 plants blocked, monsters phase through) and **rise from under the tile**
 (`GraveConfig.RISE_DURATION`). While the day is Active **and authored waves
 are still running**, each grave repeatedly spawns a **Zombie** or **Skeleton**
@@ -356,7 +357,15 @@ Each campaign type also gets a **MonsterIntroPopup** the first time the
 player reaches its intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`).
 **Zombie** has no intro popup.
 
+**Campaign aging:** registry HP is the intro-day base. At spawn,
+`Monsters.scaledForDay` applies **+30% HP per 10 inclusive days** since that
+species’ intro (`ProgressConfig.monsterIntroDay`; Zombie = Day 1) to
+**non-bosses only**. Damage, speed, and attack interval stay authored. Bosses
+keep authored stats when they recur. Day 40 Zombies are 2.2× HP. Graves and
+summoned minions use the same plot day.
+
 - Levels 1–4: same `Zombie` profile, with rising counts/pacing (Day 1 empty board).
+  Authored HP stays the Day 1 base until Day 10 (+30% campaign aging).
 - **Level 5:** first new non-boss — `Goblin` (faster grunt, same HP tier as Zombie).
 - Levels 6–9: mix `Zombie` + `Goblin` only; difficulty ramps for a growing defense.
 - **Level 10:** first boss — `GoblinElite` / Goblin Elite (heavy melee counterpart to the Goblin line).

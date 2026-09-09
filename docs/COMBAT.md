@@ -13,9 +13,15 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 | System | Role |
 | ------ | ---- |
 | `CombatService` | Damage, healing, death routing, target acquisition, projectiles, status effects |
-| `EnemyService` | Monster runtime state, movement, status fields, death cleanup |
+| `DamageMeterService` | Per-day HP ranks (Brainrot vs Monster tabs); reset on Start Day |
+| `EnemyService` | Monster runtime state, movement, status fields, death cleanup. Spawn copies HP from `Monsters.scaledForDay` (non-boss campaign aging). |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
 | `CombatController` (client) | Hit/death/explosion VFX, projectile trails (`CombatVisual` + plot watcher) |
+
+**Damage meter** ✅ — `DamageMeterService` totals HP per Brainrot / monster
+registry id on the plot owner's lawn. Broadcasts `DamageMeterUpdated` (coalesced).
+Resets when the day goes **Active**. Status DoT without a source species is not
+ranked. Client HUD is display-only.
 
 ---
 
@@ -202,8 +208,10 @@ values remain in `CombatConfig`.
 
 1. `CombatService.damageMonster` / `damageBrainrot` / `healBrainrot` routes to the owning service.
    Brainrot hits pass a `sourceBrainrotId` so the monster records last-hit
-   species. Status DoT and `BubbleTrap` bubbles omit that source, so they keep
-   the previous last hit.
+   species (and `DamageMeterService` ranks HP). Status DoT omits that source.
+   `BubbleTrap` / `BubbleBarrage` still pass a source for the damage meter;
+   last-hit kill XP stays skipped via `SKIP_LAST_HIT` (landed-hit `HIT_JOB`
+   instead).
 2. On monster death, `CombatService.notifyMonsterDeath` pushes `CombatVisual`
    `{ kind = "Death", instanceId, monsterId, row, column }` to the plot owner,
    grants Brainrot XP (`ProgressService.grantKillXp` — last-hit species for

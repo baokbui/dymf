@@ -7,6 +7,8 @@
 
 local EconomyConfig = {
 	STARTING_COINS = 125, -- Ballerina 50 + Tung Tung 75
+	-- Game Over → Rewind: retry purse on the failed day (any day number).
+	REWIND_COINS = 200,
 
 	-- Passive coin drops during Active phase only.
 	PASSIVE_DROP_INTERVAL = 25, -- seconds
@@ -24,6 +26,7 @@ local EconomyConfig = {
 
 	-- Reserved: future bonus reward amount. Day purse: Day 1 = STARTING_COINS,
 	-- later days = 0 after each day ends (see CoinService.applyDayPurse).
+	-- Rewind after Game Over uses REWIND_COINS instead.
 	LEVEL_COMPLETION_REWARD = 50,
 
 	-- Leftover *pocket* coins → brains at day end (victory / defeat), before

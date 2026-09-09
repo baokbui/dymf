@@ -176,6 +176,14 @@ function CoinService.applyDayPurse(player: Player, levelNumber: number)
 	end
 end
 
+-- Game Over → Rewind: retry the failed day with a fixed purse.
+function CoinService.applyRewindPurse(player: Player)
+	CoinService.setBalance(player, EconomyConfig.REWIND_COINS)
+	if DevConfig.isActive() then
+		CoinService.setBalance(player, DevConfig.COINS)
+	end
+end
+
 -- TEMP Studio cheat: force the playtest purse (see DevConfig).
 function CoinService.applyDevPurse(player: Player)
 	if not DevConfig.isActive() then

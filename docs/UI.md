@@ -24,6 +24,7 @@ StarterGui/
         Settings     (Frame)   ✅ M13
         Inventory    (Frame)   ✅ M13 (loadout)
         MagnetEntry  (created in MagnetHud) ✅
+        DamageMeter  (Frame)   ✅
         RewardPopup  (Frame)   ✅ M13
         UnlockPopup  (Frame)   ✅ M13
         MonsterIntroPopup (Frame) ✅
@@ -63,7 +64,7 @@ hardcode a second palette in new UI.
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Rewards, Unlock / Monster intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
+| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Damage meter, Rewards, Unlock / Monster intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
@@ -84,7 +85,9 @@ hardcode a second palette in new UI.
 - **Hearts** ✅ M13 — five house hearts at top-left (no chip).
   Left-edge HUD order: Hearts (top) → gap → Coins / Brains / Speed (mid-left) →
   gap → Inventory above Settings (bottom-left), **Magnet** square to the right
-  of that stack. Day / Start Day stays bottom-right.
+  of that stack. Day / Start Day stays bottom-right. **Damage meter** sits
+  upper-right (**Damage** title above Brainrots / Monsters tabs; height follows
+  ranked rows).
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
   only (loadout from `ProfileUpdated` / `SetEquipped`). Cards remount only when
   the equipped list changes — XP / kill `ProfileUpdated` ticks restyle in place
@@ -126,6 +129,15 @@ hardcode a second palette in new UI.
   (rings spawn at the outer pull range and collapse inward; `VfxUtil.playMagnetWaves`). Server owns cooldown (`ActivateMagnet` /
   `MagnetStateChanged`). Upgrade ranks
   at the red mini store (`ProgressConfig.UPGRADE_CATALOG` Magnet).
+- **Damage meter** ✅ — upper-right board titled **Damage**, with **Brainrots** /
+  **Monsters** tabs under the title. Collapsed shows the title and those tabs;
+  clicking a tab expands the list (click the active tab again to collapse).
+  Expanded height follows ranked rows (scrolls after
+  `DAMAGE_METER_VISIBLE_ROWS`). Each row is **name** (left) and **damage**
+  (right), then a capsule bar scaled against the current tab’s leader. Brainrot
+  ranks are HP to monsters; monster ranks are HP-equivalent chew / arrow hits
+  on plants. Server-owned (`DamageMeterService` / `DamageMeterUpdated`); resets
+  on Start Day. Display only.
 - **Inventory** ✅ M13 — bottom-left HUD button (above Settings) opens the
   loadout modal; a
   PvZ-style **seed packet grid** (portrait + name plate + status ribbon) for
@@ -191,6 +203,7 @@ hardcode a second palette in new UI.
   **GAME OVER** reveal, “You have failed to protect Triple T and his house.”,
   and **Rewind Day N**. Clicking Rewind plays a translucent clock spin, fades
   the overlay, and fires `RewindDay` (server → Preparation on the failed day
+  with `REWIND_COINS` 200).
   with the victory-checkpoint lawn already restored).
 - **RewardPopup** ✅ M13 — victory overlay: day-clear brains, leftover-gold
   brains (smaller), and a large **Total Brains Earned**. After the title, those

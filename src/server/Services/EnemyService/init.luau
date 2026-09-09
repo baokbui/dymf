@@ -4,7 +4,8 @@
 	Owns monster spawning, grid movement, per-instance state, and death. All
 	monsters share one base behavior pipeline; types are data entries in
 	Shared.Monsters with optional ability handlers. Spawning is driven by
-	LevelService (M8); set MonsterConfig.DEV_SPAWN.ENABLED for isolated testing.
+	LevelService (M8); HP ages with the campaign day for non-bosses
+	(`Monsters.scaledForDay`). Set MonsterConfig.DEV_SPAWN.ENABLED for isolated testing.
 
 	Milestone 6–7.
 ]]
@@ -162,7 +163,7 @@ local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: strin
 
 	if runtime.definition.damage > 0 then
 		local hits = computeBrainrotHits(runtime, brainrotInstanceId)
-		CombatService.damageBrainrot(brainrotInstanceId, hits)
+		CombatService.damageBrainrot(brainrotInstanceId, hits, runtime.monsterId)
 		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
 		if type(ownerUserId) == "number" then
 			CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
@@ -217,6 +218,7 @@ local function shootBrainrot(runtime: MonsterRuntime, brainrotInstanceId: string
 		{
 			kind = "Arrow",
 			originWorld = findArrowMuzzle(runtime.model),
+			sourceMonsterId = runtime.monsterId,
 		}
 	)
 	CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
@@ -230,8 +232,17 @@ local function onHouseBreach(runtime: MonsterRuntime)
 	destroyMonster(runtime, true)
 end
 
+local function currentDayForPlot(plotModel: Model): number
+	local ownerUserId = plotModel:GetAttribute("OwnerUserId")
+	if type(ownerUserId) ~= "number" then
+		return 1
+	end
+	local LevelService = require(script.Parent.LevelService)
+	return LevelService.getCurrentDayForUser(ownerUserId)
+end
+
 local function spawnInternal(plotModel: Model, monsterId: string, gridRow: number, spawnColumn: number?): MonsterRuntime?
-	local definition = Monsters.get(monsterId)
+	local definition = Monsters.scaledForDay(monsterId, currentDayForPlot(plotModel))
 	if not definition then
 		return nil
 	end
@@ -528,6 +539,15 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 					end
 				end
 			end
+		end
+	end
+
+	local applied = math.min(damage, runtime.health)
+	if type(sourceBrainrotId) == "string" and applied > 0 then
+		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" then
+			local DamageMeterService = require(script.Parent.DamageMeterService)
+			DamageMeterService.recordBrainrot(ownerUserId, sourceBrainrotId, applied)
 		end
 	end
 

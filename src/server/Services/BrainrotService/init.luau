@@ -336,7 +336,7 @@ local function detachPlacement(placement: Placement): Model?
 	return placement.model
 end
 
-local function applyBrainrotDamage(instanceId: string, hits: number): boolean
+local function applyBrainrotDamage(instanceId: string, hits: number, sourceMonsterId: string?): boolean
 	local placement = placements[instanceId]
 	if not placement then
 		return false
@@ -347,6 +347,18 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 
 	if placement.buffs.stoneUntil > os.clock() then
 		return false
+	end
+
+	if hits > 0 and type(sourceMonsterId) == "string" then
+		local maxHits = placement.definition.health
+		if maxHits > 0 then
+			local DamageMeterService = require(script.Parent.DamageMeterService)
+			DamageMeterService.recordMonster(
+				placement.ownerUserId,
+				sourceMonsterId,
+				hits * (placement.definition.maxHealth / maxHits)
+			)
+		end
 	end
 
 	if hits > 0 and placement.definition.ability == "Wall" then

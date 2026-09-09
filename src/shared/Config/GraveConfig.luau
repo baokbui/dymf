@@ -14,8 +14,8 @@ local GraveConfig = {
 	FACE_DIRECTION = Vector3.new(-1, 0, 0),
 
 	-- How many graves to place at Start Day (inclusive).
-	COUNT_MIN = 5,
-	COUNT_MAX = 8,
+	COUNT_MIN = 3,
+	COUNT_MAX = 5,
 	EMERGE_MIN = 8,
 	EMERGE_MAX = 52,
 	-- Seconds between later spawns from the same grave (while the day is Active

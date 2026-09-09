@@ -118,6 +118,13 @@
             "BackgroundTransparency": 1
           }
         },
+        "DamageMeter": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
         "RewardPopup": {
           "$className": "Frame",
           "$properties": {

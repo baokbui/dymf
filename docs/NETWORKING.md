@@ -48,7 +48,7 @@ Remotes module. That is the only required step.
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
-| `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day |
+| `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day (`REWIND_COINS`) |
 | `ContinueVictory`  | client → server | ✅     | Reward Continue → Preparation (next day) |
 | `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats, Brainrot XP, claimed evolutions. Support-job XP (`grantBrainrotXp`) is coalesced (`ProgressConfig.XP_BROADCAST_INTERVAL`) so coin / soak ticks do not remount Inventory ViewportFrames. Kills / purchases still push immediately. |
@@ -60,6 +60,7 @@ Remotes module. That is the only required step.
 | `EvolveBrainrot`   | client → server | ✅ M19 | Claim an evolution (`brainrotId`, `rarity`); server checks level, previous tier, brains |
 | `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown (rejects while paused) |
 | `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt, pausedRemaining }` (`GetServerTimeNow`; remaining seconds frozen between days) |
+| `DamageMeterUpdated` | server → client | ✅ | `{ brainrots, monsters }` ranked `{ id, damage }` lists (plot owner; coalesced) |
 
 ### RemoteFunctions
 
@@ -67,9 +68,10 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` returns `{ coins, level, profile, plantCooldowns, magnet }` — handled by `LevelService.start()`
+`RequestState` returns `{ coins, level, profile, plantCooldowns, magnet, damageMeter }` — handled by `LevelService.start()`
 (`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI;
-`magnet` is `{ level, activeUntil, readyAt, pausedRemaining }`).
+`magnet` is `{ level, activeUntil, readyAt, pausedRemaining }`;
+`damageMeter` is `{ brainrots, monsters }` ranked `{ id, damage }` lists).
 using `CoinService`, `LevelService.getClientState`, and `ProgressService.getClientState`.
 
 ---
@@ -155,7 +157,8 @@ Monsters spawn in the forest and walk toward the plot (setup time).
 **`RewindDay`** — client fires from the Game Over overlay while phase is
 `Defeat`. Server validates phase, enters `Preparation` on the same failed day
 (lawn already restored from the victory checkpoint on defeat; Brainrot XP
-already rolled back to the Start Day snapshot).
+already rolled back to the Start Day snapshot) and sets the coin purse to
+`REWIND_COINS` (200).
 
 **State** — the server pushes `LevelStateChanged(payload)` to the plot owner
 whenever phase, progress, or big-wave warning changes. The client

@@ -58,9 +58,9 @@ depending on species speed.
 HP) stay on the plot. Coin purse: **Day 1 → `STARTING_COINS` (125)**; after any
 later day ends → **0**. After **Defeat**, the player stays on the failed day;
 mid-day plants are cleared and the **last victory checkpoint** lawn is restored;
-hearts refill; coins use `applyDayPurse` (Day 1 → 125, later → 0). Phase stays
+hearts refill; leftover coins convert then `applyDayPurse` (Day 1 → 125, later → 0). Phase stays
 **`Defeat`** until **Rewind Day N** (`RewindDay` remote) returns them to
-`Preparation` on that day.
+`Preparation` on that day with **`REWIND_COINS` (200)**.
 **Day Select** clears the lawn and applies the purse for the selected day.
 **Rejoin restores** the **committed** lawn (plants from the last victory /
 wipe — not mid-day placements on an unfinished day). Brainrots only attack /
@@ -98,7 +98,7 @@ Levels.count()             -- number of authored levels
 | `name`    | string           | Display name                                  |
 | `groups`  | `{ SpawnGroup }` | Ordered internal waves to spawn               |
 | `weather` | string?          | Optional weather id (`Night`, `NightFog`, …); see `WEATHER.md` |
-| `graves`  | boolean?         | If true, place 5–8 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
+| `graves`  | boolean?         | If true, place 3–5 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
 | `reward`  | number?          | Completion coins (defaults to economy base)   |
 
 ### `SpawnGroup` (`Shared.Types`)
@@ -144,35 +144,35 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 19    | Final Bloodline   | 5 Zombie, 5 Vampire, **1** GoblinElite, 6 Vampire · **17** |
 | 20    | Duke Vampire      | 5 Zombie, 5 Vampire, 5 Goblin, **1** DukeVampire · **16** |
 | 21    | Fogbound          | Night · Zombie/Goblin/Vampire · **15** |
-| 22    | Mist March        | Night · + GoblinElite finale · **14** |
+| 22    | Mist March        | Night · + GoblinElite finale · **15** |
 | 23    | Quiet Night       | Night · easier breather · **13** |
-| 24    | Blood Fog         | Night · DukeVampire finale · **15** |
+| 24    | Blood Fog         | Night · DukeVampire finale · **16** |
 | 25    | Webbed Path       | NightFog · **Spider** intro · **13** |
-| 26    | Silk and Steel    | NightFog · Spider + GoblinElite · **12** |
+| 26    | Silk and Steel    | NightFog · Spider + GoblinElite · **13** |
 | 27    | Lull in the Mist  | NightFog · easier mix · **13** |
-| 28    | Duke's Night      | NightFog · DukeVampire finale · **13** |
-| 29    | Closing Webs      | NightFog · Spider pressure + Elite · **14** |
+| 28    | Duke's Night      | NightFog · DukeVampire finale · **14** |
+| 29    | Closing Webs      | NightFog · Spider pressure + Elite · **15** |
 | 30    | Queen Spider      | NightFog · **QueenSpider** boss finale · **13** |
-| 31    | Rattling Fog      | NightFog · **Skeleton** intro + graves · **15** |
-| 32    | Royal Remnant     | NightFog · Queen mid · graves · **13** |
-| 33    | Duke Returns      | NightFog · Duke mid · graves · **15** |
-| 34    | Thickening Dark   | NightFog · Elite open · graves · **15** |
-| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · graves · **14** |
-| 36    | Pack Pressure     | NightFogReceded · Werewolf mix · **15** |
-| 37    | Silk and Fang     | NightFogReceded · Queen mid · **14** |
-| 38    | Blood Pack        | NightFogReceded · Duke mid · **14** |
-| 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **14** |
-| 40    | Throne of Silk    | NightFogReceded · **QueenSpider + DukeVampire** dual finale · **14** |
-| 41    | First Wrappings   | Desert · **SmallMummy** only · **12** |
-| 42    | Linen March       | Desert · mummy packs · **14** |
-| 43    | Silk and Sand     | Desert · mummy packs · **16** |
-| 44    | Dust and Fang     | Desert · mummy packs · **17** |
-| 45    | Tomb Pressure     | Desert · **Scorpion** intro · **14** |
-| 46    | Bandage Pack      | Desert · mummy + scorpion · **15** |
-| 47    | Royal Dust        | Desert · mummy + scorpion · **17** |
-| 48    | Blood Linen       | Desert · mummy + scorpion · **18** |
-| 49    | Before the Tomb   | Desert · mummy + scorpion · **20** |
-| 50    | Pharaoh Mummy     | Desert · scorpion + **PharaohMummy** finale · **10** |
+| 31    | Rattling Fog      | NightFog · **Skeleton** intro + graves · **11** |
+| 32    | Royal Remnant     | NightFog · Queen mid · graves · **9** |
+| 33    | Duke Returns      | NightFog · Duke mid · graves · **11** |
+| 34    | Thickening Dark   | NightFog · Elite open · graves · **10** |
+| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · graves · **10** |
+| 36    | Pack Pressure     | NightFogReceded · Werewolf mix · **11** |
+| 37    | Silk and Fang     | NightFogReceded · Queen mid · **10** |
+| 38    | Blood Pack        | NightFogReceded · Duke mid · **10** |
+| 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **9** |
+| 40    | Throne of Silk    | NightFogReceded · **QueenSpider + DukeVampire** dual finale · **8** |
+| 41    | First Wrappings   | Desert · **SmallMummy** only · **16** |
+| 42    | Linen March       | Desert · mummy packs · **17** |
+| 43    | Silk and Sand     | Desert · mummy packs · **19** |
+| 44    | Dust and Fang     | Desert · mummy packs · **20** |
+| 45    | Tomb Pressure     | Desert · **Scorpion** intro · **18** |
+| 46    | Bandage Pack      | Desert · mummy + scorpion · **18** |
+| 47    | Royal Dust        | Desert · mummy + scorpion · **20** |
+| 48    | Blood Linen       | Desert · mummy + scorpion · **21** |
+| 49    | Before the Tomb   | Desert · mummy + scorpion · **23** |
+| 50    | Pharaoh Mummy     | Desert · scorpion + **PharaohMummy** finale · **12** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
 Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
@@ -209,6 +209,9 @@ Introduction cadence:
   Girafa / Patapim use `BRAINROT_INTRO_SCHEDULE` on reach (`introducedBrainrots`).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
+  Returning **non-boss** species also **age**: HP +30% per 10 days since that
+  unit’s intro (`Monsters.scaledForDay`). Day 40 Zombies are 2.2× their Day 1
+  HP; damage and speed are unchanged. **Bosses do not scale.**
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
   in later levels — placed in the **beginning or middle** of the day, not as
   the big-wave closer. Only decade boss days (10 / 20 / 30 / 40 / …) keep the boss
@@ -280,7 +283,8 @@ Milestone 14 balance pass: **`docs/BALANCE.md`**. Per-level spawn data lives in
   (`SaveService.restoreCommittedLawn` — do not wipe the checkpoint); **roll back
   Brainrot XP** to the Start Day snapshot; hearts
   refill; purse via `applyDayPurse`. Phase stays **`Defeat`** until the player
-  presses **Rewind Day N** (`RewindDay` → `Preparation`). Then **Start Day** as
+  presses **Rewind Day N** (`RewindDay` → `Preparation` with `REWIND_COINS`
+  200). Then **Start Day** as
   usual. Passive and ability coin drops are blocked outside `Active`.
 - On **Day Select**: full lawn wipe; purse via `applyDayPurse` for the selected day.
 - Broadcasting phase / level number / progress / `weather` via `LevelStateChanged`
@@ -301,7 +305,7 @@ later as its own mode).
   day select). Full refill on **defeat** (and Reset Progress). Defeat keeps the
   failed day; Rewind returns to Preparation on that day.
 - **Coins** — Day 1 → `STARTING_COINS` (125); later days → **0** after each day
-  ends (`CoinService.applyDayPurse`). Not DataStore-persisted.
+  ends (`CoinService.applyDayPurse`). **Rewind** → `REWIND_COINS` (200). Not DataStore-persisted.
 - Planted Brainrots are **persisted as a victory checkpoint** (id, tile, HP) and
   restored on rejoin **and on defeat** (retry the same day with the prior clear's
   lawn). Day Select clears the lawn (and the committed checkpoint). Mid-day

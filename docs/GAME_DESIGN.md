@@ -133,7 +133,7 @@ Coins are earned by:
 
 - Passive drops (every 25 seconds) ✅
 - Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s, max 10 on a plot) ✅
-- Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0 ✅
+- Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0; Rewind grants `REWIND_COINS` (200) ✅
 
 Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a
 stingy leftover-coin conversion at day end — see `ECONOMY.md`. Spend them at
@@ -297,7 +297,7 @@ Saved:
 
 Not Saved:
 
-- Coins (Day 1 → `STARTING_COINS`; later days → 0)
+- Coins (Day 1 → `STARTING_COINS`; later days → 0; Rewind → `REWIND_COINS`)
 - Brainrots placed during an unfinished day (until that day is won)
 - Active Monsters
 - Monster Positions
@@ -318,7 +318,8 @@ When the player rejoins:
 - The player must press Start Day again.
 
 Within a session, **victory keeps planted Brainrots** and commits them for
-rejoin; coin purse is **125 on Day 1** and **0 after later days**; **defeat**
+rejoin; coin purse is **125 on Day 1** and **0 after later days**; **Rewind**
+after Game Over grants **200**; **defeat**
 restores the last victory lawn on the **same day** (Game Over → Rewind);
 **day select** clears the lawn. Brainrots idle outside **Active**. See
 `LEVELS.md` / `SAVE_SYSTEM.md`.

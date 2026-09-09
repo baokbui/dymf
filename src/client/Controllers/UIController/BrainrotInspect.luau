@@ -35,6 +35,8 @@ local PORTRAIT_INSET = 8
 -- UIStroke sits outside the rect; clippers (ScrollingFrame, ClipsDescendants)
 -- shear it unless content is inset by at least this much.
 local STROKE_GUTTER = 4
+local BAR_H = 18
+local BAR_CORNER = 9
 local STATS_FILL = Color3.fromRGB(255, 255, 255)
 local XP_TRACK = Color3.fromRGB(55, 50, 48)
 local XP_FILL = Color3.fromRGB(255, 200, 55)
@@ -220,35 +222,29 @@ local function applyHpBar(
 end
 
 local function makeBar(parent: Instance, order: number, fillColor: Color3): (Frame, Frame, TextLabel)
+	local barH = BAR_H
+	local corner = BAR_CORNER
+
 	local track = Instance.new("Frame")
 	track.LayoutOrder = order
-	track.Size = UDim2.new(1, 0, 0, 18)
+	track.Size = UDim2.new(1, 0, 0, barH)
 	track.BackgroundColor3 = XP_TRACK
 	track.BorderSizePixel = 0
 	track.ClipsDescendants = false
 	track.Parent = parent
-	UITheme.styleCorner(track, 6)
+	UITheme.styleCorner(track, corner)
 	UITheme.applyStroke(track, 2)
 
-	-- Clip the fill to the pill without clipping the stroke on `track`.
-	local clip = Instance.new("Frame")
-	clip.Name = "Clip"
-	clip.BackgroundTransparency = 1
-	clip.BorderSizePixel = 0
-	clip.ClipsDescendants = true
-	clip.Size = UDim2.fromScale(1, 1)
-	clip.ZIndex = 56
-	clip.Parent = track
-	UITheme.styleCorner(clip, 6)
-
+	-- Fill is its own pill. ClipsDescendants does not honor UICorner, so a
+	-- clip mask would leave a rectangle inside the capsule track.
 	local fill = Instance.new("Frame")
 	fill.Name = "Fill"
 	fill.BackgroundColor3 = fillColor
 	fill.BorderSizePixel = 0
 	fill.Size = UDim2.fromScale(0, 1)
 	fill.ZIndex = 56
-	fill.Parent = clip
-	UITheme.styleCorner(fill, 6)
+	fill.Parent = track
+	UITheme.styleCorner(fill, corner)
 
 	local barLabel = Instance.new("TextLabel")
 	barLabel.Name = "Amount"
@@ -747,10 +743,8 @@ local function mountHeader(
 	shieldFill.Size = UDim2.fromScale(0, 1)
 	shieldFill.ZIndex = 57
 	shieldFill.Visible = false
-	local clip = hpTrack:FindFirstChild("Clip")
-	if clip and clip:IsA("Frame") then
-		shieldFill.Parent = clip
-	end
+	shieldFill.Parent = hpTrack
+	UITheme.styleCorner(shieldFill, BAR_CORNER)
 	self.hpShieldFill = shieldFill
 
 	local current, maxHp, empty, shield = hpValues(definition, healthModel)

@@ -54,6 +54,8 @@ local EVENT_NAMES = {
 	"FogRowsChanged",
 	-- Combat visuals (Milestone 7)
 	"CombatVisual",
+	-- Per-day damage ranks (plot owner)
+	"DamageMeterUpdated",
 }
 
 -- Declare every RemoteFunction name the game uses.

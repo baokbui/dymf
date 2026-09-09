@@ -86,6 +86,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         BrainrotService/  (init + BrainrotModel, BrainrotBehavior, BrainrotAnimation, Abilities, BrainrotFeedback)
         EnemyService/     (init + MonsterModel, MonsterBehavior, Abilities, MonsterFeedback)
         CombatService/
+        DamageMeterService/ (per-day HP ranks for the right-rail HUD)
         GraveService/     (fog graves → Zombie/Skeleton emerge)
         LevelService/
         SaveService/
@@ -94,7 +95,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/     (init + Shop, HUD counters, Level, Settings, Inventory, ProgressionStore, popups)
+        UIController/     (init + Shop, HUD counters, DamageMeter, Level, Settings, Inventory, ProgressionStore, popups)
         CoinController/   (ground-coin pickup intent + sparkle — M3/M11)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
@@ -344,14 +345,15 @@ Full details in `MONSTERS.md`. Summary:
 
 - **`Shared.Monsters`** — eleven data-driven entries (replaces BasicMonster).
   Movement uses `secondsPerGrid`; attacks use `attackInterval`.
-- **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, dev test spawns.
-- **`EnemyService`** — `spawn`, `MonsterBehavior` grid movement, attack-on-tile,
+- **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, campaign HP aging, dev test spawns.
+- **`EnemyService`** — `spawn` (non-boss HP scaled for the plot’s current day), `MonsterBehavior` grid movement, attack-on-tile,
   `Abilities/` handlers (Goblin Elite one-shot, Spider jump, Necromancer summon, …).
 - **`MonsterModel`** / **`MonsterFeedback`** — models clone from
   `Assets.Monsters` via `ModelUtil` (M16; Part fallback); pulse / hit flash /
   freeze / bubble feedback on the model.
 - **`CombatService`** — wired to `EnemyService` for `damageMonster`, row queries,
-  and status effects.
+  and status effects. **`DamageMeterService`** ranks HP dealt this day for the
+  right-rail HUD.
 - **`GridService.getWorldPositionAtColumn`** — fractional column positioning.
 - Opening levels now spawn **Zombie**. Campaign spawns come from `LevelService`
   (`MonsterConfig.DEV_SPAWN` stays off for play).

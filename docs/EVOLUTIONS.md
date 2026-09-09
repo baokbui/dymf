@@ -42,7 +42,7 @@ not live code. “Gold” on the sheet is **coins**.
     so inspect bars update; broadcasts are coalesced):
     - `GenerateCoins` — `COIN_XP` per coin actually spat onto the lawn.
     - `Wall` — `SOAK_XP` each time the plant takes a damage tick (chew / arrow).
-    - `FreezeTime` — `FREEZE_XP` per monster frozen on that cast.
+    - `FreezeTime` — `FREEZE_XP` (20) per monster frozen on that cast (Lirili is one-shot and has no last-hit).
     - `BubbleTrap` — `BUBBLE_XP` every `BUBBLE_XP_HITS` (2) bubbles that land
       (**instead of** last-hit).
     - `MeleeBat` — `MELEE_XP` every `MELEE_XP_HITS` (3) connecting hits

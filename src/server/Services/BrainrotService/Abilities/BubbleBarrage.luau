@@ -36,6 +36,7 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 		statusDuration = trapDuration,
 		statusVisual = "Bubble",
 		sourceInstanceId = ctx.instanceId,
+		sourceBrainrotId = ctx.definition.id,
 		extraBubbleChance = extraChance,
 	}
 

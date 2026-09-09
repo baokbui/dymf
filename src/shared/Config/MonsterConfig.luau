@@ -107,7 +107,33 @@ local MonsterConfig = {
 
 	-- Default tint when a definition omits color.
 	DEFAULT_COLOR = Color3.fromRGB(120, 80, 140),
+
+	-- Campaign aging (non-boss only): every STAT_SCALE_INTERVAL_DAYS since a
+	-- species' intro day (inclusive), HP gains STAT_SCALE_BONUS. Day 40
+	-- Zombies (intro Day 1) → 4 steps → +120% (2.2× HP). Damage, speed, and
+	-- attack interval stay at authored values. Bosses do not scale.
+	STAT_SCALE_INTERVAL_DAYS = 10,
+	STAT_SCALE_BONUS = 0.3,
 }
+
+function MonsterConfig.statMultiplier(currentDay: number, introDay: number): number
+	local day = math.max(1, math.floor(currentDay))
+	local intro = math.max(1, math.floor(introDay))
+	local elapsed = math.max(0, day - intro + 1)
+	local interval = MonsterConfig.STAT_SCALE_INTERVAL_DAYS
+	if interval <= 0 then
+		return 1
+	end
+	local steps = math.floor(elapsed / interval)
+	return 1 + MonsterConfig.STAT_SCALE_BONUS * steps
+end
+
+function MonsterConfig.scaleStat(base: number, multiplier: number): number
+	if base <= 0 then
+		return base
+	end
+	return math.max(1, math.floor(base * multiplier + 0.5))
+end
 
 table.freeze(MonsterConfig.DEV_SPAWN)
 table.freeze(MonsterConfig)

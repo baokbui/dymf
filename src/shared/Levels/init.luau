@@ -3,8 +3,8 @@
 	Levels Registry
 	Central, data-driven catalog of authored campaign levels (PvZ-style).
 
-	Difficulty ramps via spawn counts, pacing (startDelay / spawnInterval), and
-	monster species — not duplicate stat tiers of the same enemy.
+	Difficulty ramps via spawn counts, pacing (startDelay / spawnInterval),
+	monster species, and campaign aging of non-boss HP (Monsters.scaledForDay).
 	First-group startDelay is short; plant time is the forest march
 	(MonsterConfig.SPAWN_COLUMN_OFFSET).
 
@@ -410,10 +410,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFog",
 		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 3, startDelay = 1.5, spawnInterval = 2.4 },
 			{ monsterId = "Skeleton", count = 3, startDelay = 11, spawnInterval = 2.8 },
-			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.6 },
-			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Spider", count = 2, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "Goblin", count = 3, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -424,10 +424,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFog",
 		graves = true,
 		groups = {
-			{ monsterId = "Goblin", count = 4, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Goblin", count = 2, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
 			{ monsterId = "Skeleton", count = 3, startDelay = 12, spawnInterval = 2.6 },
-			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -438,11 +438,11 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFog",
 		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 4, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Zombie", count = 2, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "Vampire", count = 3, startDelay = 11, spawnInterval = 2.4 },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 11, spawnInterval = 2 },
 			{ monsterId = "Skeleton", count = 3, startDelay = 12, spawnInterval = 2.4 },
-			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Spider", count = 2, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -454,9 +454,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		graves = true,
 		groups = {
 			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
-			{ monsterId = "Skeleton", count = 4, startDelay = 10, spawnInterval = 2.6 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "Skeleton", count = 3, startDelay = 10, spawnInterval = 2.6 },
+			{ monsterId = "Vampire", count = 2, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -469,8 +469,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFogReceded",
 		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 4, startDelay = 11, spawnInterval = 2.4 },
+			{ monsterId = "Zombie", count = 3, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 2, startDelay = 11, spawnInterval = 2.4 },
 			{ monsterId = "Werewolf", count = 2, startDelay = 13, spawnInterval = 3.2 },
 			{ monsterId = "Werewolf", count = 3, startDelay = 12, spawnInterval = 2.8, isBigWave = true },
 		},
@@ -485,8 +485,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		groups = {
 			{ monsterId = "Spider", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
 			{ monsterId = "Werewolf", count = 3, startDelay = 11, spawnInterval = 2.8 },
-			{ monsterId = "Vampire", count = 4, startDelay = 12, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Vampire", count = 2, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 3, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -497,10 +497,10 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFogReceded",
 		graves = true,
 		groups = {
-			{ monsterId = "Zombie", count = 5, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Zombie", count = 3, startDelay = 1.5, spawnInterval = 2.2 },
 			{ monsterId = "QueenSpider", count = 1, startDelay = 10, spawnInterval = 2 },
 			{ monsterId = "Werewolf", count = 3, startDelay = 12, spawnInterval = 2.6 },
-			{ monsterId = "Vampire", count = 5, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "Vampire", count = 3, startDelay = 12, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -513,8 +513,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		groups = {
 			{ monsterId = "Werewolf", count = 3, startDelay = 1.5, spawnInterval = 2.6 },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 10, spawnInterval = 2 },
-			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.4 },
-			{ monsterId = "Goblin", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "Spider", count = 2, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "Goblin", count = 4, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -526,9 +526,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		graves = true,
 		groups = {
 			{ monsterId = "GoblinElite", count = 1, startDelay = 1.5, spawnInterval = 2 },
-			{ monsterId = "Werewolf", count = 4, startDelay = 10, spawnInterval = 2.4 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "Spider", count = 5, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "Werewolf", count = 3, startDelay = 10, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 2, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 3, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -539,9 +539,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		weather = "NightFogReceded",
 		graves = true,
 		groups = {
-			{ monsterId = "Werewolf", count = 4, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Vampire", count = 4, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "Spider", count = 4, startDelay = 12, spawnInterval = 2.2 },
+			{ monsterId = "Werewolf", count = 2, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Vampire", count = 2, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "Spider", count = 2, startDelay = 12, spawnInterval = 2.2 },
 			-- Dual-boss finale: Queen flags the big wave; Duke follows immediately
 			-- (startDelay 0) so both are on the lawn together without a second warning.
 			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
@@ -556,9 +556,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "First Wrappings",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 3, startDelay = 1.5, spawnInterval = 2.8 },
-			{ monsterId = "SmallMummy", count = 4, startDelay = 14, spawnInterval = 2.6 },
-			{ monsterId = "SmallMummy", count = 5, startDelay = 14, spawnInterval = 2.4, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.8 },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 14, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 14, spawnInterval = 2.4, isBigWave = true },
 		},
 	},
 
@@ -568,9 +568,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Linen March",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 4, startDelay = 1.5, spawnInterval = 2.6 },
-			{ monsterId = "SmallMummy", count = 5, startDelay = 13, spawnInterval = 2.5 },
-			{ monsterId = "SmallMummy", count = 5, startDelay = 13, spawnInterval = 2.3, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.5 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.3, isBigWave = true },
 		},
 	},
 
@@ -580,9 +580,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Silk and Sand",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.5 },
-			{ monsterId = "SmallMummy", count = 5, startDelay = 12, spawnInterval = 2.4 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.5 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -592,9 +592,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Dust and Fang",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.3 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 13, spawnInterval = 2.2, isBigWave = true },
 		},
 	},
 
@@ -604,9 +604,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Tomb Pressure",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Scorpion", count = 3, startDelay = 12, spawnInterval = 2.6 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.1, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Scorpion", count = 5, startDelay = 12, spawnInterval = 2.6 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.1, isBigWave = true },
 		},
 	},
 
@@ -616,9 +616,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Bandage Pack",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.3 },
-			{ monsterId = "Scorpion", count = 4, startDelay = 12, spawnInterval = 2.4 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.3 },
+			{ monsterId = "Scorpion", count = 5, startDelay = 12, spawnInterval = 2.4 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -628,9 +628,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Royal Dust",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Scorpion", count = 5, startDelay = 12, spawnInterval = 2.3 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Scorpion", count = 6, startDelay = 12, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 2.0, isBigWave = true },
 		},
 	},
 
@@ -640,9 +640,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Blood Linen",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.2 },
-			{ monsterId = "Scorpion", count = 6, startDelay = 11, spawnInterval = 2.2 },
-			{ monsterId = "SmallMummy", count = 6, startDelay = 12, spawnInterval = 1.9, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.2 },
+			{ monsterId = "Scorpion", count = 7, startDelay = 11, spawnInterval = 2.2 },
+			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 1.9, isBigWave = true },
 		},
 	},
 
@@ -652,9 +652,9 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Before the Tomb",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 7, startDelay = 1.5, spawnInterval = 2.1 },
-			{ monsterId = "Scorpion", count = 6, startDelay = 11, spawnInterval = 2.1 },
-			{ monsterId = "SmallMummy", count = 7, startDelay = 12, spawnInterval = 1.8, isBigWave = true },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 1.5, spawnInterval = 2.1 },
+			{ monsterId = "Scorpion", count = 7, startDelay = 11, spawnInterval = 2.1 },
+			{ monsterId = "SmallMummy", count = 8, startDelay = 12, spawnInterval = 1.8, isBigWave = true },
 		},
 	},
 
@@ -664,8 +664,8 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		name = "Pharaoh Mummy",
 		weather = "Desert",
 		groups = {
-			{ monsterId = "SmallMummy", count = 5, startDelay = 1.5, spawnInterval = 2.4 },
-			{ monsterId = "Scorpion", count = 4, startDelay = 12, spawnInterval = 2.3 },
+			{ monsterId = "SmallMummy", count = 6, startDelay = 1.5, spawnInterval = 2.4 },
+			{ monsterId = "Scorpion", count = 5, startDelay = 12, spawnInterval = 2.3 },
 			{ monsterId = "PharaohMummy", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},

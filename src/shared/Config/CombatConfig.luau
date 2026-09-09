@@ -65,6 +65,13 @@ local CombatConfig = {
 	DEATH_CORPSE_LINGER = 2.0,
 	DEATH_FADE_OUT_DURATION = 0.4,
 
+	-- Per-day damage meter HUD (right rail). Server ranks species by HP dealt.
+	-- TOP = max rows sent; VISIBLE_ROWS = max expanded viewport (panel shrinks
+	-- to fewer ranked rows; scrolls past this).
+	DAMAGE_METER_TOP = 20,
+	DAMAGE_METER_VISIBLE_ROWS = 5,
+	DAMAGE_METER_BROADCAST_INTERVAL = 0.4,
+
 	-- Height above the lane surface for projectile travel.
 	PROJECTILE_HEIGHT_OFFSET = 3.5,
 

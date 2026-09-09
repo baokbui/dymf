@@ -7,8 +7,11 @@
 	optional ability handlers. Never branch on monster names in code.
 
 	Milestone 14+ balance — see docs/BALANCE.md.
+	Spawned HP ages with the campaign day (scaledForDay, non-boss only); this catalog stays base.
 ]]
 
+local MonsterConfig = require(script.Parent.Config.MonsterConfig)
+local ProgressConfig = require(script.Parent.Config.ProgressConfig)
 local Types = require(script.Parent.Types)
 
 local Monsters = {}
@@ -309,6 +312,25 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 
 function Monsters.get(id: string): Types.MonsterDefinition?
 	return definitions[id]
+end
+
+-- Shallow copy with HP scaled for the day. Bosses keep authored stats.
+-- Damage, speed, and cadence stay at intro-day bases.
+function Monsters.scaledForDay(id: string, currentDay: number): Types.MonsterDefinition?
+	local definition = definitions[id]
+	if not definition then
+		return nil
+	end
+	if definition.isBoss == true then
+		return definition
+	end
+	local multiplier = MonsterConfig.statMultiplier(currentDay, ProgressConfig.monsterIntroDay(id))
+	if multiplier <= 1 then
+		return definition
+	end
+	local scaled = table.clone(definition)
+	scaled.health = MonsterConfig.scaleStat(definition.health, multiplier)
+	return scaled
 end
 
 function Monsters.exists(id: string): boolean

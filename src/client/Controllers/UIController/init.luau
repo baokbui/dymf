@@ -36,6 +36,7 @@ local ProgressionStore = require(script.ProgressionStore)
 local PlantToast = require(script.PlantToast)
 local BrainrotInspect = require(script.BrainrotInspect)
 local MagnetHud = require(script.MagnetHud)
+local DamageMeter = require(script.DamageMeter)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
 local InputController = require(script.Parent.InputController)
@@ -51,6 +52,7 @@ local coinCounter: CoinCounter.CoinCounter? = nil
 local brainsCounter: BrainsCounter.BrainsCounter? = nil
 local speedHud: SpeedHud.SpeedHud? = nil
 local magnetHud: MagnetHud.MagnetHud? = nil
+local damageMeterHud: DamageMeter.DamageMeterHud? = nil
 local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local heartsHud: Hearts.HeartsHud? = nil
@@ -283,10 +285,21 @@ local function requestMagnet()
 	Remotes.getEvent("ActivateMagnet"):FireServer()
 end
 
+local function applyDamageMeter(state: { [string]: any }?)
+	if damageMeterHud then
+		damageMeterHud:apply(state)
+	end
+end
+
 local function buildMagnetHud(): MagnetHud.MagnetHud
 	local hud = MagnetHud.new(buildMain())
 	hud.onActivate = requestMagnet
 	return hud
+end
+
+local function buildDamageMeter(): DamageMeter.DamageMeterHud
+	local frame = buildMain():WaitForChild("DamageMeter") :: Frame
+	return DamageMeter.new(frame)
 end
 
 local function buildShop(): Shop.Shop
@@ -531,6 +544,7 @@ function UIController.init()
 	brainsCounter = buildBrainsCounter()
 	speedHud = buildSpeedHud()
 	magnetHud = buildMagnetHud()
+	damageMeterHud = buildDamageMeter()
 	shop = buildShop()
 	plantToast = PlantToast.new(buildMain())
 	fieldInspect = BrainrotInspect.new(buildMain())
@@ -720,6 +734,10 @@ function UIController.start()
 		applyMagnetState(payload :: any)
 	end)
 
+	Remotes.getEvent("DamageMeterUpdated").OnClientEvent:Connect(function(payload: unknown)
+		applyDamageMeter(payload :: any)
+	end)
+
 	local ok, state = pcall(function()
 		return Remotes.getFunction("RequestState"):InvokeServer()
 	end)
@@ -743,6 +761,9 @@ function UIController.start()
 		end
 		if type(state.magnet) == "table" then
 			applyMagnetState(state.magnet)
+		end
+		if type(state.damageMeter) == "table" then
+			applyDamageMeter(state.damageMeter)
 		end
 	end
 

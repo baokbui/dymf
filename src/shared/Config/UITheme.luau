@@ -36,6 +36,7 @@ UITheme.PANEL_BG_UNLOCK = Color3.fromRGB(200, 130, 255) -- purple
 UITheme.PANEL_BG_STORE = Color3.fromRGB(50, 195, 175) -- teal
 UITheme.PANEL_BG_MONSTER_INTRO = Color3.fromRGB(255, 140, 90) -- fiery orange
 UITheme.PANEL_BG_GAME_OVER = Color3.fromRGB(45, 28, 40) -- dark defeat card
+UITheme.PANEL_BG_DAMAGE_METER = Color3.fromRGB(70, 150, 255) -- right-rail damage board
 
 -- Accents
 UITheme.OUTLINE = Color3.fromRGB(15, 15, 20)

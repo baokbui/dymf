@@ -21,9 +21,14 @@ Status: ✅ Milestone 14 (retuned after plant cooldowns)
 | Campaign | 16–19 | **Vampire** count/pacing ramps alongside Zombie/Goblin/Goblin Elite |
 | Boss #2 | 20 | **Duke Vampire** big wave; nerfed HP/speed/damage vs. later M10 bosses since it's the very next boss after Goblin Elite |
 
-Difficulty never uses duplicate stat tiers of the same enemy. It ramps through
-**spawn counts**, **pacing** (`startDelay` / `spawnInterval`), and **monster
-species** (Zombie → Goblin → Goblin Elite → Vampire → Duke Vampire, …).
+Difficulty ramps through **spawn counts**, **pacing** (`startDelay` /
+`spawnInterval`), **monster species**, and **campaign aging**: each species
+keeps its authored base HP, then HP grows **+30% per 10 days** since its intro
+day (`MonsterConfig.STAT_SCALE_*`, applied at spawn via `Monsters.scaledForDay`).
+**Bosses (`isBoss`) do not scale.** Damage, speed, and attack interval stay at
+the intro values. Day 40 Zombies (debut Day 1) are **+120% HP** (2.2×). Goblins
+(debut Day 5) are one step behind at Day 40 (+90% HP). Intro popups still show
+base stats.
 
 **Starter roster:** Day 1 begins with only Ballerina, Tung Tung, and
 Chimpanzini unlocked (economy + melee + wall) — the other four launch
@@ -33,7 +38,8 @@ fair: no day-one full roster against a Zombie-only opener.
 
 **House hearts:** 5 (one lost per breach). **Match coins:** Day 1 opens with
 `STARTING_COINS` (125); after later days end the purse resets to **0** (earn
-in-match via producers / passive). **Planted Brainrots** carry across
+in-match via producers / passive). **Rewind** after Game Over grants
+`REWIND_COINS` (200). **Planted Brainrots** carry across
 **victories** and **rejoin** (DataStore); defeat restores that checkpoint on the
 same day (Rewind); the lawn is wiped on day select / Reset Progress.
 Brainrots only act while the day is **Active**.
@@ -47,6 +53,7 @@ Campaign spawn counts assume that growing board — see `Shared.Levels` /
 | Knob | Value | Rationale |
 | ---- | ----- | --------- |
 | `STARTING_COINS` | 125 | Day 1 purse only (Ballerina 50 + Tung Tung 75) |
+| `REWIND_COINS` | 200 | Game Over → Rewind retry purse (any day) |
 | `PASSIVE_DROP_INTERVAL` | 25s | Backup income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
 | Ballerina `coinGeneration` | 25 / 18s | Primary mid-level income (slower snowball) |
@@ -137,14 +144,16 @@ east of the plant center so models don't overlap.
 - **Days 21–24 (Night):** moonlit night, full lawn plantable — same roster mix,
   quieter/harder alternation.
 - **Days 25–34 (NightFog):** easternmost **3** lawn columns are unplantable, so
-  effective depth shrinks — keep totals in the ~12–16 range; Level 31 introduces
-  `Skeleton` + fog **graves**; Queen / Duke recur mid-day on 32–33 after the L30
-  Queen finale.
+  effective depth shrinks — keep totals in the ~12–16 range through Day 30;
+  Days 31–40 are one step lighter (~8–11) because graves add extra spawns.
+  Level 31 introduces `Skeleton` + fog **graves**; Queen / Duke recur mid-day
+  on 32–33 after the L30 Queen finale.
 - **Days 35–40 (NightFogReceded):** fog bank loses **one** column (only 2
   blocked) so players regain a plantable tile; Level 35 introduces `Werewolf`.
 - **Days 41–50 (Desert):** sand lawn, no fog; forest replaced by pyramids;
   authored waves: `SmallMummy` from 41, `Scorpion` from 45, `PharaohMummy` on 50.
-  No graves.
+  Full lawn is plantable so totals sit higher (~16–23, Day 50 dips to 12
+  around the boss). No graves.
 
 ---
 
@@ -172,5 +181,8 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Leftover coins → brains | `EconomyConfig.COINS_PER_LEFTOVER_BRAIN` |
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
+| Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |
+| Monster campaign HP scale | `MonsterConfig.STAT_SCALE_*` (non-boss HP only; intro day from `MONSTER_INTRO_SCHEDULE`) |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |
 | Magnet cooldown / duration | `MagnetConfig`, Magnet row in `UPGRADE_CATALOG` |
+| Brainrot XP grants | `EvolutionConfig` (`KILL_XP`, `FREEZE_XP`, …) |
