@@ -54,8 +54,8 @@ level (`6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80 / 98 / 118 / 142 /
 `SaveData.upgrades`.
 
 **Magnet**: starts at **level 1** (max **5**). Each rank shortens the post-use
-cooldown from **45s** to **10s** (linear). Active pull lasts **5s**. Costs to
-reach 2 / 3 / 4 / 5: **15 / 25 / 40 / 65** brains. Press **1** (or the HUD
+cooldown from **90s** to **20s** (linear). Active pull lasts **5s**. Costs to
+reach 2 / 3 / 4 / 5: **30 / 55 / 90 / 150** brains. Press **1** (or the HUD
 chip) on an Active day. See `MagnetConfig`.
 
 ---

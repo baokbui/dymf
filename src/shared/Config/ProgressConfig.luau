@@ -102,10 +102,10 @@ local ProgressConfig = {
 			defaultLevel = 1,
 			-- Cost to reach levels 2–5 (players start at level 1).
 			brainsCosts = {
-				15,
-				25,
-				40,
-				65,
+				30,
+				55,
+				90,
+				150,
 			},
 		},
 	},

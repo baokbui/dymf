@@ -488,9 +488,14 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			end
 		else
 			if runtime.freezeVisual ~= nil then
+				local wasBubble = runtime.freezeVisual == "Bubble"
 				runtime.freezeVisual = nil
 				MonsterFeedback.setFrozen(runtime.model, false)
 				MonsterFeedback.setBubbled(runtime.model, false)
+				if wasBubble then
+					local CombatService = require(script.Parent.Parent.CombatService)
+					CombatService.applyBubbleExitSlow(runtime.plotModel, runtime.instanceId)
+				end
 			end
 			MonsterAnimation.setLocomotionPaused(runtime.model, false)
 		end

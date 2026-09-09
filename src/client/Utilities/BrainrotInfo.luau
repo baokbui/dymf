@@ -50,6 +50,14 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Sturdy Wall",
 		description = "No attack — just soaks up hits to block the lane.",
 	},
+	Stoneheart = {
+		label = "Stoneheart",
+		description = "Once per plant: below 10% HP, turns to stone and is invulnerable for 10s. Cannot use active or ultimate while stone.",
+	},
+	TenfoldGuard = {
+		label = "Tenfold Guard",
+		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while that shield lasts.",
+	},
 	ClearFogRow = {
 		label = "Clear Fog",
 		description = "One-shot. Plays a gust, blows Night Fog off the whole plot for 7s, then disappears.",

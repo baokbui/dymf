@@ -51,6 +51,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `plantOnGrave`    | boolean?               | Must be planted on a grave (Patapim); graves sit on fog tiles |
 | `ignoreMonsterChew` | boolean?             | Monsters phase through; no chew damage (Lirili, Patapim)           |
 | `plantCooldown`   | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)` |
+| `maxOnPlot`       | number?                | Cap of living plants of this id on one plot (Ballerina = 10). Nil = unlimited |
 | `color`           | Color3?                | Shop swatch + placeholder / ghost validity tint                    |
 | `modelId`         | string?                | Child name under `Assets.Brainrots` (defaults to `id`)             |
 | `modelOrientationDegrees` | Vector3?         | Local Euler after facing (+X)                                      |
@@ -192,7 +193,7 @@ one exists (`MAX_EQUIPPED` is still 7).
 
 | Name                 | Cost | Health (hits) | Damage | Interval | Range    | Ability             | Coins |
 | -------------------- | ---- | ------------- | ------ | -------- | -------- | ------------------- | ----- |
-| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 18s      | —        | Spits coins onto random tiles | 25    |
+| Ballerina Cappucina  | 50   | 500 (5)       | 0      | 18s      | —        | Spits coins onto random tiles (**max 10** on the plot) | 25    |
 | Tung Tung Sahur      | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat           | —     |
 | Tralalero Tralala    | 175  | 500 (5)       | 55     | 5.0s     | Full row | Bubble projectile → trap (0.5s) | —     |
 | Bombardino Crocodilo | 325  | — (1)         | 1000   | —        | Full row | Line bomb on place  | 30s   |
@@ -330,6 +331,7 @@ split across plants on the lawn; coin / soak / freeze / bubble-every-2 /
 melee-every-3 jobs). Claiming an evolution after the level gate spends
 brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
 / claim; planted Epic+ units get a rarity-tinted aura (purple / gold /
-red-orange). **Legendary** extras and **Mythic** passives tick in combat from
-evolution ability ids / `abilityParams`. Immortal+ combat extras still 🔜.
+red-orange). **Legendary** extras, **Mythic** passives, and **Immortal**
+passives tick in combat from evolution ability ids / `abilityParams`. GOD
+ultimates still 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

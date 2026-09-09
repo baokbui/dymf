@@ -44,6 +44,11 @@ local BrainrotConfig = {
 	POISON_TINT_COLOR = Color3.fromRGB(175, 70, 255),
 	POISON_TINT_BLEND = 0.65, -- 0 = original, 1 = full purple
 
+	-- Stoneheart: rock wash while invulnerable (server-replicated Color + Material).
+	STONE_TINT_COLOR = Color3.fromRGB(132, 124, 112),
+	STONE_TINT_BLEND = 0.78,
+	STONE_MATERIAL = Enum.Material.Slate,
+
 	-- Bombardino: fly the plant across the row while dropping one Bomb per tile.
 	-- Fly time is derived from DROP_STAGGER so the croc stays synced with drops.
 	LINE_BOMB_MODEL_ID = "Bomb",

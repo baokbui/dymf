@@ -26,8 +26,9 @@ not live code. “Gold” on the sheet is **coins**.
   XP; the client never sets it. XP from a day is **committed on victory** only.
   Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
   overrides and **Legendary** extras are applied at place / restore / claim
-  (`Evolutions.applyStats` / `claimedExtras`). **Mythic** passives compose the
-  same way (params merge or extra ability ids). Immortal+ combat extras 🔜.
+  (`Evolutions.applyStats` / `claimedExtras`). **Mythic** and **Immortal**
+  passives compose the same way (params merge or extra ability ids). GOD
+  ultimates 🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -125,7 +126,7 @@ on the sheet (TBD).
 | Epic | Wallet Ballet | Coin interval **12s** (from 18s). |
 | Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
-| Immortal | Golden Discount | When producing a coin, the next Brainrot plant costs **50%** (which plant / stacking — impl). |
+| Immortal | Golden Discount | When producing a coin, the next Brainrot plant (**any** unit) costs **50%**. One pending charge; producing again **refreshes** it (does not stack to 25%). Consumed on a successful plant. Plot `PlantDiscountFactor` so the shop shows the discounted cost. |
 | GOD | Jackpot | Produce coins **3×** faster; each coin during the ultimate **33%** extra coin. **30s** CD. |
 
 ### Chimpanzini Bananini
@@ -175,7 +176,7 @@ on the sheet (TBD).
 | Epic | Cryocycle | Plant recharge **15s** (from 20s). |
 | Legendary | Winter's Grasp | Freeze a **whole lane**. |
 | Mythic | Permafrost | Freeze duration **7s**. |
-| Immortal | Frostbound Neighbor | Also freeze **one adjacent** lane. |
+| Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row. Picks the neighbor with more monsters; ties go to the **lower** row. |
 | GOD | Glacial Dominion | Freeze the **whole lawn** and apply **25%** slow for **3s**. |
 
 ---
@@ -199,8 +200,9 @@ mutations stay in M19 or slip to a later pass.
   placements via `Evolutions.applyStats` + `BrainrotService.applyEvolutionStats`.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
   `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
-  passives use the same path (`RegenPulse`, `DesperateFury`, or params-only
-  overlays). Immortal+ 🔜.
+  passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
+  `TenfoldGuard`, or params-only overlays: Golden Discount, Wound of the
+  Shark, Assassin's Verdict, Frostbound Neighbor). GOD ultimates 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -215,7 +217,8 @@ mutations stay in M19 or slip to a later pass.
   until the Brainrot level gate; at the gate the row uses a light rarity fill
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed; **Legendary** extras
-  and **Mythic** passives tick / overlay in combat. Immortal+ still 🔜.
+  and **Mythic** / **Immortal** passives tick / overlay in combat. GOD
+  ultimates still 🔜.
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed

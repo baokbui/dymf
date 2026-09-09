@@ -164,7 +164,7 @@ function PlotService.init()
 	-- West column: player plots. East column: enemy-spawn lanes (one per row).
 	local mapColumns = PlotConfig.MAP_COLUMNS
 	local startX = -((mapColumns - 1) / 2) * PlotConfig.BASE_WIDTH
-	local startZ = -((PlotConfig.LANE_ROWS - 1) / 2) * PlotConfig.BASE_DEPTH
+	local startZ = -((PlotConfig.LANE_ROWS - 1) / 2) * PlotConfig.LANE_PITCH
 
 	local enemyPathsFolder = Workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.EnemyPaths)
 	if not enemyPathsFolder then
@@ -178,7 +178,7 @@ function PlotService.init()
 		local originPosition = Vector3.new(
 			startX + PlotConfig.PLAYER_MAP_COLUMN * PlotConfig.BASE_WIDTH,
 			0,
-			startZ + row * PlotConfig.BASE_DEPTH
+			startZ + row * PlotConfig.LANE_PITCH
 		)
 		local model, base, spawnLocation = PlotBuilder.build(i, originPosition)
 		model.Parent = plotsFolder
@@ -189,7 +189,7 @@ function PlotService.init()
 		local originPosition = Vector3.new(
 			startX + PlotConfig.ENEMY_MAP_COLUMN * PlotConfig.BASE_WIDTH,
 			0,
-			startZ + (row - 1) * PlotConfig.BASE_DEPTH
+			startZ + (row - 1) * PlotConfig.LANE_PITCH
 		)
 		local enemyLane = EnemySpawnBuilder.build(row, originPosition)
 		enemyLane.Parent = enemyPathsFolder

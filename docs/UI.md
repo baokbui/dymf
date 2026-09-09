@@ -93,7 +93,8 @@ hardcode a second palette in new UI.
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
   stroke on the viewport) so the row stays readable. Names and costs use
   outlined title text (same as HUD) so they stay readable on the yellow cards.
-  Long names wrap the rest under the first word (card width unchanged). Framing uses visual AABB
+  Units with `maxOnPlot` (Ballerina) show a live **n/max** count under the name
+  (`2/10`); card and shop size stay the same. Long names wrap the rest under the first word (card width unchanged). Framing uses visual AABB
   + optional `previewFocusOffset`; animated rigs stay posed (no idle playback
   in the ViewportFrame). After planting, the card
   shows a **recharge overlay** (`PlantCooldownsUpdated`; cheaper units recharge
@@ -116,7 +117,7 @@ hardcode a second palette in new UI.
   (magnet icon, **Lv. N**, hotkey **1**). Starts at level **1** (max **5**).
   Press **1** or click the chip during an **Active** day to pull landed coins
   from the **8 tiles** around the player (left / right / up / down / diagonal)
-  for **5s**, then cooldown (**45s** at level 1 → **10s** at level 5, linear).
+  for **5s**, then cooldown (**90s** at level 1 → **20s** at level 5, linear).
   While active, translucent purple circular soundwaves pulse around the player
   (rings spawn at the outer pull range and collapse inward; `VfxUtil.playMagnetWaves`). Server owns cooldown (`ActivateMagnet` /
   `MagnetStateChanged`). Upgrade ranks
@@ -149,9 +150,10 @@ hardcode a second palette in new UI.
   spends brains to claim (`EvolveBrainrot`, costs in `TIER_BRAINS`), a
   **lock** sits on that row. Click it to open a confirm prompt (Evolve /
   Cancel). Claimed rows drop the lock. **Epic** stats apply on claim (HP bar
-  / plant recharge); **Legendary** extras and **Mythic** passives tick in
+  / plant recharge); **Legendary** extras and **Mythic** / **Immortal**
+  passives tick in
   combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
-  red-orange / dark red / rainbow). Immortal+ combat extras still 🔜
+  red-orange / dark red / rainbow). GOD ultimates still 🔜
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted

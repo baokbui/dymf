@@ -38,7 +38,8 @@ plot's play area rather than floating as a small patch:
 - `HOUSE_ZONE` is the leftover lane length behind the grid (enemy staging lives
   in the east map column, not inside each plot).
 
-With the current defaults (lane 330 × 110, `MARGIN` 10, `ROWS` 5, `COLUMNS` 9):
+With the current defaults (lane **330 × 110**, four plots pitched **165** apart,
+`MARGIN` 10, `ROWS` 5, `COLUMNS` 9):
 `TILE_SIZE = 18`, `GRID_WIDTH = 162`, `GRID_DEPTH = 90`, and `HOUSE_ZONE = 148`.
 
 The grid is centered on the play area: `PlotBuilder` places a `GridCenter`

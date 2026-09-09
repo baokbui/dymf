@@ -37,6 +37,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		animated = true,
 		attackAnimationId = "rbxassetid://135103987361576",
 		attackHitDelay = 0.5,
+		maxOnPlot = 10,
 	},
 
 	TungTungSahur = {

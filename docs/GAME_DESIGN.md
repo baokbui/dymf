@@ -70,11 +70,11 @@ The world is one shared grass baseplate. The playable area is split into two
 side-by-side columns along X:
 
 ```
-[ west: player plots (6 lanes) ] [ east: enemy spawn lanes (6 lanes) ]
+[ west: player plots (4 lanes) ] [ east: enemy spawn lanes (4 lanes) ]
 ```
 
 Every player receives their own **isolated plot** in the west column (one lane
-per row, up to six concurrent players). The matching row in the east column is
+per row, up to four concurrent players). The matching row in the east column is
 that plot's **enemy spawn lane** — monsters stage there and enter the player's
 grid from +X. There are no player grids in the east column.
 
@@ -88,7 +88,7 @@ Each player plot contains:
 - Coin spawner marker (passive drop origin)
 - Path / Decorations folders (populated in later milestones)
 
-`Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane6`).
+`Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane4`).
 `Workspace.Maps.DarkForest` fills that east column with a dense, non-colliding
 dark forest (clear strip near the plots for entry). Monsters spawn deeper in
 the trees and walk west into player plots — that approach is setup time.
@@ -132,7 +132,7 @@ progression currency (day-clear rewards, Progression Store spends).
 Coins are earned by:
 
 - Passive drops (every 25 seconds) ✅
-- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s) ✅
+- Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s, max 10 on a plot) ✅
 - Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0 ✅
 
 Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a

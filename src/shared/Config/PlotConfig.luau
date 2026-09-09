@@ -8,6 +8,9 @@
 		[ west: player plots ] [ east: enemy spawn lanes ]
 
 	Player plots tile the west column in LANE_ROWS rows (one lane per row).
+	Plot *size* is derived from PACKED_LANE_ROWS (the original packed stack) so
+	dropping LANE_ROWS only adds even Z gaps — it does not stretch the lawn.
+
 	The east column holds enemy-spawn lanes aligned with each player row — no
 	player grids there. Monsters stage in the east column and enter the matching
 	player plot from the +X side.
@@ -32,15 +35,21 @@ local POOL_MARGIN = 20 -- grass border between the plot pool and baseplate edge
 local USABLE = BASEPLATE_SIZE - POOL_MARGIN * 2
 
 local MAP_COLUMNS = 2 -- west = player plots, east = enemy spawn
-local LANE_ROWS = 6 -- stacked lanes per column (one row per concurrent player)
+-- Footprint as if the west column were still this many packed lanes, so the
+-- lawn / house strip stay the original size when LANE_ROWS is lowered.
+local PACKED_LANE_ROWS = 6
+local LANE_ROWS = 4 -- stacked lanes per column (one row per concurrent player)
 local MAX_PLOTS = LANE_ROWS -- player lanes in the west column only
 
 local MARGIN_X = 10
 local MARGIN_Z = 10
 
--- Each map column is half the baseplate; rows stack along Z.
+-- Each map column is half the baseplate; packed-lane depth is the plot Z size.
 local BASE_WIDTH = USABLE / MAP_COLUMNS -- X (lane length)
-local BASE_DEPTH = USABLE / LANE_ROWS -- Z (one lane)
+local BASE_DEPTH = USABLE / PACKED_LANE_ROWS -- Z (one plot, original packed size)
+-- Even Z spacing for the live plot count (gaps sit between plots).
+local LANE_PITCH = USABLE / LANE_ROWS
+assert(LANE_PITCH + 1e-4 >= BASE_DEPTH, "PlotConfig: LANE_ROWS is too high for packed plot size")
 
 -- Derive the grid to fill the play area. Tiles are square; their size is set by
 -- the lane depth so the grid spans the full width of the lane (minus margins).
@@ -58,6 +67,7 @@ local HOUSE_ZONE = ZONE_TOTAL
 local PlotConfig = {
 	MAX_PLOTS = MAX_PLOTS,
 	MAP_COLUMNS = MAP_COLUMNS,
+	PACKED_LANE_ROWS = PACKED_LANE_ROWS,
 	LANE_ROWS = LANE_ROWS,
 	PLAYER_MAP_COLUMN = 0, -- west column index
 	ENEMY_MAP_COLUMN = 1, -- east column index
@@ -76,7 +86,8 @@ local PlotConfig = {
 	GRID_DEPTH = GRID_DEPTH, -- Z (rows)
 
 	BASE_WIDTH = BASE_WIDTH, -- X (lane length)
-	BASE_DEPTH = BASE_DEPTH, -- Z (one lane)
+	BASE_DEPTH = BASE_DEPTH, -- Z (one plot)
+	LANE_PITCH = LANE_PITCH, -- Z between plot centers
 	BASE_THICKNESS = 1,
 
 	-- Spawn sits at the left edge of the play area, facing the enemy (+X).

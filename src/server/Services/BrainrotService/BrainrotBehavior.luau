@@ -116,6 +116,13 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 						placement.definition.id,
 						EvolutionConfig.COIN_XP
 					)
+					local percent = 0
+					if placement.definition.abilityParams then
+						percent = placement.definition.abilityParams.plantDiscountPercent or 0
+					end
+					if percent > 0 then
+						require(script.Parent).setPlantDiscount(placement.plotModel, percent)
+					end
 				end
 				return dropped
 			end
@@ -192,17 +199,7 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.weakenUntil = 0
 	placement.weakenFactor = 0
 	placement.extraCooldowns = {}
-	placement.buffs = {
-		coinHasteUntil = 0,
-		coinHasteFactor = 1,
-		attackHasteUntil = 0,
-		attackHasteFactor = 1,
-		rangedUntil = 0,
-		pierceNext = false,
-		shieldHp = 0,
-		attackCount = 0,
-		furyTriggered = false,
-	}
+	placement.buffs = Abilities.defaultBuffs()
 	active[placement.instanceId] = placement
 	BrainrotAnimation.bind(placement.model, placement.definition)
 
@@ -245,10 +242,14 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		placement.brainrotId,
 		ProgressService.getClaimedEvolutions(player, placement.brainrotId)
 	)
+	local stoned = os.clock() < placement.buffs.stoneUntil
 	for _, extra in extras do
 		local remaining = (placement.extraCooldowns[extra.ability] or 0) - dt
 		if remaining > 0 then
 			placement.extraCooldowns[extra.ability] = remaining
+			continue
+		end
+		if stoned then
 			continue
 		end
 		local handler = Abilities.get(extra.ability)
@@ -267,6 +268,30 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		if acted then
 			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
 		end
+	end
+end
+
+local function expireTimedBuffs(placement: RuntimePlacement, now: number)
+	if placement.buffs.stoneUntil > 0 and now >= placement.buffs.stoneUntil then
+		placement.buffs.stoneUntil = 0
+		BrainrotFeedback.setStoned(placement.model, false)
+		if placement.poisonTintActive and placement.poisonUntil > now then
+			BrainrotFeedback.setPoisoned(placement.model, true)
+		end
+	end
+	if placement.buffs.tenfoldShield and placement.buffs.shieldUntil > 0 and now >= placement.buffs.shieldUntil then
+		placement.buffs.tenfoldShield = false
+		placement.buffs.shieldStunImmune = false
+		placement.buffs.shieldUntil = 0
+		placement.buffs.shieldHp = 0
+		local maxHits = placement.definition.health
+		local body = 0
+		if maxHits > 0 then
+			body = math.floor(placement.definition.maxHealth * placement.health / maxHits)
+		end
+		placement.model:SetAttribute("Health", body)
+		placement.model:SetAttribute("ShieldHp", 0)
+		BrainrotFeedback.setShield(placement.model, false)
 	end
 end
 
@@ -300,11 +325,12 @@ function BrainrotBehavior.tick(dt: number)
 		end
 
 		local combatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
-		if placement.poisonUntil > now and now >= placement.poisonNextTick then
+		local nowStone = now < placement.buffs.stoneUntil
+		if not nowStone and placement.poisonUntil > now and now >= placement.poisonNextTick then
 			CombatService.damageBrainrot(placement.instanceId, placement.poisonHitsPerTick)
 			placement.poisonNextTick = now + combatConfig.POISON_TICK_INTERVAL
 		end
-		if placement.burnUntil > now and now >= placement.burnNextTick then
+		if not nowStone and placement.burnUntil > now and now >= placement.burnNextTick then
 			CombatService.damageBrainrot(placement.instanceId, placement.burnHitsPerTick)
 			placement.burnNextTick = now + combatConfig.BURN_TICK_INTERVAL
 		end
@@ -319,6 +345,8 @@ function BrainrotBehavior.tick(dt: number)
 			continue
 		end
 
+		expireTimedBuffs(placement, now)
+
 		-- Lazy require avoids LevelService ↔ BrainrotService cycle.
 		local LevelService = require(script.Parent.Parent.LevelService)
 		local owner = Players:GetPlayerByUserId(placement.ownerUserId)
@@ -327,6 +355,10 @@ function BrainrotBehavior.tick(dt: number)
 		end
 
 		tickExtras(placement, dt)
+
+		if now < placement.buffs.stoneUntil then
+			continue
+		end
 
 		if now < placement.frozenUntil then
 			continue

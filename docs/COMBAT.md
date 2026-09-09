@@ -117,8 +117,8 @@ Applied only through `CombatService.applyStatusToMonster` or
 
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
-| Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. |
-| Slow | Reduces movement speed | — |
+| Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. **Tenfold Guard** skips Stun while `shieldStunImmune` and shield HP remain. **Stoneheart** ignores Stun / Freeze while stone. |
+| Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
 | Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.5). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
@@ -130,6 +130,13 @@ fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
 occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
+
+**Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
+- **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
+- **Wound of the Shark** — when a `"Bubble"` freeze ends, `CombatService.applyBubbleExitSlow`.
+- **Frostbound Neighbor** — `FreezeTime` also freezes one adjacent row (`freezeAdjacentLane`).
+- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`.
+- **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts.
 
 **Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
 entrance). `ScorpionBurrow` only on first **plot** column: sinks, travels

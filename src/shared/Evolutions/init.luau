@@ -3,7 +3,7 @@
 	Evolutions
 	Epic→God catalog. Claiming a tier costs brains after the Brainrot
 	level gate. 	Epic `stats` compose onto the shared registry definition. Legendary extras
-	and Mythic passives resolve from `ability` ids / `abilityParams` (never
+	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names).
 ]]
 
@@ -53,7 +53,13 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Each coin produced: 30% chance to produce one extra.",
 			abilityParams = { extraCoinChance = 30 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Golden Discount", description = "When producing a coin, the next Brainrot plant costs 50%." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Golden Discount",
+			description = "When producing a coin, the next Brainrot plant (any unit) costs 50%. One charge; producing again refreshes it (does not stack).",
+			abilityParams = { plantDiscountPercent = 50 },
+		},
 		{ rarity = "God", level = 50, name = "Jackpot", description = "Produce coins 3× faster; each coin during the ultimate 33% extra. 30s cooldown." },
 	},
 	ChimpanziniBananini = {
@@ -80,7 +86,14 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			ability = "RegenPulse",
 			abilityParams = { cooldown = 5, healPercent = 5 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Stoneheart", description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Stoneheart",
+			description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone.",
+			ability = "Stoneheart",
+			abilityParams = { healthPercent = 10, duration = 10 },
+		},
 		{ rarity = "God", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. 30s cooldown." },
 	},
 	TungTungSahur = {
@@ -107,7 +120,14 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			ability = "DesperateFury",
 			abilityParams = { healthPercent = 50, factor = 1.5 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Tenfold Guard", description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Tenfold Guard",
+			description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded.",
+			ability = "TenfoldGuard",
+			abilityParams = { every = 10, shieldPercent = 30, duration = 5 },
+		},
 		{ rarity = "God", level = 50, name = "Sahur's Wrath", description = "Hit the entire lane once for 1000% of original damage. 30s cooldown." },
 	},
 	TralaleroTralala = {
@@ -133,7 +153,13 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Each bubble 33% chance to spawn an extra trap bubble.",
 			abilityParams = { extraBubbleChance = 33 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Wound of the Shark", description = "Monsters leaving a bubble are slowed 40% for 3s." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Wound of the Shark",
+			description = "Monsters leaving a bubble are slowed 40% for 3s.",
+			abilityParams = { bubbleExitSlowPercent = 40, bubbleExitSlowDuration = 3 },
+		},
 		{ rarity = "God", level = 50, name = "Tidal Cataclysm", description = "Lane tsunami: knockback + stun, then slow 30% for 3s." },
 	},
 	CappuccinoAssassino = {
@@ -160,7 +186,13 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Every 5th attack deals 200% dmg.",
 			abilityParams = { fifthStrikeEvery = 5, fifthStrikeFactor = 2 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Assassin's Verdict", description = "Execute on hit if target is below 7.5% HP (2% for bosses)." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Assassin's Verdict",
+			description = "Execute on hit if target is below 7.5% HP (2% for bosses).",
+			abilityParams = { executeHealthPercent = 7.5, executeBossPercent = 2 },
+		},
 		{ rarity = "God", level = 50, name = "Shadow Requiem", description = "Vanish to the east end of the lane, run back, stab every monster for 2000% dmg. 45s cooldown." },
 	},
 	LiriliLarila = {
@@ -185,7 +217,13 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Freeze duration 7s.",
 			abilityParams = { freezeDuration = 7 },
 		},
-		{ rarity = "Immortal", level = 40, name = "Frostbound Neighbor", description = "Also freeze one adjacent lane." },
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Frostbound Neighbor",
+			description = "Also freeze one adjacent lane (the neighbor with more monsters; ties go to the lower row).",
+			abilityParams = { freezeAdjacentLane = 1 },
+		},
 		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s." },
 	},
 }

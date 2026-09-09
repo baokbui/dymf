@@ -6,11 +6,15 @@
 	the cast animation ends, then thaw SFX when the status expires.
 	Legendary Winter's Grasp (`abilityParams.freezeEntireLane`) freezes
 	the whole row instead. Mythic Permafrost overlays `freezeDuration`.
+	Immortal Frostbound Neighbor also freezes one adjacent lawn row
+	(`freezeAdjacentLane`): the neighbor with more monsters, ties go to
+	the lower row.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
+local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local ProgressService = require(script.Parent.Parent.Parent.ProgressService)
 
@@ -23,10 +27,12 @@ function FreezeTime.onPlaced(ctx, callbacks)
 	local freezeDuration = DEFAULT_FREEZE_DURATION
 	local freezeTiles = 2
 	local freezeEntireLane = false
+	local freezeAdjacentLane = false
 	if ctx.definition.abilityParams then
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
 		freezeTiles = ctx.definition.abilityParams.freezeTiles or freezeTiles
 		freezeEntireLane = (ctx.definition.abilityParams.freezeEntireLane or 0) >= 1
+		freezeAdjacentLane = (ctx.definition.abilityParams.freezeAdjacentLane or 0) >= 1
 	end
 
 	local hitDelay = 0
@@ -59,20 +65,20 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			return
 		end
 
-		local frozen = 0
-		if freezeEntireLane then
-			frozen = CombatService.applyEntireRowStatus(
+		local function freezeRow(targetRow: number): number
+			if freezeEntireLane then
+				return CombatService.applyEntireRowStatus(
+					plotModel,
+					targetRow,
+					"Freeze",
+					freezeDuration,
+					nil,
+					"Ice"
+				)
+			end
+			return CombatService.applyStatusAroundColumn(
 				plotModel,
-				row,
-				"Freeze",
-				freezeDuration,
-				nil,
-				"Ice"
-			)
-		else
-			frozen = CombatService.applyStatusAroundColumn(
-				plotModel,
-				row,
+				targetRow,
 				column,
 				freezeTiles,
 				freezeTiles,
@@ -81,6 +87,36 @@ function FreezeTime.onPlaced(ctx, callbacks)
 				nil,
 				"Ice"
 			)
+		end
+
+		local function pickAdjacentRow(): number?
+			local below = row - 1
+			local above = row + 1
+			local belowOk = below >= 1
+			local aboveOk = above <= GridConfig.ROWS
+			if belowOk and aboveOk then
+				local nBelow = #CombatService.getAllMonstersInRow(plotModel, below)
+				local nAbove = #CombatService.getAllMonstersInRow(plotModel, above)
+				if nAbove > nBelow then
+					return above
+				end
+				return below
+			end
+			if belowOk then
+				return below
+			end
+			if aboveOk then
+				return above
+			end
+			return nil
+		end
+
+		local frozen = freezeRow(row)
+		if freezeAdjacentLane then
+			local adjacent = pickAdjacentRow()
+			if adjacent then
+				frozen += freezeRow(adjacent)
+			end
 		end
 		if frozen > 0 then
 			ProgressService.grantBrainrotXpForUser(

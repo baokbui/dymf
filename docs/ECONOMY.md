@@ -48,6 +48,7 @@ Values live in `Shared.Config.EconomyConfig` (frozen). Current tuning:
 Related Brainrot income: `BallerinaCappucina.coinGeneration = 25` every 18s —
 coins are **spat from the unit** and land on a **random grid tile**
 (`GenerateCoins` → `CoinService.dropRandomCoinForOwner(..., origin)`).
+At most **10** Ballerinas may be living on a plot (`definition.maxOnPlot`).
 On NightFog days, spit and passive rain land only on **non-fog** columns
 (`WeatherUtil.randomClearPlotPosition` — see `WEATHER.md`).
 

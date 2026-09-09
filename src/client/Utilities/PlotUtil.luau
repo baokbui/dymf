@@ -32,6 +32,23 @@ function PlotUtil.isOnLocalPlot(instance: Instance): boolean
 	return plot ~= nil and instance:IsDescendantOf(plot)
 end
 
+function PlotUtil.countOnLocalPlot(brainrotId: string): number
+	local plot = PlotUtil.getLocalPlotModel()
+	if not plot then
+		return 0
+	end
+	local n = 0
+	for _, inst in CollectionService:GetTagged(Constants.TAGS.Brainrot) do
+		if inst:IsA("Model")
+			and inst:IsDescendantOf(plot)
+			and inst:GetAttribute("BrainrotId") == brainrotId
+		then
+			n += 1
+		end
+	end
+	return n
+end
+
 function PlotUtil.getLocalBrainrotAt(row: number, column: number): Model?
 	for _, inst in CollectionService:GetTagged(Constants.TAGS.Brainrot) do
 		if inst:IsA("Model")

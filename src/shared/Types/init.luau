@@ -49,6 +49,8 @@ export type BrainrotDefinition = {
 	-- Anchor every part on place/preview (Toolbox humanoids that fall through).
 	anchorAllParts: boolean?,
 	plantCooldown: number?, -- seconds before re-plant; nil = BrainrotConfig.plantCooldownFor(cost)
+	-- Cap of living plants of this id on one plot. Nil = unlimited.
+	maxOnPlot: number?,
 	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
 	-- Local Euler degrees (X=pitch, Y=yaw, Z=roll) applied after clearing Assets rotation.

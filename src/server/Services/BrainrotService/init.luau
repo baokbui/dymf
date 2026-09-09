@@ -11,11 +11,13 @@
 		   (never branch on Brainrot names).
 		3. Resolve the caller's owned plot (PlotService).
 		4. Reject if that Brainrot id is still recharging (plant cooldown).
-		5. Pre-check affordability against the authoritative balance.
-		6. Reserve the tile (GridService.tryOccupy) — rejects occupied/unknown.
-		7. Charge coins (CoinService.trySpend); release the tile if the charge
-		   fails (guards against a balance race between steps 5 and 7).
-		8. Build the model, record the instance, start plant cooldown.
+		5. Reject if `maxOnPlot` is set and that many of this id are already
+		   living on the plot.
+		6. Pre-check affordability against the authoritative balance.
+		7. Reserve the tile (GridService.tryOccupy) — rejects occupied/unknown.
+		8. Charge coins (CoinService.trySpend); release the tile if the charge
+		   fails (guards against a balance race between steps 6 and 8).
+		9. Build the model, record the instance, start plant cooldown.
 
 	Removal (RemoveBrainrot) verifies the caller owns the Brainrot on the tile,
 	frees the tile, and destroys the model. Digging up a Brainrot is NOT
@@ -37,6 +39,7 @@ local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local GridUtil = require(Shared.Utilities.GridUtil)
+local PlantCost = require(Shared.Utilities.PlantCost)
 local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
@@ -64,6 +67,8 @@ type Placement = BrainrotBehavior.RuntimePlacement
 
 -- instanceId -> placement (single source of runtime placement state).
 local placements: { [string]: Placement } = {}
+-- In-flight PlaceBrainrot reservations so two clicks cannot exceed maxOnPlot.
+local pendingPlotCaps: { [Model]: { [string]: number } } = {}
 -- userId -> brainrotId -> readyAt (Workspace:GetServerTimeNow)
 local plantReadyAt: { [number]: { [string]: number } } = {}
 local nextInstanceId = 0
@@ -293,17 +298,7 @@ local function createPlacement(
 		weakenUntil = 0,
 		weakenFactor = 0,
 		extraCooldowns = {},
-		buffs = {
-			coinHasteUntil = 0,
-			coinHasteFactor = 1,
-			attackHasteUntil = 0,
-			attackHasteFactor = 1,
-			rangedUntil = 0,
-			pierceNext = false,
-			shieldHp = 0,
-			attackCount = 0,
-			furyTriggered = false,
-		},
+		buffs = Abilities.defaultBuffs(),
 	}
 
 	placements[instanceId] = placement
@@ -350,6 +345,10 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 		return false
 	end
 
+	if placement.buffs.stoneUntil > os.clock() then
+		return false
+	end
+
 	if hits > 0 and placement.definition.ability == "Wall" then
 		local ProgressService = require(script.Parent.ProgressService)
 		ProgressService.grantBrainrotXpForUser(
@@ -367,6 +366,11 @@ local function applyBrainrotDamage(instanceId: string, hits: number): boolean
 		placement.buffs.shieldHp -= absorbed
 		local leftoverHp = incomingHp - absorbed
 		hits = if leftoverHp > 0 then math.ceil(leftoverHp / hpPerHit) else 0
+		if placement.buffs.shieldHp <= 0 then
+			placement.buffs.shieldStunImmune = false
+			placement.buffs.tenfoldShield = false
+			placement.buffs.shieldUntil = 0
+		end
 	end
 
 	if hits > 0 then
@@ -403,6 +407,60 @@ local function applyBrainrotHeal(instanceId: string, hits: number)
 end
 
 -- ===== Remote handlers (untrusted input) =====
+
+local function countLivingOnPlot(plotModel: Model, brainrotId: string): number
+	local n = 0
+	for _, placement in placements do
+		if placement.plotModel == plotModel
+			and placement.brainrotId == brainrotId
+			and placement.health > 0
+		then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function plotCapReason(definition: Types.BrainrotDefinition): string
+	local cap = definition.maxOnPlot
+	if type(cap) ~= "number" then
+		return "Unable to plant — plot limit reached"
+	end
+	return string.format("Unable to plant — only %d %s on the plot", cap, definition.name)
+end
+
+local function tryReservePlotCap(plotModel: Model, brainrotId: string, cap: number): boolean
+	local byId = pendingPlotCaps[plotModel]
+	if not byId then
+		byId = {}
+		pendingPlotCaps[plotModel] = byId
+	end
+	local pending = byId[brainrotId] or 0
+	if countLivingOnPlot(plotModel, brainrotId) + pending >= cap then
+		return false
+	end
+	byId[brainrotId] = pending + 1
+	return true
+end
+
+local function releasePlotCap(plotModel: Model, brainrotId: string)
+	local byId = pendingPlotCaps[plotModel]
+	if not byId then
+		return
+	end
+	local pending = byId[brainrotId]
+	if type(pending) ~= "number" then
+		return
+	end
+	if pending <= 1 then
+		byId[brainrotId] = nil
+		if next(byId) == nil then
+			pendingPlotCaps[plotModel] = nil
+		end
+	else
+		byId[brainrotId] = pending - 1
+	end
+end
 
 local function notifyPlaceFailed(player: Player, reason: string)
 	Remotes.getEvent("PlaceBrainrotFailed"):FireClient(player, reason)
@@ -446,6 +504,21 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		return
 	end
 	local plotModel = plot.model
+	local maxOnPlot = definition.maxOnPlot
+	local reservedCap = false
+	if type(maxOnPlot) == "number" and maxOnPlot > 0 then
+		if not tryReservePlotCap(plotModel, definition.id, maxOnPlot) then
+			notifyPlaceFailed(player, plotCapReason(definition))
+			return
+		end
+		reservedCap = true
+	end
+	local function releaseCap()
+		if reservedCap then
+			releasePlotCap(plotModel, definition.id)
+			reservedCap = false
+		end
+	end
 	local rowCleared = FogRows.isRowCleared(plotModel, position.row)
 	if WeatherUtil.fogBlocksPlanting(
 		position.column,
@@ -455,6 +528,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		definition.triggersOnPlace,
 		definition.plantOnGrave
 	) then
+		releaseCap()
 		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
 		return
 	end
@@ -462,16 +536,20 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	local hasGrave = GraveService.hasGrave(plotModel, position)
 	if definition.plantOnGrave == true then
 		if not hasGrave then
+			releaseCap()
 			notifyPlaceFailed(player, "Unable to plant — plant this on a grave")
 			return
 		end
 	elseif hasGrave then
+		releaseCap()
 		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
 		return
 	end
 
 	-- Affordability pre-check (cheap reject before reserving the tile).
-	if CoinService.getBalance(player) < definition.cost then
+	local cost = PlantCost.coins(definition.cost, plotModel)
+	if CoinService.getBalance(player) < cost then
+		releaseCap()
 		notifyPlaceFailed(player, "Unable to plant — not enough coins")
 		return
 	end
@@ -484,15 +562,17 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		then GridService.tryOccupyOverGrave(plotModel, position, instanceId)
 		else GridService.tryOccupy(plotModel, position, instanceId)
 	if not occupied then
+		releaseCap()
 		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
 		return
 	end
-	if not CoinService.trySpend(player, definition.cost) then
+	if not CoinService.trySpend(player, cost) then
 		if definition.plantOnGrave == true then
 			GridService.revertToGrave(plotModel, position)
 		else
 			GridService.release(plotModel, position)
 		end
+		releaseCap()
 		notifyPlaceFailed(player, "Unable to plant — not enough coins")
 		return
 	end
@@ -503,10 +583,16 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		else
 			GridService.release(plotModel, position)
 		end
-		CoinService.addCoins(player, definition.cost)
+		CoinService.addCoins(player, cost)
+		releaseCap()
 		return
 	end
 
+	if cost < definition.cost then
+		plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, nil)
+	end
+
+	releaseCap()
 	local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
 	startPlantCooldown(player, definition)
@@ -714,6 +800,19 @@ function BrainrotService.syncNameplates(player: Player, brainrotId: string?)
 	end
 end
 
+function BrainrotService.setPlantDiscount(plotModel: Model, percent: number)
+	if percent <= 0 then
+		return
+	end
+	local factor = math.clamp(1 - percent / 100, 0.01, 0.99)
+	local current = plotModel:GetAttribute(PlantCost.DISCOUNT_ATTRIBUTE)
+	-- Keep the stronger (lower) factor; a matching 50% charge just refreshes.
+	if type(current) == "number" and current < factor then
+		return
+	end
+	plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, factor)
+end
+
 -- Removes every Brainrot on a plot and frees its tiles (level end / reset).
 function BrainrotService.clearPlot(plotModel: Model)
 	local toRemove: { Placement } = {}
@@ -731,6 +830,7 @@ function BrainrotService.clearPlot(plotModel: Model)
 	if lineBomb and (lineBomb :: any).clearPlot then
 		(lineBomb :: any).clearPlot(plotModel)
 	end
+	plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, nil)
 end
 
 -- Remove Brainrots standing on NightFog-blocked lawn columns (east fog zone).
@@ -774,7 +874,16 @@ local function applyBrainrotStatus(
 
 	local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 	local now = os.clock()
+	if placement.buffs.stoneUntil > now then
+		return
+	end
 	if kind == "Stun" or kind == "Freeze" then
+		if kind == "Stun"
+			and placement.buffs.shieldStunImmune
+			and placement.buffs.shieldHp > 0
+		then
+			return
+		end
 		placement.frozenUntil = math.max(placement.frozenUntil, now + duration)
 		-- Cartoon dizzy stars for the remaining stun/freeze window (Queen Spider,
 		-- Duke Vampire Terrify, …).

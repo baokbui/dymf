@@ -14,8 +14,8 @@ local MagnetConfig = {
 	DURATION = 5,
 
 	-- Cooldown after the active window (level 1 → max level, linear).
-	COOLDOWN_LEVEL_1 = 45,
-	COOLDOWN_LEVEL_MAX = 10,
+	COOLDOWN_LEVEL_1 = 90,
+	COOLDOWN_LEVEL_MAX = 20,
 
 	-- Chebyshev distance 1: one tile left / right / up / down / diagonal.
 	RANGE_TILES = 1,

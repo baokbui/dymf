@@ -102,6 +102,7 @@ function MeleeBat.tryAct(ctx, callbacks)
 	-- Start swing anim / pulse immediately; damage waits for attackHitDelay so
 	-- the impact frame can line up with the authored clip.
 	callbacks.pulseAttack()
+	ctx.buffs.attackCount += 1
 
 	local function strike(foundId: string)
 		if ranged then

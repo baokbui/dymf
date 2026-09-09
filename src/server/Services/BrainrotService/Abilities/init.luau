@@ -28,6 +28,12 @@ export type EvolutionBuffs = {
 	shieldHp: number,
 	attackCount: number,
 	furyTriggered: boolean,
+	stoneUntil: number,
+	stoneTriggered: boolean,
+	shieldUntil: number,
+	shieldStunImmune: boolean,
+	tenfoldAt: number,
+	tenfoldShield: boolean,
 }
 
 export type AbilityContext = {
@@ -68,7 +74,29 @@ local handlers: { [string]: AbilityHandler } = {
 	PierceBrew = require(script.PierceBrew),
 	RegenPulse = require(script.RegenPulse),
 	DesperateFury = require(script.DesperateFury),
+	Stoneheart = require(script.Stoneheart),
+	TenfoldGuard = require(script.TenfoldGuard),
 }
+
+function Abilities.defaultBuffs(): EvolutionBuffs
+	return {
+		coinHasteUntil = 0,
+		coinHasteFactor = 1,
+		attackHasteUntil = 0,
+		attackHasteFactor = 1,
+		rangedUntil = 0,
+		pierceNext = false,
+		shieldHp = 0,
+		attackCount = 0,
+		furyTriggered = false,
+		stoneUntil = 0,
+		stoneTriggered = false,
+		shieldUntil = 0,
+		shieldStunImmune = false,
+		tenfoldAt = 0,
+		tenfoldShield = false,
+	}
+end
 
 function Abilities.get(abilityId: string?): AbilityHandler?
 	if not abilityId then

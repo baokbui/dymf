@@ -910,6 +910,41 @@ function CombatService.applyStatusToMonster(
 	end
 end
 
+-- Wound of the Shark: when a bubble freeze ends, Slow from claimed Immortal
+-- `bubbleExitSlowPercent` (params-only; any roster id, never a unit-name branch).
+function CombatService.applyBubbleExitSlow(plotModel: Model, monsterInstanceId: string)
+	local ownerUserId = plotModel:GetAttribute("OwnerUserId")
+	if type(ownerUserId) ~= "number" then
+		return
+	end
+	local player = Players:GetPlayerByUserId(ownerUserId)
+	if not player then
+		return
+	end
+	local Brainrots = require(ReplicatedStorage.Shared.Brainrots)
+	local Evolutions = require(ReplicatedStorage.Shared.Evolutions)
+	local ProgressService = require(script.Parent.ProgressService)
+	local percent = 0
+	local duration = 3
+	for _, definition in Brainrots.getAll() do
+		local claimed = ProgressService.getClaimedEvolutions(player, definition.id)
+		local overlaid = Evolutions.applyStats(definition, claimed)
+		local params = overlaid.abilityParams
+		if params and type(params.bubbleExitSlowPercent) == "number" and params.bubbleExitSlowPercent > 0 then
+			percent = params.bubbleExitSlowPercent
+			if type(params.bubbleExitSlowDuration) == "number" and params.bubbleExitSlowDuration > 0 then
+				duration = params.bubbleExitSlowDuration
+			end
+			break
+		end
+	end
+	if percent <= 0 then
+		return
+	end
+	local factor = math.clamp(1 - percent / 100, 0.05, 1)
+	CombatService.applyStatusToMonster(monsterInstanceId, "Slow", duration, factor)
+end
+
 function CombatService.noteLandedAttack(sourceInstanceId: string)
 	local BrainrotService = require(script.Parent.BrainrotService)
 	BrainrotService.noteLandedAttack(sourceInstanceId)

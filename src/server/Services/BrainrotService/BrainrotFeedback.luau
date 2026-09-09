@@ -24,6 +24,7 @@ local pulseTokens: { [Model]: number } = {}
 local activeHitFlashTweens: { [Model]: { Tween } } = {}
 local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
 local poisonLooks: { [Model]: { [BasePart]: Color3 } } = {}
+local stoneLooks: { [Model]: { [BasePart]: { color: Color3, material: Enum.Material } } } = {}
 
 local function visibleParts(model: Model): { BasePart }
 	local parts: { BasePart } = {}
@@ -179,6 +180,64 @@ function BrainrotFeedback.setPoisoned(model: Model, poisoned: boolean)
 			poisonLooks[model] = nil
 		end
 		model:SetAttribute("Poisoned", false)
+	end
+end
+
+function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
+	local parts = visibleParts(model)
+	if #parts == 0 then
+		return
+	end
+
+	if stoned then
+		cancelHitFlash(model)
+		if not stoneLooks[model] then
+			local looks: { [BasePart]: { color: Color3, material: Enum.Material } } = {}
+			local flashBases = hitFlashBaseColors[model]
+			for _, part in parts do
+				looks[part] = {
+					color = (flashBases and flashBases[part]) or part.Color,
+					material = part.Material,
+				}
+			end
+			stoneLooks[model] = looks
+		end
+
+		local tint = BrainrotConfig.STONE_TINT_COLOR
+		local blend = BrainrotConfig.STONE_TINT_BLEND
+		local stoneMaterial = BrainrotConfig.STONE_MATERIAL
+		local originals = stoneLooks[model]
+		if not originals then
+			return
+		end
+		local tinted: { [BasePart]: Color3 } = {}
+		for _, part in parts do
+			local look = originals[part]
+			local base = if look then look.color else part.Color
+			local washed = base:Lerp(tint, blend)
+			part.Color = washed
+			part.Material = stoneMaterial
+			tinted[part] = washed
+		end
+		hitFlashBaseColors[model] = tinted
+		model:SetAttribute("Stoned", true)
+	else
+		local originals = stoneLooks[model]
+		if originals then
+			for part, look in originals do
+				if part.Parent then
+					part.Color = look.color
+					part.Material = look.material
+				end
+			end
+			local restored: { [BasePart]: Color3 } = {}
+			for part, look in originals do
+				restored[part] = look.color
+			end
+			hitFlashBaseColors[model] = restored
+			stoneLooks[model] = nil
+		end
+		model:SetAttribute("Stoned", false)
 	end
 end
 
@@ -358,8 +417,12 @@ function BrainrotFeedback.cleanup(model: Model)
 	if poisonLooks[model] then
 		BrainrotFeedback.setPoisoned(model, false)
 	end
+	if stoneLooks[model] then
+		BrainrotFeedback.setStoned(model, false)
+	end
 	hitFlashBaseColors[model] = nil
 	poisonLooks[model] = nil
+	stoneLooks[model] = nil
 	BrainrotFeedback.clearAura(model)
 	BrainrotFeedback.clearShield(model)
 

@@ -500,6 +500,35 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 
 	if type(sourceBrainrotId) == "string" then
 		runtime.lastHitBrainrotId = sourceBrainrotId
+		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" then
+			local player = Players:GetPlayerByUserId(ownerUserId)
+			if player then
+				local Brainrots = require(ReplicatedStorage.Shared.Brainrots)
+				local Evolutions = require(ReplicatedStorage.Shared.Evolutions)
+				local ProgressService = require(script.Parent.ProgressService)
+				local base = Brainrots.get(sourceBrainrotId)
+				if base then
+					local overlaid = Evolutions.applyStats(
+						base,
+						ProgressService.getClaimedEvolutions(player, sourceBrainrotId)
+					)
+					local params = overlaid.abilityParams
+					if params then
+						local executePercent = params.executeHealthPercent
+						if type(executePercent) == "number" and executePercent > 0 and runtime.maxHealth > 0 then
+							local threshold = executePercent
+							if runtime.definition.isBoss == true then
+								threshold = params.executeBossPercent or 2
+							end
+							if runtime.health / runtime.maxHealth * 100 <= threshold then
+								damage = runtime.health
+							end
+						end
+					end
+				end
+			end
+		end
 	end
 
 	runtime.health = math.max(0, runtime.health - damage)

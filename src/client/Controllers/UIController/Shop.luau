@@ -19,6 +19,8 @@ local UITheme = require(Shared.Config.UITheme)
 local Types = require(Shared.Types)
 
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
+local PlotUtil = require(script.Parent.Parent.Parent.Utilities.PlotUtil)
+local PlantCost = require(Shared.Utilities.PlantCost)
 
 local Shop = {}
 Shop.__index = Shop
@@ -35,6 +37,9 @@ local PANEL_CORNER_RADIUS = UITheme.CORNER_PANEL
 local NAME_TEXT_SIZE = 9
 local NAME_MAX_WIDTH = CARD_WIDTH - 8
 local NAME_HEIGHT = 20
+local NAME_HEIGHT_CAPPED = 14
+local COUNT_HEIGHT = 12
+local COUNT_TEXT_SIZE = 11
 
 local TOOL_COLUMN_WIDTH = 44
 local TOOL_GAP = 6
@@ -45,6 +50,7 @@ type Card = {
 	button: TextButton,
 	costLabel: TextLabel,
 	nameLabel: TextLabel,
+	countLabel: TextLabel?,
 	cooldownCover: Frame,
 	cooldownLabel: TextLabel,
 	definition: Types.BrainrotDefinition,
@@ -304,12 +310,17 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	end
 	passthrough(preview)
 
+	local cap = definition.maxOnPlot
+	local hasCap = type(cap) == "number" and cap > 0
+	local nameHeight = if hasCap then NAME_HEIGHT_CAPPED else NAME_HEIGHT
+	local nameTop = 4 + SWATCH_SIZE
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.AnchorPoint = Vector2.new(0.5, 0)
-	nameLabel.Position = UDim2.new(0.5, 0, 0, 4 + SWATCH_SIZE)
-	nameLabel.Size = UDim2.new(1, -6, 0, NAME_HEIGHT)
+	nameLabel.Position = UDim2.new(0.5, 0, 0, nameTop)
+	nameLabel.Size = UDim2.new(1, -6, 0, nameHeight)
 	nameLabel.TextSize = NAME_TEXT_SIZE
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -322,11 +333,30 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.TextSize = NAME_TEXT_SIZE
 	nameLabel.TextWrapped = true
 
+	local countLabel: TextLabel? = nil
+	if hasCap and type(cap) == "number" then
+		local count = Instance.new("TextLabel")
+		count.Name = "PlotCount"
+		count.BackgroundTransparency = 1
+		count.AnchorPoint = Vector2.new(0.5, 0)
+		count.Position = UDim2.new(0.5, 0, 0, nameTop + nameHeight)
+		count.Size = UDim2.new(1, -6, 0, COUNT_HEIGHT)
+		count.TextSize = COUNT_TEXT_SIZE
+		count.TextXAlignment = Enum.TextXAlignment.Center
+		count.TextYAlignment = Enum.TextYAlignment.Center
+		count.Text = string.format("0/%d", cap)
+		count.Parent = button
+		passthrough(count)
+		UITheme.applyOutlinedTitle(count, UITheme.TITLE)
+		count.TextSize = COUNT_TEXT_SIZE
+		countLabel = count
+	end
+
 	local costLabel = Instance.new("TextLabel")
 	costLabel.Name = "Cost"
 	costLabel.BackgroundTransparency = 1
 	costLabel.AnchorPoint = Vector2.new(0.5, 1)
-	costLabel.Position = UDim2.new(0.5, 0, 1, -5)
+	costLabel.Position = UDim2.new(0.5, 0, 1, if hasCap then 0 else -5)
 	costLabel.Size = UDim2.new(1, -6, 0, 12)
 	costLabel.TextSize = 12
 	costLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -372,6 +402,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 		button = button,
 		costLabel = costLabel,
 		nameLabel = nameLabel,
+		countLabel = countLabel,
 		cooldownCover = cooldownCover,
 		cooldownLabel = cooldownLabel,
 		definition = definition,
@@ -384,7 +415,8 @@ function Shop.refresh(self: Shop)
 		local readyAt = self.plantReadyAt[card.definition.id]
 		local remaining = if type(readyAt) == "number" then readyAt - now else 0
 		local onCooldown = remaining > 0
-		local affordable = self.balance >= card.definition.cost
+		local plantCost = PlantCost.coins(card.definition.cost, PlotUtil.getLocalPlotModel())
+		local affordable = self.balance >= plantCost
 		local selected = self.selectedId == card.definition.id
 
 		Shop.styleCard(card.button, selected and not onCooldown)
@@ -395,6 +427,18 @@ function Shop.refresh(self: Shop)
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.DANGER)
 		end
 		card.costLabel.TextSize = 12
+		card.costLabel.Text = tostring(plantCost)
+		local countLabel = card.countLabel
+		local cap = card.definition.maxOnPlot
+		if countLabel and type(cap) == "number" and cap > 0 then
+			local planted = PlotUtil.countOnLocalPlot(card.definition.id)
+			countLabel.Text = string.format("%d/%d", planted, cap)
+			UITheme.applyOutlinedTitle(
+				countLabel,
+				if planted >= cap then UITheme.DANGER else UITheme.TITLE
+			)
+			countLabel.TextSize = COUNT_TEXT_SIZE
+		end
 
 		if onCooldown then
 			local duration = BrainrotConfig.plantCooldownFor(

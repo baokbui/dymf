@@ -545,6 +545,54 @@ function ProgressService.applyDevRoster(player: Player)
 	broadcast(player)
 end
 
+local function claimedThroughRarity(brainrotId: string, stopRarity: string, existing: { string }?): { string }
+	local raw: { string } = {}
+	for _, row in Evolutions.rowsFor(brainrotId) do
+		table.insert(raw, row.rarity)
+		if row.rarity == stopRarity then
+			break
+		end
+	end
+	if Evolutions.claimedSet(existing)["God"] and stopRarity ~= "God" then
+		table.insert(raw, "God")
+	end
+	return Evolutions.sanitizeClaimed(brainrotId, raw)
+end
+
+-- TEMP Studio cheat: floor XP + claim Epic→tier at FORCE_BRAINROT_LEVEL (see DevConfig).
+function ProgressService.applyDevEvolutions(player: Player)
+	if not DevConfig.isActive() then
+		return
+	end
+	local targetLevel = DevConfig.FORCE_BRAINROT_LEVEL
+	if type(targetLevel) ~= "number" or targetLevel < 1 then
+		return
+	end
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return
+	end
+	local clampedLevel = math.clamp(math.floor(targetLevel), 1, EvolutionConfig.MAX_LEVEL)
+	local targetXp = EvolutionConfig.xpForLevel(clampedLevel)
+	local tier = EvolutionConfig.tierForLevel(clampedLevel)
+	local stopRarity = if tier and tier.id ~= "Common" then tier.id else nil
+	for id in pairs(Brainrots.getAll()) do
+		if not Brainrots.isPlayable(id) then
+			continue
+		end
+		profile.brainrotXp[id] = math.max(profile.brainrotXp[id] or 0, targetXp)
+		if stopRarity then
+			profile.evolutions[id] = claimedThroughRarity(id, stopRarity, profile.evolutions[id])
+		end
+	end
+	local BrainrotService = require(script.Parent.BrainrotService)
+	for id in pairs(profile.evolutions) do
+		BrainrotService.applyEvolutionStats(player, id)
+		BrainrotService.syncNameplates(player, id)
+	end
+	broadcast(player)
+end
+
 -- TEMP Studio cheat: force playtest brains (see DevConfig).
 function ProgressService.applyDevBrains(player: Player)
 	if not DevConfig.isActive() then

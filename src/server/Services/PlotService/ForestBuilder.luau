@@ -66,10 +66,10 @@ function ForestBuilder.build(enemyColumnCenterX: number, startZ: number): Folder
 	local halfW = PlotConfig.BASE_WIDTH / 2
 	local minX = enemyColumnCenterX - halfW + PlotConfig.FOREST_CLEAR_WEST
 	local maxX = enemyColumnCenterX + halfW - PlotConfig.FOREST_MARGIN_EAST
-	local minZ = startZ - PlotConfig.BASE_DEPTH / 2 + PlotConfig.FOREST_MARGIN_Z
+	local minZ = startZ - PlotConfig.LANE_PITCH / 2 + PlotConfig.FOREST_MARGIN_Z
 	local maxZ = startZ
-		+ (PlotConfig.LANE_ROWS - 1) * PlotConfig.BASE_DEPTH
-		+ PlotConfig.BASE_DEPTH / 2
+		+ (PlotConfig.LANE_ROWS - 1) * PlotConfig.LANE_PITCH
+		+ PlotConfig.LANE_PITCH / 2
 		- PlotConfig.FOREST_MARGIN_Z
 
 	if maxX <= minX or maxZ <= minZ then

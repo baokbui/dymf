@@ -219,10 +219,10 @@ local function forestBounds(plotModel: Model): (Vector3, Vector3)
 	local halfW = PlotConfig.BASE_WIDTH / 2
 	local minX = enemyCenterX - halfW + PlotConfig.FOREST_CLEAR_WEST
 	local maxX = enemyCenterX + halfW - PlotConfig.FOREST_MARGIN_EAST
-	local minZ = origin.Z - PlotConfig.BASE_DEPTH / 2
+	local minZ = origin.Z - PlotConfig.LANE_PITCH / 2
 	local maxZ = origin.Z
-		+ (PlotConfig.LANE_ROWS - 1) * PlotConfig.BASE_DEPTH
-		+ PlotConfig.BASE_DEPTH / 2
+		+ (PlotConfig.LANE_ROWS - 1) * PlotConfig.LANE_PITCH
+		+ PlotConfig.LANE_PITCH / 2
 	return Vector3.new(minX, 0, minZ), Vector3.new(maxX, 0, maxZ)
 end
 

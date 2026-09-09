@@ -23,6 +23,7 @@ local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
+local PlantCost = require(Shared.Utilities.PlantCost)
 local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local UIEvents = require(script.Parent.Parent.UIEvents)
@@ -177,7 +178,27 @@ local function canAfford(): boolean
 		return false
 	end
 	local definition = Brainrots.get(id)
-	return definition ~= nil and balance >= definition.cost
+	return definition ~= nil and balance >= PlantCost.coins(definition.cost, PlotUtil.getLocalPlotModel())
+end
+
+local function countLivingOnPlot(brainrotId: string): number
+	return PlotUtil.countOnLocalPlot(brainrotId)
+end
+
+local function plotCapReached(definition: Types.BrainrotDefinition): boolean
+	local cap = definition.maxOnPlot
+	if type(cap) ~= "number" or cap <= 0 then
+		return false
+	end
+	return countLivingOnPlot(definition.id) >= cap
+end
+
+local function plotCapReason(definition: Types.BrainrotDefinition): string
+	local cap = definition.maxOnPlot
+	if type(cap) ~= "number" then
+		return "Unable to plant — plot limit reached"
+	end
+	return string.format("Unable to plant — only %d %s on the plot", cap, definition.name)
 end
 
 local function updateGhost(tile: BasePart?)
@@ -206,7 +227,11 @@ local function updateGhost(tile: BasePart?)
 		and type(row) == "number"
 		and fogBlockedFor(definition, column, row)
 	local tileTaken = if definition.plantOnGrave == true then not isGrave else occupied
-	local placeable = placementAllowed and not tileTaken and not fogBlocked and canAfford()
+	local placeable = placementAllowed
+		and not tileTaken
+		and not fogBlocked
+		and canAfford()
+		and not plotCapReached(definition)
 
 	if ghostModel then
 		ModelUtil.pivotToTileTop(ghostModel, topCenter, definition.modelOrientationDegrees, nil, definition.modelYOffset)
@@ -487,6 +512,10 @@ local function onPrimaryAction(position: Vector2)
 	end
 	if PlacementController.isOnCooldown(id) then
 		UIEvents.firePlantFailed("Unable to plant — still recharging")
+		return
+	end
+	if plotCapReached(definition) then
+		UIEvents.firePlantFailed(plotCapReason(definition))
 		return
 	end
 

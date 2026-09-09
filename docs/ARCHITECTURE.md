@@ -203,8 +203,9 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
   (`EnemySpawnBuilder`) aligned with each player row — no player grids on that
   side. The pool is sized to fill the baseplate (`BASEPLATE_SIZE` / `POOL_MARGIN`
   in `PlotConfig`): usable area split across `MAP_COLUMNS` (west = plots, east =
-  enemy spawn) and `LANE_ROWS`. Default: 6 player plots + 6 enemy lanes
-  (6 rows × 2 columns).
+  enemy spawn) and `LANE_ROWS`. Default: **4** player plots + **4** enemy lanes
+  (4 rows × 2 columns). Plot footprint stays the original packed 6-lane size
+  (`PACKED_LANE_ROWS`); `LANE_PITCH` spaces the four plots evenly along Z.
 - **PlotBuilder** procedurally builds each player lane from `PlotConfig`: an
   invisible, non-colliding `Base` (region origin + placement raycast target), a
   `SpawnLocation` at the play area's left edge facing the enemy (+X),
@@ -474,15 +475,15 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   use landed-hit XP instead); boss XP split per living plant on the lawn;
   persisted as `brainrotXp` (save v5). Inspect UI shows level / XP. XP from a
   failed or unfinished day rewinds to the Start Day snapshot.
-- **Epic stats + Legendary extras + Mythic passives + aura (live):** claimed Epic overlays `stats`
+- **Epic stats + Legendary extras + Mythic / Immortal passives + aura (live):** claimed Epic overlays `stats`
   onto the registry definition (interval / HP / damage / plant cooldown).
-  Legendary extras and Mythic passives tick from evolution `ability` ids
+  Legendary extras and Mythic / Immortal passives tick from evolution `ability` ids
   (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
-  `RegenPulse`, `DesperateFury`; Lirili’s `freezeEntireLane` / `freezeDuration`
-  and other params-only rows merge into `abilityParams`). Aura is purple at
+  `RegenPulse`, `DesperateFury`, `Stoneheart`, `TenfoldGuard`; Lirili’s
+  `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` and other
+  params-only rows merge into `abilityParams`). Aura is purple at
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
-  at GOD. Immortal+ combat extras
-  still 🔜.
+  at GOD. GOD ultimates still 🔜.
 
 ### Milestone 12 — Audio ✅
 

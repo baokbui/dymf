@@ -14,6 +14,11 @@ function ShieldPulse.tryAct(ctx, _callbacks)
 	if type(params) == "table" then
 		shield = params.shield or shield
 	end
+	-- Banana Bastion replaces a timed Tenfold shield; drop stun-immunity
+	-- so Bastion HP is not wiped when Tenfold's 5s timer expires.
+	ctx.buffs.tenfoldShield = false
+	ctx.buffs.shieldStunImmune = false
+	ctx.buffs.shieldUntil = 0
 	ctx.buffs.shieldHp = math.max(0, shield)
 	local hitsRemaining = ctx.model:GetAttribute("HitsRemaining")
 	if type(hitsRemaining) == "number" then

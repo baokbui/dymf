@@ -50,6 +50,7 @@ Campaign spawn counts assume that growing board — see `Shared.Levels` /
 | `PASSIVE_DROP_INTERVAL` | 25s | Backup income cadence during Active levels |
 | `PASSIVE_DROP_AMOUNT` | 25 | Matches producer coin size |
 | Ballerina `coinGeneration` | 25 / 18s | Primary mid-level income (slower snowball) |
+| Ballerina `maxOnPlot` | 10 | Caps producer snowball on one lawn |
 | Leftover coins → brains | 100 coins = 1 brain | Day-end pocket leftover only. Steep so a couple Ballerina cycles are not a brain. Uncollected ground coins are wasted. |
 
 ---
@@ -76,7 +77,7 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 
 | Unit | Cost | Hits | Combat role |
 | ---- | ---- | ---- | ----------- |
-| Ballerina | 50 | 5 | Economy (25 / 18s) |
+| Ballerina | 50 | 5 | Economy (25 / 18s; max 10 on the plot) |
 | Chimpanzini | 50 | 20 | Wall (~30s vs one Zombie) |
 | Tung Tung | 75 | 12 | Melee (55 / 1.5s ≈ 37 DPS; ~5 hits vs 250 HP Zombie) |
 | Lirili | 75 | — | One-shot freeze 2 tiles ahead + behind (5s; Mythic 7s); uneatable; plant cooldown 20s |
@@ -154,8 +155,8 @@ is worth buying. Twenty levels add **+1 WalkSpeed** each (noticeable over a
 couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 41 / 52 / 65 / 80 / 98 / 118 / 142 / 170 / 204 / 245 / 294 / 353 / 424 / 509**.
 
-Magnet starts at **level 1** (everyone has it). Four paid ranks (**15 / 25 /
-40 / 65** brains) cut cooldown **45s → 10s** at max. Duration stays **5s**.
+Magnet starts at **level 1** (everyone has it). Four paid ranks (**30 / 55 /
+90 / 150** brains) cut cooldown **90s → 20s** at max. Duration stays **5s**.
 
 ---
 

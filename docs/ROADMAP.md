@@ -635,7 +635,7 @@ mutations ship in M19 or slip later.
 
 - Shared schema: Brainrot XP map live (`brainrotXp`); evolution rows
   (`brainrotId` + rarity, ability ids, **Epic `stats`**, **Legendary extras**,
-  **Mythic passives**) ✅; Immortal+ extras 🔜
+  **Mythic passives**) ✅; **Immortal passives** ✅; GOD ultimates 🔜
 - XP grant rules ✅ — last-hit species for normal kills (`BubbleTrap` /
   `MeleeBat` skipped); boss XP split evenly across every living plant; support
   jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP` / `BUBBLE_XP` every 2 landed
@@ -645,7 +645,7 @@ mutations ship in M19 or slip later.
   (`claimedExtras` + `tickExtras`). Mythic passives ✅
 - Persist XP via `SaveService` (v5) and claimed tiers (v6 `evolutions`);
   Epic combat stats ✅; Legendary combat extras ✅; Mythic passives ✅;
-  Immortal+ 🔜
+  Immortal passives ✅; GOD ultimates 🔜
 - Inventory / field inspect show portrait header (name, HP bar, level, XP bar)
   plus Stats and evolution rows (gray until the Brainrot level gate,
   then light rarity fill + shiny title; lock until brains claim, with a
