@@ -46,6 +46,7 @@ type Profile = {
 	evolutions: { [string]: { string } },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
+	introducedMechanics: { string },
 	sessionStartedAt: number,
 	hydrated: boolean, -- false until SaveService.applySaveSlice (or reset)
 }
@@ -217,11 +218,11 @@ local function sanitizeMonsterIdList(raw: { string }): { string }
 	return result
 end
 
-local function sanitizeBrainrotIntroList(raw: { string }): { string }
+local function sanitizeMechanicIntroList(raw: { string }): { string }
 	local seen: { [string]: boolean } = {}
 	local result: { string } = {}
 	for _, id in raw do
-		if type(id) ~= "string" or seen[id] or not Brainrots.isPlayable(id) then
+		if type(id) ~= "string" or seen[id] or not ProgressConfig.isMechanicIntroId(id) then
 			continue
 		end
 		seen[id] = true
@@ -268,6 +269,7 @@ local function ensureProfile(player: Player): Profile
 		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
+		introducedMechanics = {},
 		sessionStartedAt = os.clock(),
 		hydrated = false,
 	}
@@ -373,6 +375,7 @@ function ProgressService.getSaveSlice(player: Player): {
 	evolutions: { [string]: { string } },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
+	introducedMechanics: { string },
 }?
 	local profile = profiles[player.UserId]
 	if not profile or not profile.hydrated then
@@ -390,6 +393,7 @@ function ProgressService.getSaveSlice(player: Player): {
 		evolutions = copyEvolutions(profile.evolutions),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
+		introducedMechanics = copyList(profile.introducedMechanics),
 	}
 end
 
@@ -403,6 +407,7 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	evolutions: { [string]: { string } }?,
 	introducedMonsters: { string }?,
 	introducedBrainrots: { string }?,
+	introducedMechanics: { string }?,
 })
 	local profile = ensureProfile(player)
 	if type(slice.brains) == "number" then
@@ -436,9 +441,15 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 		profile.introducedMonsters = {}
 	end
 	if type(slice.introducedBrainrots) == "table" then
-		profile.introducedBrainrots = sanitizeBrainrotIntroList(slice.introducedBrainrots :: { string })
+		-- Unlock-schedule, reach-intro, and store-grant ids — any playable Brainrot.
+		profile.introducedBrainrots = sanitizeIdList(slice.introducedBrainrots :: { string })
 	else
 		profile.introducedBrainrots = {}
+	end
+	if type(slice.introducedMechanics) == "table" then
+		profile.introducedMechanics = sanitizeMechanicIntroList(slice.introducedMechanics :: { string })
+	else
+		profile.introducedMechanics = {}
 	end
 	profile.sessionStartedAt = os.clock()
 	profile.hydrated = true
@@ -459,6 +470,7 @@ function ProgressService.reset(player: Player)
 		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
+		introducedMechanics = {},
 		sessionStartedAt = os.clock(),
 		hydrated = true,
 	}
@@ -732,6 +744,27 @@ function ProgressService.consumeMonsterIntrosForDay(player: Player, dayNumber: n
 		end
 		markIntroduced(profile.introducedMonsters, entry.monsterId)
 		table.insert(granted, entry.monsterId)
+	end
+	return granted
+end
+
+-- Mechanic / hazard intros (graves). Catch-up: every MECHANIC_INTRO_SCHEDULE
+-- entry with day <= dayNumber not yet in SaveData.introducedMechanics.
+function ProgressService.consumeMechanicIntrosForDay(player: Player, dayNumber: number): { string }
+	local profile = ensureProfile(player)
+	if not profile.hydrated then
+		return {}
+	end
+	local granted: { string } = {}
+	for _, entry in ProgressConfig.MECHANIC_INTRO_SCHEDULE do
+		if entry.day > dayNumber or not ProgressConfig.isMechanicIntroId(entry.id) then
+			continue
+		end
+		if listContains(profile.introducedMechanics, entry.id) then
+			continue
+		end
+		markIntroduced(profile.introducedMechanics, entry.id)
+		table.insert(granted, entry.id)
 	end
 	return granted
 end

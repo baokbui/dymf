@@ -2,7 +2,8 @@
 --[[
 	DamageMeterService
 	Server-owned per-day damage ranks for the plot owner HUD. Brainrot rows
-	are HP dealt to monsters; monster rows are HP-equivalent dealt to Brainrots.
+	are HP dealt to monsters (every CombatService hit that passes
+	sourceBrainrotId); monster rows are HP-equivalent dealt to Brainrots.
 	UI is display-only — this service never trusts the client.
 ]]
 

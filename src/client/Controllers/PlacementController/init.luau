@@ -339,6 +339,15 @@ local function tryRemoveAt(position: Vector2)
 end
 
 local function tryInspectAt(position: Vector2)
+	local hit = GridController.raycastAt(position.X, position.Y)
+	if hit then
+		local monster = PlotUtil.getLocalMonsterFromInstance(hit.Instance)
+		if monster then
+			UIEvents.fireFieldInspect(monster)
+			AudioController.play("UiClick")
+			return
+		end
+	end
 	local tile = GridController.resolveTileAt(position.X, position.Y)
 	if not tile then
 		UIEvents.fireFieldInspect(nil)

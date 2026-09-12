@@ -180,7 +180,8 @@ already-cleared day (Day Select) does not re-grant or re-show the popup
 
 **Reach unlock:** **Girafa Celestre** is granted on first reach of Day 25
 (Night Fog). **Brr Brr Patapim** is granted on first reach of Day 31
-(`ProgressConfig.REACH_UNLOCK_SCHEDULE`). Equip into an open loadout slot if
+(`ProgressConfig.REACH_UNLOCK_SCHEDULE`), alongside a graves **MechanicIntroPopup**.
+Equip into an open loadout slot if
 one exists (`MAX_EQUIPPED` is still 7).
 
 **Store (Milestone 18):** Mini stores cloned beside each plot house

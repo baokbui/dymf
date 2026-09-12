@@ -62,6 +62,20 @@ function PlotUtil.getLocalBrainrotAt(row: number, column: number): Model?
 	return nil
 end
 
+function PlotUtil.getLocalMonsterFromInstance(instance: Instance): Model?
+	local current: Instance? = instance
+	while current do
+		if current:IsA("Model") and CollectionService:HasTag(current, Constants.TAGS.Monster) then
+			if PlotUtil.isOnLocalPlot(current) then
+				return current
+			end
+			return nil
+		end
+		current = current.Parent
+	end
+	return nil
+end
+
 function PlotUtil.getOwningPlotModel(instance: Instance): Model?
 	local plotsFolder = workspace:FindFirstChild(Constants.WORKSPACE_FOLDERS.Plots)
 	if not plotsFolder then

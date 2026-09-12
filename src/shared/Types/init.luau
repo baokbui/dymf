@@ -186,6 +186,8 @@ export type SaveData = {
 	introducedMonsters: { string }?,
 	-- Brainrot intro popups already shown (BRAINROT_INTRO_SCHEDULE + UNLOCK_SCHEDULE).
 	introducedBrainrots: { string }?,
+	-- Mechanic / hazard intros already shown (MECHANIC_INTRO_SCHEDULE, e.g. Grave).
+	introducedMechanics: { string }?,
 	-- 🔜 Milestone 21 — collected boss trophies displayed in the house
 	collectedBosses: { CollectedBoss }?,
 }

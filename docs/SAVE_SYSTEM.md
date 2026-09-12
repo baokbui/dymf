@@ -42,7 +42,7 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number (`SAVE_VERSION` = 6)|
+| `version`      | number (`SAVE_VERSION` = 7)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
@@ -57,6 +57,7 @@ Not saved (transient / runtime):
 | `evolutions`   | `{ [brainrotId]: { rarity } }` claimed Epic→God tiers |
 | `introducedMonsters` | `{ string }` (monster intro popups already shown) |
 | `introducedBrainrots` | `{ string }` (Brainrot intro popups already shown) |
+| `introducedMechanics` | `{ string }` (mechanic intro popups already shown, e.g. Grave) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
@@ -65,9 +66,10 @@ Not saved (transient / runtime):
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 6` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 7` — bump when the schema changes; migrate older payloads.
   **v4 → v5:** add `brainrotXp` (empty map if missing).
   **v5 → v6:** add `evolutions` (empty map if missing).
+  **v6 → v7:** add `introducedMechanics` (empty list if missing).
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).

@@ -12,9 +12,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
+local Monsters = require(Shared.Monsters)
 local Remotes = require(Shared.Remotes)
 local Constants = require(Shared.Constants)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local MagnetConfig = require(Shared.Config.MagnetConfig)
+local PlotConfig = require(Shared.Config.PlotConfig)
 local LevelConfig = require(Shared.Config.LevelConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Logger = require(Shared.Utilities.Logger)
@@ -31,10 +34,12 @@ local Inventory = require(script.Inventory)
 local RewardPopup = require(script.RewardPopup)
 local UnlockPopup = require(script.UnlockPopup)
 local MonsterIntroPopup = require(script.MonsterIntroPopup)
+local MechanicIntroPopup = require(script.MechanicIntroPopup)
 local GameOverPopup = require(script.GameOverPopup)
 local ProgressionStore = require(script.ProgressionStore)
 local PlantToast = require(script.PlantToast)
 local BrainrotInspect = require(script.BrainrotInspect)
+local MonsterInspect = require(script.MonsterInspect)
 local MagnetHud = require(script.MagnetHud)
 local DamageMeter = require(script.DamageMeter)
 local PlacementController = require(script.Parent.PlacementController)
@@ -61,10 +66,12 @@ local inventoryPanel: Inventory.InventoryPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
 local unlockPopup: UnlockPopup.UnlockPopupHud? = nil
 local monsterIntroPopup: MonsterIntroPopup.MonsterIntroPopupHud? = nil
+local mechanicIntroPopup: MechanicIntroPopup.MechanicIntroPopupHud? = nil
 local gameOverPopup: GameOverPopup.GameOverPopupHud? = nil
 local progressionStore: ProgressionStore.ProgressionStoreHud? = nil
 local plantToast: PlantToast.PlantToastHud? = nil
 local fieldInspect: BrainrotInspect.InspectCard? = nil
+local monsterInspect: MonsterInspect.InspectCard? = nil
 local lastBrainrotXp: { [string]: number } = {}
 local lastEvolutions: { [string]: { string } } = {}
 local settingsEntry: TextButton? = nil
@@ -112,6 +119,12 @@ local function pumpIntros()
 	if nextItem.kind == "brainrot" and unlockPopup then
 		unlockPopup:show(nextItem.id)
 		if not unlockPopup.frame.Visible then
+			introBusy = false
+			pumpIntros()
+		end
+	elseif nextItem.kind == "mechanic" and mechanicIntroPopup then
+		mechanicIntroPopup:show(nextItem.id)
+		if not mechanicIntroPopup.frame.Visible then
 			introBusy = false
 			pumpIntros()
 		end
@@ -270,7 +283,12 @@ local function applyMagnetState(state: { [string]: any }?)
 	end
 	local character = localPlayer.Character
 	if character then
-		VfxUtil.playMagnetWaves(character, remaining)
+		local level = if magnetHud then magnetHud.level else MagnetConfig.DEFAULT_LEVEL
+		if type(state.level) == "number" then
+			level = state.level
+		end
+		local radius = MagnetConfig.rangeTilesFor(level) * PlotConfig.TILE_SIZE
+		VfxUtil.playMagnetWaves(character, remaining, radius)
 	end
 end
 
@@ -352,6 +370,10 @@ local function buildMonsterIntroPopup(): MonsterIntroPopup.MonsterIntroPopupHud
 	return MonsterIntroPopup.new(buildMain():WaitForChild("MonsterIntroPopup") :: Frame)
 end
 
+local function buildMechanicIntroPopup(): MechanicIntroPopup.MechanicIntroPopupHud
+	return MechanicIntroPopup.new(buildMain():WaitForChild("MechanicIntroPopup") :: Frame)
+end
+
 local function buildGameOverPopup(): GameOverPopup.GameOverPopupHud
 	return GameOverPopup.new(buildMain():WaitForChild("GameOverPopup") :: Frame)
 end
@@ -410,8 +432,13 @@ local function buildHudEntries()
 			settingsPanel:setOpen(false)
 		end
 		inventoryPanel:setOpen(opening)
-		if opening and fieldInspect then
-			fieldInspect:hide()
+		if opening then
+			if fieldInspect then
+				fieldInspect:hide()
+			end
+			if monsterInspect then
+				monsterInspect:hide()
+			end
 		end
 	end)
 	settingsEntry = makeHudEntry(
@@ -469,16 +496,19 @@ local function applyLevelState(state: { [string]: any }?)
 				enqueueIntro("brainrot", reward.unlockedBrainrotId)
 			end
 			enqueueIntroList("brainrot", state.introducedBrainrotIds)
+			enqueueIntroList("mechanic", state.introducedMechanicIds)
 			enqueueIntroList("monster", state.introducedMonsterIds)
 		end
 	elseif state.phase ~= Constants.PHASE.Victory and rewardPopup then
 		rewardPopup:hide()
 		introHoldForReward = false
 		enqueueIntroList("brainrot", state.introducedBrainrotIds)
+		enqueueIntroList("mechanic", state.introducedMechanicIds)
 		enqueueIntroList("monster", state.introducedMonsterIds)
 		pumpIntros()
 	else
 		enqueueIntroList("brainrot", state.introducedBrainrotIds)
+		enqueueIntroList("mechanic", state.introducedMechanicIds)
 		enqueueIntroList("monster", state.introducedMonsterIds)
 		pumpIntros()
 	end
@@ -549,6 +579,8 @@ function UIController.init()
 	plantToast = PlantToast.new(buildMain())
 	fieldInspect = BrainrotInspect.new(buildMain())
 	fieldInspect:dockField()
+	monsterInspect = MonsterInspect.new(buildMain())
+	monsterInspect:dockField()
 	levelPanel = buildLevelPanel()
 	heartsHud = buildHearts()
 	inventoryPanel = buildInventory()
@@ -565,11 +597,15 @@ function UIController.init()
 	end
 	unlockPopup = buildUnlockPopup()
 	monsterIntroPopup = buildMonsterIntroPopup()
+	mechanicIntroPopup = buildMechanicIntroPopup()
 	if unlockPopup then
 		unlockPopup.onHidden = onIntroHidden
 	end
 	if monsterIntroPopup then
 		monsterIntroPopup.onHidden = onIntroHidden
+	end
+	if mechanicIntroPopup then
+		mechanicIntroPopup.onHidden = onIntroHidden
 	end
 	gameOverPopup = buildGameOverPopup()
 	progressionStore = buildProgressionStore()
@@ -606,21 +642,13 @@ function UIController.start()
 	end)
 
 	UIEvents.fieldInspect:Connect(function(model: Model?)
-		if not fieldInspect then
-			return
-		end
 		if not model then
-			fieldInspect:hide()
-			return
-		end
-		local brainrotId = model:GetAttribute("BrainrotId")
-		if type(brainrotId) ~= "string" then
-			fieldInspect:hide()
-			return
-		end
-		local definition = Brainrots.get(brainrotId)
-		if not definition then
-			fieldInspect:hide()
+			if fieldInspect then
+				fieldInspect:hide()
+			end
+			if monsterInspect then
+				monsterInspect:hide()
+			end
 			return
 		end
 		if inventoryPanel then
@@ -628,6 +656,51 @@ function UIController.start()
 		end
 		if settingsPanel then
 			settingsPanel:setOpen(false)
+		end
+
+		local monsterId = model:GetAttribute("MonsterId")
+		if type(monsterId) == "string" then
+			local monsterDef = Monsters.get(monsterId)
+			if not monsterDef or not monsterInspect then
+				if fieldInspect then
+					fieldInspect:hide()
+				end
+				if monsterInspect then
+					monsterInspect:hide()
+				end
+				return
+			end
+			if fieldInspect then
+				fieldInspect:hide()
+			end
+			monsterInspect:show({
+				definition = monsterDef,
+				healthModel = model,
+			})
+			return
+		end
+
+		if not fieldInspect then
+			return
+		end
+		local brainrotId = model:GetAttribute("BrainrotId")
+		if type(brainrotId) ~= "string" then
+			fieldInspect:hide()
+			if monsterInspect then
+				monsterInspect:hide()
+			end
+			return
+		end
+		local definition = Brainrots.get(brainrotId)
+		if not definition then
+			fieldInspect:hide()
+			if monsterInspect then
+				monsterInspect:hide()
+			end
+			return
+		end
+		if monsterInspect then
+			monsterInspect:hide()
 		end
 		fieldInspect:show({
 			definition = definition,
@@ -676,6 +749,9 @@ function UIController.start()
 		end
 		if fieldInspect then
 			fieldInspect:hide()
+		end
+		if monsterInspect then
+			monsterInspect:hide()
 		end
 		local position = if typeof(anchor) == "Vector3" then anchor else nil
 		progressionStore:open(shopKind, position)

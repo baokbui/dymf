@@ -40,7 +40,8 @@ local GraveConfig = {
 
 	-- Hits from Brr Brr Patapim before the grave collapses. Other Brainrots
 	-- cannot chip this HP. Lane shots stop at the stone (no shake); only
-	-- Patapim smashes shake. Bombardino still damages monsters behind it.
+	-- Patapim smashes shake. Piercing Brew flies through with no grave HP.
+	-- Bombardino still damages monsters behind it.
 	PATAPIM_HITS = 6,
 	SHAKE_STUDS = 0.45,
 	SHAKE_OUT_DURATION = 0.06,

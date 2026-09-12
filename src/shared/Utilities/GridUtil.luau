@@ -82,8 +82,14 @@ end
 -- center) still counts as on-plot — otherwise Brainrots targeting the very
 -- last column (e.g. Tung Tung Sahur planted there, or one tile behind a wall
 -- on that column) could never see the monster actively chewing them.
-function GridUtil.isOnPlotColumn(column: number): boolean
-	return GridUtil.tileAtColumn(column) <= GridConfig.COLUMNS
+-- Optional `laneSpan`: multi-lane bosses scale to ~span tiles in X as well as
+-- Z, so they count as on-plot once any part of that footprint overlaps the lawn.
+function GridUtil.isOnPlotColumn(column: number, laneSpan: number?): boolean
+	local half = GridUtil.laneFootprintHalfColumns(laneSpan or 1)
+	if half <= 0 then
+		return GridUtil.tileAtColumn(column) <= GridConfig.COLUMNS
+	end
+	return (column - half) < GridConfig.COLUMNS + 0.5
 end
 
 function GridUtil.isColumnInRange(
@@ -125,6 +131,33 @@ end
 function GridUtil.occupiesLaneRow(row: number, laneSpan: number, targetRow: number): boolean
 	local span = math.max(1, math.floor(laneSpan))
 	return targetRow >= row and targetRow <= row + span - 1
+end
+
+-- Half-width in fractional columns of a multi-lane unit's visual footprint.
+-- Uniform scale makes X cover ~laneSpan tiles; span 1 stays a point (tile match).
+function GridUtil.laneFootprintHalfColumns(laneSpan: number): number
+	local span = math.max(1, math.floor(laneSpan))
+	if span <= 1 then
+		return 0
+	end
+	return span / 2
+end
+
+-- True when a unit's column footprint overlaps inclusive lawn tiles [minTile, maxTile].
+-- Span 1 is a point: equivalent to tileAtColumn in that inclusive range (so a
+-- chewer on the west half of the band's edge tile still counts).
+function GridUtil.columnOverlapsTileBand(
+	column: number,
+	laneSpan: number,
+	minTile: number,
+	maxTile: number
+): boolean
+	local half = GridUtil.laneFootprintHalfColumns(laneSpan)
+	local occMin = column - half
+	local occMax = column + half
+	local bandMin = minTile - 0.5
+	local bandMax = maxTile + 0.5
+	return occMax >= bandMin and occMin <= bandMax
 end
 
 -- Visual midpoint of a multi-lane unit's occupied rows, for world-position

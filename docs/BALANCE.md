@@ -165,7 +165,9 @@ couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 41 / 52 / 65 / 80 / 98 / 118 / 142 / 170 / 204 / 245 / 294 / 353 / 424 / 509**.
 
 Magnet starts at **level 1** (everyone has it). Four paid ranks (**30 / 55 /
-90 / 150** brains) cut cooldown **90s → 20s** at max. Duration stays **5s**.
+90 / 150** brains) cut cooldown **90s → 20s** at max and grow pull range by
+**1/5 tile** per level (**1.2 → 2.0 tiles** world Chebyshev from the player).
+Duration stays **5s**.
 Cooldown remaining when a day ends is frozen until the next Start Day.
 
 ---
@@ -184,5 +186,5 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |
 | Monster campaign HP scale | `MonsterConfig.STAT_SCALE_*` (non-boss HP only; intro day from `MONSTER_INTRO_SCHEDULE`) |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |
-| Magnet cooldown / duration | `MagnetConfig`, Magnet row in `UPGRADE_CATALOG` |
+| Magnet cooldown / duration / range | `MagnetConfig`, Magnet row in `UPGRADE_CATALOG` |
 | Brainrot XP grants | `EvolutionConfig` (`KILL_XP`, `FREEZE_XP`, …) |

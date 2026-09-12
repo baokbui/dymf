@@ -390,7 +390,7 @@ function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { stri
 		if runtime.plotModel == plotModel
 			and isCombatTarget(runtime)
 			and occupiesRow(runtime, row)
-			and GridUtil.isOnPlotColumn(runtime.column)
+			and GridUtil.isOnPlotColumn(runtime.column, runtime.definition.laneSpan)
 		then
 			table.insert(result, runtime.instanceId)
 		end
@@ -478,6 +478,14 @@ function EnemyService.getMonsterColumn(instanceId: string): number?
 	return if runtime then runtime.column else nil
 end
 
+function EnemyService.getMonsterLaneSpan(instanceId: string): number
+	local runtime = monsters[instanceId]
+	if not runtime then
+		return 1
+	end
+	return math.max(1, math.floor(runtime.definition.laneSpan or 1))
+end
+
 function EnemyService.getProjectileWorldY(plotModel: Model, row: number, startColumn: number): number?
 	local pos = GridService.getWorldPositionAtColumn(plotModel, row, startColumn)
 	if not pos then
@@ -543,7 +551,7 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 	end
 
 	local applied = math.min(damage, runtime.health)
-	if type(sourceBrainrotId) == "string" and applied > 0 then
+	if type(sourceBrainrotId) == "string" and sourceBrainrotId ~= "" and applied > 0 then
 		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
 		if type(ownerUserId) == "number" then
 			local DamageMeterService = require(script.Parent.DamageMeterService)
@@ -687,6 +695,7 @@ function EnemyService.init()
 		queryFirstInRow = EnemyService.getFirstMonsterInRow,
 		queryFirstInMeleeReach = EnemyService.getFirstMonsterInMeleeReach,
 		getMonsterColumn = EnemyService.getMonsterColumn,
+		getMonsterLaneSpan = EnemyService.getMonsterLaneSpan,
 		getProjectileWorldY = EnemyService.getProjectileWorldY,
 		setProjectilePosition = EnemyService.setProjectilePosition,
 		damage = EnemyService.damageMonster,

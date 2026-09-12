@@ -38,6 +38,7 @@ type MonsterHandlers = {
 	queryFirstInRow: (plotModel: Model, row: number, fromColumn: number, rangeTiles: number) -> string?,
 	queryFirstInMeleeReach: (plotModel: Model, row: number, fromColumn: number, reachColumns: number) -> string?,
 	getMonsterColumn: (instanceId: string) -> number?,
+	getMonsterLaneSpan: (instanceId: string) -> number,
 	getProjectileWorldY: (plotModel: Model, row: number, startColumn: number) -> number?,
 	setProjectilePosition: (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> (),
 	damage: (instanceId: string, damage: number, sourceBrainrotId: string?) -> boolean,
@@ -58,6 +59,13 @@ local function monsterColumnOf(instanceId: string): number?
 	return nil
 end
 
+local function monsterLaneSpanOf(instanceId: string): number
+	if monsterHandlers then
+		return monsterHandlers.getMonsterLaneSpan(instanceId)
+	end
+	return 1
+end
+
 -- If a grave sits between the shooter and this monster, shake the stone (no HP).
 local function absorbGraveBlock(plotModel: Model, row: number, fromColumn: number, targetColumn: number): boolean
 	return graveService().absorbLaneHit(plotModel, row, fromColumn, targetColumn)
@@ -65,6 +73,24 @@ end
 
 local function isBehindGrave(plotModel: Model, row: number, fromColumn: number, targetColumn: number): boolean
 	return graveService().isMonsterBehindGrave(plotModel, row, fromColumn, targetColumn)
+end
+
+-- Graves only block status aimed past the stone — not a unit whose body already
+-- overlaps the caster's tile (Lirili planted on a multi-lane boss).
+local function statusBlockedByGrave(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	targetColumn: number,
+	laneSpan: number
+): boolean
+	if GridUtil.columnOverlapsTileBand(targetColumn, laneSpan, fromColumn, fromColumn) then
+		return false
+	end
+	if targetColumn <= fromColumn then
+		return false
+	end
+	return isBehindGrave(plotModel, row, fromColumn, targetColumn)
 end
 
 local function fireCombatVisual(ownerUserId: number, payload: { [string]: any })
@@ -303,6 +329,8 @@ export type ProjectileLaunchOptions = {
 	sourceMonsterId: string?,
 	-- Extra monsters east of the first hit (100% damage each).
 	pierceCount: number?,
+	-- Fly through graves; the stone takes no HP. Implied when pierceCount > 0.
+	pierceGraves: boolean?,
 	-- Bubble Barrage / Double Bubble extras after the seed splits.
 	extraBubbleChance: number?,
 }
@@ -342,7 +370,8 @@ function CombatService.launchProjectile(
 	end
 
 	local pierceCount = if options then options.pierceCount else nil
-	local pierceGraves = type(pierceCount) == "number" and pierceCount > 0
+	local pierceGraves = (options and options.pierceGraves == true)
+		or (type(pierceCount) == "number" and pierceCount > 0)
 	local blockingColumn = if pierceGraves
 		then nil
 		else graveService().getBlockingColumn(
@@ -370,7 +399,10 @@ function CombatService.launchProjectile(
 			sourceBrainrotId = options.sourceBrainrotId,
 			sourceInstanceId = options.sourceInstanceId,
 			sourceMonsterId = options.sourceMonsterId,
-			pierceCount = if blockingColumn then nil else pierceCount,
+			-- Keep pierce + source on grave-blocked shots so Piercing Brew
+			-- still attributes both hits if a stone is the first blocker.
+			pierceCount = pierceCount,
+			pierceGraves = if pierceGraves then true else nil,
 		}
 	end
 
@@ -786,20 +818,28 @@ function CombatService.applyRowStatus(
 end
 
 -- Status on every monster on the row (ahead and behind the caster).
+-- `fromColumn` is the caster tile for grave LOS (Winter's Grasp). Nil = house
+-- (column 0), which would let a fog grave eat the whole freeze.
 function CombatService.applyEntireRowStatus(
 	plotModel: Model,
 	row: number,
 	kind: Types.StatusEffectKind,
 	duration: number,
 	magnitude: number?,
-	visual: string?
+	visual: string?,
+	fromColumn: number?
 ): number
+	local origin = if type(fromColumn) == "number" then fromColumn else 0
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	local applied = 0
 	for _, monsterId in targets do
 		local targetColumn = monsterColumnOf(monsterId)
-		if type(targetColumn) == "number" and isBehindGrave(plotModel, row, 0, targetColumn) then
-			absorbGraveBlock(plotModel, row, 0, targetColumn)
+		if type(targetColumn) ~= "number" then
+			continue
+		end
+		local span = monsterLaneSpanOf(monsterId)
+		if statusBlockedByGrave(plotModel, row, origin, targetColumn, span) then
+			absorbGraveBlock(plotModel, row, origin, targetColumn)
 			continue
 		end
 		CombatService.applyStatusToMonster(monsterId, kind, duration, magnitude, visual)
@@ -809,7 +849,9 @@ function CombatService.applyEntireRowStatus(
 end
 
 -- Status on this row in a band: `tilesBehind` west of `centerColumn` and
--- `tilesAhead` east (inclusive lawn tiles). Graves still block eastward.
+-- `tilesAhead` east (inclusive lawn tiles). Match by tile / multi-lane
+-- footprint (not a tight fractional window) so a 3-lane boss standing on the
+-- caster tile still freezes. Graves still block eastward past the stone.
 function CombatService.applyStatusAroundColumn(
 	plotModel: Model,
 	row: number,
@@ -823,8 +865,8 @@ function CombatService.applyStatusAroundColumn(
 ): number
 	local ahead = math.max(0, tilesAhead)
 	local behind = math.max(0, tilesBehind)
-	local minCol = math.max(1, centerColumn - behind)
-	local maxColExclusive = math.min(GridConfig.COLUMNS, centerColumn + ahead) + 1
+	local minTile = math.max(1, centerColumn - behind)
+	local maxTile = math.min(GridConfig.COLUMNS, centerColumn + ahead)
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	local applied = 0
 	for _, monsterId in targets do
@@ -832,12 +874,11 @@ function CombatService.applyStatusAroundColumn(
 		if type(targetColumn) ~= "number" then
 			continue
 		end
-		if targetColumn < minCol or targetColumn >= maxColExclusive then
+		local span = monsterLaneSpanOf(monsterId)
+		if not GridUtil.columnOverlapsTileBand(targetColumn, span, minTile, maxTile) then
 			continue
 		end
-		if targetColumn > centerColumn
-			and isBehindGrave(plotModel, row, centerColumn, targetColumn)
-		then
+		if statusBlockedByGrave(plotModel, row, centerColumn, targetColumn, span) then
 			absorbGraveBlock(plotModel, row, centerColumn, targetColumn)
 			continue
 		end
@@ -899,6 +940,7 @@ function CombatService.getMonstersInRow(
 	return {}
 end
 
+-- `sourceBrainrotId` is required for DamageMeter ranks (HP dealt this day).
 function CombatService.damageMonster(monsterInstanceId: string, damage: number, sourceBrainrotId: string?): boolean
 	if monsterHandlers then
 		return monsterHandlers.damage(monsterInstanceId, damage, sourceBrainrotId)
@@ -987,6 +1029,29 @@ function CombatService.clearPlot(plotModel: Model)
 	Projectile.destroyAllOnPlot(plotModel)
 end
 
+local function shotPiercesGraves(impact: Projectile.ImpactSpec?): boolean
+	if not impact then
+		return false
+	end
+	if impact.pierceGraves == true then
+		return true
+	end
+	return type(impact.pierceCount) == "number" and impact.pierceCount > 0
+end
+
+local function nextPierceTarget(
+	plotModel: Model,
+	row: number,
+	searchFrom: number,
+	excludeId: string?
+): string?
+	local pierceId = CombatService.getFirstMonsterInRow(plotModel, row, searchFrom + 0.01, FULL_LINE)
+	if pierceId and pierceId ~= excludeId then
+		return pierceId
+	end
+	return nil
+end
+
 local function onProjectileImpact(
 	instanceId: string,
 	damage: number,
@@ -996,7 +1061,7 @@ local function onProjectileImpact(
 	plotModel: Model?,
 	row: number?,
 	column: number?
-): boolean
+): (boolean, string?)
 	if targetKind == "Grave" or targetKind == "LaneEnd" or targetKind == "Split" then
 		if targetKind == "Split" and plotModel and type(row) == "number" and type(column) == "number" then
 			local split = if impact then impact.splitBarrage else nil
@@ -1041,13 +1106,23 @@ local function onProjectileImpact(
 				end
 			end
 		end
+		-- Piercing Brew: skip the stone (no HP / shake) and keep flying to the
+		-- monster east of it.
+		if targetKind == "Grave"
+			and shotPiercesGraves(impact)
+			and plotModel
+			and type(row) == "number"
+			and type(column) == "number"
+		then
+			return false, nextPierceTarget(plotModel, row, column, nil)
+		end
 		if targetKind == "Grave" then
 			fireCombatVisual(ownerUserId, {
 				kind = "Hit",
 				soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
 			})
 		end
-		return false
+		return false, nil
 	end
 
 	if targetKind == "Brainrot" then
@@ -1061,7 +1136,7 @@ local function onProjectileImpact(
 			instanceId = instanceId,
 			soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
 		})
-		return killed
+		return killed, nil
 	end
 
 	local killed = CombatService.damageMonster(instanceId, damage, if impact then impact.sourceBrainrotId else nil)
@@ -1099,27 +1174,10 @@ local function onProjectileImpact(
 			end
 		end
 		if type(searchFrom) == "number" then
-			local pierceId = CombatService.getFirstMonsterInRow(
-				plotModel,
-				row,
-				searchFrom + 0.01,
-				FULL_LINE
-			)
-			if pierceId and pierceId ~= instanceId then
-				CombatService.damageMonster(
-					pierceId,
-					damage,
-					if impact then impact.sourceBrainrotId else nil
-				)
-				fireCombatVisual(ownerUserId, {
-					kind = "Hit",
-					instanceId = pierceId,
-					soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
-				})
-			end
+			return killed, nextPierceTarget(plotModel, row, searchFrom, instanceId)
 		end
 	end
-	return killed
+	return killed, nil
 end
 
 function CombatService.init()

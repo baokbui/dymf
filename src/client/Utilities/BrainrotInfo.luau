@@ -66,6 +66,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Grave Smash",
 		description = "Plant on a grave. Immune — monsters walk through. Two smashes per swing (1s apart); 6 collapse the stone, then he disappears.",
 	},
+	PierceBrew = {
+		label = "Piercing Brew",
+		description = "Next shuriken flies through graves and hits the monster behind the first. The grave takes no damage.",
+	},
 }
 
 function BrainrotInfo.abilityLabel(abilityId: string?): string

@@ -192,6 +192,8 @@ Introduction cadence:
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
   **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**,
   and grants **Brr Brr Patapim** (grave buster) on first reach of that day.
+  The first reach of Day 31 also queues a **graves** intro (`MECHANIC_INTRO_SCHEDULE`)
+  explaining Grave Buster and Cappuccino's Piercing Brew (Legendary).
   **Exception:** Level 41 introduces `SmallMummy` at the start of the 41–50 band.
   **Exception:** Level 45 introduces `Scorpion` (matches the 5-level cadence).
   Days **41–50** authored waves are desert-only: **SmallMummy** from 41,
@@ -207,6 +209,7 @@ Introduction cadence:
   listed in `ProgressConfig`. Same idea as Brainrot intros, persisted on
   `introducedMonsters`. **Zombie** has no intro (Day 1 already uses them).
   Girafa / Patapim use `BRAINROT_INTRO_SCHEDULE` on reach (`introducedBrainrots`).
+  Graves use `MECHANIC_INTRO_SCHEDULE` on Day 31 (`introducedMechanics`).
 - Levels between introductions mix only monsters the player has already seen,
   ramping count/pacing slowly — sometimes the same difficulty as the prior level.
   Returning **non-boss** species also **age**: HP +30% per 10 days since that

@@ -1199,7 +1199,7 @@ local function ensureMagnetHeartbeat()
 	end)
 end
 
-local function spawnMagnetCircle(root: BasePart, token: number)
+local function spawnMagnetCircle(root: BasePart, token: number, startRadius: number)
 	if magnetWaveToken ~= token or not root.Parent then
 		return
 	end
@@ -1208,7 +1208,6 @@ local function spawnMagnetCircle(root: BasePart, token: number)
 	local thickness = VfxConfig.MAGNET_WAVE_THICKNESS
 	local color = VfxConfig.MAGNET_WAVE_COLOR
 	local startTrans = VfxConfig.MAGNET_WAVE_TRANSPARENCY
-	local startRadius = VfxConfig.MAGNET_WAVE_START_RADIUS
 	local endRadius = math.max(0.05, VfxConfig.MAGNET_WAVE_END_RADIUS)
 	local speed = VfxConfig.MAGNET_WAVE_SPEED
 	local lift = VfxConfig.MAGNET_WAVE_LIFT
@@ -1254,7 +1253,7 @@ end
 	pulse starts at the outer pull range and collapses inward. High
 	frequency. A new call cancels the previous loop.
 ]]
-function VfxUtil.playMagnetWaves(character: Model, duration: number)
+function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius: number?)
 	magnetWaveToken += 1
 	local token = magnetWaveToken
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -1262,6 +1261,7 @@ function VfxUtil.playMagnetWaves(character: Model, duration: number)
 		return
 	end
 
+	local radius = startRadius or VfxConfig.MAGNET_WAVE_START_RADIUS
 	local interval = VfxConfig.MAGNET_WAVE_INTERVAL
 	local remaining = math.max(0.1, duration)
 	local pulses = math.max(1, math.ceil(remaining / interval))
@@ -1271,7 +1271,7 @@ function VfxUtil.playMagnetWaves(character: Model, duration: number)
 			if magnetWaveToken ~= token then
 				return
 			end
-			spawnMagnetCircle(root, token)
+			spawnMagnetCircle(root, token, radius)
 			if pulse < pulses then
 				task.wait(interval)
 			end

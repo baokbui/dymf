@@ -60,7 +60,7 @@ Movement is **grid-based**: monsters spawn deep in the east dark forest
 the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
 
-**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan` tiles across Z, and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
+**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan` tiles across Z **and** X (uniform scale), and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). Freeze / row splash also treat the X footprint as on-plot once it overlaps the lawn, so a one-shot planted on the visual middle of Queen Spider still hits. The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
 
 ---
 
@@ -238,7 +238,8 @@ under the stone (`MONSTER_RISE_DURATION`). The grave **stays** on the tile
 lands **6** smashes (`GraveConfig.PATAPIM_HITS`) or the plot is cleared.
 Other Brainrot damage and status **cannot** chip graves; lane shots stop at
 the stone for monsters **behind** it (higher column / east) without shaking.
-**Piercing Brew** shots fly through and still hit those monsters. **Bombardino**
+**Piercing Brew** shots fly through the grave (no grave HP) and still hit
+those monsters. **Bombardino**
 bombs still damage those monsters. Collapse uses the same
 fade-in-place death as monsters. **Patapim** uses `ignoreMonsterChew` so
 monsters walk through him and the grave.
@@ -355,7 +356,8 @@ The roster is introduced **one monster at a time** through campaign levels
 (spawn counts assume **lawn carry-over** after victory — see `LEVELS.md`).
 Each campaign type also gets a **MonsterIntroPopup** the first time the
 player reaches its intro day (`ProgressConfig.MONSTER_INTRO_SCHEDULE`).
-**Zombie** has no intro popup.
+**Zombie** has no intro popup. **Graves** (Day 31) get a **MechanicIntroPopup**
+(`MECHANIC_INTRO_SCHEDULE`) covering Grave Buster and Piercing Brew.
 
 **Campaign aging:** registry HP is the intro-day base. At spawn,
 `Monsters.scaledForDay` applies **+30% HP per 10 inclusive days** since that

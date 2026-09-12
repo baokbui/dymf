@@ -121,8 +121,10 @@ local function tickPlayer(player: Player, runtime: Runtime)
 		return
 	end
 
+	local ProgressService = require(script.Parent.ProgressService)
 	local CoinService = require(script.Parent.CoinService)
-	CoinService.pullAdjacentCoins(player, origin)
+	local rangeTiles = MagnetConfig.rangeTilesFor(ProgressService.getMagnetLevel(player))
+	CoinService.pullCoinsInRange(player, root.Position, rangeTiles)
 end
 
 function MagnetService.pauseCooldown(player: Player)

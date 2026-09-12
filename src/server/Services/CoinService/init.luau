@@ -12,8 +12,9 @@
 
 	Server authority: the client only sends a CollectCoin *intent* for a coin id;
 	this service re-checks ownership, existence, distance, and Landed before
-	crediting. Magnet pulls (`pullAdjacentCoins`) collect adjacent landed coins
-	after MagnetService validates the ability. Balances are never set from client input.
+	crediting. Magnet pulls (`pullCoinsInRange`) collect landed coins within
+	the player's level-scaled Chebyshev range after MagnetService validates
+	the ability. Balances are never set from client input.
 
 	Milestone 3.
 ]]
@@ -23,6 +24,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local EconomyConfig = require(Shared.Config.EconomyConfig)
+local PlotConfig = require(Shared.Config.PlotConfig)
 local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
@@ -315,10 +317,12 @@ local function onCollectCoin(player: Player, coinId: unknown)
 	creditCoin(player, coinId)
 end
 
--- Chebyshev distance 1: tiles left / right / up / down / diagonal of `origin`.
-function CoinService.pullAdjacentCoins(player: Player, origin: Types.GridPosition)
+-- World-space Chebyshev from the player, in tiles (`rangeTiles`).
+-- Level 1 reaches a bit past the adjacent ring; max level reaches 2 tiles.
+function CoinService.pullCoinsInRange(player: Player, originWorld: Vector3, rangeTiles: number)
 	local MagnetConfig = require(ReplicatedStorage.Shared.Config.MagnetConfig)
-	local range = MagnetConfig.RANGE_TILES
+	local range = math.max(0, rangeTiles)
+	local rangeStuds = range * PlotConfig.TILE_SIZE
 	for coinId, entry in groundCoins do
 		if entry.ownerUserId ~= player.UserId then
 			continue
@@ -329,9 +333,8 @@ function CoinService.pullAdjacentCoins(player: Player, origin: Types.GridPositio
 		if entry.part:GetAttribute("Landed") ~= true then
 			continue
 		end
-		local dRow = math.abs(entry.gridPosition.row - origin.row)
-		local dCol = math.abs(entry.gridPosition.column - origin.column)
-		if math.max(dRow, dCol) ~= range then
+		local delta = entry.part.Position - originWorld
+		if math.max(math.abs(delta.X), math.abs(delta.Z)) > rangeStuds then
 			continue
 		end
 

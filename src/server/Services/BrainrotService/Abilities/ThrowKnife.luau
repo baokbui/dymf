@@ -44,7 +44,9 @@ function ThrowKnife.tryAct(ctx, callbacks)
 				kind = "Shuriken",
 				soundKey = "ThrowKnifeHit",
 				sourceBrainrotId = ctx.definition.id,
+				sourceInstanceId = ctx.instanceId,
 				pierceCount = if pierceCount > 0 then pierceCount else nil,
+				pierceGraves = pierceCount > 0,
 			}
 		)
 	end

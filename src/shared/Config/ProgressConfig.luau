@@ -97,7 +97,7 @@ local ProgressConfig = {
 		{
 			id = "Magnet",
 			name = "Magnet",
-			description = "Press 1 to pull coins from tiles around you for 5 seconds. Higher levels shorten the cooldown.",
+			description = "Press 1 to pull coins from tiles around you for 5 seconds. Higher levels shorten the cooldown and pull coins from farther away.",
 			maxLevel = 5,
 			defaultLevel = 1,
 			-- Cost to reach levels 2–5 (players start at level 1).
@@ -117,6 +117,12 @@ local ProgressConfig = {
 	BRAINROT_INTRO_SCHEDULE = {
 		{ day = 25, brainrotId = "GiraffaCeleste" },
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
+	},
+
+	-- Mechanic / hazard intros on first reach (catch-up like monster intros).
+	-- Day 31 graves share the Preparation queue with Patapim + Skeleton.
+	MECHANIC_INTRO_SCHEDULE = {
+		{ day = 31, id = "Grave" },
 	},
 
 	-- Monster / boss intro cadence: the first time the player *reaches* `day`
@@ -159,6 +165,15 @@ function ProgressConfig.monsterIntroDay(monsterId: string): number
 		end
 	end
 	return 1
+end
+
+function ProgressConfig.isMechanicIntroId(id: string): boolean
+	for _, entry in ProgressConfig.MECHANIC_INTRO_SCHEDULE do
+		if entry.id == id then
+			return true
+		end
+	end
+	return false
 end
 
 function ProgressConfig.upgradeById(upgradeId: string): any?

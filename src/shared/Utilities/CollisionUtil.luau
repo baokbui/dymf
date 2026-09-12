@@ -61,14 +61,22 @@ function CollisionUtil.applyMonster(model: Model)
 	CollisionUtil.init()
 	local group = Constants.COLLISION_GROUPS.Monsters
 
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			descendant.CanCollide = false
-			descendant.CanTouch = false
-			descendant.Massless = true
-			setPartGroup(descendant, group)
+	local function assign(instance: Instance)
+		if instance:IsA("BasePart") then
+			instance.CanCollide = false
+			instance.CanTouch = false
+			instance.Massless = true
+			-- Click-inspect needs queryable parts; GridController tile rays
+			-- exclude Monster-tagged models so planting still hits the lawn.
+			instance.CanQuery = true
+			setPartGroup(instance, group)
 		end
 	end
+
+	for _, descendant in model:GetDescendants() do
+		assign(descendant)
+	end
+	model.DescendantAdded:Connect(assign)
 end
 
 return CollisionUtil

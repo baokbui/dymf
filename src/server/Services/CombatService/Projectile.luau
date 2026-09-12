@@ -31,6 +31,8 @@ export type ImpactSpec = {
 	sourceInstanceId: string?,
 	sourceMonsterId: string?,
 	pierceCount: number?,
+	-- Piercing Brew: fly through graves (no grave HP / shake) to the next monster.
+	pierceGraves: boolean?,
 	-- Bubble Barrage: this projectile is the seed; on Split, spawn one child per row.
 	splitBarrage: {
 		rangeTiles: number,
@@ -80,6 +82,7 @@ export type ActiveProjectile = {
 	zLerpColumns: number?,
 }
 
+-- Returns killed, then an optional next instance id so piercing shots keep flying.
 type ImpactCallback = (
 	instanceId: string,
 	damage: number,
@@ -89,7 +92,7 @@ type ImpactCallback = (
 	plotModel: Model?,
 	row: number?,
 	column: number?
-) -> boolean
+) -> (boolean, string?)
 type GetColumnCallback = (instanceId: string, targetKind: string?) -> number?
 type SetPositionCallback = (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> ()
 
@@ -677,7 +680,8 @@ function Projectile.launch(
 		model = shurikenModel
 		part = hub
 		local pierceCount = if spec.impact then spec.impact.pierceCount else nil
-		if type(pierceCount) == "number" and pierceCount > 0 then
+		local pierceGraves = spec.impact and spec.impact.pierceGraves == true
+		if pierceGraves or (type(pierceCount) == "number" and pierceCount > 0) then
 			applyPierceAura(shurikenModel, hub)
 		end
 		shurikenModel.Parent = folder
@@ -802,7 +806,7 @@ function Projectile.tick(
 			then projectile.column <= liveColumn
 			else projectile.column >= liveColumn
 		if reached then
-			onImpact(
+			local _killed, pierceNextId = onImpact(
 				projectile.spec.targetInstanceId,
 				projectile.spec.damage,
 				projectile.spec.ownerUserId,
@@ -812,6 +816,19 @@ function Projectile.tick(
 				projectile.spec.row,
 				projectile.spec.targetColumn
 			)
+			if type(pierceNextId) == "string" and pierceNextId ~= "" then
+				local nextColumn = getColumn(pierceNextId, nil)
+				if type(nextColumn) == "number" then
+					projectile.spec.targetInstanceId = pierceNextId
+					projectile.spec.targetKind = nil
+					projectile.spec.targetColumn = nextColumn
+					local impact = projectile.spec.impact
+					if impact and type(impact.pierceCount) == "number" then
+						impact.pierceCount = math.max(0, impact.pierceCount - 1)
+					end
+					continue
+				end
+			end
 			destroyProjectile(projectile)
 			active[id] = nil
 		end

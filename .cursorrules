@@ -30,6 +30,7 @@ Then consult the system-specific docs relevant to the task:
 - docs/WEATHER.md — per-day weather (NightFog, plant rules, client visuals)
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
+- docs/STORE.md — Progression Store catalogs, Magnet / Speed upgrades
 - docs/HOUSE.md — plot houses + boss collection (Milestone 21)
 - docs/EVOLUTIONS.md — Brainrot leveling + Epic→God tiers (Milestone 19)
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
@@ -88,6 +89,7 @@ Services (current):
 - EnemyService
 - BrainrotService
 - CoinService
+- MagnetService
 - ProgressService
 - StoreService
 - GraveService
@@ -116,6 +118,8 @@ The server owns:
 - Plot houses (build, owner sign, future boss display)
 - Saving
 - Rewards / unlocks / loadout / statistics / Progression Store purchases
+- Magnet cooldown / pull
+- Per-day damage-meter totals
 
 The client owns:
 
@@ -152,6 +156,7 @@ Examples:
 - Mini-store yard placement (`StoreConfig`)
 - Monster spawn column / forest march (`MonsterConfig`)
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
+- Magnet cooldown / pull range (`MagnetConfig`)
 - Weather, graves, VFX, audio
 
 Studio-only playtest cheats live in `DevConfig`. `isActive()` = ENABLED and
@@ -268,7 +273,7 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 
 - **Coins** — match currency (placement, passive drops). `CoinService` only.
 - **Brains** — progression currency (day rewards, leftover-coin conversion at
-  day end, Progression Store spends, future evolve / house boss income).
+  day end, Progression Store spends, evolution claims, future house boss income).
   `ProgressService` only for brains balances.
 - Clients never set balances.
 
@@ -286,10 +291,13 @@ Persist:
 - Brains
 - Player health (hearts)
 - Planted Brainrots (id, tile, HP) — **victory checkpoint only** (not mid-day)
-- Unlocks, equipped loadout, upgrades, statistics, **Brainrot XP** (per registry
-  id) — XP from a failed / unfinished day is **not** committed (Start Day snapshot;
-  same idea as the lawn checkpoint)
-- Future player-owned progression (collected bosses, evolutions, …)
+- Unlocks, equipped loadout, upgrades (`WalkSpeed`, **Magnet** 1–5), statistics
+- **Brainrot XP** (per registry id) — XP from a failed / unfinished day is
+  **not** committed (Start Day snapshot; same idea as the lawn checkpoint)
+- **Claimed evolution tiers** (per Brainrot id)
+- Intro popup flags (`introducedMonsters`, `introducedBrainrots`,
+  `introducedMechanics`)
+- Future player-owned progression (collected bosses, …)
 
 Do NOT persist:
 

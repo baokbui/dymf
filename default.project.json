@@ -146,6 +146,13 @@
             "BackgroundTransparency": 1
           }
         },
+        "MechanicIntroPopup": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
         "GameOverPopup": {
           "$className": "Frame",
           "$properties": {

@@ -32,7 +32,17 @@ local localPlayer = Players.LocalPlayer
 
 local highlight: BasePart? = nil
 local rayParams = RaycastParams.new()
+local inspectParams = RaycastParams.new()
 local hoveredTile: BasePart? = nil
+
+local function screenRay(x: number, y: number, params: RaycastParams): RaycastResult?
+	local camera = Workspace.CurrentCamera
+	if not camera then
+		return nil
+	end
+	local ray = camera:ScreenPointToRay(x, y)
+	return Workspace:Raycast(ray.Origin, ray.Direction * RAY_DISTANCE, params)
+end
 
 local function createHighlight(): BasePart
 	local part = Instance.new("Part")
@@ -84,13 +94,7 @@ end
 -- placement preview can share one raycast definition. Returns nil for misses,
 -- non-tiles, and tiles on other players' plots.
 local function resolveTileAt(x: number, y: number): BasePart?
-	local camera = Workspace.CurrentCamera
-	if not camera then
-		return nil
-	end
-
-	local ray = camera:ScreenPointToRay(x, y)
-	local result = Workspace:Raycast(ray.Origin, ray.Direction * RAY_DISTANCE, rayParams)
+	local result = screenRay(x, y, rayParams)
 	if not result then
 		return nil
 	end
@@ -121,8 +125,15 @@ local function refreshRayFilter()
 	if character then
 		table.insert(exclude, character)
 	end
+	inspectParams.FilterType = Enum.RaycastFilterType.Exclude
+	inspectParams.FilterDescendantsInstances = exclude
+
+	local tileExclude = table.clone(exclude)
+	for _, inst in CollectionService:GetTagged(Constants.TAGS.Monster) do
+		table.insert(tileExclude, inst)
+	end
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = exclude
+	rayParams.FilterDescendantsInstances = tileExclude
 end
 
 function GridController.init()
@@ -133,6 +144,8 @@ end
 
 function GridController.start()
 	localPlayer.CharacterAdded:Connect(refreshRayFilter)
+	CollectionService:GetInstanceAddedSignal(Constants.TAGS.Monster):Connect(refreshRayFilter)
+	CollectionService:GetInstanceRemovedSignal(Constants.TAGS.Monster):Connect(refreshRayFilter)
 
 	-- Event-driven (no per-frame polling): update on cursor movement.
 	UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
@@ -167,6 +180,12 @@ end
 -- sharing the same raycast rules as the hover highlight.
 function GridController.resolveTileAt(x: number, y: number): BasePart?
 	return resolveTileAt(x, y)
+end
+
+-- World hit under a screen point (monsters included). Tile hover / plant
+-- rays exclude Monster-tagged models so a walking unit does not eat the lawn.
+function GridController.raycastAt(x: number, y: number): RaycastResult?
+	return screenRay(x, y, inspectParams)
 end
 
 return GridController

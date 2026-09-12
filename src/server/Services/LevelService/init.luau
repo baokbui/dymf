@@ -59,6 +59,7 @@ type PlayerState = {
 	-- One-shot: consumed into LevelStateChanged intro arrays on the next broadcast.
 	pendingMonsterIntroIds: { string }?,
 	pendingBrainrotIntroIds: { string }?,
+	pendingMechanicIntroIds: { string }?,
 }
 
 local states: { [number]: PlayerState } = {}
@@ -113,6 +114,10 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		payload.introducedMonsterId = state.pendingMonsterIntroIds[1]
 		state.pendingMonsterIntroIds = nil
 	end
+	if state.pendingMechanicIntroIds and #state.pendingMechanicIntroIds > 0 then
+		payload.introducedMechanicIds = state.pendingMechanicIntroIds
+		state.pendingMechanicIntroIds = nil
+	end
 
 	return payload
 end
@@ -142,10 +147,12 @@ end
 local function queueIntros(player: Player, state: PlayerState)
 	ProgressService.consumeReachUnlocksForDay(player, state.currentLevel)
 	local brainrotIds = ProgressService.consumeBrainrotIntrosForDay(player, state.currentLevel)
+	local mechanicIds = ProgressService.consumeMechanicIntrosForDay(player, state.currentLevel)
 	local monsterIds = ProgressService.consumeMonsterIntrosForDay(player, state.currentLevel)
 	state.pendingBrainrotIntroIds = if #brainrotIds > 0 then brainrotIds else nil
+	state.pendingMechanicIntroIds = if #mechanicIds > 0 then mechanicIds else nil
 	state.pendingMonsterIntroIds = if #monsterIds > 0 then monsterIds else nil
-	if #brainrotIds > 0 or #monsterIds > 0 then
+	if #brainrotIds > 0 or #mechanicIds > 0 or #monsterIds > 0 then
 		local SaveService = require(script.Parent.SaveService)
 		SaveService.saveNow(player, "unit_intro")
 	end
@@ -503,6 +510,7 @@ local function initPlayer(player: Player)
 		bigWaveWarning = false,
 		pendingMonsterIntroIds = nil,
 		pendingBrainrotIntroIds = nil,
+		pendingMechanicIntroIds = nil,
 	}
 	task.defer(function()
 		broadcast(player)

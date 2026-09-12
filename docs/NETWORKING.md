@@ -179,8 +179,8 @@ include `unlockedBrainrotId` when clearing that day grants a starter-roster
 Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`). Phase stays **Victory** until the
 player presses **Continue** (`ContinueVictory`); then Preparation. Unlock
 popups queue after Continue. Join / Preparation payloads may include
-`introducedBrainrotIds` and `introducedMonsterIds` (queued intros; see
-`BRAINROTS.md` / `UI.md` / `LEVELS.md`).
+`introducedBrainrotIds`, `introducedMechanicIds`, and `introducedMonsterIds`
+(queued intros; see `BRAINROTS.md` / `UI.md` / `LEVELS.md`).
 
 ---
 

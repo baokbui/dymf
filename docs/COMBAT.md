@@ -20,8 +20,11 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 **Damage meter** ✅ — `DamageMeterService` totals HP per Brainrot / monster
 registry id on the plot owner's lawn. Broadcasts `DamageMeterUpdated` (coalesced).
-Resets when the day goes **Active**. Status DoT without a source species is not
-ranked. Client HUD is display-only.
+Resets when the day goes **Active**. Every Brainrot hit that goes through
+`CombatService.damageMonster` with a `sourceBrainrotId` ranks: knives (incl.
+Piercing Brew / fifth strike / execute leftover HP), melee bat, Ranged Rampage
+bats, Tralalero bubbles / barrage, Bombardino column bombs. Status DoT without a
+source species is not ranked. Client HUD is display-only.
 
 ---
 
@@ -55,20 +58,25 @@ are **not** valid targets — Brainrots wait until the monster enters the plot.
 and status aimed at monsters **strictly east** of the stone (`fromColumn <
 grave < targetColumn`). Combat does not apply HP or status to those monsters
 (shurikens stop at the stone). **Piercing Brew** (`pierceCount`) is the
-exception: the shot flies through the grave, damages the first monster, and
-still hits the one behind. Graves have no combat HP except **Patapim**
+exception: the shot never treats the grave as a target (no HP, no shake),
+keeps flying through the stone, damages the first monster, and still hits
+the one behind. Graves have no combat HP except **Patapim**
 smashes (`hitFromPatapim`), which also **shake** the mesh. Other hits do not
 shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
 valid targets for lane shots. Graves do not block westbound Skeleton arrows.
 
-Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 2) occupy rows
+Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 2, Queen Spider = 3) occupy rows
 `[row, row + laneSpan − 1]` — `row` is the unit's lowest/anchor row, not a
 center — and are valid targets from **any** row in that range
-(`GridUtil.occupiesLaneRow`). Melee, projectiles, and row splash all use this
-rule via `EnemyService` queries. Visual placement centers the model on the
-midpoint of its occupied span (`GridUtil.laneCenterRow`) so even spans still
-render centered between their lanes instead of snapped to one edge.
+(`GridUtil.occupiesLaneRow`). Uniform scale also makes them ~`laneSpan` tiles
+wide in X; freeze / row splash treat that footprint as on-plot once it overlaps
+the lawn (`isOnPlotColumn(column, laneSpan)`), so planting Lirili on the visual
+middle of Queen Spider still hits even if her pivot is a tile east. Melee,
+projectiles, and row splash all use the row rule via `EnemyService` queries.
+Visual placement centers the model on the midpoint of its occupied span
+(`GridUtil.laneCenterRow`) so even spans still render centered between their
+lanes instead of snapped to one edge.
 
 The reverse direction also respects the span: when a multi-lane unit attacks,
 it hits every Brainrot standing on its current tile across **all** occupied
@@ -86,7 +94,7 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and flies through graves. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
+| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
 | Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
@@ -163,10 +171,14 @@ tick, capped at max HP). Fast march (`secondsPerGrid` 2.0).
 
 **Lirili / Bombardino** — Lirili freeze (`applyStatusAroundColumn`, 2 tiles
 ahead and behind) and Bombardino entire-row damage only target monsters **on
-the lawn** (`isOnPlotColumn`). Bombardino column hits
-match by **tile index** so chewing units at melee standoff still take damage.
-Freeze/Stun are rejected while a monster is **downed**, and starting a tip-over
-(last stand) clears any active freeze.
+the lawn** (`isOnPlotColumn`, multi-lane footprint included). Both column
+bombs and freeze match by **tile index / footprint overlap** so chewing units
+at melee standoff — and a 3-lane boss standing on the plant tile — still take
+the hit. Legendary Winter's Grasp (`applyEntireRowStatus`) uses the **caster
+tile** for grave LOS (not column 0), so a fog grave west of Lirili does not
+eat a freeze planted on Queen Spider. Graves still block monsters strictly
+east of the stone from the caster. Freeze/Stun are rejected while a monster is
+**downed**, and starting a tip-over (last stand) clears any active freeze.
 
 **Duke Vampire** ✅ — `DukeVampireFreeze` is a **once-only** last stand: at
 ≤20% HP he falls over (`MonsterDeath.playDowned`, rig intact —
@@ -208,7 +220,8 @@ values remain in `CombatConfig`.
 
 1. `CombatService.damageMonster` / `damageBrainrot` / `healBrainrot` routes to the owning service.
    Brainrot hits pass a `sourceBrainrotId` so the monster records last-hit
-   species (and `DamageMeterService` ranks HP). Status DoT omits that source.
+   species (and `DamageMeterService` ranks HP). Knives also pass
+   `sourceInstanceId`. Status DoT omits that source.
    `BubbleTrap` / `BubbleBarrage` still pass a source for the damage meter;
    last-hit kill XP stays skipped via `SKIP_LAST_HIT` (landed-hit `HIT_JOB`
    instead).

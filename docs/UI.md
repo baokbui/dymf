@@ -25,9 +25,12 @@ StarterGui/
         Inventory    (Frame)   ✅ M13 (loadout)
         MagnetEntry  (created in MagnetHud) ✅
         DamageMeter  (Frame)   ✅
+        BrainrotInspect (created in BrainrotInspect) ✅
+        MonsterInspect (created in MonsterInspect) ✅
         RewardPopup  (Frame)   ✅ M13
         UnlockPopup  (Frame)   ✅ M13
         MonsterIntroPopup (Frame) ✅
+        MechanicIntroPopup (Frame) ✅
         GameOverPopup (Frame) ✅
         ProgressionStore (Frame) ✅ M18
 ```
@@ -47,7 +50,7 @@ All HUD panels share a **cartoon thick-outline** look from
   dock stay cool blue (the reference look), Coins / Brains / Speed are bare
   glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip),   Inventory is leafy green, Settings is orange, Magnet is red,
   RewardPopup is gold, UnlockPopup is purple, ProgressionStore is teal,
-  MonsterIntroPopup is orange, GameOverPopup is dark defeat crimson.
+  MonsterIntroPopup is orange, MechanicIntroPopup is mossy stone, GameOverPopup is dark defeat crimson.
 - Black `UIStroke` borders (thick on panels, slightly thinner on cards)
 - Bold white/accent titles with black `TextStroke`
 - Flat saturated accents (gold coins, red hearts/danger, green start)
@@ -64,7 +67,7 @@ hardcode a second palette in new UI.
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Damage meter, Rewards, Unlock / Monster intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
+| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Damage meter, field Brainrot / monster inspect, Rewards, Unlock / Monster intro / Mechanic intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
@@ -119,14 +122,16 @@ hardcode a second palette in new UI.
 - **Magnet** ✅ — square HUD chip to the **right** of Inventory / Settings
   (magnet icon, **Lv. N**, hotkey **1**). Starts at level **1** (max **5**).
   Press **1** or click the chip during an **Active** day to pull landed coins
-  from the **8 tiles** around the player (left / right / up / down / diagonal)
-  for **5s**, then cooldown (**90s** at level 1 → **20s** at level 5, linear).
-  If the day ends while the magnet is on cooldown (or still in its 5s window),
+  toward the player for **5s**, then cooldown (**90s** at level 1 → **20s** at
+  level 5, linear). Pull range is world Chebyshev from the player:
+  **1.2 tiles** at level 1, **+1/5 tile per level**, **2 tiles** at level 5
+  (`MagnetConfig.rangeTilesFor`). Rings spawn at that outer radius and collapse
+  inward (`VfxUtil.playMagnetWaves`). If the day ends while the magnet is on
+  cooldown (or still in its 5s window),
   the remaining cooldown **pauses** — the HUD timer does not tick during
   Victory / Defeat / Preparation — and **resumes** when the player starts the
   next day (Countdown or Active). Rejoin still drops in-memory cooldown.
-  While active, translucent purple circular soundwaves pulse around the player
-  (rings spawn at the outer pull range and collapse inward; `VfxUtil.playMagnetWaves`). Server owns cooldown (`ActivateMagnet` /
+  Server owns cooldown (`ActivateMagnet` /
   `MagnetStateChanged`). Upgrade ranks
   at the red mini store (`ProgressConfig.UPGRADE_CATALOG` Magnet).
 - **Damage meter** ✅ — upper-right board titled **Damage**, with **Brainrots** /
@@ -136,7 +141,10 @@ hardcode a second palette in new UI.
   `DAMAGE_METER_VISIBLE_ROWS`). Each row is **name** (left) and **damage**
   (right), then a capsule bar scaled against the current tab’s leader. Brainrot
   ranks are HP to monsters; monster ranks are HP-equivalent chew / arrow hits
-  on plants. Server-owned (`DamageMeterService` / `DamageMeterUpdated`); resets
+  on plants. Damaging Brainrot abilities (knives, bats, bubbles, Bombardino
+  bombs, pierce / fifth-strike / execute leftover HP) all pass a
+  `sourceBrainrotId` so they rank. Server-owned (`DamageMeterService` /
+  `DamageMeterUpdated`); resets
   on Start Day. Display only.
 - **Inventory** ✅ M13 — bottom-left HUD button (above Settings) opens the
   loadout modal; a
@@ -179,7 +187,10 @@ hardcode a second palette in new UI.
   rightmost 500 of the current green fill blue** (body HP is unchanged;
   when the shield drops that slice is green again). A translucent blue
   ForceField bubble wraps the plant while the shield is up. No Equip button on the field card. No close X — dismiss by clicking
-  empty lawn, shovel, a shop seed, or closing Inventory. Server validates
+  empty lawn, shovel, a shop seed, or closing Inventory. **Clicking a monster
+  on your plot** opens a matching right-side card (`MonsterInspect`): portrait,
+  live HP, stats, ability blurb — no evolutions, XP, or Equip. Opening one
+  lawn card hides the other. Server validates
   equip changes via `SetEquipped`. Loadout **cannot** change while the day is
   **Active** (server reject + inventory packets / Equip button locked).
   Every planted Brainrot shows a world nameplate (full name, claimed
@@ -199,6 +210,12 @@ hardcode a second palette in new UI.
   Driven by `introducedMonsterIds` on `LevelStateChanged`; portrait via
   `MonsterPreview`, stats/abilities via `MonsterInfo`. Persisted in
   `SaveData.introducedMonsters` so it only fires once.
+- **MechanicIntroPopup** ✅ — same cartoon modal the first time the player
+  **reaches** a mechanic intro day. `ProgressConfig.MECHANIC_INTRO_SCHEDULE`:
+  Graves on Day 31. Copy explains destroying graves with **Brr Brr Patapim**
+  (Grave Buster) and hitting monsters behind them with Cappuccino's
+  **Piercing Brew** (Legendary evolution). Driven by `introducedMechanicIds`
+  on `LevelStateChanged`; persisted in `SaveData.introducedMechanics`.
 - **GameOverPopup** ✅ — full-screen defeat overlay when hearts hit 0: slow
   **GAME OVER** reveal, “You have failed to protect Triple T and his house.”,
   and **Rewind Day N**. Clicking Rewind plays a translucent clock spin, fades

@@ -659,6 +659,8 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		local currentSpeed = PlayerConfig.WALK_SPEED + level * bonus
 		local nextSpeed = PlayerConfig.WALK_SPEED + math.min(level + 1, def.maxLevel) * bonus
 		local isMagnet = def.id == MagnetConfig.ID
+		local currentRange = MagnetConfig.rangeTilesFor(level)
+		local nextRange = MagnetConfig.rangeTilesFor(math.min(level + 1, def.maxLevel))
 		local currentCooldown = MagnetConfig.cooldownFor(level)
 		local nextCooldown = MagnetConfig.cooldownFor(math.min(level + 1, def.maxLevel))
 
@@ -688,7 +690,7 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		local stats = Instance.new("TextLabel")
 		stats.BackgroundTransparency = 1
 		stats.Position = UDim2.fromOffset(0, 132)
-		stats.Size = UDim2.new(1, 0, 0, 100)
+		stats.Size = UDim2.new(1, 0, 0, 120)
 		stats.TextWrapped = true
 		stats.TextXAlignment = Enum.TextXAlignment.Left
 		stats.TextYAlignment = Enum.TextYAlignment.Top
@@ -696,8 +698,9 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		if atMax then
 			if isMagnet then
 				stats.Text = string.format(
-					"Duration: %s\nCooldown: %s  (maxed)",
+					"Duration: %s\nRange: %s  (maxed)\nCooldown: %s  (maxed)",
 					MagnetConfig.formatSeconds(MagnetConfig.DURATION),
+					MagnetConfig.formatTiles(currentRange),
 					MagnetConfig.formatSeconds(currentCooldown)
 				)
 			else
@@ -705,10 +708,12 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 			end
 		elseif isMagnet then
 			stats.Text = string.format(
-				"Duration: %s\nCooldown: %s\nNext level: %s\nCost: %d brains",
+				"Duration: %s\nRange: %s\nCooldown: %s\nNext level: %s cooldown, %s range\nCost: %d brains",
 				MagnetConfig.formatSeconds(MagnetConfig.DURATION),
+				MagnetConfig.formatTiles(currentRange),
 				MagnetConfig.formatSeconds(currentCooldown),
 				MagnetConfig.formatSeconds(nextCooldown),
+				MagnetConfig.formatTiles(nextRange),
 				nextCost or 0
 			)
 		else

@@ -109,6 +109,7 @@ local function defaultSaveData(): Types.SaveData
 		evolutions = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
+		introducedMechanics = {},
 	}
 end
 
@@ -225,6 +226,16 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
+	local introducedMechanics = payload.introducedMechanics
+	if type(introducedMechanics) == "table" then
+		save.introducedMechanics = {}
+		for _, value in introducedMechanics do
+			if type(value) == "string" then
+				table.insert(save.introducedMechanics :: { string }, value)
+			end
+		end
+	end
+
 	local brainrots = payload.brainrots
 	if type(brainrots) == "table" then
 		save.brainrots = {}
@@ -299,6 +310,11 @@ local function collectSnapshot(player: Player): Types.SaveData
 			then progress.introducedBrainrots
 			elseif fallback and fallback.introducedBrainrots
 			then deepCopyStringList(fallback.introducedBrainrots)
+			else {},
+		introducedMechanics = if progress
+			then progress.introducedMechanics
+			elseif fallback and fallback.introducedMechanics
+			then deepCopyStringList(fallback.introducedMechanics)
 			else {},
 	}
 end
@@ -393,6 +409,7 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		evolutions = saveData.evolutions,
 		introducedMonsters = saveData.introducedMonsters,
 		introducedBrainrots = saveData.introducedBrainrots,
+		introducedMechanics = saveData.introducedMechanics,
 	})
 	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
 	local forcedDay = LevelService.applyDevDay(player)

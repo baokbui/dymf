@@ -68,7 +68,7 @@ entry-point Script / LocalScript.
 
 ```
 ReplicatedStorage/Shared/
-    Config/        Grid, Economy, Level, Plot, Progress, Store, House, Weather, Audio, UI + aggregator init
+    Config/        Grid, Economy, Level, Plot, Progress, Store, House, Magnet, Grave, Combat, Evolution, Weather, Audio, UI + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
     Utilities/     Logger, GridUtil, WeatherUtil + aggregator init
@@ -95,7 +95,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/     (init + Shop, HUD counters, DamageMeter, Level, Settings, Inventory, ProgressionStore, popups)
+        UIController/     (init + Shop, HUD counters, DamageMeter, Level, Settings, Inventory, BrainrotInspect, MonsterInspect, ProgressionStore, popups)
         CoinController/   (ground-coin pickup intent + sparkle — M3/M11)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
@@ -444,7 +444,9 @@ Full details in `UI.md`. Summary:
 - **Inventory** — bottom-left HUD button (above Settings) + modal; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
   stats + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
-  on your lawn opens the same card with live HP.
+  on your lawn opens the same card with live HP. Clicking a monster on your
+  plot opens `MonsterInspect` (portrait, live HP, stats, ability — no
+  evolutions).
 - **Reward popup** — victory shows brains earned (store purchases → M18).
 - Save schema **v5** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists, and `brainrotXp`.
 

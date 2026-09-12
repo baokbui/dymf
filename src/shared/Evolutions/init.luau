@@ -175,7 +175,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Legendary",
 			level = 20,
 			name = "Piercing Brew",
-			description = "Attack pierces the first monster: 100% dmg to it and the one behind. 10s cooldown.",
+			description = "Attack pierces the first monster: 100% dmg to it and the one behind (flies through graves). 10s cooldown.",
 			ability = "PierceBrew",
 			abilityParams = { cooldown = 10 },
 		},

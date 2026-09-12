@@ -21,7 +21,7 @@ UIEvents.pendingSpend = pendingSpendBindable.Event
 -- Fired with a player-facing reason string when a plant attempt is rejected.
 UIEvents.plantFailed = plantFailedBindable.Event
 
--- Fired with a planted Brainrot Model to inspect, or nil to hide the card.
+-- Fired with a planted Brainrot or a local-plot monster Model to inspect, or nil to hide.
 UIEvents.fieldInspect = fieldInspectBindable.Event
 
 function UIEvents.fireCoinDelta(delta: number)

@@ -54,7 +54,9 @@ level (`6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80 / 98 / 118 / 142 /
 `SaveData.upgrades`.
 
 **Magnet**: starts at **level 1** (max **5**). Each rank shortens the post-use
-cooldown from **90s** to **20s** (linear). Active pull lasts **5s**. Remaining
+cooldown from **90s** to **20s** (linear) and grows pull range by **1/5 tile**
+(world Chebyshev from the player: **1.2 tiles** at level 1 → **2 tiles** at
+max). Active pull lasts **5s**. Remaining
 cooldown **pauses** when the day ends and **resumes** on Start Day. Costs to
 reach 2 / 3 / 4 / 5: **30 / 55 / 90 / 150** brains. Press **1** (or the HUD
 chip) on an Active day. See `MagnetConfig`.
@@ -68,7 +70,7 @@ chip) on an Active day. See `MagnetConfig`.
 | `StoreConfig` | Template names, yard offsets, prompt copy, close distance |
 | `StoreService` | Clone beside house; owner-only ProximityPrompt → `OpenProgressionStore` (kind + mascot position) |
 | `ProgressService` | Validate `BuyStoreItem` (own plot + in range, brains, catalog) |
-| `MagnetService` | Activate magnet, cooldown (pauses between days), pull adjacent coins |
+| `MagnetService` | Activate magnet, cooldown (pauses between days), pull coins in level-scaled range |
 | `UIController/ProgressionStore` | List rows open a stats card (desc + buy) |
 | `StoreController` | Hide Talk prompts on other players' stalls |
 | `PlotService` | Applies `ProgressService.getWalkSpeed` on spawn |

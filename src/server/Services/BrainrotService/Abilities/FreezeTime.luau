@@ -73,7 +73,8 @@ function FreezeTime.onPlaced(ctx, callbacks)
 					"Freeze",
 					freezeDuration,
 					nil,
-					"Ice"
+					"Ice",
+					column
 				)
 			end
 			return CombatService.applyStatusAroundColumn(
