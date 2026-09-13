@@ -28,7 +28,7 @@ not live code. “Gold” on the sheet is **coins**.
   overrides and **Legendary** extras are applied at place / restore / claim
   (`Evolutions.applyStats` / `claimedExtras`). **Mythic** and **Immortal**
   passives compose the same way (params merge or extra ability ids). GOD
-  ultimates 🔜.
+  ultimates: Tung Tung **Sahur's Wrath** ✅; other roster ultimates 🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -147,7 +147,7 @@ on the sheet (TBD).
 | Legendary | Ranged Rampage | Throws a spinning bat from the **left hand** down the **whole row** for **10s**. Hits on the lawn knock monsters back **half a tile** (off-plot / forest: damage only). **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
 | Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. |
-| GOD | Sahur's Wrath | Hit the **entire lane** once for **1000%** of original damage. **30s** CD. |
+| GOD | Sahur's Wrath | A **Tung Bat** appears above him, expands, stretches to the **east plot edge**, then slams his **row** for **1000%** of his current bat damage. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -201,8 +201,9 @@ mutations stay in M19 or slip to a later pass.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
   `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
-  `TenfoldGuard`, or params-only overlays: Golden Discount, Wound of the
-  Shark, Assassin's Verdict, Frostbound Neighbor). GOD ultimates 🔜.
+  `TenfoldGuard`; params-only overlays: Golden Discount, Wound of the
+  Shark, Assassin's Verdict, Frostbound Neighbor). **GOD** ultimates use the
+  same extras path (`SahurWrath` ✅; other roster ultimates 🔜).
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -216,9 +217,9 @@ mutations stay in M19 or slip to a later pass.
   **Current Evolution** (white Common base ability, then Epic→God gray
   until the Brainrot level gate; at the gate the row uses a light rarity fill
   and a shiny rarity title, with a lock until brains claim and a confirm
-  prompt on click). **Epic** stats apply once claimed; **Legendary** extras
-  and **Mythic** / **Immortal** passives tick / overlay in combat. GOD
-  ultimates still 🔜.
+  prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
+  overlay in combat. **GOD** ultimates tick the same extras path
+  (`SahurWrath` ✅; others 🔜).
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed

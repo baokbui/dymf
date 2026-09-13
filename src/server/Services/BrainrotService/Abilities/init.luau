@@ -76,6 +76,7 @@ local handlers: { [string]: AbilityHandler } = {
 	DesperateFury = require(script.DesperateFury),
 	Stoneheart = require(script.Stoneheart),
 	TenfoldGuard = require(script.TenfoldGuard),
+	SahurWrath = require(script.SahurWrath),
 }
 
 function Abilities.defaultBuffs(): EvolutionBuffs

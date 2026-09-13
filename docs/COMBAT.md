@@ -96,12 +96,14 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
+| Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: appears above the plant, expands, stretches to the east plot edge, then slams the **row** | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block). `MeleeBat` SFX on impact |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
 | Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
-`BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, speed, spin, bubble size) +
+`BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, `WRATH_*` slam timing,
+speed, spin, bubble size) +
 `VfxConfig` bubble colors (cyan trap / gold barrage). Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles and thrown bats skip trails. Bubble Barrage adds a gold light-streak.
 

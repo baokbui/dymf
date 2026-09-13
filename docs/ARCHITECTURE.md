@@ -487,7 +487,7 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` and other
   params-only rows merge into `abilityParams`). Aura is purple at
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
-  at GOD. GOD ultimates still 🔜.
+  at GOD. **GOD ultimates:** Tung Tung `SahurWrath` ✅; others 🔜.
 
 ### Milestone 12 — Audio ✅
 

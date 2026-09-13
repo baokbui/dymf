@@ -844,4 +844,11 @@ function Projectile.destroyAllOnPlot(plotModel: Model)
 	end
 end
 
+-- Standalone Tung Bat clone (Ranged Rampage mesh / procedural fallback). Caller
+-- parents it and drives CFrame / Size — not ticked as a flying projectile.
+function Projectile.createBatVisual(): Model
+	local model, _ = createBatModel()
+	return model
+end
+
 return Projectile

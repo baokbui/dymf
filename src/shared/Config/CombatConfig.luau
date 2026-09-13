@@ -52,6 +52,18 @@ local CombatConfig = {
 	BAT_FALLBACK_HANDLE_COLOR = Color3.fromRGB(139, 90, 43),
 	BAT_FALLBACK_HEAD_COLOR = Color3.fromRGB(90, 55, 28),
 
+	-- Sahur's Wrath (Tung Tung GOD): same bat appears above the plant, expands,
+	-- stretches to the east plot edge, then slams the row.
+	WRATH_HOVER_OFFSET = 3.5, -- studs above the plant's visual top
+	WRATH_EXPAND_SCALE = 1.45,
+	WRATH_EXPAND_DURATION = 0.28,
+	WRATH_STRETCH_DURATION = 0.42,
+	WRATH_SLAM_DURATION = 0.18,
+	WRATH_SLAM_HEIGHT = 2.4, -- studs above tile top at impact
+	WRATH_LINGER = 0.22,
+	-- East end of the stretch, in fractional columns (COLUMNS + this = east face).
+	WRATH_EAST_EDGE = 0.5,
+
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,
 	POISON_DAMAGE_PER_TICK = 25,

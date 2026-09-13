@@ -30,6 +30,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Ranged Rampage",
 		description = "Throws a spinning bat from the left hand down the whole row. Hits on the lawn knock monsters back half a tile.",
 	},
+	SahurWrath = {
+		label = "Sahur's Wrath",
+		description = "A giant bat appears above Tung, stretches to the east end of the plot, and slams the whole row.",
+	},
 	BubbleTrap = {
 		label = "Bubble Trap",
 		description = "Launches a bubble that traps the closest monster in the row.",

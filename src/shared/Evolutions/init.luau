@@ -128,7 +128,14 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			ability = "TenfoldGuard",
 			abilityParams = { every = 10, shieldPercent = 30, duration = 5 },
 		},
-		{ rarity = "God", level = 50, name = "Sahur's Wrath", description = "Hit the entire lane once for 1000% of original damage. 30s cooldown." },
+		{
+			rarity = "God",
+			level = 50,
+			name = "Sahur's Wrath",
+			description = "A giant bat appears above Tung, stretches to the east end of the plot, and slams the row for 1000% damage. 30s cooldown.",
+			ability = "SahurWrath",
+			abilityParams = { cooldown = 30, damagePercent = 1000 },
+		},
 	},
 	TralaleroTralala = {
 		{
