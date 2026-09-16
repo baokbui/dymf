@@ -1,8 +1,8 @@
 --!strict
 --[[
 	ProgressionStore
-	Talk-to-mascot overlay for brains purchases. List rows open a stats card
-	(description + buy). Display + BuyStoreItem intent only.
+	Brainrot shop overlay (Talk at the plot stall) and HUD Upgrades overlay.
+	List rows open a stats card (description + buy). Display + BuyStoreItem intent only.
 ]]
 
 local Players = game:GetService("Players")
@@ -869,6 +869,10 @@ function ProgressionStore.rebuild(self: ProgressionStoreHud)
 	if self.selectedId then
 		self:showStats(self.selectedId)
 	end
+end
+
+function ProgressionStore.getShopKind(self: ProgressionStoreHud): string?
+	return self.shopKind
 end
 
 function ProgressionStore.open(self: ProgressionStoreHud, shopKind: string, anchor: Vector3?)

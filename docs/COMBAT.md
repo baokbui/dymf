@@ -160,8 +160,8 @@ Uses the default tip-over death like other monsters.
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
 - **Wound of the Shark** — when a `"Bubble"` freeze ends, `CombatService.applyBubbleExitSlow`.
 - **Frostbound Neighbor** — `FreezeTime` also freezes one adjacent row (`freezeAdjacentLane`).
-- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`. Model turns **slate / stone gray** (`BrainrotFeedback.setStoned`): Color + `Slate` material; SurfaceAppearance / MeshPart TextureID cleared so Toolbox meshes actually show the rock (same trick as Ice freeze). Restored when the 10s ends.
-- **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts. Tung shows a small orbiting `Assets.Projectiles.Shield` instead of the Banana Bastion bubble.
+- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`. Model reads as **granite** (`BrainrotFeedback.setStoned`): the aura Highlight fill becomes a cool gray wash (Roblox only draws one Highlight per model; aura outline would otherwise hide a second one), aura flames pause, and mesh Color / `Rock` apply after stripping SurfaceAppearance / textures. Restored when the 10s ends.
+- **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts. `abilityParams.orbitShield` clones a small `Assets.Projectiles.Shield` in orbit (Tung); Banana Bastion stays a ForceField bubble.
 
 **Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
 entrance). `ScorpionBurrow` only on first **plot** column: sinks, travels

@@ -44,11 +44,14 @@ local BrainrotConfig = {
 	POISON_TINT_COLOR = Color3.fromRGB(175, 70, 255),
 	POISON_TINT_BLEND = 0.65, -- 0 = original, 1 = full purple
 
-	-- Stoneheart: full rock color + Slate. Toolbox MeshParts ignore Color
-	-- until SurfaceAppearance / TextureID are cleared (same as Ice freeze).
-	STONE_TINT_COLOR = Color3.fromRGB(148, 140, 128),
+	-- Stoneheart: cool granite, not warm beige. Highlight fill always
+	-- washes lighter than the authored RGB, so start dark.
+	STONE_TINT_COLOR = Color3.fromRGB(58, 64, 72),
 	STONE_TINT_BLEND = 1,
-	STONE_MATERIAL = Enum.Material.Slate,
+	STONE_MATERIAL = Enum.Material.Rock,
+	STONE_OUTLINE_COLOR = Color3.fromRGB(28, 30, 34),
+	STONE_HIGHLIGHT_FILL = 0.22,
+	STONE_HIGHLIGHT_OUTLINE = 0.05,
 
 	-- Bombardino: fly the plant across the row while dropping one Bomb per tile.
 	-- Fly time is derived from DROP_STAGGER so the croc stays synced with drops.

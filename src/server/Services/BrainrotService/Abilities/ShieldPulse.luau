@@ -20,6 +20,7 @@ function ShieldPulse.tryAct(ctx, _callbacks)
 	ctx.buffs.shieldStunImmune = false
 	ctx.buffs.shieldUntil = 0
 	ctx.buffs.shieldHp = math.max(0, shield)
+	ctx.model:SetAttribute("ShieldOrbit", nil)
 	local hitsRemaining = ctx.model:GetAttribute("HitsRemaining")
 	if type(hitsRemaining) == "number" then
 		local maxHits = ctx.definition.health

@@ -92,7 +92,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Immortal",
 			level = 40,
 			name = "Stoneheart",
-			description = "Once per plant: below 10% HP, turns to stone (gray Slate) and is invulnerable 10s. No active or ultimate while stone.",
+			description = "Once per plant: below 10% HP, turns to stone (granite Highlight wash) and is invulnerable 10s. No active or ultimate while stone.",
 			ability = "Stoneheart",
 			abilityParams = { healthPercent = 10, duration = 10 },
 		},
@@ -128,7 +128,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			name = "Tenfold Guard",
 			description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded. A small shield orbits Tung.",
 			ability = "TenfoldGuard",
-			abilityParams = { every = 10, shieldPercent = 30, duration = 5 },
+			abilityParams = { every = 10, shieldPercent = 30, duration = 5, orbitShield = 1 },
 		},
 		{
 			rarity = "God",

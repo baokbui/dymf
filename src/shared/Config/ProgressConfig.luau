@@ -53,14 +53,14 @@ local ProgressConfig = {
 		{ day = 31, brainrotId = "BrrBrrPatapim" },
 	},
 
-	-- Buy with brains at the blue mini store (Tung Mascot). Starter-roster
+	-- Buy with brains at the physical Brainrot shop (Tung Mascot). Starter-roster
 	-- units (DEFAULT_UNLOCKS + UNLOCK_SCHEDULE) and Patapim stay campaign-only.
 	-- Giraffa can be bought early; reach Day 25 still grants her for free.
 	STORE_CATALOG = {
 		{ brainrotId = "GiraffaCeleste", brainsCost = 50 },
 	},
 
-	-- Buy with brains at the red mini store (67 Mascot). Level is persisted
+	-- Buy with brains from the HUD Upgrades shop. Level is persisted
 	-- in SaveData.upgrades[id]. Walk speed = PlayerConfig.WALK_SPEED + level * bonus.
 	-- 20 levels × +1 WalkSpeed: 16 → 36 at max. Players who already maxed the
 	-- old 10-rank track can keep buying.

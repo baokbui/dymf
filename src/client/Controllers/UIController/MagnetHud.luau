@@ -1,8 +1,8 @@
 --!strict
 --[[
 	MagnetHud
-	Bottom-left square next to Inventory / Settings: magnet glyph, level,
-	cooldown overlay. Display + ActivateMagnet intent only.
+	Bottom-center square: magnet glyph, level, cooldown overlay.
+	Display + ActivateMagnet intent only.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,8 +15,8 @@ local UITheme = require(Shared.Config.UITheme)
 local MagnetHud = {}
 MagnetHud.__index = MagnetHud
 
-local SIZE = 96
-local ICON = 56
+local SIZE = 64
+local ICON = 36
 -- Image asset 114934566416428; ImageLabel uses the texture id.
 local MAGNET_ICON_TEXTURE_ID = "rbxassetid://73519143112132"
 
@@ -40,7 +40,7 @@ local function mountGlyph(parent: Frame)
 	glyph.Name = "Glyph"
 	glyph.BackgroundTransparency = 1
 	glyph.AnchorPoint = Vector2.new(0.5, 0)
-	glyph.Position = UDim2.new(0.5, 0, 0, 8)
+	glyph.Position = UDim2.new(0.5, 0, 0, 5)
 	glyph.Size = UDim2.fromOffset(ICON, ICON)
 	glyph.Image = MAGNET_ICON_TEXTURE_ID
 	glyph.ScaleType = Enum.ScaleType.Fit
@@ -51,8 +51,8 @@ end
 function MagnetHud.new(parent: Frame): MagnetHud
 	local button = Instance.new("TextButton")
 	button.Name = "MagnetEntry"
-	button.AnchorPoint = Vector2.new(0, 1)
-	button.Position = UDim2.new(0, 194, 1, -16)
+	button.AnchorPoint = Vector2.new(0.5, 1)
+	button.Position = UDim2.new(0.5, 0, 1, -16)
 	button.Size = UDim2.fromOffset(SIZE, SIZE)
 	button.AutoButtonColor = true
 	button.Text = ""
@@ -66,28 +66,28 @@ function MagnetHud.new(parent: Frame): MagnetHud
 	local hotkey = Instance.new("TextLabel")
 	hotkey.Name = "Hotkey"
 	hotkey.BackgroundTransparency = 1
-	hotkey.Position = UDim2.fromOffset(6, 2)
-	hotkey.Size = UDim2.fromOffset(20, 16)
+	hotkey.Position = UDim2.fromOffset(4, 1)
+	hotkey.Size = UDim2.fromOffset(16, 14)
 	hotkey.ZIndex = 16
 	hotkey.Text = MagnetConfig.HOTKEY_LABEL
-	hotkey.TextSize = 12
+	hotkey.TextSize = 10
 	hotkey.TextXAlignment = Enum.TextXAlignment.Left
 	hotkey.Parent = button
 	UITheme.applyOutlinedTitle(hotkey)
-	hotkey.TextSize = 12
+	hotkey.TextSize = 10
 
 	local levelLabel = Instance.new("TextLabel")
 	levelLabel.Name = "Level"
 	levelLabel.BackgroundTransparency = 1
 	levelLabel.AnchorPoint = Vector2.new(0.5, 1)
-	levelLabel.Position = UDim2.new(0.5, 0, 1, -6)
-	levelLabel.Size = UDim2.new(1, -8, 0, 18)
+	levelLabel.Position = UDim2.new(0.5, 0, 1, -4)
+	levelLabel.Size = UDim2.new(1, -6, 0, 14)
 	levelLabel.ZIndex = 16
 	levelLabel.Text = "Lv. 1"
-	levelLabel.TextSize = 14
+	levelLabel.TextSize = 11
 	levelLabel.Parent = button
 	UITheme.applyOutlinedTitle(levelLabel)
-	levelLabel.TextSize = 14
+	levelLabel.TextSize = 11
 
 	local overlay = Instance.new("Frame")
 	overlay.Name = "Cooldown"
@@ -109,12 +109,12 @@ function MagnetHud.new(parent: Frame): MagnetHud
 	timerLabel.Size = UDim2.fromScale(1, 1)
 	timerLabel.ZIndex = 18
 	timerLabel.Text = ""
-	timerLabel.TextSize = 22
+	timerLabel.TextSize = 16
 	timerLabel.Visible = false
 	timerLabel.Active = false
 	timerLabel.Parent = button
 	UITheme.applyOutlinedTitle(timerLabel)
-	timerLabel.TextSize = 22
+	timerLabel.TextSize = 16
 
 	local self = setmetatable({
 		button = button,

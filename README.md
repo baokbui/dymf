@@ -16,7 +16,7 @@ same day again with your last victory lawn.
 
 **Coins** pay for plants during a match (Day 1 starts with 125; later days you
 earn them on the lawn). **Brains** are the meta currency: win a day, then spend
-them at the mini stores beside your house — unlock units like Girafa Celestre,
+them at the Brainrot stall beside your house or the HUD Upgrades shop — unlock units like Girafa Celestre,
 or buy Speed so you can scoop coins faster.
 
 Progress carries across sessions: day, hearts, brains, unlocks, loadout, and

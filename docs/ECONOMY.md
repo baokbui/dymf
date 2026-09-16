@@ -101,7 +101,7 @@ Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
 with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**
 — the coins spent placing it are lost (see `BRAINROTS.md` / `NETWORKING.md`).
 
-**Brains** are spent at the Progression Stores (Milestone 18): `ProgressService`
+**Brains** are spent at the Brainrot stall and HUD Upgrades (Milestone 18): `ProgressService`
 validates `BuyStoreItem` and deducts brains. See `docs/STORE.md`. Leftover
 match coins convert to brains at victory / defeat via
 `ProgressService.brainsFromLeftoverCoins` (then `applyDayPurse`). Rewind then

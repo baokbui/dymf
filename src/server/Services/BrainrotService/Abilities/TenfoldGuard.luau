@@ -40,6 +40,9 @@ function TenfoldGuard.tryAct(ctx, _callbacks)
 	ctx.buffs.shieldStunImmune = true
 	ctx.buffs.shieldUntil = os.clock() + math.max(0, duration)
 	ctx.buffs.shieldHp = math.max(0, maxHealth * shieldPercent / 100)
+	if type(params) == "table" and (params.orbitShield or 0) >= 1 then
+		ctx.model:SetAttribute("ShieldOrbit", true)
+	end
 
 	local hitsRemaining = ctx.model:GetAttribute("HitsRemaining")
 	if type(hitsRemaining) == "number" then

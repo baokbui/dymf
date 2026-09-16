@@ -1,8 +1,9 @@
 --!strict
 --[[
 	StoreConfig
-	Per-plot mini stores cloned beside each house. Templates live under
-	ReplicatedStorage.Assets.Stores (Studio). Catalog prices in ProgressConfig.
+	Per-plot Brainrot shop cloned beside each house. Templates live under
+	ReplicatedStorage.Assets.Stores (Studio). Player upgrades stay HUD-only.
+	Catalog prices in ProgressConfig.
 ]]
 
 local StoreConfig = {
@@ -35,11 +36,6 @@ local StoreConfig = {
 	FACE_DIRECTION = Vector3.new(1, 0, -1),
 	MODEL_ORIENTATION_DEGREES = Vector3.new(0, -90, 0),
 
-	-- Origin is the Brainrots stall (closer to the door). Upgrades is offset
-	-- along FACE: after template yaw −90 that axis is stall *width*, so the
-	-- pair sits side by side instead of one behind the other.
-	-- Smaller STORE_SPACING = closer together. More negative DOOR_RIGHT_Z =
-	-- further back along the house (away from the door / walk-up).
 	YARD_OFFSET_X = 16,
 	STORE_SPACING = 16,
 	DOOR_RIGHT_Z = -32,

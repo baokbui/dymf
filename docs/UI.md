@@ -23,6 +23,7 @@ StarterGui/
         LevelUI      (Frame)   ✅ M8
         Settings     (Frame)   ✅ M13
         Inventory    (Frame)   ✅ M13 (loadout)
+        Index        (Frame)   ✅ (encounter catalog)
         MagnetEntry  (created in MagnetHud) ✅
         DamageMeter  (Frame)   ✅
         BrainrotInspect (created in BrainrotInspect) ✅
@@ -48,7 +49,8 @@ All HUD panels share a **cartoon thick-outline** look from
   geometry everywhere, but each HUD piece gets its own saturated "candy" color
   so the screen doesn't read as one wall of blue: Day/Start Day panel and Shop
   dock stay cool blue (the reference look), Coins / Brains / Speed are bare
-  glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip),   Inventory is leafy green, Settings is orange, Magnet is red,
+  glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip), Inventory /
+  Index / Upgrades / Settings are bare icon + name (no plate), Magnet is red,
   RewardPopup is gold, UnlockPopup is purple, ProgressionStore is teal,
   MonsterIntroPopup is orange, MechanicIntroPopup is mossy stone, GameOverPopup is dark defeat crimson.
 - Black `UIStroke` borders (thick on panels, slightly thinner on cards)
@@ -67,7 +69,7 @@ hardcode a second palette in new UI.
 
 | Controller            | Owns                                         | Status |
 | --------------------- | -------------------------------------------- | ------ |
-| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Magnet, Damage meter, field Brainrot / monster inspect, Rewards, Unlock / Monster intro / Mechanic intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
+| `UIController`        | Shop, Coins, Brains, Speed, Hearts, Level, Settings, Inventory, Index, Magnet, Damage meter, field Brainrot / monster inspect, Rewards, Unlock / Monster intro / Mechanic intro / Game Over, Progression Store | ✅ M3–M4, M8, M13, M18 |
 | `CoinController`      | Ground-coin pickup intent (`CollectCoin`)    | ✅ M3  |
 | `BrainrotController`  | Brainrot action sound feedback (`BrainrotAction`) | ✅ M5/M12 |
 | `CombatController`      | Combat hit/death visuals (`CombatVisual`)         | ✅ M7 |
@@ -87,8 +89,9 @@ hardcode a second palette in new UI.
 - **Speed** ✅ M18 — glyph + WalkSpeed under Brains on the left edge.
 - **Hearts** ✅ M13 — five house hearts at top-left (no chip).
   Left-edge HUD order: Hearts (top) → gap → Coins / Brains / Speed (mid-left) →
-  gap → Inventory above Settings (bottom-left), **Magnet** square to the right
-  of that stack. Day / Start Day stays bottom-right. **Damage meter** sits
+  gap → Inventory, Index, Upgrades, Settings in one bottom-left row
+  (icon on top, name under it; no plate). **Magnet** is a smaller square
+  at **bottom-center**. Day / Start Day stays bottom-right. **Damage meter** sits
   upper-right (**Damage** title above Brainrots / Monsters tabs; height follows
   ranked rows).
 - **Shop** ✅ M4 / M13 — top-center placement bar shows **equipped** Brainrots
@@ -112,14 +115,14 @@ hardcode a second palette in new UI.
   (player copy uses "Day"; remotes stay `StartLevel` / `LevelStateChanged`).
   After Start Day, red bold **“Day starting in 3”** sits above the panel and
   counts down to 0, then hides when the day goes Active.
-- **Settings** ✅ M13 — bottom-left HUD button opens the
+- **Settings** ✅ M13 — bottom-left bare icon + name opens the
   modal. Mute,
   music/SFX volume, Brainrot SFX toggle, statistics, **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time
   played stays current. Day Select is deferred to a future dedicated UI.
-- **Magnet** ✅ — square HUD chip to the **right** of Inventory / Settings
+- **Magnet** ✅ — smaller square HUD chip at **bottom-center**
   (magnet icon, **Lv. N**, hotkey **1**). Starts at level **1** (max **5**).
   Press **1** or click the chip during an **Active** day to pull landed coins
   toward the player for **5s**, then cooldown (**90s** at level 1 → **20s** at
@@ -133,7 +136,7 @@ hardcode a second palette in new UI.
   next day (Countdown or Active). Rejoin still drops in-memory cooldown.
   Server owns cooldown (`ActivateMagnet` /
   `MagnetStateChanged`). Upgrade ranks
-  at the red mini store (`ProgressConfig.UPGRADE_CATALOG` Magnet).
+  at the HUD **Upgrades** shop (`ProgressConfig.UPGRADE_CATALOG` Magnet).
 - **Damage meter** ✅ — upper-right board titled **Damage**, with **Brainrots** /
   **Monsters** tabs under the title. Collapsed shows the title and those tabs;
   clicking a tab expands the list (click the active tab again to collapse).
@@ -146,7 +149,7 @@ hardcode a second palette in new UI.
   `sourceBrainrotId` so they rank. Server-owned (`DamageMeterService` /
   `DamageMeterUpdated`); resets
   on Start Day. Display only.
-- **Inventory** ✅ M13 — bottom-left HUD button (above Settings) opens the
+- **Inventory** ✅ M13 — bottom-left bare icon + name (left of Index) opens the
   loadout modal; a
   PvZ-style **seed packet grid** (portrait + name plate + status ribbon) for
   unlocked Brainrots (max `ProgressConfig.MAX_EQUIPPED`). Only unlocked
@@ -187,8 +190,9 @@ hardcode a second palette in new UI.
   screen, with live **HP** (`Health` / `MaxHealth`; updates as it takes
   hits). Remaining **Banana Bastion** shield (`ShieldHp`) **paints the
   rightmost 500 of the current green fill blue** (body HP is unchanged;
-  when the shield drops that slice is green again). A translucent blue
-  ForceField bubble wraps the plant while the shield is up. No Equip button on the field card. No close X — dismiss by clicking
+  when the shield drops that slice is green again). **Banana Bastion** wraps
+  the plant in a translucent blue ForceField bubble; **Tenfold Guard**
+  (`orbitShield`) orbits a small `Assets.Projectiles.Shield` instead. No Equip button on the field card. No close X — dismiss by clicking
   empty lawn, shovel, a shop seed, or closing Inventory. **Clicking a monster
   on your plot** opens a matching right-side card (`MonsterInspect`): portrait,
   live HP, stats, ability blurb — no evolutions, XP, or Equip. Opening one
@@ -229,10 +233,21 @@ hardcode a second palette in new UI.
   lines and **Continue** scale-pop in one at a time (no fade). Stays until
   **Continue** (`ContinueVictory`); then unlock intros may play.
 
+### Index ✅
+
+- **Index** — HUD button (icon + name) opens a catalog of **every** Brainrot
+  and Monster. **Brainrots** / **Monsters** tabs. Units you have encountered
+  show a portrait and name. Units you have not met yet are a **black
+  silhouette** with **?** / `???`. Encountered Brainrots = unlocked or
+  intro-shown (`unlocks` / `introducedBrainrots`). Encountered Monsters =
+  intro-shown (`introducedMonsters`) plus Day 1 species (Zombie has no intro).
+  Necromancer / GoblinKing stay silhouettes until they appear. Display-only.
+
 ### Milestone 18 — Progression Store ✅
 
-- Physical **Brainrots Store** (Tung Mascot, blue mini store) and **Upgrade
-  Store** (67 Mascot, red mini store) cloned beside each plot house.
+- Talk to the **Brainrot shop** stall (Tung Mascot, blue mini store) beside
+  your house. HUD **Upgrades** sits in the bottom-left row with Inventory /
+  Index / Settings. Physical upgrade stall is gone.
 - Overlay lists `STORE_CATALOG` (Girafa Celestre) / Speed upgrades. Owned
   Brainrots gray out with a red **SOLD** stamp. Clicking a row opens a
   **stats card** to the **right** of the shop (description, stats, buy/cost at
@@ -240,8 +255,7 @@ hardcode a second palette in new UI.
   on the brains HUD and a green “Purchased Successfully!” float. Broke
   buys play an error SFX and a red “Purchase Unsuccessful…” message above the
   Buy button. Repeat fails stack (new on top; older slide up and fade faster).
-  Walking farther than `StoreConfig.CLOSE_DISTANCE` from the mascot closes the overlay.
-  Talk / buy is **own plot only** — other players' stalls do not show a prompt.
+  Brainrot buys require standing at your stall; HUD Upgrades require owning a plot.
 
 See `docs/STORE.md`.
 

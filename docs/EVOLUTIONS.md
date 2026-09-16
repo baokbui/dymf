@@ -10,7 +10,7 @@ later unlocks add their aura and bonus on top of earlier ones. The base unit
 This is **not** campaign day 10 / 20 / … (`LevelService` / `highestUnlocked`).
 Sheet labels “Level 10” mean **Brainrot level 10**.
 
-Status: 🔜 Milestone 19
+Status: 🔜 Milestone 19 (ladder + most GOD ultimates live; Cappuccino / Tralalero GOD remaining)
 
 Authoring source: design sheet (Epic → God). Numbers below are targets,
 not live code. “Gold” on the sheet is **coins**.
@@ -139,7 +139,7 @@ on the sheet (TBD).
 | Epic | Goliath | **4000** HP (from 2000). |
 | Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
-| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. The plant turns **stone gray** (Slate). Cannot use active or ultimate while stone. |
+| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. The plant reads as **granite** (aura Highlight wash + `Rock` material; flames pause). Cannot use active or ultimate while stone. |
 | GOD | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. A small **Mirror** from `Assets.Projectiles` orbits Chimpanzini. **30s** CD. |
 
 ### Tung Tung Sahur
@@ -204,8 +204,9 @@ mutations stay in M19 or slip to a later pass.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
   `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
-  `TenfoldGuard`; params-only overlays: Golden Discount, Wound of the
-  Shark, Assassin's Verdict, Frostbound Neighbor). **GOD** ultimates use the
+  `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
+  overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
+  Frostbound Neighbor). **GOD** ultimates use the
   same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation` ✅;
   Lirili `freezeEntireLawn` params overlay ✅). Cappuccino / Tralalero GOD 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit

@@ -31,6 +31,13 @@ type StoneLook = {
 	surfaceAppearanceParents: { [SurfaceAppearance]: Instance },
 	meshTextures: { [MeshPart]: string },
 	specialMeshTextures: { [SpecialMesh]: string },
+	decalParents: { [Instance]: Instance },
+	auraFillColor: Color3?,
+	auraFillTransparency: number?,
+	auraOutlineColor: Color3?,
+	auraOutlineTransparency: number?,
+	createdHighlight: boolean,
+	disabledEmitters: { ParticleEmitter },
 }
 local stoneLooks: { [Model]: StoneLook } = {}
 local orbitConnections: { [Model]: { [string]: RBXScriptConnection } } = {}
@@ -199,9 +206,93 @@ function BrainrotFeedback.setPoisoned(model: Model, poisoned: boolean)
 	end
 end
 
+local STONE_HIGHLIGHT_NAME = "StoneHighlight"
+
+local function hideAuraEmitters(model: Model, look: StoneLook)
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("ParticleEmitter") and descendant.Enabled then
+			local parent = descendant.Parent
+			if parent and (parent.Name == "AuraVfx" or parent:FindFirstAncestor("AuraVfx") ~= nil) then
+				descendant.Enabled = false
+				table.insert(look.disabledEmitters, descendant)
+			end
+		end
+	end
+end
+
+local function restoreAuraEmitters(look: StoneLook)
+	for _, emitter in look.disabledEmitters do
+		if emitter.Parent then
+			emitter.Enabled = true
+		end
+	end
+	table.clear(look.disabledEmitters)
+end
+
+local function applyStoneHighlight(model: Model, look: StoneLook)
+	local fill = BrainrotConfig.STONE_TINT_COLOR
+	local outline = BrainrotConfig.STONE_OUTLINE_COLOR
+	-- One Highlight per model: evolved plants already have AuraHighlight
+	-- (fill fully transparent). Reuse it so the stone wash actually renders.
+	local existing = model:FindFirstChild("AuraHighlight")
+	if existing and existing:IsA("Highlight") then
+		if look.auraFillColor == nil then
+			look.auraFillColor = existing.FillColor
+			look.auraFillTransparency = existing.FillTransparency
+			look.auraOutlineColor = existing.OutlineColor
+			look.auraOutlineTransparency = existing.OutlineTransparency
+		end
+		existing.Enabled = true
+		existing.FillColor = fill
+		existing.FillTransparency = BrainrotConfig.STONE_HIGHLIGHT_FILL
+		existing.OutlineColor = outline
+		existing.OutlineTransparency = BrainrotConfig.STONE_HIGHLIGHT_OUTLINE
+		existing.Adornee = model
+	else
+		local created = model:FindFirstChild(STONE_HIGHLIGHT_NAME)
+		if not (created and created:IsA("Highlight")) then
+			if created then
+				created:Destroy()
+			end
+			local highlight = Instance.new("Highlight")
+			highlight.Name = STONE_HIGHLIGHT_NAME
+			highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+			highlight.Adornee = model
+			highlight.Parent = model
+			created = highlight
+			look.createdHighlight = true
+		end
+		local stoneHighlight = created :: Highlight
+		stoneHighlight.Enabled = true
+		stoneHighlight.FillColor = fill
+		stoneHighlight.FillTransparency = BrainrotConfig.STONE_HIGHLIGHT_FILL
+		stoneHighlight.OutlineColor = outline
+		stoneHighlight.OutlineTransparency = BrainrotConfig.STONE_HIGHLIGHT_OUTLINE
+	end
+	hideAuraEmitters(model, look)
+end
+
+local function clearStoneHighlight(model: Model, look: StoneLook)
+	restoreAuraEmitters(look)
+	if look.createdHighlight then
+		local created = model:FindFirstChild(STONE_HIGHLIGHT_NAME)
+		if created then
+			created:Destroy()
+		end
+		look.createdHighlight = false
+	end
+	local existing = model:FindFirstChild("AuraHighlight")
+	if existing and existing:IsA("Highlight") and look.auraFillColor then
+		existing.FillColor = look.auraFillColor
+		existing.FillTransparency = look.auraFillTransparency or 1
+		existing.OutlineColor = look.auraOutlineColor or look.auraFillColor
+		existing.OutlineTransparency = look.auraOutlineTransparency or 0.15
+	end
+end
+
 function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 	local parts = visibleParts(model)
-	if #parts == 0 then
+	if stoned and #parts == 0 then
 		return
 	end
 
@@ -213,6 +304,7 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 			local surfaceAppearanceParents: { [SurfaceAppearance]: Instance } = {}
 			local meshTextures: { [MeshPart]: string } = {}
 			local specialMeshTextures: { [SpecialMesh]: string } = {}
+			local decalParents: { [Instance]: Instance } = {}
 			local flashBases = hitFlashBaseColors[model]
 
 			for _, part in parts do
@@ -229,6 +321,9 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 					elseif child:IsA("SpecialMesh") and child.TextureId ~= "" then
 						specialMeshTextures[child] = child.TextureId
 						child.TextureId = ""
+					elseif (child:IsA("Decal") or child:IsA("Texture")) and child.Parent then
+						decalParents[child] = child.Parent
+						child.Parent = nil
 					end
 				end
 			end
@@ -239,6 +334,14 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 				then
 					surfaceAppearanceParents[descendant] = descendant.Parent
 					descendant.Parent = nil
+				elseif (descendant:IsA("Decal") or descendant:IsA("Texture"))
+					and descendant.Parent
+					and decalParents[descendant] == nil
+					and descendant.Name ~= "AuraVfx"
+					and descendant:FindFirstAncestor("AuraVfx") == nil
+				then
+					decalParents[descendant] = descendant.Parent
+					descendant.Parent = nil
 				end
 			end
 
@@ -248,16 +351,20 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 				surfaceAppearanceParents = surfaceAppearanceParents,
 				meshTextures = meshTextures,
 				specialMeshTextures = specialMeshTextures,
+				decalParents = decalParents,
+				createdHighlight = false,
+				disabledEmitters = {},
 			}
+		end
+
+		local originals = stoneLooks[model]
+		if not originals then
+			return
 		end
 
 		local tint = BrainrotConfig.STONE_TINT_COLOR
 		local blend = BrainrotConfig.STONE_TINT_BLEND
 		local stoneMaterial = BrainrotConfig.STONE_MATERIAL
-		local originals = stoneLooks[model]
-		if not originals then
-			return
-		end
 		local tinted: { [BasePart]: Color3 } = {}
 		for _, part in parts do
 			local base = originals.colors[part] or part.Color
@@ -267,6 +374,7 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 			tinted[part] = washed
 		end
 		hitFlashBaseColors[model] = tinted
+		applyStoneHighlight(model, originals)
 		model:SetAttribute("Stoned", true)
 	else
 		local look = stoneLooks[model]
@@ -292,6 +400,12 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 					mesh.TextureId = textureId
 				end
 			end
+			for decal, parent in look.decalParents do
+				if parent.Parent and decal.Parent == nil then
+					decal.Parent = parent
+				end
+			end
+			clearStoneHighlight(model, look)
 			hitFlashBaseColors[model] = look.colors
 			stoneLooks[model] = nil
 		end
@@ -571,7 +685,7 @@ function BrainrotFeedback.setShield(model: Model, active: boolean)
 		return
 	end
 
-	if model:GetAttribute("BrainrotId") == "TungTungSahur" then
+	if model:GetAttribute("ShieldOrbit") == true then
 		local root = model:FindFirstChild("RootPart", true) or model:FindFirstChild("HumanoidRootPart", true)
 		local hub = if root and root:IsA("BasePart") then root else body
 		attachOrbitShield(model, hub)
@@ -712,6 +826,15 @@ function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale:
 	highlight.OutlineTransparency = 0.15
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model
+
+	local look = stoneLooks[model]
+	if look and model:GetAttribute("Stoned") == true then
+		look.auraFillColor = nil
+		look.auraFillTransparency = nil
+		look.auraOutlineColor = nil
+		look.auraOutlineTransparency = nil
+		applyStoneHighlight(model, look)
+	end
 end
 
 function BrainrotFeedback.cleanup(model: Model)

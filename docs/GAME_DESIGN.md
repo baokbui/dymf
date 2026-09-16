@@ -137,7 +137,7 @@ Coins are earned by:
 
 Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a
 stingy leftover-coin conversion at day end — see `ECONOMY.md`. Spend them at
-per-plot mini stores (Tung / 67 mascots) — see `STORE.md`. Speed upgrades
+the HUD **Upgrades** shop or the Brainrot stall beside your house — see `STORE.md`. Speed upgrades
 persist in `SaveData.upgrades`.
 
 Only the server controls currency. Clients display balances and send intent.
@@ -367,7 +367,8 @@ See `ROADMAP.md` for milestone status. Summary:
 **Phase 3 ✅** — Campaign content, VFX, audio, UI polish, balance, models,
 animations, weather, graves (M10–17)
 
-**Phase 4 ✅** — Progression Store (M18): per-plot mini stores, brains spends,
+**Phase 4 ✅** — Progression Store (M18): Brainrot stall + HUD Upgrades, brains spends,
 Speed upgrades
 
-**Phase 5 🔜** — Brainrot leveling + evolutions (M19), retention (M20), house boss collection (M21)
+**Phase 5 🔜** — Brainrot leveling + evolutions (M19: ladder live; Cappuccino /
+Tralalero GOD remaining), retention (M20), house boss collection (M21)

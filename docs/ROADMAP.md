@@ -413,7 +413,7 @@ Persist player progress.
 ## Improve and Add
 
 - Shop (Already implemented in a previous milestone. Can improve if needed) ✅
-- Brainrots Store (Buy new brainrots) → **Milestone 18** (physical world shops)
+- Brainrots Store (Buy new brainrots) → **Milestone 18** (HUD shops)
 - Brains (currency) ✅ granted on victory; spent at store in M18
 - Reward System ✅ victory popup shows brains earned (level number × config)
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
@@ -583,19 +583,20 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 ## Add
 
-- Physical **Progression Stores** cloned beside each plot house (not the
-  ScreenGui seed-packet shop bar)
-- **Blue mini store** — **Tung Mascot**: spend **Brains** on `STORE_CATALOG`
+- Physical **Brainrot shop** cloned beside each plot house (Talk to Tung Mascot)
+- HUD **Upgrades** next to Inventory (no red stall)
+- HUD **Index** catalog of encountered Brainrots / Monsters
+- **Brainrots** shop: spend **Brains** on `STORE_CATALOG`
   (Girafa Celestre for now; still free on reach Day 25). Starter roster and
   Patapim stay campaign/reach unlocks.
-- **Red mini store** — **67 Mascot**: spend Brains on player upgrades (Speed)
+- **Upgrades** shop: spend Brains on player upgrades (Speed, Magnet)
 - Catalog in `ProgressConfig.STORE_CATALOG` / `UPGRADE_CATALOG`
 - Purchases through `ProgressService` + persist via `SaveService` (`unlocks`,
   `upgrades`)
 
 ## Complete When
 
-- Players can talk to each mascot, browse, and buy with brains.
+- Players can talk to the Brainrot stall or open HUD Upgrades, browse, and buy with brains.
 - Speed upgrades apply on spawn / rejoin.
 - Exploits (free unlock, fake spend) fail server validation.
 

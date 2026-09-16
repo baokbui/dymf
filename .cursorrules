@@ -153,7 +153,7 @@ Examples:
 - Cost, health, damage, range, cooldown, attack interval
 - Coin generation / day purse (`EconomyConfig.STARTING_COINS`, `REWIND_COINS`)
 - Player walk speed (`PlayerConfig.WALK_SPEED`) and store catalogs (`ProgressConfig`)
-- Mini-store yard placement (`StoreConfig`)
+- Progression shop kinds / Brainrot stall placement (`StoreConfig`)
 - Monster spawn column / forest march (`MonsterConfig`)
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
 - Magnet cooldown / pull range (`MagnetConfig`)
@@ -172,7 +172,9 @@ Unit and prop visuals live under `ReplicatedStorage.Assets` (Rojo
 - `Assets.Brainrots` — Brainrot models (`modelId` / registry `id`)
 - `Assets.Monsters` — Monster models (`modelId` / registry `id`)
 - `Assets.Houses` — Plot house models (`HouseConfig.MODEL_ID`)
-- `Assets.Stores` — Per-plot mini stores (`StoreConfig`; cloned beside each house)
+- `Assets.Stores` — Brainrot shop stall (`StoreConfig`; cloned beside each house)
+- `Assets.Projectiles` — combat props (`CombatConfig.*_MODEL_ID`: Shuriken,
+  Tung Bat, Arrow, Shield, Mirror, Bomb, …)
 
 Clone via `Shared.Utilities.ModelUtil`. Prefer templates when present; use
 procedural / Part fallbacks so gameplay works without assets. Strip Scripts,

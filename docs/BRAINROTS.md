@@ -334,5 +334,7 @@ brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
 / claim; planted Epic+ units get a rarity-tinted aura (purple / gold /
 red-orange). **Legendary** extras, **Mythic** passives, and **Immortal**
 passives tick in combat from evolution ability ids / `abilityParams`. GOD
-ultimates: Tung Tung **Sahur's Wrath** ✅; other roster ultimates 🔜.
+ultimates: Tung Tung **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini
+**Primal Retaliation**, Lirili **Glacial Dominion** ✅; Cappuccino **Shadow
+Requiem** and Tralalero **Tidal Cataclysm** 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

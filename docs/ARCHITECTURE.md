@@ -90,12 +90,12 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         GraveService/     (fog graves → Zombie/Skeleton emerge)
         LevelService/
         SaveService/
-        StoreService/     (Progression Store prompts — M18)
+        StoreService/     (Brainrot stall + shop ownership — M18)
         ProgressService/  (brains, unlocks, loadout, upgrades, statistics)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
-        UIController/     (init + Shop, HUD counters, DamageMeter, Level, Settings, Inventory, BrainrotInspect, MonsterInspect, ProgressionStore, popups)
+        UIController/     (init + Shop, HUD counters, DamageMeter, Level, Settings, Inventory, Index, BrainrotInspect, MonsterInspect, ProgressionStore, popups)
         CoinController/   (ground-coin pickup intent + sparkle — M3/M11)
         PlacementController/ (selection, ghost preview, place/remove intent)
         GridController/   (hover highlight + tile resolver on own plot)
@@ -115,10 +115,7 @@ Workspace/
     Plots/        plot models are generated here at runtime
     EnemyPaths/
     Maps/
-    ProgressionStores/  per-plot clones (runtime)
 ```
-
-`ReplicatedStorage.Assets.Stores` holds mini-store **templates**.
 
 ---
 
@@ -223,7 +220,7 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 - See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
 - Gameplay isolation is **server-validated**, not physical: plant / shovel /
   coin collect / Progression Store only succeed on the acting player's own plot
-  (and own coins / own stalls).
+  (and own coins).
   Players **phase through monsters** (`CollisionUtil` / `BvmPlayers` ×
   `BvmMonsters`); monster parts also stay `CanCollide = false`.
 - **Plot** (class) tracks `ownerUserId` and provides reuse cleanup (`release`
@@ -439,9 +436,9 @@ Full details in `UI.md`. Summary:
   (`grantUnlockForLevel`, called from `LevelService.onVictory`) — see
   `BRAINROTS.md`.
 - **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
-- **Settings** — bottom-left HUD button; mute, volume steps, Brainrot SFX toggle,
+- **Settings** — bottom-left bare icon + name; mute, volume steps, Brainrot SFX toggle,
   statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
-- **Inventory** — bottom-left HUD button (above Settings) + modal; click a packet
+- **Inventory** — bottom-left bare icon + name (left of Index) + modal; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
   stats + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
   on your lawn opens the same card with live HP. Clicking a monster on your
@@ -454,19 +451,22 @@ Full details in `UI.md`. Summary:
 
 Full details in `STORE.md` / `UI.md`. Summary:
 
-- **`StoreService`** + **`StoreConfig`** — clone blue/red mini stores beside each
-  plot house; owner-only ProximityPrompt → `OpenProgressionStore`. Overlay closes
-  past `CLOSE_DISTANCE` from the mascot. `BuyStoreItem` requires the caller at
-  their own stall.
-- **`ProgressService`** validates `BuyStoreItem` (own shop range, brains spend, catalog, owned /
+- **`StoreService`** + **`StoreConfig`** — clone the Brainrot stall beside each
+  house; owner-only Talk → `OpenProgressionStore`. Overlay closes past
+  `CLOSE_DISTANCE` from the mascot. HUD **Upgrades** only need an owned plot.
+- **`ProgressService`** validates `BuyStoreItem` (stall range for Brainrots, own plot
+  for Upgrades, brains spend, catalog, owned /
   max level). Catalogs in `ProgressConfig.STORE_CATALOG` (Girafa Celestre) and
   `UPGRADE_CATALOG` (WalkSpeed, 20 ranks; Magnet 1–5). Speed applied on spawn / rejoin via
   `PlotService` + `ProgressService.getWalkSpeed`.
 - **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
-  stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; Inventory +
-  Settings bottom-left with Magnet square to the right.
+  stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; bottom-left
+  row Inventory / Index / Upgrades / Settings (bare icon + name); Magnet square bottom-center.
+- **`UIController/Index`** — Brainrots / Monsters catalog; unseen units are
+  black silhouettes with **?**. Encountered from unlocks / intro lists (Day 1
+  Zombie is always shown — no intro popup).
 
-### Milestone 19 — Brainrot leveling + evolutions 🔜
+### Milestone 19 — Brainrot leveling + evolutions 🔜 (ladder live; Cappuccino / Tralalero GOD remaining)
 
 Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
 

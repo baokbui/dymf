@@ -704,6 +704,22 @@ function Levels.getByNumber(number: number): Types.LevelDefinition?
 	return nil
 end
 
+-- First campaign day this species is authored to spawn. Nil if it never appears
+-- in Days 1–50 (Necromancer / GoblinKing).
+function Levels.firstDayForMonster(monsterId: string): number?
+	local earliest: number? = nil
+	for _, definition in ordered do
+		for _, group in definition.groups do
+			if group.monsterId == monsterId then
+				if earliest == nil or definition.number < earliest then
+					earliest = definition.number
+				end
+			end
+		end
+	end
+	return earliest
+end
+
 function Levels.count(): number
 	return #ordered
 end

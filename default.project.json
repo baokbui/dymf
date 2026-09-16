@@ -118,6 +118,13 @@
             "BackgroundTransparency": 1
           }
         },
+        "Index": {
+          "$className": "Frame",
+          "$properties": {
+            "Visible": false,
+            "BackgroundTransparency": 1
+          }
+        },
         "DamageMeter": {
           "$className": "Frame",
           "$properties": {

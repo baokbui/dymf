@@ -1,8 +1,8 @@
 --!strict
 --[[
 	StoreService
-	Clones mini-store templates beside each plot house and wires Talk prompts.
-	Only the plot owner can open or buy; purchases stay on ProgressService.
+	Clones the Brainrot mini-store beside each plot house and wires Talk
+	prompts. Player upgrades stay HUD-only. Purchases stay on ProgressService.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -20,7 +20,6 @@ local StoreService = {}
 StoreService.Name = "StoreService"
 
 local log = Logger.new(StoreService.Name)
-local templatesReady = false
 local missingLogged = false
 
 local function mascotMatches(root: Instance, name: string): boolean
@@ -207,14 +206,16 @@ end
 
 function StoreService.attachToHouse(plotModel: Model, house: Model)
 	adoptWorkspaceTemplates()
-	templatesReady = true
 
 	local brainrotTemplate = resolveTemplate(StoreConfig.BRAINROT_STORE_MODEL_ID, StoreConfig.BRAINROT_MASCOT_NAME)
-	local upgradeTemplate = resolveTemplate(StoreConfig.UPGRADE_STORE_MODEL_ID, StoreConfig.UPGRADE_MASCOT_NAME)
-	if not brainrotTemplate and not upgradeTemplate then
+	if not brainrotTemplate then
 		if not missingLogged then
 			missingLogged = true
-			log:warn("no store templates in Assets.Stores (or Workspace.Progression Stores)")
+			log:warn("no Brainrot store template in Assets.Stores (or Workspace.Progression Stores)")
+		end
+		local leftover = plotModel:FindFirstChild(StoreConfig.PLOT_FOLDER_NAME)
+		if leftover then
+			leftover:Destroy()
 		end
 		return
 	end
@@ -231,42 +232,16 @@ function StoreService.attachToHouse(plotModel: Model, house: Model)
 	local grassY = center.Y - size.Y * 0.5
 	local frontX = center.X + size.X * 0.5
 	local origin = Vector3.new(frontX + StoreConfig.YARD_OFFSET_X, grassY, center.Z + StoreConfig.DOOR_RIGHT_Z)
-	local face = Vector3.new(StoreConfig.FACE_DIRECTION.X, 0, StoreConfig.FACE_DIRECTION.Z)
-	if face.Magnitude < 1e-4 then
-		face = Vector3.new(1, 0, 0)
-	else
-		face = face.Unit
-	end
-	-- After template yaw −90, FACE is stall width (not depth). Offset along
-	-- FACE so Upgrades sits beside Brainrots instead of behind it.
-	local along = face
-	if along.Z > 0 then
-		along = -along
-	end
-	local spacing = along * StoreConfig.STORE_SPACING
 
-	if brainrotTemplate then
-		placeStore(
-			brainrotTemplate,
-			folder,
-			StoreConfig.BRAINROT_STORE_MODEL_ID,
-			origin,
-			StoreConfig.SHOP_BRAINROTS,
-			StoreConfig.BRAINROT_MASCOT_NAME,
-			StoreConfig.BRAINROT_PROMPT_OBJECT
-		)
-	end
-	if upgradeTemplate then
-		placeStore(
-			upgradeTemplate,
-			folder,
-			StoreConfig.UPGRADE_STORE_MODEL_ID,
-			origin + spacing,
-			StoreConfig.SHOP_UPGRADES,
-			StoreConfig.UPGRADE_MASCOT_NAME,
-			StoreConfig.UPGRADE_PROMPT_OBJECT
-		)
-	end
+	placeStore(
+		brainrotTemplate,
+		folder,
+		StoreConfig.BRAINROT_STORE_MODEL_ID,
+		origin,
+		StoreConfig.SHOP_BRAINROTS,
+		StoreConfig.BRAINROT_MASCOT_NAME,
+		StoreConfig.BRAINROT_PROMPT_OBJECT
+	)
 end
 
 function StoreService.getShopAnchor(player: Player, shopKind: string): Vector3?
@@ -290,9 +265,18 @@ function StoreService.getShopAnchor(player: Player, shopKind: string): Vector3?
 	return nil
 end
 
--- True when the player owns a plot and is within CLOSE_DISTANCE of that
--- plot's stall for `shopKind`. Neighbor stalls never count.
+-- Upgrades: own a plot (HUD). Brainrots: own plot and stand at your stall.
 function StoreService.canPlayerUseShop(player: Player, shopKind: string): boolean
+	local PlotService = require(script.Parent.PlotService)
+	if PlotService.getPlotModel(player) == nil then
+		return false
+	end
+	if shopKind == StoreConfig.SHOP_UPGRADES then
+		return true
+	end
+	if shopKind ~= StoreConfig.SHOP_BRAINROTS then
+		return false
+	end
 	local anchor = StoreService.getShopAnchor(player, shopKind)
 	if not anchor then
 		return false

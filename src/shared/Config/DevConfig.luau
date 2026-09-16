@@ -9,7 +9,7 @@
 local RunService = game:GetService("RunService")
 
 local DevConfig = {
-	ENABLED = true,
+	ENABLED = false,
 	COINS = 10000,
 	BRAINS = 10000,
 	UNLOCK_ALL_BRAINROTS = true,

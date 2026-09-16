@@ -5,7 +5,7 @@
 	per-species Brainrot XP, and claimed evolution tiers (brains spend after
 	the level gate). Brainrot XP from an unfinished / failed day is held as a
 	Start Day snapshot and is not committed until victory (defeat / rewind /
-	leave persist the snapshot). The physical Progression Store spends brains
+	leave persist the snapshot). The Brainrot shop stall and HUD Upgrades spend brains
 	here (Milestone 18).
 
 	Statistics update live via ProfileUpdated. Time played includes the current
@@ -295,6 +295,8 @@ local function buildPayload(profile: Profile): { [string]: any }
 		statistics = statsForClient(profile),
 		brainrotXp = copyXp(profile.brainrotXp),
 		evolutions = copyEvolutions(profile.evolutions),
+		introducedMonsters = copyList(profile.introducedMonsters),
+		introducedBrainrots = copyList(profile.introducedBrainrots),
 	}
 end
 
@@ -360,6 +362,8 @@ function ProgressService.getClientState(player: Player): { [string]: any }
 			statistics = {},
 			brainrotXp = {},
 			evolutions = {},
+			introducedMonsters = {},
+			introducedBrainrots = {},
 		}
 	end
 	return buildPayload(profile)

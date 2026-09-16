@@ -1,42 +1,44 @@
 # BVM Progression Stores
 
-Each **plot house** gets its own blue + red mini stores in the yard (not a
-shared world stall). Players **talk** to **their own** mascots only; the HUD is display-only.
-Spends are **server-authoritative** (`ProgressService`).
+The **Brainrot shop** is a physical stall beside each plot house. **Upgrades**
+are a HUD button next to Inventory. The overlay is display-only. Spends are
+**server-authoritative** (`ProgressService`).
 
 Status: ✅ Milestone 18
 
 ---
 
-## Where templates live
+## HUD
 
-**Do not keep live shops in `Workspace.Progression Stores`.** That is one
-copy for the whole map.
+Bottom-left row (icon on top, name under it; no plate):
 
-| Place | Role |
-| ----- | ---- |
-| `ReplicatedStorage.Assets.Stores` | **Templates** (like `Assets.Houses`) |
-| `PlotN.ProgressionStores` | Clones beside that plot’s cottage |
+| Button | Opens |
+| ------ | ----- |
+| Inventory | loadout |
+| **Index** | encountered Brainrots / Monsters catalog |
+| **Upgrades** | `UPGRADE_CATALOG` |
+| Settings | settings modal |
 
-In Studio: move **Blue Mini Store** and **Red Mini Store** into
-`ReplicatedStorage.Assets.Stores`. Names can also be detected by mascot
-(`Tung Mascot` / `67 Mascot`). If they are still under Workspace
-`Progression Stores` on Play, the server **moves** them into Assets and
-clones per plot (session-only unless you save the place).
+Click the same chip again (or the overlay X) to close. Opening Inventory,
+Settings, Index, or a field inspect card closes the store overlay.
 
-Tune `YARD_OFFSET_X`, `STORE_SPACING`, `DOOR_RIGHT_Z`, and `FACE_DIRECTION`
-in `StoreConfig`. Stalls sit on the **right** of the door, **side by side**
-(offset along FACE after template yaw −90), facing the yard on a diagonal
-toward the outer sand (`FACE_DIRECTION` +X/−Z).
+Talk to **your** Tung Mascot at the blue mini store to open the Brainrot
+catalog. The upgrade stall is HUD-only (no red mini store).
+
+Templates live in `ReplicatedStorage.Assets.Stores`. If they are still under
+Workspace `Progression Stores` on Play, the server **moves** them into Assets
+and clones the Brainrot stall per plot.
+
+Tune `YARD_OFFSET_X` and `DOOR_RIGHT_Z` in `StoreConfig`.
 
 ---
 
 ## Shops
 
-| Store | Mascot | Currency | Sells |
-| ----- | ------ | -------- | ----- |
-| Blue mini store | `Tung Mascot` | Brains | `STORE_CATALOG` (Girafa Celestre only for now) |
-| Red mini store | `67 Mascot` | Brains | Player upgrades (`ProgressConfig.UPGRADE_CATALOG`) |
+| Store | Where | Currency | Sells |
+| ----- | ----- | -------- | ----- |
+| Brainrot shop | Plot stall (`Tung Mascot`) | Brains | `STORE_CATALOG` (Girafa Celestre only for now) |
+| Upgrades | HUD **Upgrades** | Brains | Player upgrades (`ProgressConfig.UPGRADE_CATALOG`) |
 
 Starter-roster Brainrots (Day 1 + clear Days 3/5/7/9) and **Brr Brr Patapim**
 (reach Day 31) are **not** sold here. The shop currently sells **Girafa
@@ -67,27 +69,25 @@ chip) on an Active day. See `MagnetConfig`.
 
 | Module | Role |
 | ------ | ---- |
-| `StoreConfig` | Template names, yard offsets, prompt copy, close distance |
-| `StoreService` | Clone beside house; owner-only ProximityPrompt → `OpenProgressionStore` (kind + mascot position) |
-| `ProgressService` | Validate `BuyStoreItem` (own plot + in range, brains, catalog) |
+| `StoreConfig` | Stall template names, yard offsets, prompt copy, shop kinds |
+| `StoreService` | Clone Brainrot stall; owner-only Talk → `OpenProgressionStore`; `canPlayerUseShop` |
+| `ProgressService` | Validate `BuyStoreItem` (plot + stall range for Brainrots; plot for Upgrades) |
 | `MagnetService` | Activate magnet, cooldown (pauses between days), pull coins in level-scaled range |
+| `UIController` | HUD Index / Upgrades; ProgressionStore overlay |
 | `UIController/ProgressionStore` | List rows open a stats card (desc + buy) |
 | `StoreController` | Hide Talk prompts on other players' stalls |
 | `PlotService` | Applies `ProgressService.getWalkSpeed` on spawn |
 
-Talk prompts only appear on **your** stalls. The server ignores Talk / buys
-from anyone who does not own that plot, and `BuyStoreItem` also requires the
-caller to be within `CLOSE_DISTANCE` of **their** matching stall (neighbor
-shops never count).
+Talk prompts only appear on **your** stall. `BuyStoreItem` for Brainrots also
+requires the caller within `CLOSE_DISTANCE` of **their** stall. HUD Upgrades
+only require owning a plot.
 
-Walking farther than `StoreConfig.CLOSE_DISTANCE` (XZ, default 22 studs) from
-the mascot you talked to closes the overlay (and its stats card). Sidestepping
-at the stall stays inside that radius; running onto the lawn does not. The
-Heartbeat watch only runs while the UI is open.
+Walking farther than `StoreConfig.CLOSE_DISTANCE` from the mascot closes the
+Brainrot overlay. HUD Upgrades stay open until dismissed.
 
 Remotes: `OpenProgressionStore` (server → client, `shopKind` + mascot
-`Vector3`), `BuyStoreItem` (client → server), `StorePurchaseSucceeded` /
-`StorePurchaseFailed` (server → client).
+`Vector3` for the stall), `BuyStoreItem` (client → server),
+`StorePurchaseSucceeded` / `StorePurchaseFailed` (server → client).
 Success: kaching SFX, red `-{cost}` on the brains HUD, green “Purchased
 Successfully!” banner. Not enough brains: error SFX
 (`AudioConfig.PurchaseError`) and a red “Purchase Unsuccessful…” banner

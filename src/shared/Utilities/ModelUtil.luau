@@ -143,12 +143,12 @@ function ModelUtil.findMonsterTemplate(modelId: string): Model?
 	return findTemplate(ModelUtil.getBrainrotTemplatesFolder(), modelId)
 end
 
-function ModelUtil.findStoreTemplate(modelId: string): Model?
-	return findTemplate(ModelUtil.getStoreTemplatesFolder(), modelId)
-end
-
 function ModelUtil.findHouseTemplate(modelId: string): Model?
 	return findTemplate(ModelUtil.getHouseTemplatesFolder(), modelId)
+end
+
+function ModelUtil.findStoreTemplate(modelId: string): Model?
+	return findTemplate(ModelUtil.getStoreTemplatesFolder(), modelId)
 end
 
 function ModelUtil.findProjectileTemplate(modelId: string): Model?
