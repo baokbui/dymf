@@ -421,7 +421,7 @@ Full details in `COMBAT.md`. Summary:
 - **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime).
 - **`VfxUtil`** + **`PlotUtil`** (client utilities) — ephemeral particles and plot helpers.
 - **`CombatController`** — hit/death particles, line-bomb explosions (`Explosion`
-  payload), projectile trail/glow on `plot.Projectiles` parts.
+  payload), Sahur’s Wrath landing (`BatSlam`), projectile trail/glow on `plot.Projectiles` parts.
 - **`CoinController`** — gold pickup sparkle when a collected coin despawns.
 - Server still owns combat; visuals are pushed via `CombatVisual` or derived from
   replicated instances (projectiles, coin removal).
@@ -483,11 +483,15 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   onto the registry definition (interval / HP / damage / plant cooldown).
   Legendary extras and Mythic / Immortal passives tick from evolution `ability` ids
   (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
-  `RegenPulse`, `DesperateFury`, `Stoneheart`, `TenfoldGuard`; Lirili’s
-  `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` and other
+  `RegenPulse`, `DesperateFury`, `Stoneheart`, `TenfoldGuard`, `SahurWrath`,
+  `Jackpot`, `PrimalRetaliation`; Lirili’s
+  `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` /
+  `freezeEntireLawn` / `lawnSlowPercent` and other
   params-only rows merge into `abilityParams`). Aura is purple at
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
-  at GOD. **GOD ultimates:** Tung Tung `SahurWrath` ✅; others 🔜.
+  at GOD. **GOD ultimates:** Tung Tung `SahurWrath`, Ballerina `Jackpot`,
+  Chimpanzini `PrimalRetaliation` ✅; Lirili Glacial Dominion (on plant) ✅;
+  Cappuccino / Tralalero 🔜.
 
 ### Milestone 12 — Audio ✅
 

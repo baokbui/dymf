@@ -32,7 +32,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",
-		description = "A giant bat appears above Tung, stretches to the east end of the plot, and slams the whole row.",
+		description = "A giant bat grows above Tung, then his melee swing arcs it onto the row covering every tile to the plot edge. Needs 4+ enemies or a boss in the row; the Tung closest to the enemies slams first.",
 	},
 	BubbleTrap = {
 		label = "Bubble Trap",
@@ -60,7 +60,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	TenfoldGuard = {
 		label = "Tenfold Guard",
-		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while that shield lasts.",
+		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while that shield lasts. A small shield orbits Tung.",
 	},
 	ClearFogRow = {
 		label = "Clear Fog",
@@ -73,6 +73,14 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	PierceBrew = {
 		label = "Piercing Brew",
 		description = "Next shuriken flies through graves and hits the monster behind the first. The grave takes no damage.",
+	},
+	Jackpot = {
+		label = "Jackpot",
+		description = "For 10s, produce coins 3× faster; each coin has a 33% chance to drop an extra. Independent of Encore. 30s cooldown.",
+	},
+	PrimalRetaliation = {
+		label = "Primal Retaliation",
+		description = "For 15s, reflect 25% of chew damage back to that monster. A small mirror orbits Chimpanzini. 30s cooldown.",
 	},
 }
 

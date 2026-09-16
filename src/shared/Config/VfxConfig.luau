@@ -59,6 +59,32 @@ local VfxConfig = {
 	TILE_EXPLOSION_FLASH_DURATION = 0.15,
 	ROW_EXPLOSION_STAGGER = 0.035,
 
+	-- Sahur's Wrath bat landing: yellow energy burst (crown + ground ring).
+	-- Sized to lawn tiles so the slam reads across ~2 tiles, not a small spark.
+	BAT_SLAM_WAVE_COLOR = Color3.fromRGB(255, 196, 32),
+	BAT_SLAM_WAVE_COLOR_HOT = Color3.fromRGB(255, 236, 110),
+	BAT_SLAM_WAVE_COUNT = 4,
+	BAT_SLAM_WAVE_STAGGER = 0.2,
+	BAT_SLAM_WIDEN_PER_WAVE = 0.28,
+	BAT_SLAM_WAVE_DURATION = 0.5,
+	BAT_SLAM_TRANSPARENCY = 0.22,
+	BAT_SLAM_CROWN_COUNT = 22,
+	BAT_SLAM_CROWN_INNER_COUNT = 16,
+	BAT_SLAM_RING_COUNT = 20,
+	BAT_SLAM_SPIKE_THICKNESS = TILE * 0.055,
+	BAT_SLAM_CROWN_INNER_START_RADIUS = TILE * 0.13,
+	BAT_SLAM_CROWN_INNER_END_RADIUS = TILE * 0.48,
+	BAT_SLAM_CROWN_INNER_START_LENGTH = TILE * 0.48,
+	BAT_SLAM_CROWN_INNER_WIDTH = TILE * 0.15,
+	BAT_SLAM_CROWN_START_RADIUS = TILE * 0.2,
+	BAT_SLAM_CROWN_END_RADIUS = TILE * 0.8,
+	BAT_SLAM_CROWN_START_LENGTH = TILE * 0.56,
+	BAT_SLAM_CROWN_WIDTH = TILE * 0.17,
+	BAT_SLAM_RING_START_RADIUS = TILE * 0.36,
+	BAT_SLAM_RING_END_RADIUS = TILE * 1.95,
+	BAT_SLAM_RING_START_LENGTH = TILE * 0.4,
+	BAT_SLAM_RING_WIDTH = TILE * 0.2,
+
 	-- Ground coin pickup sparkle.
 	COIN_PICKUP_COUNT = 10,
 	COIN_PICKUP_SPEED = 8,
@@ -176,6 +202,25 @@ local VfxConfig = {
 	SHIELD_BUBBLE_TRANSPARENCY = 0.62,
 	SHIELD_BUBBLE_PADDING = 1.18,
 	SHIELD_HP_FILL = Color3.fromRGB(70, 185, 255),
+
+	-- Tung Tenfold Guard: small Shield from Assets.Projectiles orbits the plant.
+	SHIELD_ORBIT_SIZE = 2.2,
+	SHIELD_ORBIT_RADIUS = 3.4,
+	SHIELD_ORBIT_LIFT = 1.3,
+	SHIELD_ORBIT_PERIOD = 1.5,
+
+	-- Chimpanzini Primal Retaliation: small Mirror from Assets.Projectiles orbits the plant.
+	MIRROR_ORBIT_SIZE = 2.2,
+	MIRROR_ORBIT_RADIUS = 3.4,
+	MIRROR_ORBIT_LIFT = 1.3,
+	MIRROR_ORBIT_PERIOD = 1.5,
+
+	-- Jackpot (Ballerina GOD) gold burst at the plant.
+	JACKPOT_COLOR = Color3.fromRGB(255, 205, 40),
+	JACKPOT_BURST_COUNT = 22,
+	JACKPOT_BURST_SPEED = 16,
+	JACKPOT_BURST_SIZE = 0.42,
+	JACKPOT_BURST_LIFETIME = 0.55,
 
 	-- Planted evolution aura: flame spikes only (no sparkles / speed lines).
 	-- Rate = how many flames; size/speed stay in BrainrotFeedback so the

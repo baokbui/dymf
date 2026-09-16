@@ -180,6 +180,22 @@ local function playExplosion(row: number?, column: number?, entireRow: boolean?,
 	end
 end
 
+local function playBatSlam(data: { [string]: any })
+	local raw = data.hits
+	if type(raw) ~= "table" then
+		return
+	end
+
+	for _, packed in raw do
+		if type(packed) == "table" then
+			local item = packed :: { [string]: any }
+			if type(item.x) == "number" and type(item.y) == "number" and type(item.z) == "number" then
+				VfxUtil.playBatSlam(Vector3.new(item.x, item.y, item.z))
+			end
+		end
+	end
+end
+
 local function watchProjectile(instance: Instance)
 	local part: BasePart? = nil
 	if instance:IsA("BasePart") then
@@ -317,6 +333,14 @@ local function onCombatVisual(payload: unknown)
 			AudioController.play("Explosion")
 		end
 		playExplosion(data.row, data.column, data.entireRow == true, data.stagger)
+	elseif kind == "BatSlam" then
+		AudioController.play("Explosion")
+		playBatSlam(data)
+	elseif kind == "Jackpot" then
+		local origin = asVector3(data.x or data.X, data.y or data.Y, data.z or data.Z)
+		if origin then
+			VfxUtil.playJackpotBurst(origin)
+		end
 	elseif kind == "Terrify" then
 		AudioController.play("Terrify")
 		playTerrifyPulse(data.instanceId)

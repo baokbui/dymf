@@ -2,9 +2,11 @@
 --[[
 	Evolutions
 	Epic→God catalog. Claiming a tier costs brains after the Brainrot
-	level gate. 	Epic `stats` compose onto the shared registry definition. Legendary extras
+	level gate. Epic `stats` compose onto the shared registry definition. Legendary extras
 	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
-	mutate the catalog; never branch on unit names).
+	mutate the catalog; never branch on unit names). GOD ultimates: `Jackpot`,
+	`PrimalRetaliation`, `SahurWrath`, plus Lirili `freezeEntireLawn` overlay.
+	Tidal Cataclysm and Shadow Requiem are not wired yet.
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
@@ -60,7 +62,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "When producing a coin, the next Brainrot plant (any unit) costs 50%. One charge; producing again refreshes it (does not stack).",
 			abilityParams = { plantDiscountPercent = 50 },
 		},
-		{ rarity = "God", level = 50, name = "Jackpot", description = "Produce coins 3× faster; each coin during the ultimate 33% extra. 30s cooldown." },
+		{ rarity = "God", level = 50, name = "Jackpot", description = "Produce coins 3× faster for 10s; each coin during the ultimate 33% extra. 30s cooldown.", ability = "Jackpot", abilityParams = { cooldown = 30, duration = 10, factor = 3, extraChance = 33 } },
 	},
 	ChimpanziniBananini = {
 		{
@@ -90,11 +92,11 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Immortal",
 			level = 40,
 			name = "Stoneheart",
-			description = "Once per plant: below 10% HP, stone / invulnerable 10s. No active or ultimate while stone.",
+			description = "Once per plant: below 10% HP, turns to stone (gray Slate) and is invulnerable 10s. No active or ultimate while stone.",
 			ability = "Stoneheart",
 			abilityParams = { healthPercent = 10, duration = 10 },
 		},
-		{ rarity = "God", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. 30s cooldown." },
+		{ rarity = "God", level = 50, name = "Primal Retaliation", description = "15s: reflect 25% of chew damage to that monster. A small Mirror orbits Chimpanzini. 30s cooldown.", ability = "PrimalRetaliation", abilityParams = { cooldown = 30, duration = 15, reflectPercent = 25 } },
 	},
 	TungTungSahur = {
 		{
@@ -124,7 +126,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Immortal",
 			level = 40,
 			name = "Tenfold Guard",
-			description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded.",
+			description = "Every 10 attacks: shield 30% max HP for 5s; stun-immune while shielded. A small shield orbits Tung.",
 			ability = "TenfoldGuard",
 			abilityParams = { every = 10, shieldPercent = 30, duration = 5 },
 		},
@@ -132,9 +134,9 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Sahur's Wrath",
-			description = "A giant bat appears above Tung, stretches to the east end of the plot, and slams the row for 1000% damage. 30s cooldown.",
+			description = "A giant bat grows above Tung, then his melee swing arcs it onto the row covering every tile to the plot edge. Needs 4+ enemies or a boss in the row. Closest ready Tung slams first. 1000% damage. 30s cooldown.",
 			ability = "SahurWrath",
-			abilityParams = { cooldown = 30, damagePercent = 1000 },
+			abilityParams = { cooldown = 30, damagePercent = 1000, minEnemies = 4 },
 		},
 	},
 	TralaleroTralala = {
@@ -231,7 +233,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Also freeze one adjacent lane (the neighbor with more monsters; ties go to the lower row).",
 			abilityParams = { freezeAdjacentLane = 1 },
 		},
-		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s." },
+		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freeze the whole lawn and apply 25% slow for 3s after thaw.", abilityParams = { freezeEntireLawn = 1, lawnSlowPercent = 25, lawnSlowDuration = 3 } },
 	},
 }
 

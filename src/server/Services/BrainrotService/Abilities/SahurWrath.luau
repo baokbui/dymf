@@ -1,9 +1,13 @@
 --!strict
 --[[
 	SahurWrath (Tung Tung GOD)
-	Same Tung Bat as Ranged Rampage: appears above the plant, expands,
-	stretches east to the plot edge, then slams the row for damagePercent
-	of current bat damage.
+	Same Tung Bat as Ranged Rampage: grows vertically above the plant (wide
+	club) to the remaining lane length, then Tung's melee swing arcs it
+	onto the row so it covers every tile from him to the east plot edge.
+
+	Gates: 4+ combat targets in the row, or a boss occupying the row.
+	If several GOD Tungs in the same row are ready, the easternmost (closest
+	to incoming monsters) slams first; others stay ready until it finishes.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -13,6 +17,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local GridService = require(script.Parent.Parent.Parent.GridService)
@@ -23,10 +28,45 @@ type RestPart = {
 	size: Vector3,
 	relPos: Vector3,
 	relRot: CFrame,
-	stretchAxis: string,
 }
 
 local SahurWrath = {}
+
+local log = Logger.new("SahurWrath")
+
+-- One slam at a time per plot row so two ready Tungs cannot overlap.
+local rowBusy: { [Model]: { [number]: boolean } } = {}
+
+local function setRowBusy(plotModel: Model, row: number, busy: boolean)
+	local rows = rowBusy[plotModel]
+	if busy then
+		if not rows then
+			rows = {}
+			rowBusy[plotModel] = rows
+		end
+		rows[row] = true
+		return
+	end
+	if not rows then
+		return
+	end
+	rows[row] = nil
+	if next(rows) == nil then
+		rowBusy[plotModel] = nil
+	end
+end
+
+local function isRowBusy(plotModel: Model, row: number): boolean
+	local rows = rowBusy[plotModel]
+	return rows ~= nil and rows[row] == true
+end
+
+local function rowQualifies(plotModel: Model, row: number, minEnemies: number): boolean
+	if CombatService.rowHasBoss(plotModel, row) then
+		return true
+	end
+	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+end
 
 local function projectilesFolder(plotModel: Model): Folder
 	local folder = plotModel:FindFirstChild("Projectiles")
@@ -90,36 +130,19 @@ local function applyGodHighlight(model: Model)
 	highlight.Parent = model
 end
 
-local function layAlongLane(model: Model, position: Vector3): CFrame
+-- Longest extent stands on +Y so the grow reads as "up from the head".
+local function standUpright(model: Model, position: Vector3)
 	local o = CombatConfig.BAT_MODEL_ORIENTATION_DEGREES
 	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
 	model:PivotTo(CFrame.new(position) * orient)
 	local size = model:GetExtentsSize()
 	local align = CFrame.new()
-	if size.Y >= size.X and size.Y >= size.Z then
+	if size.X >= size.Y and size.X >= size.Z then
 		align = CFrame.Angles(0, 0, math.rad(90))
-	elseif size.Z >= size.X then
-		align = CFrame.Angles(0, math.rad(90), 0)
+	elseif size.Z >= size.Y then
+		align = CFrame.Angles(math.rad(90), 0, 0)
 	end
-	local pivot = CFrame.new(position) * align * orient
-	model:PivotTo(pivot)
-	return pivot
-end
-
-local function stretchAxisFor(relRot: CFrame): string
-	local right = relRot.RightVector
-	local up = relRot.UpVector
-	local look = relRot.LookVector
-	local ax = math.abs(right.X)
-	local ay = math.abs(up.X)
-	local az = math.abs(look.X)
-	if ax >= ay and ax >= az then
-		return "X"
-	end
-	if ay >= az then
-		return "Y"
-	end
-	return "Z"
+	model:PivotTo(CFrame.new(position) * align * orient)
 end
 
 local function captureRest(model: Model, origin: CFrame): { RestPart }
@@ -133,39 +156,39 @@ local function captureRest(model: Model, origin: CFrame): { RestPart }
 				size = descendant.Size,
 				relPos = rel.Position,
 				relRot = relRot,
-				stretchAxis = stretchAxisFor(relRot),
 			})
 		end
 	end
 	return rests
 end
 
-local function applyPose(rests: { RestPart }, origin: CFrame, stretch: number)
+-- Grow up from the origin (head) and fatten on X/Z so it stays a club.
+local function applyPose(rests: { RestPart }, origin: CFrame, heightMul: number, widthMul: number)
 	for _, rest in rests do
 		if not rest.part.Parent then
 			continue
 		end
-		local sx = rest.size.X
-		local sy = rest.size.Y
-		local sz = rest.size.Z
-		if rest.stretchAxis == "X" then
-			sx *= stretch
-		elseif rest.stretchAxis == "Y" then
-			sy *= stretch
-		else
-			sz *= stretch
-		end
+		local rightY = math.abs(rest.relRot.RightVector.Y)
+		local upY = math.abs(rest.relRot.UpVector.Y)
+		local lookY = math.abs(rest.relRot.LookVector.Y)
+		local sx = rest.size.X * (widthMul + (heightMul - widthMul) * rightY)
+		local sy = rest.size.Y * (widthMul + (heightMul - widthMul) * upY)
+		local sz = rest.size.Z * (widthMul + (heightMul - widthMul) * lookY)
 		rest.part.Size = Vector3.new(sx, sy, sz)
-		local pos = Vector3.new(rest.relPos.X * stretch, rest.relPos.Y, rest.relPos.Z)
+		local pos = Vector3.new(rest.relPos.X * widthMul, rest.relPos.Y * heightMul, rest.relPos.Z * widthMul)
 		rest.part.CFrame = origin * CFrame.new(pos) * rest.relRot
 	end
 end
 
-local function runSlam(
-	ctx,
-	callbacks,
-	damage: number
-)
+local function slamDuration(ctx): number
+	local delay = ctx.definition.attackHitDelay
+	if type(delay) == "number" and delay > 0 then
+		return delay
+	end
+	return CombatConfig.WRATH_SLAM_DURATION
+end
+
+local function runSlam(ctx, callbacks, damage: number)
 	local plotModel = ctx.plotModel
 	local plant = ctx.model
 	if not plotModel.Parent or not plant.Parent then
@@ -183,51 +206,55 @@ local function runSlam(
 	end
 
 	local visSize, visCenter = ModelUtil.getVisualSizeAndCenter(plant)
-	local westX = plant:GetPivot().Position.X
-	local hoverY = visCenter.Y + visSize.Y * 0.5 + CombatConfig.WRATH_HOVER_OFFSET
+	local originX = visCenter.X + CombatConfig.WRATH_FRONT_GAP
+	local headY = visCenter.Y + visSize.Y * 0.5 + CombatConfig.WRATH_HOVER_OFFSET
 	local slamY = tile.Y + CombatConfig.WRATH_SLAM_HEIGHT
-	local z = tile.Z
+	local z = visCenter.Z
+	local desiredLen = math.max(east.X - originX, 0.05)
 
 	local bat = Projectile.createBatVisual()
 	bat.Name = "SahurWrathBat"
 	bat:SetAttribute("ProjectileKind", "Bat")
 	bat.Parent = projectilesFolder(plotModel)
-	layAlongLane(bat, Vector3.new(westX, hoverY, z))
+	standUpright(bat, Vector3.new(originX, headY, z))
+	local batSize, batCenter = ModelUtil.getVisualSizeAndCenter(bat)
+	local bottom = batCenter.Y - batSize.Y * 0.5
+	bat:PivotTo(bat:GetPivot() + Vector3.new(0, headY - bottom, 0))
 	applyGodHighlight(bat)
 
-	local startScale = bat:GetScale()
-	local expandedScale = startScale * CombatConfig.WRATH_EXPAND_SCALE
+	destroyWelds(bat)
+	batSize, batCenter = ModelUtil.getVisualSizeAndCenter(bat)
+	local currentLen = math.max(batSize.Y, 0.05)
+	local lengthMul = desiredLen / currentLen
+	local widthMul = CombatConfig.WRATH_WIDTH_SCALE
+	local originHover = CFrame.new(originX, headY, z)
+	local rests = captureRest(bat, originHover)
+
 	tweenAlpha(CombatConfig.WRATH_EXPAND_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function(alpha)
 		if bat.Parent then
-			bat:ScaleTo(startScale + (expandedScale - startScale) * alpha)
+			applyPose(
+				rests,
+				originHover,
+				1 + (lengthMul - 1) * alpha,
+				1 + (widthMul - 1) * alpha
+			)
 		end
 	end)
-	if not bat.Parent then
+	if not bat.Parent or not plant.Parent then
+		if bat.Parent then
+			bat:Destroy()
+		end
 		return
 	end
 
-	destroyWelds(bat)
-	local cf, aabb = bat:GetBoundingBox()
-	local minX = cf.Position.X - aabb.X * 0.5
-	local currentLen = math.max(aabb.X, 0.05)
-	local desiredLen = math.max(east.X - westX, currentLen)
-	local rests = captureRest(bat, CFrame.new(minX, hoverY, z))
-	local targetStretch = desiredLen / currentLen
-
-	tweenAlpha(CombatConfig.WRATH_STRETCH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function(alpha)
+	local dropTime = slamDuration(ctx)
+	callbacks.pulseAttack()
+	-- Quarter-circle chop: upright (+Y) → laid along the lane (+X), pivot at Tung.
+	tweenAlpha(dropTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function(alpha)
 		if bat.Parent then
-			local ox = minX + (westX - minX) * alpha
-			applyPose(rests, CFrame.new(ox, hoverY, z), 1 + (targetStretch - 1) * alpha)
-		end
-	end)
-	if not bat.Parent then
-		return
-	end
-
-	tweenAlpha(CombatConfig.WRATH_SLAM_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function(alpha)
-		if bat.Parent then
-			local y = hoverY + (slamY - hoverY) * alpha
-			applyPose(rests, CFrame.new(westX, y, z), targetStretch)
+			local y = headY + (slamY - headY) * alpha
+			local origin = CFrame.new(originX, y, z) * CFrame.Angles(0, 0, -math.rad(90) * alpha)
+			applyPose(rests, origin, lengthMul, widthMul)
 		end
 	end)
 	if not bat.Parent or not plotModel.Parent then
@@ -238,6 +265,7 @@ local function runSlam(
 	end
 
 	callbacks.playSound("MeleeBat")
+	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row)
 	CombatService.dealEntireRowDamage(
 		plotModel,
 		ctx.position.row,
@@ -257,20 +285,37 @@ local function runSlam(
 end
 
 function SahurWrath.tryAct(ctx, callbacks)
-	if #CombatService.getAllMonstersInRow(ctx.plotModel, ctx.position.row) == 0 then
+	local minEnemies = CombatConfig.WRATH_MIN_ENEMIES
+	local params = ctx.extraParams
+	if type(params) == "table" and type(params.minEnemies) == "number" then
+		minEnemies = params.minEnemies
+	end
+
+	if isRowBusy(ctx.plotModel, ctx.position.row) then
+		return false
+	end
+	if not rowQualifies(ctx.plotModel, ctx.position.row, minEnemies) then
+		return false
+	end
+
+	local BrainrotBehavior = require(script.Parent.Parent.BrainrotBehavior)
+	if BrainrotBehavior.hasCloserReadyAlly(ctx.instanceId, "SahurWrath") then
 		return false
 	end
 
 	local percent = 1000
-	local params = ctx.extraParams
 	if type(params) == "table" then
 		percent = params.damagePercent or percent
 	end
 	local damage = math.max(1, math.floor(ctx.definition.damage * percent / 100))
 
-	callbacks.pulseAttack()
+	setRowBusy(ctx.plotModel, ctx.position.row, true)
 	task.spawn(function()
-		runSlam(ctx, callbacks, damage)
+		local ok, err = pcall(runSlam, ctx, callbacks, damage)
+		setRowBusy(ctx.plotModel, ctx.position.row, false)
+		if not ok then
+			log:warn(err)
+		end
 	end)
 	return true
 end

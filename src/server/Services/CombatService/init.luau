@@ -39,6 +39,8 @@ type MonsterHandlers = {
 	queryFirstInMeleeReach: (plotModel: Model, row: number, fromColumn: number, reachColumns: number) -> string?,
 	getMonsterColumn: (instanceId: string) -> number?,
 	getMonsterLaneSpan: (instanceId: string) -> number,
+	getMonsterRegistryId: (instanceId: string) -> string?,
+	isBoss: (instanceId: string) -> boolean,
 	getProjectileWorldY: (plotModel: Model, row: number, startColumn: number) -> number?,
 	setProjectilePosition: (part: BasePart, plotModel: Model, row: number, column: number, worldY: number) -> (),
 	damage: (instanceId: string, damage: number, sourceBrainrotId: string?) -> boolean,
@@ -121,9 +123,9 @@ function CombatService.setMonsterHandlers(handlers: MonsterHandlers)
 	monsterHandlers = handlers
 end
 
-function CombatService.damageBrainrot(instanceId: string, hits: number, sourceMonsterId: string?): boolean
+function CombatService.damageBrainrot(instanceId: string, hits: number, sourceMonsterInstanceId: string?): boolean
 	if brainrotDamageHandler then
-		return brainrotDamageHandler(instanceId, hits, sourceMonsterId)
+		return brainrotDamageHandler(instanceId, hits, sourceMonsterInstanceId)
 	end
 	return false
 end
@@ -723,6 +725,41 @@ function CombatService.fireTileExplosion(
 	})
 end
 
+function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number)
+	local GridService = require(script.Parent.GridService)
+	local hits: { { x: number, y: number, z: number } } = {}
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		local column = monsterColumnOf(monsterId)
+		if type(column) ~= "number" then
+			continue
+		end
+		local pos = GridService.getWorldPositionAtColumn(plotModel, row, column)
+		if pos then
+			table.insert(hits, {
+				x = pos.X,
+				y = pos.Y,
+				z = pos.Z,
+			})
+		end
+	end
+	if #hits == 0 then
+		return
+	end
+	fireCombatVisual(ownerUserId, {
+		kind = "BatSlam",
+		hits = hits,
+	})
+end
+
+function CombatService.fireJackpot(ownerUserId: number, position: Vector3)
+	fireCombatVisual(ownerUserId, {
+		kind = "Jackpot",
+		x = position.X,
+		y = position.Y,
+		z = position.Z,
+	})
+end
+
 function CombatService.dealColumnDamage(
 	plotModel: Model,
 	row: number,
@@ -919,6 +956,18 @@ function CombatService.getAllMonstersInRow(plotModel: Model, row: number): { str
 	return {}
 end
 
+function CombatService.rowHasBoss(plotModel: Model, row: number): boolean
+	if not monsterHandlers then
+		return false
+	end
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		if monsterHandlers.isBoss(monsterId) then
+			return true
+		end
+	end
+	return false
+end
+
 function CombatService.hasMonsterOnPlot(plotModel: Model): boolean
 	for row = 1, GridConfig.ROWS do
 		if #CombatService.getAllMonstersInRow(plotModel, row) > 0 then
@@ -946,6 +995,13 @@ function CombatService.damageMonster(monsterInstanceId: string, damage: number, 
 		return monsterHandlers.damage(monsterInstanceId, damage, sourceBrainrotId)
 	end
 	return false
+end
+
+function CombatService.getMonsterRegistryId(instanceId: string): string?
+	if monsterHandlers then
+		return monsterHandlers.getMonsterRegistryId(instanceId)
+	end
+	return nil
 end
 
 function CombatService.applyStatusToMonster(

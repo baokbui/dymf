@@ -12,6 +12,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
+local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
@@ -24,13 +25,28 @@ local pulseTokens: { [Model]: number } = {}
 local activeHitFlashTweens: { [Model]: { Tween } } = {}
 local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
 local poisonLooks: { [Model]: { [BasePart]: Color3 } } = {}
-local stoneLooks: { [Model]: { [BasePart]: { color: Color3, material: Enum.Material } } } = {}
+type StoneLook = {
+	colors: { [BasePart]: Color3 },
+	materials: { [BasePart]: Enum.Material },
+	surfaceAppearanceParents: { [SurfaceAppearance]: Instance },
+	meshTextures: { [MeshPart]: string },
+	specialMeshTextures: { [SpecialMesh]: string },
+}
+local stoneLooks: { [Model]: StoneLook } = {}
+local orbitConnections: { [Model]: { [string]: RBXScriptConnection } } = {}
+local orbitTweens: { [Model]: { [string]: Tween } } = {}
 
 local function visibleParts(model: Model): { BasePart }
 	local parts: { BasePart } = {}
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant.Transparency < 0.95 then
-			if descendant.Name == "ShieldVfx" or descendant.Name == "AuraVfx" then
+			if descendant.Name == "ShieldVfx" or descendant.Name == "AuraVfx" or descendant.Name == "RetaliationVfx" then
+				continue
+			end
+			if descendant:FindFirstAncestor("ShieldVfx")
+				or descendant:FindFirstAncestor("RetaliationVfx")
+				or descendant:FindFirstAncestor("AuraVfx")
+			then
 				continue
 			end
 			table.insert(parts, descendant)
@@ -192,15 +208,47 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 	if stoned then
 		cancelHitFlash(model)
 		if not stoneLooks[model] then
-			local looks: { [BasePart]: { color: Color3, material: Enum.Material } } = {}
+			local colors: { [BasePart]: Color3 } = {}
+			local materials: { [BasePart]: Enum.Material } = {}
+			local surfaceAppearanceParents: { [SurfaceAppearance]: Instance } = {}
+			local meshTextures: { [MeshPart]: string } = {}
+			local specialMeshTextures: { [SpecialMesh]: string } = {}
 			local flashBases = hitFlashBaseColors[model]
+
 			for _, part in parts do
-				looks[part] = {
-					color = (flashBases and flashBases[part]) or part.Color,
-					material = part.Material,
-				}
+				colors[part] = (flashBases and flashBases[part]) or part.Color
+				materials[part] = part.Material
+				if part:IsA("MeshPart") and part.TextureID ~= "" then
+					meshTextures[part] = part.TextureID
+					part.TextureID = ""
+				end
+				for _, child in part:GetChildren() do
+					if child:IsA("SurfaceAppearance") and child.Parent then
+						surfaceAppearanceParents[child] = child.Parent
+						child.Parent = nil
+					elseif child:IsA("SpecialMesh") and child.TextureId ~= "" then
+						specialMeshTextures[child] = child.TextureId
+						child.TextureId = ""
+					end
+				end
 			end
-			stoneLooks[model] = looks
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("SurfaceAppearance")
+					and descendant.Parent
+					and surfaceAppearanceParents[descendant] == nil
+				then
+					surfaceAppearanceParents[descendant] = descendant.Parent
+					descendant.Parent = nil
+				end
+			end
+
+			stoneLooks[model] = {
+				colors = colors,
+				materials = materials,
+				surfaceAppearanceParents = surfaceAppearanceParents,
+				meshTextures = meshTextures,
+				specialMeshTextures = specialMeshTextures,
+			}
 		end
 
 		local tint = BrainrotConfig.STONE_TINT_COLOR
@@ -212,8 +260,7 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 		end
 		local tinted: { [BasePart]: Color3 } = {}
 		for _, part in parts do
-			local look = originals[part]
-			local base = if look then look.color else part.Color
+			local base = originals.colors[part] or part.Color
 			local washed = base:Lerp(tint, blend)
 			part.Color = washed
 			part.Material = stoneMaterial
@@ -222,19 +269,30 @@ function BrainrotFeedback.setStoned(model: Model, stoned: boolean)
 		hitFlashBaseColors[model] = tinted
 		model:SetAttribute("Stoned", true)
 	else
-		local originals = stoneLooks[model]
-		if originals then
-			for part, look in originals do
+		local look = stoneLooks[model]
+		if look then
+			for part, color in look.colors do
 				if part.Parent then
-					part.Color = look.color
-					part.Material = look.material
+					part.Color = color
+					part.Material = look.materials[part] or Enum.Material.SmoothPlastic
 				end
 			end
-			local restored: { [BasePart]: Color3 } = {}
-			for part, look in originals do
-				restored[part] = look.color
+			for appearance, parent in look.surfaceAppearanceParents do
+				if parent.Parent and appearance.Parent == nil then
+					appearance.Parent = parent
+				end
 			end
-			hitFlashBaseColors[model] = restored
+			for mesh, textureId in look.meshTextures do
+				if mesh.Parent then
+					mesh.TextureID = textureId
+				end
+			end
+			for mesh, textureId in look.specialMeshTextures do
+				if mesh.Parent then
+					mesh.TextureId = textureId
+				end
+			end
+			hitFlashBaseColors[model] = look.colors
 			stoneLooks[model] = nil
 		end
 		model:SetAttribute("Stoned", false)
@@ -257,6 +315,35 @@ local function resolveBody(model: Model): BasePart?
 	return model:FindFirstChildWhichIsA("BasePart", true)
 end
 
+local function stopOrbit(model: Model, vfxName: string)
+	local tweens = orbitTweens[model]
+	if tweens then
+		local tween = tweens[vfxName]
+		if tween then
+			tween:Cancel()
+			tweens[vfxName] = nil
+		end
+		if next(tweens) == nil then
+			orbitTweens[model] = nil
+		end
+	end
+	local conns = orbitConnections[model]
+	if conns then
+		local conn = conns[vfxName]
+		if conn then
+			conn:Disconnect()
+			conns[vfxName] = nil
+		end
+		if next(conns) == nil then
+			orbitConnections[model] = nil
+		end
+	end
+	local vfx = model:FindFirstChild(vfxName)
+	if vfx then
+		vfx:Destroy()
+	end
+end
+
 function BrainrotFeedback.clearAura(model: Model)
 	while true do
 		local existing = model:FindFirstChild("AuraVfx", true)
@@ -272,26 +359,180 @@ function BrainrotFeedback.clearAura(model: Model)
 end
 
 function BrainrotFeedback.clearShield(model: Model)
-	local bubble = model:FindFirstChild("ShieldVfx")
-	if bubble then
-		bubble:Destroy()
-	end
+	stopOrbit(model, "ShieldVfx")
 end
 
-function BrainrotFeedback.setShield(model: Model, active: boolean)
-	if not active then
-		BrainrotFeedback.clearShield(model)
+local function weldToPrimary(primary: BasePart, part: BasePart)
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Massless = true
+	part.CastShadow = false
+	if part == primary then
 		return
 	end
-	if model:FindFirstChild("ShieldVfx") then
-		return
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = primary
+	weld.Part1 = part
+	weld.Parent = part
+end
+
+local function createProceduralOrbitShield(): Model
+	local model = Instance.new("Model")
+	model.Name = "ShieldVfx"
+	local part = Instance.new("Part")
+	part.Name = "Shield"
+	part.Size = Vector3.new(0.28, 2.1, 1.5)
+	part.Material = Enum.Material.SmoothPlastic
+	part.Color = Color3.fromRGB(80, 170, 255)
+	part.Parent = model
+	model.PrimaryPart = part
+	return model
+end
+
+local function createProceduralOrbitMirror(): Model
+	local model = Instance.new("Model")
+	model.Name = "RetaliationVfx"
+	local part = Instance.new("Part")
+	part.Name = "Mirror"
+	part.Size = Vector3.new(0.12, 1.9, 1.4)
+	part.Material = Enum.Material.Glass
+	part.Color = Color3.fromRGB(210, 230, 255)
+	part.Reflectance = 0.55
+	part.Parent = model
+	model.PrimaryPart = part
+	return model
+end
+
+local function cloneAuthoredOrbitProp(templateId: string, orientationDegrees: Vector3, fallbackName: string): Model?
+	local folder = ModelUtil.getProjectileTemplatesFolder()
+	local child = if folder then folder:FindFirstChild(templateId) else nil
+	if child and child:IsA("Model") then
+		return ModelUtil.cloneTemplate(child, {
+			skipBodyAlias = true,
+			orientationDegrees = orientationDegrees,
+		})
+	end
+	if child and child:IsA("BasePart") then
+		local model = Instance.new("Model")
+		local part = child:Clone()
+		part.Name = fallbackName
+		part.Parent = model
+		model.PrimaryPart = part
+		return model
+	end
+	return nil
+end
+
+local function rememberOrbit(model: Model, vfxName: string, tween: Tween, conn: RBXScriptConnection)
+	local tweens = orbitTweens[model]
+	if not tweens then
+		tweens = {}
+		orbitTweens[model] = tweens
+	end
+	tweens[vfxName] = tween
+	local conns = orbitConnections[model]
+	if not conns then
+		conns = {}
+		orbitConnections[model] = conns
+	end
+	conns[vfxName] = conn
+end
+
+local function attachOrbitProp(
+	model: Model,
+	body: BasePart,
+	vfxName: string,
+	prop: Model,
+	size: number,
+	radius: number,
+	lift: number,
+	period: number,
+	orientationDegrees: Vector3
+)
+	prop.Name = vfxName
+	prop.Parent = model
+
+	local extents = prop:GetExtentsSize()
+	local longest = math.max(extents.X, extents.Y, extents.Z, 0.05)
+	if longest > 0.05 then
+		prop:ScaleTo(prop:GetScale() * (size / longest))
 	end
 
-	local body = resolveBody(model)
-	if not body then
+	local primary = prop.PrimaryPart or prop:FindFirstChildWhichIsA("BasePart", true)
+	if not primary then
+		prop:Destroy()
 		return
 	end
+	prop.PrimaryPart = primary
+	primary.Anchored = false
+	primary.CanCollide = false
+	primary.CanQuery = false
+	primary.CanTouch = false
+	primary.Massless = true
+	primary.CastShadow = false
+	for _, descendant in prop:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			weldToPrimary(primary, descendant)
+		end
+	end
 
+	local o = orientationDegrees
+	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
+	local function pose(alpha: number): CFrame
+		return CFrame.new(0, lift, 0) * CFrame.Angles(0, alpha, 0) * CFrame.new(radius, 0, 0) * orient
+	end
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = "OrbitMotor"
+	motor.Part0 = body
+	motor.Part1 = primary
+	motor.C0 = pose(0)
+	motor.C1 = CFrame.new()
+	motor.Parent = primary
+
+	local spin = Instance.new("NumberValue")
+	spin.Name = "OrbitSpin"
+	spin.Value = 0
+	spin.Parent = prop
+
+	local conn = spin:GetPropertyChangedSignal("Value"):Connect(function()
+		if not motor.Parent then
+			return
+		end
+		motor.C0 = pose(spin.Value)
+	end)
+
+	local tween = TweenService:Create(
+		spin,
+		TweenInfo.new(period, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
+		{ Value = math.pi * 2 }
+	)
+	rememberOrbit(model, vfxName, tween, conn)
+	tween:Play()
+end
+
+local function attachOrbitShield(model: Model, body: BasePart)
+	local shield = cloneAuthoredOrbitProp(
+		CombatConfig.SHIELD_MODEL_ID,
+		CombatConfig.SHIELD_ORBIT_ORIENTATION_DEGREES,
+		"Shield"
+	) or createProceduralOrbitShield()
+	attachOrbitProp(
+		model,
+		body,
+		"ShieldVfx",
+		shield,
+		VfxConfig.SHIELD_ORBIT_SIZE,
+		VfxConfig.SHIELD_ORBIT_RADIUS,
+		VfxConfig.SHIELD_ORBIT_LIFT,
+		VfxConfig.SHIELD_ORBIT_PERIOD,
+		CombatConfig.SHIELD_ORBIT_ORIENTATION_DEGREES
+	)
+end
+
+local function attachBubbleShield(model: Model, body: BasePart)
 	local visualSize, center = ModelUtil.getVisualSizeAndCenter(model)
 	local diameter = math.max(visualSize.X, visualSize.Y, visualSize.Z, 2) * VfxConfig.SHIELD_BUBBLE_PADDING
 	local bubble = Instance.new("Part")
@@ -314,6 +555,67 @@ function BrainrotFeedback.setShield(model: Model, active: boolean)
 	weld.Part0 = body
 	weld.Part1 = bubble
 	weld.Parent = bubble
+end
+
+function BrainrotFeedback.setShield(model: Model, active: boolean)
+	if not active then
+		BrainrotFeedback.clearShield(model)
+		return
+	end
+	if model:FindFirstChild("ShieldVfx") then
+		return
+	end
+
+	local body = resolveBody(model)
+	if not body then
+		return
+	end
+
+	if model:GetAttribute("BrainrotId") == "TungTungSahur" then
+		local root = model:FindFirstChild("RootPart", true) or model:FindFirstChild("HumanoidRootPart", true)
+		local hub = if root and root:IsA("BasePart") then root else body
+		attachOrbitShield(model, hub)
+	else
+		attachBubbleShield(model, body)
+	end
+end
+
+function BrainrotFeedback.clearRetaliation(model: Model)
+	stopOrbit(model, "RetaliationVfx")
+end
+
+function BrainrotFeedback.setRetaliation(model: Model, active: boolean)
+	if not active then
+		BrainrotFeedback.clearRetaliation(model)
+		return
+	end
+	if model:FindFirstChild("RetaliationVfx") then
+		return
+	end
+
+	local body = resolveBody(model)
+	if not body then
+		return
+	end
+
+	local root = model:FindFirstChild("RootPart", true) or model:FindFirstChild("HumanoidRootPart", true)
+	local hub = if root and root:IsA("BasePart") then root else body
+	local mirror = cloneAuthoredOrbitProp(
+		CombatConfig.MIRROR_MODEL_ID,
+		CombatConfig.MIRROR_ORBIT_ORIENTATION_DEGREES,
+		"Mirror"
+	) or createProceduralOrbitMirror()
+	attachOrbitProp(
+		model,
+		hub,
+		"RetaliationVfx",
+		mirror,
+		VfxConfig.MIRROR_ORBIT_SIZE,
+		VfxConfig.MIRROR_ORBIT_RADIUS,
+		VfxConfig.MIRROR_ORBIT_LIFT,
+		VfxConfig.MIRROR_ORBIT_PERIOD,
+		CombatConfig.MIRROR_ORBIT_ORIENTATION_DEGREES
+	)
 end
 
 local function discEmitter(parent: BasePart, name: string): ParticleEmitter
@@ -425,6 +727,7 @@ function BrainrotFeedback.cleanup(model: Model)
 	stoneLooks[model] = nil
 	BrainrotFeedback.clearAura(model)
 	BrainrotFeedback.clearShield(model)
+	BrainrotFeedback.clearRetaliation(model)
 
 	local base = baseScales[model]
 	if base and model.Parent then

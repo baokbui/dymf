@@ -28,7 +28,10 @@ not live code. “Gold” on the sheet is **coins**.
   overrides and **Legendary** extras are applied at place / restore / claim
   (`Evolutions.applyStats` / `claimedExtras`). **Mythic** and **Immortal**
   passives compose the same way (params merge or extra ability ids). GOD
-  ultimates: Tung Tung **Sahur's Wrath** ✅; other roster ultimates 🔜.
+  ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
+  Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
+  (on plant). Cappuccino **Shadow Requiem** and Tralalero **Tidal Cataclysm**
+  🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -127,7 +130,7 @@ on the sheet (TBD).
 | Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
 | Immortal | Golden Discount | When producing a coin, the next Brainrot plant (**any** unit) costs **50%**. One pending charge; producing again **refreshes** it (does not stack to 25%). Consumed on a successful plant. Plot `PlantDiscountFactor` so the shop shows the discounted cost. |
-| GOD | Jackpot | Produce coins **3×** faster; each coin during the ultimate **33%** extra coin. **30s** CD. |
+| GOD | Jackpot | Produce coins **3×** faster for **10s**; each coin during the ultimate **33%** extra coin (independent of Encore). **30s** CD. |
 
 ### Chimpanzini Bananini
 
@@ -136,8 +139,8 @@ on the sheet (TBD).
 | Epic | Goliath | **4000** HP (from 2000). |
 | Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
-| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Cannot use active or ultimate while stone. |
-| GOD | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. **30s** CD. |
+| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. The plant turns **stone gray** (Slate). Cannot use active or ultimate while stone. |
+| GOD | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. A small **Mirror** from `Assets.Projectiles` orbits Chimpanzini. **30s** CD. |
 
 ### Tung Tung Sahur
 
@@ -146,8 +149,8 @@ on the sheet (TBD).
 | Epic | Tung Tung Training | **1500** HP / **100** dmg (from 1200 / 55). |
 | Legendary | Ranged Rampage | Throws a spinning bat from the **left hand** down the **whole row** for **10s**. Hits on the lawn knock monsters back **half a tile** (off-plot / forest: damage only). **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
-| Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. |
-| GOD | Sahur's Wrath | A **Tung Bat** appears above him, expands, stretches to the **east plot edge**, then slams his **row** for **1000%** of his current bat damage. **30s** CD. |
+| Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. A small **Shield** from `Assets.Projectiles` orbits Tung (not a bubble). |
+| GOD | Sahur's Wrath | A **Tung Bat** grows **vertically above him** (wide club, as tall as the remaining lane), then his **melee swing** arcs it onto the ground covering **every tile from him to the east plot edge** (yellow ring **at each monster hit**). Fires only if the row has **4+** enemies **or a boss**. If several GOD Tungs in the row are ready, the **easternmost** (closest to incoming monsters) slams first; others stay ready. **1000%** of his current bat damage. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -177,7 +180,7 @@ on the sheet (TBD).
 | Legendary | Winter's Grasp | Freeze a **whole lane**. |
 | Mythic | Permafrost | Freeze duration **7s**. |
 | Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row. Picks the neighbor with more monsters; ties go to the **lower** row. |
-| GOD | Glacial Dominion | Freeze the **whole lawn** and apply **25%** slow for **3s**. |
+| GOD | Glacial Dominion | Freeze the **whole lawn** (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
 
 ---
 
@@ -203,7 +206,8 @@ mutations stay in M19 or slip to a later pass.
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
   `TenfoldGuard`; params-only overlays: Golden Discount, Wound of the
   Shark, Assassin's Verdict, Frostbound Neighbor). **GOD** ultimates use the
-  same extras path (`SahurWrath` ✅; other roster ultimates 🔜).
+  same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation` ✅;
+  Lirili `freezeEntireLawn` params overlay ✅). Cappuccino / Tralalero GOD 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -219,7 +223,8 @@ mutations stay in M19 or slip to a later pass.
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
-  (`SahurWrath` ✅; others 🔜).
+  (`SahurWrath`, `Jackpot`, `PrimalRetaliation` ✅; Lirili Glacial Dominion
+  on plant ✅). Cappuccino / Tralalero GOD 🔜.
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed

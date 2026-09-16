@@ -52,17 +52,37 @@ local CombatConfig = {
 	BAT_FALLBACK_HANDLE_COLOR = Color3.fromRGB(139, 90, 43),
 	BAT_FALLBACK_HEAD_COLOR = Color3.fromRGB(90, 55, 28),
 
-	-- Sahur's Wrath (Tung Tung GOD): same bat appears above the plant, expands,
-	-- stretches to the east plot edge, then slams the row.
-	WRATH_HOVER_OFFSET = 3.5, -- studs above the plant's visual top
-	WRATH_EXPAND_SCALE = 1.45,
-	WRATH_EXPAND_DURATION = 0.28,
-	WRATH_STRETCH_DURATION = 0.42,
-	WRATH_SLAM_DURATION = 0.18,
-	WRATH_SLAM_HEIGHT = 2.4, -- studs above tile top at impact
-	WRATH_LINGER = 0.22,
-	-- East end of the stretch, in fractional columns (COLUMNS + this = east face).
+	-- Tenfold Guard: small authored shield that orbits Tung.
+	SHIELD_MODEL_ID = "Shield",
+	SHIELD_ORBIT_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
+
+	-- Primal Retaliation: small authored mirror that orbits Chimpanzini.
+	MIRROR_MODEL_ID = "Mirror",
+	MIRROR_ORBIT_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
+
+	-- Sahur's Wrath (Tung Tung GOD): bat grows vertically above the plant to
+	-- the lane length, then the melee swing arcs it onto the row (covers Tung →
+	-- east plot edge).
+	WRATH_HOVER_OFFSET = 0.6, -- studs above the plant's visual top (pivot)
+	WRATH_FRONT_GAP = 0.8, -- studs east of the plant center
+	WRATH_WIDTH_SCALE = 12, -- X/Z fatten while upright (club, not a noodle)
+	WRATH_EXPAND_DURATION = 0.55,
+	WRATH_SLAM_DURATION = 1.2, -- fallback if attackHitDelay is missing
+	WRATH_SLAM_HEIGHT = 2.4, -- studs above tile top at impact (pivot)
+	WRATH_LINGER = 0.28,
+	-- East end of the landed bat, in fractional columns (COLUMNS + this).
 	WRATH_EAST_EDGE = 0.5,
+	-- Ult only fires if the row has this many combat targets, or a boss.
+	WRATH_MIN_ENEMIES = 4,
+
+	-- Jackpot (Ballerina GOD): 3× coin interval for duration; extra spit chance.
+	JACKPOT_DURATION = 10,
+	JACKPOT_FACTOR = 3,
+	JACKPOT_EXTRA_CHANCE = 33,
+
+	-- Primal Retaliation (Chimpanzini GOD): reflect chew HP for duration.
+	REFLECT_DURATION = 15,
+	REFLECT_PERCENT = 25,
 
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,

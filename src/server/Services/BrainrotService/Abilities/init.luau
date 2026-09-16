@@ -12,7 +12,7 @@ export type AbilityCallbacks = {
 	-- Unregisters + frees the tile but keeps the model (LineBomb fly-over).
 	detachSelf: () -> Model?,
 	freezeSelf: (duration: number) -> (),
-	pulseAttack: () -> (),
+	pulseAttack: (speed: number?) -> (),
 	-- Loaded attack AnimationTrack.Length when animated; nil otherwise.
 	getAttackLength: (() -> number?)?,
 	playSound: (soundKey: string) -> (),
@@ -34,6 +34,11 @@ export type EvolutionBuffs = {
 	shieldStunImmune: boolean,
 	tenfoldAt: number,
 	tenfoldShield: boolean,
+	jackpotUntil: number,
+	jackpotFactor: number,
+	jackpotExtraChance: number,
+	reflectUntil: number,
+	reflectPercent: number,
 }
 
 export type AbilityContext = {
@@ -77,6 +82,8 @@ local handlers: { [string]: AbilityHandler } = {
 	Stoneheart = require(script.Stoneheart),
 	TenfoldGuard = require(script.TenfoldGuard),
 	SahurWrath = require(script.SahurWrath),
+	Jackpot = require(script.Jackpot),
+	PrimalRetaliation = require(script.PrimalRetaliation),
 }
 
 function Abilities.defaultBuffs(): EvolutionBuffs
@@ -96,6 +103,11 @@ function Abilities.defaultBuffs(): EvolutionBuffs
 		shieldStunImmune = false,
 		tenfoldAt = 0,
 		tenfoldShield = false,
+		jackpotUntil = 0,
+		jackpotFactor = 1,
+		jackpotExtraChance = 0,
+		reflectUntil = 0,
+		reflectPercent = 0,
 	}
 end
 

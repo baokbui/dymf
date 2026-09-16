@@ -70,8 +70,15 @@ local function effectiveDefinition(placement: RuntimePlacement): Types.BrainrotD
 	if now < placement.weakenUntil then
 		damage = damage * (1 - placement.weakenFactor)
 	end
+	local coinHaste = 1
 	if now < placement.buffs.coinHasteUntil and placement.buffs.coinHasteFactor > 1 then
-		interval = interval / placement.buffs.coinHasteFactor
+		coinHaste = math.max(coinHaste, placement.buffs.coinHasteFactor)
+	end
+	if now < placement.buffs.jackpotUntil and placement.buffs.jackpotFactor > 1 then
+		coinHaste = math.max(coinHaste, placement.buffs.jackpotFactor)
+	end
+	if coinHaste > 1 then
+		interval = interval / coinHaste
 	end
 	if now < placement.buffs.attackHasteUntil and placement.buffs.attackHasteFactor > 1 then
 		interval = interval / placement.buffs.attackHasteFactor
@@ -136,6 +143,12 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			if chance > 0 and math.random() * 100 < chance then
 				spit(amount)
 			end
+			if os.clock() < placement.buffs.jackpotUntil then
+				local jackpotChance = placement.buffs.jackpotExtraChance
+				if jackpotChance > 0 and math.random() * 100 < jackpotChance then
+					spit(amount)
+				end
+			end
 		end,
 		destroySelf = function()
 			if destroyHandler then
@@ -151,10 +164,10 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 		freezeSelf = function(duration: number)
 			placement.frozenUntil = os.clock() + duration
 		end,
-		pulseAttack = function()
+		pulseAttack = function(speed: number?)
 			-- Authored swing clips replace the old ScaleTo attack pulse.
 			if placement.definition.animated then
-				BrainrotAnimation.playAttack(placement.model)
+				BrainrotAnimation.playAttack(placement.model, speed)
 			else
 				BrainrotFeedback.pulseAttack(placement.model)
 			end
@@ -233,6 +246,64 @@ function BrainrotBehavior.unregister(placement: RuntimePlacement)
 	BrainrotFeedback.cleanup(placement.model)
 end
 
+local function hasClaimedExtra(placement: RuntimePlacement, abilityId: string): boolean
+	local player = Players:GetPlayerByUserId(placement.ownerUserId)
+	if not player then
+		return false
+	end
+	local extras = Evolutions.claimedExtras(
+		placement.brainrotId,
+		ProgressService.getClaimedEvolutions(player, placement.brainrotId)
+	)
+	for _, extra in extras do
+		if extra.ability == abilityId then
+			return true
+		end
+	end
+	return false
+end
+
+-- True when another living plant on the same row has this extra ready and sits
+-- further east (closer to incoming monsters). Used so Sahur's Wrath doesn't
+-- double-cast; the easternmost ready Tung goes first.
+function BrainrotBehavior.hasCloserReadyAlly(instanceId: string, abilityId: string): boolean
+	local placement = active[instanceId]
+	if not placement then
+		return false
+	end
+	local myColumn = placement.position.column
+	for _, other in active do
+		if other.instanceId == instanceId then
+			continue
+		end
+		if other.plotModel ~= placement.plotModel then
+			continue
+		end
+		if other.position.row ~= placement.position.row then
+			continue
+		end
+		if other.brainrotId ~= placement.brainrotId then
+			continue
+		end
+		if not isBehaviorAlive(other) then
+			continue
+		end
+		if other.position.column <= myColumn then
+			continue
+		end
+		if os.clock() < other.buffs.stoneUntil then
+			continue
+		end
+		if (other.extraCooldowns[abilityId] or 0) > 0 then
+			continue
+		end
+		if hasClaimedExtra(other, abilityId) then
+			return true
+		end
+	end
+	return false
+end
+
 local function tickExtras(placement: RuntimePlacement, dt: number)
 	local player = Players:GetPlayerByUserId(placement.ownerUserId)
 	if not player then
@@ -292,6 +363,11 @@ local function expireTimedBuffs(placement: RuntimePlacement, now: number)
 		placement.model:SetAttribute("Health", body)
 		placement.model:SetAttribute("ShieldHp", 0)
 		BrainrotFeedback.setShield(placement.model, false)
+	end
+	if placement.buffs.reflectUntil > 0 and now >= placement.buffs.reflectUntil then
+		placement.buffs.reflectUntil = 0
+		placement.buffs.reflectPercent = 0
+		BrainrotFeedback.setRetaliation(placement.model, false)
 	end
 end
 

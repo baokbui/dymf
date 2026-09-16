@@ -201,7 +201,7 @@ function BrainrotAnimation.bind(model: Model, definition: Types.BrainrotDefiniti
 	end
 end
 
-function BrainrotAnimation.playAttack(model: Model)
+function BrainrotAnimation.playAttack(model: Model, speed: number?)
 	local state = states[model]
 	if not state or not state.attack then
 		return
@@ -210,6 +210,8 @@ function BrainrotAnimation.playAttack(model: Model)
 		state.attack:Stop(0)
 	end
 	state.attack:Play(0.05)
+	local rate = if type(speed) == "number" and speed > 0 then speed else 1
+	state.attack:AdjustSpeed(rate)
 end
 
 -- Length of the loaded attack clip in seconds (nil if missing / not ready).

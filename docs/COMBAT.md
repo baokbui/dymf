@@ -96,14 +96,17 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
-| Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: appears above the plant, expands, stretches to the east plot edge, then slams the **row** | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block). `MeleeBat` SFX on impact |
+| Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) if the row has **4+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each hit monster**) on impact |
+| Ballerina GOD (`Jackpot`) | Extra ability; no projectile | **10s**: coin interval **3×** faster (max with Golden Waltz); each spit **33%** extra coin (independent of Encore). `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst. **30s** CD |
+| Chimpanzini GOD (`PrimalRetaliation`) | Extra ability; no projectile | **15s**: **25%** of incoming chew/arrow HP is dealt back to **that monster instance** through `CombatService.damageMonster`. A small `Assets.Projectiles.Mirror` orbits Chimpanzini. **30s** CD |
+| Lirili GOD (Glacial Dominion) | On plant (`freezeEntireLawn` params overlay; Lirili does not persist to tick extras) | Freeze **every lawn row** at the current freeze duration, then **25%** Slow (`slowFactor` 0.75) lasting freeze + **3s** so it is felt after thaw |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
 | Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
 `BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, `WRATH_*` slam timing,
-speed, spin, bubble size) +
+bubble size) +
 `VfxConfig` bubble colors (cyan trap / gold barrage). Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles and thrown bats skip trails. Bubble Barrage adds a gold light-streak.
 
@@ -134,7 +137,7 @@ Applied only through `CombatService.applyStatusToMonster` or
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
 | Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. **Tenfold Guard** skips Stun while `shieldStunImmune` and shield HP remain. **Stoneheart** ignores Stun / Freeze while stone. |
-| Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). | — |
+| Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). Lirili GOD Glacial Dominion applies Slow **25%** (`magnitude` 0.75) on every lawn row for freeze duration + **3s**. | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
 | Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.5). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
@@ -147,12 +150,18 @@ occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
+**GOD ultimates** ✅ (except Cappuccino / Tralalero) — extras path or params overlay:
+- **Sahur's Wrath** — `SahurWrath` extra; gates + easternmost ready Tung.
+- **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
+- **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
+- **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
+
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
 - **Wound of the Shark** — when a `"Bubble"` freeze ends, `CombatService.applyBubbleExitSlow`.
 - **Frostbound Neighbor** — `FreezeTime` also freezes one adjacent row (`freezeAdjacentLane`).
-- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`.
-- **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts.
+- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`. Model turns **slate / stone gray** (`BrainrotFeedback.setStoned`): Color + `Slate` material; SurfaceAppearance / MeshPart TextureID cleared so Toolbox meshes actually show the rock (same trick as Ice freeze). Restored when the 10s ends.
+- **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts. Tung shows a small orbiting `Assets.Projectiles.Shield` instead of the Banana Bastion bubble.
 
 **Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
 entrance). `ScorpionBurrow` only on first **plot** column: sinks, travels
@@ -178,7 +187,9 @@ bombs and freeze match by **tile index / footprint overlap** so chewing units
 at melee standoff — and a 3-lane boss standing on the plant tile — still take
 the hit. Legendary Winter's Grasp (`applyEntireRowStatus`) uses the **caster
 tile** for grave LOS (not column 0), so a fog grave west of Lirili does not
-eat a freeze planted on Queen Spider. Graves still block monsters strictly
+eat a freeze planted on Queen Spider. GOD Glacial Dominion freezes **every**
+lawn row (`freezeEntireLawn`) plus Slow 25% for freeze duration + **3s**.
+Graves still block monsters strictly
 east of the stone from the caster. Freeze/Stun are rejected while a monster is
 **downed**, and starting a tip-over (last stand) clears any active freeze.
 
@@ -209,6 +220,9 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
+| Bat slam impact | `CombatVisual` kind `BatSlam` — Sahur’s Wrath landing: yellow ring **at each monster hit** (`VfxUtil.playBatSlam`) |
+| Jackpot burst | `CombatVisual` kind `Jackpot` — gold particle burst at Ballerina (`VfxUtil.playJackpotBurst`); SFX via `BrainrotAction` `PurchaseKaching` |
+| Primal Retaliation | Server `BrainrotFeedback.setRetaliation` — small `Assets.Projectiles.Mirror` orbits Chimpanzini for the 15s window (Banana Bastion bubble stays) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, sparks, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
 | Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
@@ -262,7 +276,7 @@ fall / linger / fade timings. **Never hardcode** combat tuning in services.
 
 | Name | Direction | Purpose |
 | ---- | --------- | ------- |
-| `CombatVisual` | server → client | `Hit` (`instanceId`, optional `soundKey` / `muteSound`), `Death` (`monsterId`, …), `Explosion` (`row`, optional `column` / `entireRow`) |
+| `CombatVisual` | server → client | `Hit` (`instanceId`, optional `soundKey` / `muteSound`), `Death` (`monsterId`, …), `Explosion` (`row`, optional `column` / `entireRow`), `BatSlam` (`hits` = `{ x, y, z }` per monster hit) |
 
 See `NETWORKING.md` for the full catalog.
 

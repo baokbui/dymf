@@ -163,7 +163,7 @@ local function attackBrainrot(runtime: MonsterRuntime, brainrotInstanceId: strin
 
 	if runtime.definition.damage > 0 then
 		local hits = computeBrainrotHits(runtime, brainrotInstanceId)
-		CombatService.damageBrainrot(brainrotInstanceId, hits, runtime.monsterId)
+		CombatService.damageBrainrot(brainrotInstanceId, hits, runtime.instanceId)
 		local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
 		if type(ownerUserId) == "number" then
 			CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
@@ -218,7 +218,7 @@ local function shootBrainrot(runtime: MonsterRuntime, brainrotInstanceId: string
 		{
 			kind = "Arrow",
 			originWorld = findArrowMuzzle(runtime.model),
-			sourceMonsterId = runtime.monsterId,
+			sourceMonsterId = runtime.instanceId,
 		}
 	)
 	CombatService.notifyMonsterAttack(ownerUserId, runtime.monsterId)
@@ -486,6 +486,19 @@ function EnemyService.getMonsterLaneSpan(instanceId: string): number
 	return math.max(1, math.floor(runtime.definition.laneSpan or 1))
 end
 
+function EnemyService.getMonsterRegistryId(instanceId: string): string?
+	local runtime = monsters[instanceId]
+	if not runtime then
+		return nil
+	end
+	return runtime.monsterId
+end
+
+function EnemyService.isBoss(instanceId: string): boolean
+	local runtime = monsters[instanceId]
+	return runtime ~= nil and runtime.definition.isBoss == true
+end
+
 function EnemyService.getProjectileWorldY(plotModel: Model, row: number, startColumn: number): number?
 	local pos = GridService.getWorldPositionAtColumn(plotModel, row, startColumn)
 	if not pos then
@@ -696,6 +709,8 @@ function EnemyService.init()
 		queryFirstInMeleeReach = EnemyService.getFirstMonsterInMeleeReach,
 		getMonsterColumn = EnemyService.getMonsterColumn,
 		getMonsterLaneSpan = EnemyService.getMonsterLaneSpan,
+		getMonsterRegistryId = EnemyService.getMonsterRegistryId,
+		isBoss = EnemyService.isBoss,
 		getProjectileWorldY = EnemyService.getProjectileWorldY,
 		setProjectilePosition = EnemyService.setProjectilePosition,
 		damage = EnemyService.damageMonster,

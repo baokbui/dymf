@@ -8,7 +8,9 @@
 	the whole row instead. Mythic Permafrost overlays `freezeDuration`.
 	Immortal Frostbound Neighbor also freezes one adjacent lawn row
 	(`freezeAdjacentLane`): the neighbor with more monsters, ties go to
-	the lower row.
+	the lower row. GOD Glacial Dominion (`freezeEntireLawn`) freezes every
+	lawn row and Slow 25% for freezeDuration + lawnSlowDuration (felt
+	after thaw).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,11 +30,17 @@ function FreezeTime.onPlaced(ctx, callbacks)
 	local freezeTiles = 2
 	local freezeEntireLane = false
 	local freezeAdjacentLane = false
+	local freezeEntireLawn = false
+	local lawnSlowPercent = 0
+	local lawnSlowDuration = 0
 	if ctx.definition.abilityParams then
 		freezeDuration = ctx.definition.abilityParams.freezeDuration or freezeDuration
 		freezeTiles = ctx.definition.abilityParams.freezeTiles or freezeTiles
 		freezeEntireLane = (ctx.definition.abilityParams.freezeEntireLane or 0) >= 1
 		freezeAdjacentLane = (ctx.definition.abilityParams.freezeAdjacentLane or 0) >= 1
+		freezeEntireLawn = (ctx.definition.abilityParams.freezeEntireLawn or 0) >= 1
+		lawnSlowPercent = ctx.definition.abilityParams.lawnSlowPercent or lawnSlowPercent
+		lawnSlowDuration = ctx.definition.abilityParams.lawnSlowDuration or lawnSlowDuration
 	end
 
 	local hitDelay = 0
@@ -66,7 +74,7 @@ function FreezeTime.onPlaced(ctx, callbacks)
 		end
 
 		local function freezeRow(targetRow: number): number
-			if freezeEntireLane then
+			if freezeEntireLane or freezeEntireLawn then
 				return CombatService.applyEntireRowStatus(
 					plotModel,
 					targetRow,
@@ -87,6 +95,24 @@ function FreezeTime.onPlaced(ctx, callbacks)
 				freezeDuration,
 				nil,
 				"Ice"
+			)
+		end
+
+		local function applyLawnSlow(targetRow: number)
+			if lawnSlowPercent <= 0 or lawnSlowDuration <= 0 then
+				return
+			end
+			local factor = math.clamp(1 - lawnSlowPercent / 100, 0.05, 1)
+			-- Freeze owns movement until thaw; Slow lasts through freeze plus
+			-- lawnSlowDuration so the 3s is felt after ice breaks.
+			CombatService.applyEntireRowStatus(
+				plotModel,
+				targetRow,
+				"Slow",
+				freezeDuration + lawnSlowDuration,
+				factor,
+				nil,
+				column
 			)
 		end
 
@@ -112,11 +138,19 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			return nil
 		end
 
-		local frozen = freezeRow(row)
-		if freezeAdjacentLane then
-			local adjacent = pickAdjacentRow()
-			if adjacent then
-				frozen += freezeRow(adjacent)
+		local frozen = 0
+		if freezeEntireLawn then
+			for targetRow = 1, GridConfig.ROWS do
+				frozen += freezeRow(targetRow)
+				applyLawnSlow(targetRow)
+			end
+		else
+			frozen = freezeRow(row)
+			if freezeAdjacentLane then
+				local adjacent = pickAdjacentRow()
+				if adjacent then
+					frozen += freezeRow(adjacent)
+				end
 			end
 		end
 		if frozen > 0 then

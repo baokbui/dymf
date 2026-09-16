@@ -69,6 +69,17 @@ function VfxUtil.playHitBurst(position: Vector3)
 	)
 end
 
+function VfxUtil.playJackpotBurst(position: Vector3)
+	emitBurst(
+		position,
+		VfxConfig.JACKPOT_COLOR,
+		VfxConfig.JACKPOT_BURST_COUNT,
+		VfxConfig.JACKPOT_BURST_SPEED,
+		VfxConfig.JACKPOT_BURST_SIZE,
+		VfxConfig.JACKPOT_BURST_LIFETIME
+	)
+end
+
 function VfxUtil.playDeathBurst(position: Vector3)
 	emitBurst(
 		position,
@@ -319,6 +330,157 @@ function VfxUtil.playTileExplosion(position: Vector3)
 	task.delay(VfxConfig.TILE_EXPLOSION_SHOCKWAVE_DURATION + 0.1, function()
 		shockwave:Destroy()
 	end)
+end
+
+local function spikeLengthScale(index: number, count: number): number
+	local t = ((index * 7 + 3) % math.max(count, 1)) / math.max(count, 1)
+	return 0.62 + t * 0.7
+end
+
+local function spikeCFrame(origin: Vector3, yaw: number, radius: number, length: number, upBias: number): CFrame
+	local outward = Vector3.new(math.cos(yaw), 0, math.sin(yaw))
+	local tip = outward * (1 - upBias) + Vector3.new(0, upBias, 0)
+	if tip.Magnitude < 0.05 then
+		tip = Vector3.yAxis
+	else
+		tip = tip.Unit
+	end
+	local base = origin + outward * radius
+	local mid = base + tip * (length * 0.5)
+	return CFrame.lookAt(mid, mid + tip)
+end
+
+local function makeSpike(color: Color3, width: number, thickness: number, length: number, transparency: number): WedgePart
+	local wedge = Instance.new("WedgePart")
+	wedge.Name = "BatSlamSpike"
+	wedge.Anchored = true
+	wedge.CanCollide = false
+	wedge.CanQuery = false
+	wedge.CanTouch = false
+	wedge.CastShadow = false
+	wedge.Material = Enum.Material.Neon
+	wedge.Color = color
+	wedge.Transparency = transparency
+	wedge.Size = Vector3.new(width, thickness, length)
+	return wedge
+end
+
+type SpikeLayer = {
+	count: number,
+	yawOffset: number,
+	upBias: number,
+	startRadius: number,
+	endRadius: number,
+	length: number,
+	width: number,
+	color: Color3,
+}
+
+local function emitSpikeLayer(
+	origin: Vector3,
+	layer: SpikeLayer,
+	duration: number,
+	parts: { BasePart },
+	radiusMul: number,
+	startTransparency: number
+)
+	local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local thickness = VfxConfig.BAT_SLAM_SPIKE_THICKNESS
+	for i = 1, layer.count do
+		local yaw = ((i - 1) / layer.count) * math.pi * 2 + layer.yawOffset
+		local scale = spikeLengthScale(i, layer.count)
+		local length = layer.length * scale
+		local width = layer.width * (0.75 + scale * 0.35)
+		local startRadius = layer.startRadius * radiusMul
+		local endRadius = layer.endRadius * radiusMul
+		local wedge = makeSpike(layer.color, width, thickness, length, startTransparency)
+		wedge.CFrame = spikeCFrame(origin, yaw, startRadius, length, layer.upBias)
+		wedge.Parent = effectsFolder()
+		table.insert(parts, wedge)
+		TweenService:Create(wedge, info, {
+			CFrame = spikeCFrame(origin, yaw, endRadius, length, layer.upBias),
+			Transparency = 1,
+		}):Play()
+	end
+end
+
+local function emitEnergyBurst(
+	origin: Vector3,
+	delaySec: number,
+	hot: boolean,
+	radiusMul: number,
+	duration: number,
+	startTransparency: number
+)
+	local function spawn()
+		local hotColor = VfxConfig.BAT_SLAM_WAVE_COLOR_HOT
+		local bodyColor = VfxConfig.BAT_SLAM_WAVE_COLOR
+		local color = if hot then hotColor else bodyColor
+		local parts: { BasePart } = {}
+
+		-- Inner crown: mostly vertical spikes (the bowl around the impact).
+		emitSpikeLayer(origin, {
+			count = VfxConfig.BAT_SLAM_CROWN_INNER_COUNT,
+			yawOffset = 0.11,
+			upBias = 0.9,
+			startRadius = VfxConfig.BAT_SLAM_CROWN_INNER_START_RADIUS,
+			endRadius = VfxConfig.BAT_SLAM_CROWN_INNER_END_RADIUS,
+			length = VfxConfig.BAT_SLAM_CROWN_INNER_START_LENGTH,
+			width = VfxConfig.BAT_SLAM_CROWN_INNER_WIDTH,
+			color = hotColor,
+		}, duration, parts, radiusMul, startTransparency)
+
+		-- Outer crown: spikes leaning out (height stays fixed).
+		emitSpikeLayer(origin, {
+			count = VfxConfig.BAT_SLAM_CROWN_COUNT,
+			yawOffset = 0,
+			upBias = 0.68,
+			startRadius = VfxConfig.BAT_SLAM_CROWN_START_RADIUS,
+			endRadius = VfxConfig.BAT_SLAM_CROWN_END_RADIUS,
+			length = VfxConfig.BAT_SLAM_CROWN_START_LENGTH,
+			width = VfxConfig.BAT_SLAM_CROWN_WIDTH,
+			color = color,
+		}, duration, parts, radiusMul, startTransparency)
+
+		-- Ground ring: jagged halo wrapping the burst.
+		emitSpikeLayer(origin, {
+			count = VfxConfig.BAT_SLAM_RING_COUNT,
+			yawOffset = 0.16,
+			upBias = 0.22,
+			startRadius = VfxConfig.BAT_SLAM_RING_START_RADIUS,
+			endRadius = VfxConfig.BAT_SLAM_RING_END_RADIUS,
+			length = VfxConfig.BAT_SLAM_RING_START_LENGTH,
+			width = VfxConfig.BAT_SLAM_RING_WIDTH,
+			color = bodyColor,
+		}, duration, parts, radiusMul, startTransparency)
+
+		task.delay(duration + 0.08, function()
+			for _, part in parts do
+				part:Destroy()
+			end
+		end)
+	end
+
+	if delaySec <= 0 then
+		spawn()
+	else
+		task.delay(delaySec, spawn)
+	end
+end
+
+function VfxUtil.playBatSlam(position: Vector3)
+	local ground = position + Vector3.new(0, 0.2, 0)
+	for w = 1, VfxConfig.BAT_SLAM_WAVE_COUNT do
+		local pulseSpread = 1 + (w - 1) * VfxConfig.BAT_SLAM_WIDEN_PER_WAVE
+		emitEnergyBurst(
+			ground,
+			(w - 1) * VfxConfig.BAT_SLAM_WAVE_STAGGER,
+			w % 2 == 1,
+			pulseSpread,
+			VfxConfig.BAT_SLAM_WAVE_DURATION,
+			VfxConfig.BAT_SLAM_TRANSPARENCY
+		)
+	end
 end
 
 -- Thin neon segment between two world points (used to build curved soundwaves).

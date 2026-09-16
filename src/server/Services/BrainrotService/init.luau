@@ -352,12 +352,17 @@ local function applyBrainrotDamage(instanceId: string, hits: number, sourceMonst
 	if hits > 0 and type(sourceMonsterId) == "string" then
 		local maxHits = placement.definition.health
 		if maxHits > 0 then
+			local incomingHp = hits * (placement.definition.maxHealth / maxHits)
+			-- Chew/arrow `sourceMonsterId` is the runtime instance. The meter
+			-- ranks by registry species id.
+			local speciesId = CombatService.getMonsterRegistryId(sourceMonsterId) or sourceMonsterId
 			local DamageMeterService = require(script.Parent.DamageMeterService)
-			DamageMeterService.recordMonster(
-				placement.ownerUserId,
-				sourceMonsterId,
-				hits * (placement.definition.maxHealth / maxHits)
-			)
+			DamageMeterService.recordMonster(placement.ownerUserId, speciesId, incomingHp)
+			if os.clock() < placement.buffs.reflectUntil and placement.buffs.reflectPercent > 0 then
+				local reflected = math.max(1, math.floor(incomingHp * placement.buffs.reflectPercent / 100 + 0.5))
+				CombatService.damageMonster(sourceMonsterId, reflected, placement.brainrotId)
+				CombatService.notifyHitVisual(placement.ownerUserId, sourceMonsterId)
+			end
 		end
 	end
 

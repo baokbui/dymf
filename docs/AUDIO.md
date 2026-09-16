@@ -64,7 +64,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `BigWave` | First frame of big-wave warning |
 | `Victory` / `Defeat` | Level phase change |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
-| `PurchaseKaching` | Store purchase succeeded (cash register) |
+| `PurchaseKaching` | Store purchase succeeded (cash register); Ballerina Jackpot via `BrainrotAction` |
 | `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
 | `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
@@ -110,6 +110,8 @@ ids stay silent.
 | Event | Path |
 | ----- | ---- |
 | Melee bat hit (incl. kill) | `MeleeBat` ability → (optional `attackHitDelay`) → `BrainrotAction` → `AudioController.play("MeleeBat")`; client ScaleTo pulse skipped when `animated` |
+| Sahur’s Wrath land | `BrainrotAction` `MeleeBat` + `CombatVisual` `BatSlam` → `AudioController.play("Explosion")` (ground boom, once) |
+| Jackpot | `Jackpot` extra → `BrainrotAction` `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst |
 | Knife impact | `CombatVisual` Hit with `soundKey = "ThrowKnifeHit"` |
 | Bubble projectile impact | `CombatVisual` Hit with `soundKey = "BubbleTrap"` (after travel) |
 | Generic hit particles | `CombatVisual` Hit (`muteSound` skips SFX when bat already played) |
