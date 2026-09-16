@@ -335,6 +335,6 @@ brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
 red-orange). **Legendary** extras, **Mythic** passives, and **Immortal**
 passives tick in combat from evolution ability ids / `abilityParams`. GOD
 ultimates: Tung Tung **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini
-**Primal Retaliation**, Lirili **Glacial Dominion** ✅; Cappuccino **Shadow
-Requiem** and Tralalero **Tidal Cataclysm** 🔜.
+**Primal Retaliation**, Lirili **Glacial Dominion**, Cappuccino **Shadow
+Requiem** ✅; Tralalero **Tidal Cataclysm** 🔜.
 A separate mutation layer (replace core ability) is optional and not on the sheet.

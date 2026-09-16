@@ -23,6 +23,7 @@ type AnimState = {
 	idle: AnimationTrack?,
 	attack: AnimationTrack?,
 	hit: AnimationTrack?,
+	ability: { [string]: AnimationTrack },
 }
 
 local states: { [Model]: AnimState } = {}
@@ -189,11 +190,23 @@ function BrainrotAnimation.bind(model: Model, definition: Types.BrainrotDefiniti
 		Enum.AnimationPriority.Action2
 	)
 
+	local abilityTracks: { [string]: AnimationTrack } = {}
+	local abilityIds = definition.abilityAnimationIds
+	if abilityIds then
+		for abilityId, animationId in abilityIds do
+			local track = loadTrack(animator, animationId, false, Enum.AnimationPriority.Action3)
+			if track then
+				abilityTracks[abilityId] = track
+			end
+		end
+	end
+
 	states[model] = {
 		animator = animator,
 		idle = idle,
 		attack = attack,
 		hit = hit,
+		ability = abilityTracks,
 	}
 
 	if idle then
@@ -238,6 +251,43 @@ function BrainrotAnimation.playHit(model: Model)
 	state.hit:Play(0.05)
 end
 
+-- One-shot extra clip from definition.abilityAnimationIds (GOD ultimates).
+function BrainrotAnimation.playAbility(model: Model, abilityId: string)
+	local state = states[model]
+	if not state then
+		return
+	end
+	local track = state.ability[abilityId]
+	if not track then
+		return
+	end
+	if state.attack and state.attack.IsPlaying then
+		state.attack:Stop(0.05)
+	end
+	for _, other in state.ability do
+		if other.IsPlaying then
+			other:Stop(0.05)
+		end
+	end
+	track:Play(0.05)
+end
+
+function BrainrotAnimation.getAbilityLength(model: Model, abilityId: string): number?
+	local state = states[model]
+	if not state then
+		return nil
+	end
+	local track = state.ability[abilityId]
+	if not track then
+		return nil
+	end
+	local length = track.Length
+	if typeof(length) ~= "number" or length <= 0 then
+		return nil
+	end
+	return length
+end
+
 function BrainrotAnimation.unbind(model: Model)
 	local state = states[model]
 	if not state then
@@ -254,6 +304,10 @@ function BrainrotAnimation.unbind(model: Model)
 	if state.hit then
 		state.hit:Stop(0)
 		state.hit:Destroy()
+	end
+	for _, track in state.ability do
+		track:Stop(0)
+		track:Destroy()
 	end
 	states[model] = nil
 end

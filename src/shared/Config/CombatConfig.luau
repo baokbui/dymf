@@ -75,6 +75,21 @@ local CombatConfig = {
 	-- Ult only fires if the row has this many combat targets, or a boss.
 	WRATH_MIN_ENEMIES = 4,
 
+	-- Shadow Requiem (Cappuccino GOD): two vertical black ")" crescents.
+	-- Width stays large; height grows slowly with travel. Fade off the east
+	-- plot edge; pierce every monster and grave. 2000% of current knife damage.
+	SWORD_WAVE_GROW_COLUMNS = 3, -- tiles of travel to reach full height
+	SWORD_WAVE_FADE_COLUMNS = 1.1, -- start fading this many columns before the east edge
+	SWORD_WAVE_EAST_EDGE = 0.55, -- destroy at COLUMNS + this
+	SWORD_WAVE_TRANSPARENCY = 0.12,
+	SWORD_WAVE_COLUMNS_PER_SECOND = 8,
+	SWORD_WAVE_PIERCE_COUNT = 64,
+	SWORD_WAVE_ANIM_FALLBACK = 1.85, -- seconds if the clip Length is not ready
+	SWORD_WAVE_RELEASE_LEAD = 0.04, -- fire this many seconds before clip end
+	SWORD_WAVE_FALLBACK_Z = 1.15, -- studs off visual center when swords are missing
+	SWORD_WAVE_FALLBACK_EAST = 1.1,
+	SWORD_WAVE_FALLBACK_UP = 0.85,
+
 	-- Jackpot (Ballerina GOD): 3× coin interval for duration; extra spit chance.
 	JACKPOT_DURATION = 10,
 	JACKPOT_FACTOR = 3,

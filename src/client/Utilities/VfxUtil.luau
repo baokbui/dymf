@@ -823,6 +823,9 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	part:SetAttribute("VfxDecorated", true)
 
 	local kind = part:GetAttribute("ProjectileKind")
+	if kind == "SwordWave" then
+		return
+	end
 	local isBubble = kind == "Bubble"
 	local isBat = kind == "Bat"
 	local isShuriken = kind == "Shuriken"

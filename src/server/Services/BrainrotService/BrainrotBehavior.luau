@@ -175,6 +175,12 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 		getAttackLength = function()
 			return BrainrotAnimation.getAttackLength(placement.model)
 		end,
+		playAbility = function(abilityId: string)
+			BrainrotAnimation.playAbility(placement.model, abilityId)
+		end,
+		getAbilityLength = function(abilityId: string)
+			return BrainrotAnimation.getAbilityLength(placement.model, abilityId)
+		end,
 		playSound = function(soundKey: string)
 			local player = Players:GetPlayerByUserId(placement.ownerUserId)
 			if not player then

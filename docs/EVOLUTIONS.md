@@ -10,7 +10,7 @@ later unlocks add their aura and bonus on top of earlier ones. The base unit
 This is **not** campaign day 10 / 20 / … (`LevelService` / `highestUnlocked`).
 Sheet labels “Level 10” mean **Brainrot level 10**.
 
-Status: 🔜 Milestone 19 (ladder + most GOD ultimates live; Cappuccino / Tralalero GOD remaining)
+Status: 🔜 Milestone 19 (ladder + most GOD ultimates live; Tralalero GOD remaining)
 
 Authoring source: design sheet (Epic → God). Numbers below are targets,
 not live code. “Gold” on the sheet is **coins**.
@@ -30,7 +30,7 @@ not live code. “Gold” on the sheet is **coins**.
   passives compose the same way (params merge or extra ability ids). GOD
   ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
   Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
-  (on plant). Cappuccino **Shadow Requiem** and Tralalero **Tidal Cataclysm**
+  (on plant); Cappuccino **Shadow Requiem** ✅. Tralalero **Tidal Cataclysm**
   🔜.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
@@ -170,7 +170,7 @@ on the sheet (TBD).
 | Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | Vanish to the east end of the lane, run back, stab every monster in the path for **2000%** dmg. **45s** CD. |
+| GOD | Shadow Requiem | At the end of the dual-slash, two black sword waves fly down the row, grow with distance, fade off the plot, and pierce every monster and grave for **2000%** dmg. **45s** CD. |
 
 ### Lirili Larila
 
@@ -207,8 +207,8 @@ mutations stay in M19 or slip to a later pass.
   `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
   Frostbound Neighbor). **GOD** ultimates use the
-  same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation` ✅;
-  Lirili `freezeEntireLawn` params overlay ✅). Cappuccino / Tralalero GOD 🔜.
+  same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation`,
+  `ShadowRequiem` ✅; Lirili `freezeEntireLawn` params overlay ✅). Tralalero GOD 🔜.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -224,8 +224,8 @@ mutations stay in M19 or slip to a later pass.
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
-  (`SahurWrath`, `Jackpot`, `PrimalRetaliation` ✅; Lirili Glacial Dominion
-  on plant ✅). Cappuccino / Tralalero GOD 🔜.
+  (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem` ✅; Lirili Glacial Dominion
+  on plant ✅). Tralalero GOD 🔜.
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed

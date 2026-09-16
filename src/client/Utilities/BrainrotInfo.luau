@@ -82,6 +82,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Primal Retaliation",
 		description = "For 15s, reflect 25% of chew damage back to that monster. A small mirror orbits Chimpanzini. 30s cooldown.",
 	},
+	ShadowRequiem = {
+		label = "Shadow Requiem",
+		description = "Two black sword waves leave Cappuccino's blades, grow with distance, fade off the plot, and pierce every monster and grave for 2000% damage. 45s cooldown.",
+	},
 }
 
 function BrainrotInfo.abilityLabel(abilityId: string?): string

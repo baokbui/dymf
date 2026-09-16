@@ -466,7 +466,7 @@ Full details in `STORE.md` / `UI.md`. Summary:
   black silhouettes with **?**. Encountered from unlocks / intro lists (Day 1
   Zombie is always shown — no intro popup).
 
-### Milestone 19 — Brainrot leveling + evolutions 🔜 (ladder live; Cappuccino / Tralalero GOD remaining)
+### Milestone 19 — Brainrot leveling + evolutions 🔜 (ladder live; Tralalero GOD remaining)
 
 Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
 
@@ -484,14 +484,14 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   Legendary extras and Mythic / Immortal passives tick from evolution `ability` ids
   (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
   `RegenPulse`, `DesperateFury`, `Stoneheart`, `TenfoldGuard`, `SahurWrath`,
-  `Jackpot`, `PrimalRetaliation`; Lirili’s
+  `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`; Lirili’s
   `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` /
   `freezeEntireLawn` / `lawnSlowPercent` and other
   params-only rows merge into `abilityParams`). Aura is purple at
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
   at GOD. **GOD ultimates:** Tung Tung `SahurWrath`, Ballerina `Jackpot`,
   Chimpanzini `PrimalRetaliation` ✅; Lirili Glacial Dominion (on plant) ✅;
-  Cappuccino / Tralalero 🔜.
+  Cappuccino `ShadowRequiem` ✅; Tralalero 🔜.
 
 ### Milestone 12 — Audio ✅
 

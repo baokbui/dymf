@@ -182,7 +182,7 @@ hardcode a second palette in new UI.
   combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
   red-orange / dark red / rainbow). GOD ultimates: Tung Tung
   **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini **Primal Retaliation**,
-  Lirili **Glacial Dominion** ✅; Cappuccino / Tralalero 🔜
+  Lirili **Glacial Dominion**, Cappuccino **Shadow Requiem** ✅; Tralalero 🔜
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted

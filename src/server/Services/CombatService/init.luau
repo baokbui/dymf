@@ -28,6 +28,8 @@ local log = Logger.new(CombatService.Name)
 
 local FULL_LINE = BrainrotConfig.FULL_LINE_RANGE
 
+local waveHits: { [string]: { hits: { [string]: boolean }, expires: number } } = {}
+
 local brainrotDamageHandler: ((instanceId: string, hits: number, sourceMonsterId: string?) -> boolean)?
 local brainrotHealHandler: ((instanceId: string, hits: number) -> ())?
 local brainrotStatusHandler: ((instanceId: string, kind: Types.StatusEffectKind, duration: number, magnitude: number?) -> ())?
@@ -333,6 +335,10 @@ export type ProjectileLaunchOptions = {
 	pierceCount: number?,
 	-- Fly through graves; the stone takes no HP. Implied when pierceCount > 0.
 	pierceGraves: boolean?,
+	-- Keep flying through every remaining monster, then off the east plot edge.
+	pierceAll: boolean?,
+	-- Shared id so two Shadow Requiem waves don't double-hit the same monster.
+	waveGroupId: string?,
 	-- Bubble Barrage / Double Bubble extras after the seed splits.
 	extraBubbleChance: number?,
 }
@@ -549,6 +555,61 @@ function CombatService.launchSpreadingBubble(
 			streak = true,
 		},
 		spawn.Y,
+		monsterHandlers.setProjectilePosition
+	)
+	return true
+end
+
+-- Rainbow sword wave: always flies to the east plot edge. Damage is applied
+-- as the wave's column passes each monster (graves never block). Origin stays
+-- at the sword's world Z/Y so two waves can leave Cappuccino's two blades.
+function CombatService.launchSwordWave(
+	plotModel: Model,
+	position: Types.GridPosition,
+	damage: number,
+	ownerUserId: number,
+	originWorld: Vector3,
+	options: ProjectileLaunchOptions?
+): boolean
+	if not monsterHandlers then
+		return false
+	end
+
+	local GridService = require(script.Parent.GridService)
+	local startColumn = position.column
+	local fromX = GridService.worldXToColumn(plotModel, originWorld.X)
+	if type(fromX) == "number" then
+		startColumn = fromX
+	end
+
+	local eastEdge = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
+	local impact: Projectile.ImpactSpec = {
+		soundKey = if options then options.soundKey else nil,
+		sourceBrainrotId = if options then options.sourceBrainrotId else nil,
+		sourceInstanceId = if options then options.sourceInstanceId else nil,
+		pierceCount = CombatConfig.SWORD_WAVE_PIERCE_COUNT,
+		pierceGraves = true,
+		pierceAll = true,
+		waveGroupId = if options then options.waveGroupId else nil,
+	}
+
+	Projectile.launch(
+		{
+			plotModel = plotModel,
+			row = position.row,
+			startColumn = startColumn,
+			targetInstanceId = "LaneEnd",
+			targetColumn = eastEdge,
+			damage = damage,
+			ownerUserId = ownerUserId,
+			kind = "SwordWave",
+			impact = impact,
+			targetKind = "LaneEnd",
+			originWorld = originWorld,
+			worldZ = originWorld.Z,
+			columnsPerSecond = CombatConfig.SWORD_WAVE_COLUMNS_PER_SECOND,
+		},
+		originWorld.Y,
 		monsterHandlers.setProjectilePosition
 	)
 	return true
@@ -1095,6 +1156,27 @@ local function shotPiercesGraves(impact: Projectile.ImpactSpec?): boolean
 	return type(impact.pierceCount) == "number" and impact.pierceCount > 0
 end
 
+local function shotPiercesAll(impact: Projectile.ImpactSpec?): boolean
+	return impact ~= nil and impact.pierceAll == true
+end
+
+local function claimWaveHit(waveGroupId: string?, monsterId: string): boolean
+	if type(waveGroupId) ~= "string" or waveGroupId == "" then
+		return true
+	end
+	local now = os.clock()
+	local bucket = waveHits[waveGroupId]
+	if not bucket or now >= bucket.expires then
+		bucket = { hits = {}, expires = now + 8 }
+		waveHits[waveGroupId] = bucket
+	end
+	if bucket.hits[monsterId] then
+		return false
+	end
+	bucket.hits[monsterId] = true
+	return true
+end
+
 local function nextPierceTarget(
 	plotModel: Model,
 	row: number,
@@ -1106,6 +1188,58 @@ local function nextPierceTarget(
 		return pierceId
 	end
 	return nil
+end
+
+local function pierceContinue(
+	plotModel: Model,
+	row: number,
+	searchFrom: number,
+	excludeId: string?,
+	impact: Projectile.ImpactSpec?
+): string?
+	local nextId = nextPierceTarget(plotModel, row, searchFrom, excludeId)
+	if nextId then
+		return nextId
+	end
+	if shotPiercesAll(impact) then
+		return "LaneEnd"
+	end
+	return nil
+end
+
+local function onWaveSweep(
+	plotModel: Model,
+	row: number,
+	fromColumn: number,
+	toColumn: number,
+	damage: number,
+	ownerUserId: number,
+	impact: Projectile.ImpactSpec?
+)
+	if damage <= 0 then
+		return
+	end
+	local lo = math.min(fromColumn, toColumn)
+	local hi = math.max(fromColumn, toColumn)
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		local column = monsterColumnOf(monsterId)
+		if type(column) ~= "number" then
+			continue
+		end
+		if column <= lo or column > hi then
+			continue
+		end
+		local waveId = if impact then impact.waveGroupId else nil
+		if not claimWaveHit(waveId, monsterId) then
+			continue
+		end
+		CombatService.damageMonster(monsterId, damage, if impact then impact.sourceBrainrotId else nil)
+		fireCombatVisual(ownerUserId, {
+			kind = "Hit",
+			instanceId = monsterId,
+			soundKey = if impact then impact.soundKey else nil,
+		})
+	end
 end
 
 local function onProjectileImpact(
@@ -1170,7 +1304,7 @@ local function onProjectileImpact(
 			and type(row) == "number"
 			and type(column) == "number"
 		then
-			return false, nextPierceTarget(plotModel, row, column, nil)
+			return false, pierceContinue(plotModel, row, column, nil, impact)
 		end
 		if targetKind == "Grave" then
 			fireCombatVisual(ownerUserId, {
@@ -1195,33 +1329,43 @@ local function onProjectileImpact(
 		return killed, nil
 	end
 
-	local killed = CombatService.damageMonster(instanceId, damage, if impact then impact.sourceBrainrotId else nil)
-	if impact and type(impact.sourceInstanceId) == "string" then
-		CombatService.noteLandedAttack(impact.sourceInstanceId)
+	local alreadyHit = false
+	if impact and type(impact.waveGroupId) == "string" then
+		alreadyHit = not claimWaveHit(impact.waveGroupId, instanceId)
 	end
-	local payload: { [string]: any } = {
-		kind = "Hit",
-		instanceId = instanceId,
-		soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
-	}
-	fireCombatVisual(ownerUserId, payload)
 
-	if not killed and impact and impact.statusKind then
-		local duration = impact.statusDuration
-		local isKnockback = impact.statusKind == "Knockback"
-		if isKnockback or (type(duration) == "number" and duration > 0) then
-			CombatService.applyStatusToMonster(
-				instanceId,
-				impact.statusKind,
-				if type(duration) == "number" then duration else 0,
-				impact.statusMagnitude,
-				impact.statusVisual
-			)
+	local killed = false
+	if not alreadyHit then
+		killed = CombatService.damageMonster(instanceId, damage, if impact then impact.sourceBrainrotId else nil)
+		if impact and type(impact.sourceInstanceId) == "string" then
+			CombatService.noteLandedAttack(impact.sourceInstanceId)
+		end
+		local payload: { [string]: any } = {
+			kind = "Hit",
+			instanceId = instanceId,
+			soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
+		}
+		fireCombatVisual(ownerUserId, payload)
+
+		if not killed and impact and impact.statusKind then
+			local duration = impact.statusDuration
+			local isKnockback = impact.statusKind == "Knockback"
+			if isKnockback or (type(duration) == "number" and duration > 0) then
+				CombatService.applyStatusToMonster(
+					instanceId,
+					impact.statusKind,
+					if type(duration) == "number" then duration else 0,
+					impact.statusMagnitude,
+					impact.statusVisual
+				)
+			end
 		end
 	end
 
 	local pierceCount = if impact then impact.pierceCount else nil
-	if type(pierceCount) == "number" and pierceCount > 0 and plotModel and type(row) == "number" then
+	local shouldPierce = shotPiercesAll(impact)
+		or (type(pierceCount) == "number" and pierceCount > 0)
+	if shouldPierce and plotModel and type(row) == "number" then
 		local searchFrom = column
 		if not killed and monsterHandlers then
 			local liveColumn = monsterHandlers.getMonsterColumn(instanceId)
@@ -1230,7 +1374,7 @@ local function onProjectileImpact(
 			end
 		end
 		if type(searchFrom) == "number" then
-			return killed, nextPierceTarget(plotModel, row, searchFrom, instanceId)
+			return killed, pierceContinue(plotModel, row, searchFrom, instanceId, impact)
 		end
 	end
 	return killed, nil
@@ -1258,7 +1402,8 @@ function CombatService.start()
 					return monsterHandlers.getMonsterColumn(instanceId)
 				end,
 				monsterHandlers.setProjectilePosition,
-				onProjectileImpact
+				onProjectileImpact,
+				onWaveSweep
 			)
 		end
 	end)

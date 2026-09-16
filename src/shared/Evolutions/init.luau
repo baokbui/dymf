@@ -5,8 +5,8 @@
 	level gate. Epic `stats` compose onto the shared registry definition. Legendary extras
 	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names). GOD ultimates: `Jackpot`,
-	`PrimalRetaliation`, `SahurWrath`, plus Lirili `freezeEntireLawn` overlay.
-	Tidal Cataclysm and Shadow Requiem are not wired yet.
+	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, plus Lirili `freezeEntireLawn` overlay.
+	Tidal Cataclysm is not wired yet.
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
@@ -202,7 +202,14 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Execute on hit if target is below 7.5% HP (2% for bosses).",
 			abilityParams = { executeHealthPercent = 7.5, executeBossPercent = 2 },
 		},
-		{ rarity = "God", level = 50, name = "Shadow Requiem", description = "Vanish to the east end of the lane, run back, stab every monster for 2000% dmg. 45s cooldown." },
+		{
+			rarity = "God",
+			level = 50,
+			name = "Shadow Requiem",
+			description = "At the end of the dual-slash, two black sword waves fly down the row, grow, fade off the plot, and pierce every monster and grave for 2000% dmg. 45s cooldown.",
+			ability = "ShadowRequiem",
+			abilityParams = { cooldown = 45, damagePercent = 2000 },
+		},
 	},
 	LiriliLarila = {
 		{

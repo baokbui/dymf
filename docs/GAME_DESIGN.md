@@ -370,5 +370,5 @@ animations, weather, graves (M10–17)
 **Phase 4 ✅** — Progression Store (M18): Brainrot stall + HUD Upgrades, brains spends,
 Speed upgrades
 
-**Phase 5 🔜** — Brainrot leveling + evolutions (M19: ladder live; Cappuccino /
-Tralalero GOD remaining), retention (M20), house boss collection (M21)
+**Phase 5 🔜** — Brainrot leveling + evolutions (M19: ladder live; Tralalero
+GOD remaining), retention (M20), house boss collection (M21)

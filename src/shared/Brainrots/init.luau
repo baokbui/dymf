@@ -149,6 +149,9 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		animated = true,
 		attackAnimationId = "rbxassetid://99069565346809",
 		attackHitDelay = 0.5,
+		abilityAnimationIds = {
+			ShadowRequiem = "rbxassetid://75899149923839",
+		},
 	},
 
 	ChimpanziniBananini = {

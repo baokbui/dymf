@@ -22,9 +22,9 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 registry id on the plot owner's lawn. Broadcasts `DamageMeterUpdated` (coalesced).
 Resets when the day goes **Active**. Every Brainrot hit that goes through
 `CombatService.damageMonster` with a `sourceBrainrotId` ranks: knives (incl.
-Piercing Brew / fifth strike / execute leftover HP), melee bat, Ranged Rampage
-bats, Tralalero bubbles / barrage, Bombardino column bombs. Status DoT without a
-source species is not ranked. Client HUD is display-only.
+Piercing Brew / fifth strike / execute leftover HP), Shadow Requiem waves, melee
+bat, Ranged Rampage bats, Tralalero bubbles / barrage, Bombardino column bombs.
+Status DoT without a source species is not ranked. Client HUD is display-only.
 
 ---
 
@@ -57,10 +57,11 @@ are **not** valid targets — Brainrots wait until the monster enters the plot.
 **Fog graves** sit on a lawn column and **block** Brainrot damage, projectiles,
 and status aimed at monsters **strictly east** of the stone (`fromColumn <
 grave < targetColumn`). Combat does not apply HP or status to those monsters
-(shurikens stop at the stone). **Piercing Brew** (`pierceCount`) is the
-exception: the shot never treats the grave as a target (no HP, no shake),
-keeps flying through the stone, damages the first monster, and still hits
-the one behind. Graves have no combat HP except **Patapim**
+(shurikens stop at the stone). **Piercing Brew** (`pierceCount`) and Cappuccino
+GOD **Shadow Requiem** (`pierceAll` sword waves) are the exceptions: those
+shots never treat the grave as a target (no HP, no shake), keep flying through
+the stone, and still damage monsters behind it. Piercing Brew also hits the
+monster behind the first. Graves have no combat HP except **Patapim**
 smashes (`hitFromPatapim`), which also **shake** the mesh. Other hits do not
 shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
@@ -95,6 +96,7 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
+| Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — two **vertical** black **backwards-C** (`")"`) crescents from Cappuccino’s swords (bulge leads +X; tips sit west). Width is large from spawn; **height** grows with travel; fade off the east plot edge. Always fly to `LaneEnd`; damage is applied as each wave’s column passes a monster (`pierceAll`). Graves never block. Both waves share a `waveGroupId` so each monster takes **2000%** once. | `ThrowKnifeHit` at release + `Hit` sparks per monster. **45s** CD. Does not fire (or start CD) if the row has no combat target. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) if the row has **4+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each hit monster**) on impact |
 | Ballerina GOD (`Jackpot`) | Extra ability; no projectile | **10s**: coin interval **3×** faster (max with Golden Waltz); each spit **33%** extra coin (independent of Encore). `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst. **30s** CD |
@@ -106,9 +108,11 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
 `BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, `WRATH_*` slam timing,
-bubble size) +
-`VfxConfig` bubble colors (cyan trap / gold barrage). Client trail/glow branches on the `ProjectileKind`
-attribute (`VfxUtil`); normal bubbles and thrown bats skip trails. Bubble Barrage adds a gold light-streak.
+`SWORD_WAVE_*` grow / fade / speed, bubble size) +
+`VfxConfig` bubble colors (cyan trap / gold barrage) and sword-wave black ink.
+Client trail/glow branches on the `ProjectileKind`
+attribute (`VfxUtil`); normal bubbles, thrown bats, and `SwordWave` skip extra
+client trails (waves already carry a black trail). Bubble Barrage adds a gold light-streak.
 
 ### Studio: Cappuccino shuriken model
 
@@ -150,11 +154,12 @@ occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
-**GOD ultimates** ✅ (except Cappuccino / Tralalero) — extras path or params overlay:
+**GOD ultimates** ✅ (except Tralalero) — extras path or params overlay:
 - **Sahur's Wrath** — `SahurWrath` extra; gates + easternmost ready Tung.
 - **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
+- **Shadow Requiem** — `ShadowRequiem` extra. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches two `SwordWave` projectiles from Cappuccino’s swords. Waves grow, fade off the plot, pierce every on-plot monster in the row and every grave, **2000%** (once per monster). **45s** CD.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.

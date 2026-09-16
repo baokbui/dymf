@@ -15,6 +15,8 @@ export type AbilityCallbacks = {
 	pulseAttack: (speed: number?) -> (),
 	-- Loaded attack AnimationTrack.Length when animated; nil otherwise.
 	getAttackLength: (() -> number?)?,
+	playAbility: (abilityId: string) -> (),
+	getAbilityLength: (abilityId: string) -> number?,
 	playSound: (soundKey: string) -> (),
 }
 
@@ -84,6 +86,7 @@ local handlers: { [string]: AbilityHandler } = {
 	SahurWrath = require(script.SahurWrath),
 	Jackpot = require(script.Jackpot),
 	PrimalRetaliation = require(script.PrimalRetaliation),
+	ShadowRequiem = require(script.ShadowRequiem),
 }
 
 function Abilities.defaultBuffs(): EvolutionBuffs

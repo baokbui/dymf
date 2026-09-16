@@ -68,6 +68,8 @@ export type BrainrotDefinition = {
 	hitAnimationId: string?, -- rbxassetid://… flinch when damaged; nil → HitAnimation child only
 	-- Seconds after action anim starts before melee damage / coin spit.
 	attackHitDelay: number?,
+	-- One-shot clips keyed by extra ability id (e.g. ShadowRequiem).
+	abilityAnimationIds: { [string]: string }?,
 }
 
 -- Data-driven definition for a Monster type (zombie, vampire, boss, ...).

@@ -215,6 +215,27 @@ local VfxConfig = {
 	MIRROR_ORBIT_LIFT = 1.3,
 	MIRROR_ORBIT_PERIOD = 1.5,
 
+	-- Shadow Requiem: vertical backwards-C ")" (bulge leads +X). Black slash;
+	-- Y height grows with travel.
+	SWORD_WAVE_COLOR = Color3.fromRGB(8, 8, 10),
+	SWORD_WAVE_COLOR_EDGE = Color3.fromRGB(22, 22, 26),
+	SWORD_WAVE_WIDTH = TILE * 0.1, -- Z thickness
+	SWORD_WAVE_STROKE = 1.35, -- XY ribbon thickness (volume on the leading edge)
+	SWORD_WAVE_WAKE_OFFSET = 2.4, -- studs west of the leading crescent
+	SWORD_WAVE_WAKE_STROKE = 2.1,
+	SWORD_WAVE_START_HEIGHT = TILE * 0.32, -- Y span at spawn
+	SWORD_WAVE_END_HEIGHT = TILE * 1.85, -- Y span at full travel
+	SWORD_WAVE_BOW = TILE * 0.48, -- how far the tips sit west of the bulge
+	SWORD_WAVE_SEGMENTS = 18,
+	SWORD_WAVE_GLOW_BRIGHTNESS = 3.2,
+	SWORD_WAVE_GLOW_RANGE = 16,
+	SWORD_WAVE_FLAME_RATE = 40,
+	SWORD_WAVE_FLAME_SPEED = NumberRange.new(22, 42),
+	SWORD_WAVE_FLAME_LIFETIME = NumberRange.new(0.28, 0.52),
+	SWORD_WAVE_FLAME_SPREAD = Vector2.new(24, 42),
+	SWORD_WAVE_TRAIL_LIFETIME = 0.48,
+	SWORD_WAVE_TRAIL_WIDTH = 1.25,
+
 	-- Jackpot (Ballerina GOD) gold burst at the plant.
 	JACKPOT_COLOR = Color3.fromRGB(255, 205, 40),
 	JACKPOT_BURST_COUNT = 22,
