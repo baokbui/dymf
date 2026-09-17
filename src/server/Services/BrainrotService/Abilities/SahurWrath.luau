@@ -310,6 +310,12 @@ function SahurWrath.tryAct(ctx, callbacks)
 	local damage = math.max(1, math.floor(ctx.definition.damage * percent / 100))
 
 	setRowBusy(ctx.plotModel, ctx.position.row, true)
+	local slam = ctx.definition.attackHitDelay
+	if type(slam) ~= "number" or slam <= 0 then
+		slam = CombatConfig.WRATH_SLAM_DURATION
+	end
+	callbacks.lockExclusive(CombatConfig.WRATH_EXPAND_DURATION + slam + CombatConfig.WRATH_LINGER)
+	callbacks.lockCore(CombatConfig.WRATH_EXPAND_DURATION + slam + CombatConfig.WRATH_LINGER)
 	task.spawn(function()
 		local ok, err = pcall(runSlam, ctx, callbacks, damage)
 		setRowBusy(ctx.plotModel, ctx.position.row, false)

@@ -1,8 +1,8 @@
 --!strict
 --[[
 	Settings
-	Mute / volume / Brainrot SFX toggles, statistics, reset progress.
-	Cartoon thick-outline look via UITheme.
+	Mute / volume / Brainrot SFX / high-quality VFX toggles, statistics,
+	reset progress. Cartoon thick-outline look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
+local VfxLoad = require(Shared.Utilities.VfxLoad)
 
 local AudioController = require(script.Parent.Parent.AudioController)
 
@@ -191,7 +192,37 @@ function Settings.new(parent: Frame): SettingsPanel
 		applyAudio()
 	end)
 
-	local statsSection = section("Statistics", 2)
+	local graphicsSection = section("Graphics", 2)
+	local qualityButton = makeButton(graphicsSection, "High Quality VFX: On", UITheme.BUTTON_BG)
+	qualityButton.LayoutOrder = 1
+	qualityButton.TextSize = 13
+	local qualityHint = Instance.new("TextLabel")
+	qualityHint.BackgroundTransparency = 1
+	qualityHint.Size = UDim2.new(1, 0, 0, 32)
+	qualityHint.LayoutOrder = 2
+	qualityHint.TextSize = 13
+	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
+	qualityHint.TextYAlignment = Enum.TextYAlignment.Top
+	qualityHint.TextWrapped = true
+	qualityHint.Text = "On keeps full combat effects. Off uses simpler VFX for higher framerate."
+	qualityHint.Parent = graphicsSection
+	UITheme.applyOutlinedTitle(qualityHint, UITheme.TITLE)
+	qualityHint.TextSize = 13
+
+	local highQualityVfx = VfxLoad.isHighQuality()
+	local function applyGraphics()
+		VfxLoad.setHighQuality(highQualityVfx)
+		qualityButton.Text = if highQualityVfx then "High Quality VFX: On" else "High Quality VFX: Off"
+		qualityButton.TextSize = 13
+	end
+	qualityButton.Activated:Connect(function()
+		AudioController.play("UiClick")
+		highQualityVfx = not highQualityVfx
+		applyGraphics()
+	end)
+	applyGraphics()
+
+	local statsSection = section("Statistics", 3)
 	local statsLabel = Instance.new("TextLabel")
 	statsLabel.BackgroundTransparency = 1
 	statsLabel.Size = UDim2.new(1, 0, 0, 130)
@@ -205,7 +236,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	UITheme.applyOutlinedTitle(statsLabel, UITheme.TITLE)
 	statsLabel.TextSize = 16
 
-	local dangerSection = section("Danger Zone", 3)
+	local dangerSection = section("Danger Zone", 4)
 	local dangerHint = Instance.new("TextLabel")
 	dangerHint.BackgroundTransparency = 1
 	dangerHint.Size = UDim2.new(1, 0, 0, 36)

@@ -7,6 +7,7 @@
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local RegenPulse = {}
+RegenPulse.exclusive = false
 
 function RegenPulse.tryAct(ctx, _callbacks)
 	local params = ctx.extraParams

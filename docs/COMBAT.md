@@ -62,7 +62,7 @@ grave < targetColumn`). Combat does not apply HP or status to those monsters
 GOD **Shadow Requiem** (`pierceAll` sword waves) are the exceptions: those
 shots never treat the grave as a target (no HP, no shake), keep flying through
 the stone, and still damage monsters behind it. Piercing Brew also hits the
-monster behind the first. Graves have no combat HP except **Patapim**
+monster behind the first at the knife’s normal damage. Graves have no combat HP except **Patapim**
 smashes (`hitFromPatapim`), which also **shake** the mesh. Other hits do not
 shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
@@ -96,8 +96,8 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
-| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
-| Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — two **vertical** **backwards-C** (`")"`) crescents from Cappuccino’s swords (bulge leads +X; tips sit west). **White fill**, **black outline**, **black** flame/trail streaks. Width is large from spawn; **height** grows with travel. Stop on the **last lawn tile**, then explode into a **tall white light pillar** that **expands to one tile wide**; **black flames corkscrew** around it as it rises, then the pillar fades over **~3s**. Always fly to `LaneEnd`; damage is applied as each wave’s column passes a monster (`pierceAll`). Graves never block. Both waves share a `waveGroupId` so each monster is hit once. Crescent damage is **2000%** at **1 tile**, plus **100%** per extra tile (`travelPercent`). From column 1 the last tile is **8 tiles** away → **2700%**, plus a flat **1000%** pillar (`finisherPercent`, not ramped; once per `waveGroupId`; footprint overlap on the last tile). | `ThrowKnifeHit` at release + `Hit` sparks per monster. **45s** CD. Does not fire (or start CD) if the row has no combat target. |
+| Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback). **Every** knife stands upright in the lane plane: **sharp rim** leads toward monsters, face looks across the row, cartwheel about **+Z**. | Damage + `ThrowKnifeHit`. **Piercing Brew** (**6s** window, **10s** CD): gold aura/trail/sparks, flies through graves (no grave HP), and hits the first monster and the one behind at the knife’s normal damage. Does not throw (or start its interval) while an exclusive extra such as **Shadow Requiem** is playing. |
+| Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — one **vertical** **backwards-C** (`")"`) crescent from the midpoint of Cappuccino’s swords (same Z span as the old dual slash). **White fill**, **black outline**, **black** flame/trail streaks. **Height** grows with travel. Stop on the **last lawn tile**, then explode into a **tall white light pillar**. Damage as the column passes each monster (`pierceAll`). Graves never block. Crescent **2000%** at **1 tile**, plus **100%** per extra tile, plus a flat **1000%** last-tile pillar. | `ThrowKnifeHit` at release + `Hit` sparks per monster. **45s** CD. Does not fire (or start CD) if the row has no combat target. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) if the row has **4+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each hit monster**) on impact |
 | Ballerina GOD (`Jackpot`) | Extra ability; no projectile | **10s**: coin interval **3×** faster (max with Golden Waltz); each spit **33%** extra coin (independent of Encore). `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst. **30s** CD |
@@ -114,12 +114,12 @@ Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 `travelPercent`, `finisherPercent`).
 
-**Heavy VFX budget** ✅ — `VfxLoad` caps simultaneous GOD-ult FX so a 4-player
-server full of Cappuccinos / Tungs does not replicate hundreds of particle
-emitters at once. New effects stay **Full** while live load is below
-`HEAVY_VFX_FULL_UNTIL` (10), **Reduced** until `HEAVY_VFX_REDUCED_UNTIL` (22),
-then **Minimal** (geometry + light, no flame particles / corkscrew Heartbeat).
-Costs: sword wave 2, pillar 5, bat slam 2, jackpot 1. Combat math is unchanged.
+**Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** toggle (**High Quality
+VFX** On / Off), not an automatic cap. On = **Full**. Off = **Minimal**
+(geometry + light; no flame particles / corkscrew trails locally). Server still
+authors Full sword-wave / pillar models so combat looks the same for every
+plot; Performance mode strips particles and trails on the local client. Magnet
+rings also skip when Off. Combat math is unchanged.
 
 Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles, thrown bats, and `SwordWave` skip extra
@@ -131,8 +131,11 @@ client trails (waves already carry a black trail). Bubble Barrage adds a gold li
 2. Move your shuriken **Model** from Workspace into that folder.
 3. Rename it to **`Shuriken`** (or set `CombatConfig.SHURIKEN_MODEL_ID`).
 4. Set a `PrimaryPart` if possible; strip Tools/Scripts.
-5. If it flies edge-on, tweak `SHURIKEN_MODEL_ORIENTATION_DEGREES` (often
-   `Vector3.new(90, 0, 0)` or similar).
+5. **Every** shuriken (not only Piercing Brew) is stood **upright** in the
+   lane plane so the **sharp rim** leads toward monsters (face looks across
+   the row) and cartwheels about +Z. Tune
+   `SHURIKEN_MODEL_ORIENTATION_DEGREES` only if a specific asset still faces
+   wrong after that bake.
 
 ### Studio: Tung Tung thrown bat
 
@@ -170,7 +173,7 @@ Uses the default tip-over death like other monsters.
 - **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
-- **Shadow Requiem** — `ShadowRequiem` extra. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches two `SwordWave` projectiles from Cappuccino’s swords (**white fill**, **black outline** and streaks). Waves grow, stop on the last lawn tile, and explode into a **white light pillar**. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (6 tiles = **2500%**; from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
+- **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
@@ -239,7 +242,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Bat slam impact | `CombatVisual` kind `BatSlam` — Sahur’s Wrath landing: yellow ring **at each monster hit** (`VfxUtil.playBatSlam`) |
 | Jackpot burst | `CombatVisual` kind `Jackpot` — gold particle burst at Ballerina (`VfxUtil.playJackpotBurst`); SFX via `BrainrotAction` `PurchaseKaching` |
 | Primal Retaliation | Server `BrainrotFeedback.setRetaliation` — small `Assets.Projectiles.Mirror` orbits Chimpanzini for the 15s window (Banana Bastion bubble stays) |
-| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, sparks, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
+| Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, a gold spark cloud around the star, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
 | Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
 

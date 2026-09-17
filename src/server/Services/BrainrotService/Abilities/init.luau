@@ -18,6 +18,10 @@ export type AbilityCallbacks = {
 	playAbility: (abilityId: string) -> (),
 	getAbilityLength: (abilityId: string) -> number?,
 	playSound: (soundKey: string) -> (),
+	-- Pause other exclusive extras until os.clock() + duration.
+	lockExclusive: (duration: number) -> (),
+	-- Pause the core attack until os.clock() + duration.
+	lockCore: (duration: number) -> (),
 }
 
 export type EvolutionBuffs = {
@@ -26,7 +30,7 @@ export type EvolutionBuffs = {
 	attackHasteUntil: number,
 	attackHasteFactor: number,
 	rangedUntil: number,
-	pierceNext: boolean,
+	pierceUntil: number,
 	shieldHp: number,
 	attackCount: number,
 	furyTriggered: boolean,
@@ -41,6 +45,8 @@ export type EvolutionBuffs = {
 	jackpotExtraChance: number,
 	reflectUntil: number,
 	reflectPercent: number,
+	exclusiveUntil: number,
+	coreLockUntil: number,
 }
 
 export type AbilityContext = {
@@ -61,6 +67,8 @@ export type AbilityHandler = {
 	onPlaced: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
 	onRemoved: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
 	tryAct: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> boolean)?,
+	-- false = may run with other abilities (Ballerina coin boosts, silent passives).
+	exclusive: boolean?,
 }
 
 -- Explicit requires so handlers resolve reliably (matches definition.ability ids).
@@ -96,7 +104,7 @@ function Abilities.defaultBuffs(): EvolutionBuffs
 		attackHasteUntil = 0,
 		attackHasteFactor = 1,
 		rangedUntil = 0,
-		pierceNext = false,
+		pierceUntil = 0,
 		shieldHp = 0,
 		attackCount = 0,
 		furyTriggered = false,
@@ -111,6 +119,8 @@ function Abilities.defaultBuffs(): EvolutionBuffs
 		jackpotExtraChance = 0,
 		reflectUntil = 0,
 		reflectPercent = 0,
+		exclusiveUntil = 0,
+		coreLockUntil = 0,
 	}
 end
 

@@ -7,6 +7,7 @@
 local BrainrotFeedback = require(script.Parent.Parent.BrainrotFeedback)
 
 local ShieldPulse = {}
+ShieldPulse.exclusive = false
 
 function ShieldPulse.tryAct(ctx, _callbacks)
 	local params = ctx.extraParams

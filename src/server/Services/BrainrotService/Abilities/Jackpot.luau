@@ -14,6 +14,7 @@ local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local Jackpot = {}
+Jackpot.exclusive = false
 
 function Jackpot.tryAct(ctx, callbacks)
 	local params = ctx.extraParams

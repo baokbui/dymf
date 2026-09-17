@@ -1,48 +1,53 @@
 --!strict
 --[[
 	VfxLoad
-	Server- and client-local budget for heavy combat VFX (GOD ultimates).
-	Full quality until the live load hits HEAVY_VFX_FULL_UNTIL; then new
-	effects spawn Reduced, then Minimal. Damage is never throttled.
-	Each VM has its own counter (server replication vs local CombatVisual).
+	Heavy combat VFX quality for GOD ultimates (sword waves, pillars, slams,
+	jackpot). Quality is a client Settings toggle — never auto-throttled by
+	how many effects are alive. Damage is never throttled.
+
+	Server always authors Full visuals so every plot sees the same geometry.
+	Performance-mode clients strip particles/trails locally.
 ]]
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
+local RunService = game:GetService("RunService")
 
 local VfxLoad = {}
 
 export type Quality = "Full" | "Reduced" | "Minimal"
 
-local load = 0
+local highQuality = true
+local listeners: { (boolean) -> () } = {}
 
-function VfxLoad.qualityAt(loadNow: number): Quality
-	if loadNow < VfxConfig.HEAVY_VFX_FULL_UNTIL then
-		return "Full"
+function VfxLoad.isHighQuality(): boolean
+	if not RunService:IsClient() then
+		return true
 	end
-	if loadNow < VfxConfig.HEAVY_VFX_REDUCED_UNTIL then
-		return "Reduced"
-	end
-	return "Minimal"
+	return highQuality
 end
 
-function VfxLoad.current(): number
-	return load
+function VfxLoad.quality(): Quality
+	return if VfxLoad.isHighQuality() then "Full" else "Minimal"
 end
 
-function VfxLoad.acquire(cost: number): (Quality, () -> ())
-	local amount = math.max(1, math.floor(cost))
-	local quality = VfxLoad.qualityAt(load)
-	load += amount
-	local released = false
-	return quality, function()
-		if released then
-			return
-		end
-		released = true
-		load = math.max(0, load - amount)
+function VfxLoad.setHighQuality(enabled: boolean)
+	if not RunService:IsClient() then
+		return
 	end
+	if highQuality == enabled then
+		return
+	end
+	highQuality = enabled
+	for _, listener in listeners do
+		listener(enabled)
+	end
+end
+
+function VfxLoad.onHighQualityChanged(listener: (boolean) -> ())
+	table.insert(listeners, listener)
+end
+
+function VfxLoad.acquire(_cost: number): (Quality, () -> ())
+	return VfxLoad.quality(), function() end
 end
 
 return VfxLoad

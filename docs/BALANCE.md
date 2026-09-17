@@ -185,7 +185,7 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
 | GOD ult percents | `Shared.Evolutions` `abilityParams` (`damagePercent`, `travelPercent`, `finisherPercent`, …) |
 | Sword-wave / pillar look | `VfxConfig.SWORD_WAVE_*`; timing in `CombatConfig.SWORD_WAVE_*` |
-| Heavy ult VFX budget | `VfxConfig.HEAVY_VFX_FULL_UNTIL` / `REDUCED_UNTIL` and per-effect costs |
+| Heavy ult VFX | Settings **High Quality VFX**; `VfxConfig.HEAVY_VFX_*` costs for `VfxLoad.acquire` |
 | Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |
 | Monster campaign HP scale | `MonsterConfig.STAT_SCALE_*` (non-boss HP only; intro day from `MONSTER_INTRO_SCHEDULE`) |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |

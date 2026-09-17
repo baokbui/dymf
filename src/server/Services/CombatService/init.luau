@@ -331,7 +331,7 @@ export type ProjectileLaunchOptions = {
 	sourceBrainrotId: string?,
 	sourceInstanceId: string?,
 	sourceMonsterId: string?,
-	-- Extra monsters east of the first hit (100% damage each).
+	-- Extra monsters east of the first hit.
 	pierceCount: number?,
 	-- Fly through graves; the stone takes no HP. Implied when pierceCount > 0.
 	pierceGraves: boolean?,
@@ -370,7 +370,7 @@ function CombatService.launchProjectile(
 	if not worldY then
 		return false
 	end
-	-- Shurikens spin flat and fly a little higher than the legacy bolt.
+	-- Shurikens cartwheel vertically and fly a little higher than the legacy bolt.
 	if options and options.kind == "Shuriken" then
 		worldY = worldY
 			- CombatConfig.PROJECTILE_HEIGHT_OFFSET
@@ -567,9 +567,8 @@ end
 
 -- Shadow Requiem sword wave: always flies to the last lawn tile. Damage is
 -- applied as the wave's column passes each monster (graves never block),
--- ramped per tile past the first. Origin stays at the sword's world Z/Y so
--- two waves can leave Cappuccino's two blades. On arrival both waves share
--- one last-tile finale (white pillar + flat bonus).
+-- ramped per tile past the first. Origin stays at the blades' midpoint.
+-- On arrival the wave detonates a last-tile finale (white pillar + flat bonus).
 function CombatService.launchSwordWave(
 	plotModel: Model,
 	position: Types.GridPosition,

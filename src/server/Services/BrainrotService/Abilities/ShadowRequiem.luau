@@ -1,15 +1,12 @@
 --!strict
 --[[
 	ShadowRequiem (Cappuccino GOD)
-	Plays the dual-slash clip, then at the end of that animation two
-	sword waves leave Cappuccino's blades (white fill, black outline and
-	streaks). They start small, grow with distance, stop on the last lawn
-	tile, and explode into a white light pillar that expands to one tile
-	wide, with black flames corkscrewing around it as it rises, then fades
-	over ~3s. Pierce every monster and grave.
-	Both waves share one hit group so each monster is hit once.
-	Crescent damage is 2000% at 1 tile, plus 100% per extra tile of travel
-	(8 tiles away = 2700%). The last-tile pillar bonus stays a flat extra 1000%.
+	Plays the dual-slash clip, then at the end of that animation one
+	sword wave leaves Cappuccino (white fill, black outline and streaks).
+	It starts small, grows with distance, stops on the last lawn tile, and
+	explodes into a white light pillar. Pierce every monster and grave.
+	Crescent damage is 2000% at 1 tile, plus 100% per extra tile of travel.
+	The last-tile pillar bonus stays a flat extra 1000%.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -62,17 +59,12 @@ local function collectSwords(model: Model): { BasePart }
 	return swords
 end
 
-local function waveOrigins(model: Model): (Vector3, Vector3)
+local function waveOrigin(model: Model): Vector3
 	local _, center = ModelUtil.getVisualSizeAndCenter(model)
-	local fallbackA = center + Vector3.new(
+	local fallback = center + Vector3.new(
 		CombatConfig.SWORD_WAVE_FALLBACK_EAST,
 		CombatConfig.SWORD_WAVE_FALLBACK_UP,
-		CombatConfig.SWORD_WAVE_FALLBACK_Z
-	)
-	local fallbackB = center + Vector3.new(
-		CombatConfig.SWORD_WAVE_FALLBACK_EAST,
-		CombatConfig.SWORD_WAVE_FALLBACK_UP,
-		-CombatConfig.SWORD_WAVE_FALLBACK_Z
+		0
 	)
 
 	local swords = collectSwords(model)
@@ -80,14 +72,14 @@ local function waveOrigins(model: Model): (Vector3, Vector3)
 		table.sort(swords, function(a, b)
 			return a.Position.Z < b.Position.Z
 		end)
-		return swords[1].Position, swords[#swords].Position
+		local a = swords[1].Position
+		local b = swords[#swords].Position
+		return (a + b) * 0.5
 	end
 	if #swords == 1 then
-		local p = swords[1].Position
-		local mirrored = Vector3.new(p.X, p.Y, center.Z - (p.Z - center.Z))
-		return p, mirrored
+		return swords[1].Position
 	end
-	return fallbackA, fallbackB
+	return fallback
 end
 
 local function clipWait(callbacks): number
@@ -111,7 +103,7 @@ local function fireWaves(ctx, damage: number, laneEndBonus: number, travelBonus:
 		return
 	end
 
-	local originA, originB = waveOrigins(ctx.model)
+	local origin = waveOrigin(ctx.model)
 	local waveGroupId = string.format("%s_%.3f", ctx.instanceId, os.clock())
 	local options = {
 		sourceBrainrotId = ctx.definition.id,
@@ -125,8 +117,7 @@ local function fireWaves(ctx, damage: number, laneEndBonus: number, travelBonus:
 		waveTravelBonus = travelBonus,
 	}
 
-	CombatService.launchSwordWave(ctx.plotModel, ctx.position, damage, ctx.ownerUserId, originA, options)
-	CombatService.launchSwordWave(ctx.plotModel, ctx.position, damage, ctx.ownerUserId, originB, options)
+	CombatService.launchSwordWave(ctx.plotModel, ctx.position, damage, ctx.ownerUserId, origin, options)
 end
 
 function ShadowRequiem.tryAct(ctx, callbacks)
@@ -160,6 +151,13 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 	local travelBonus = math.max(0, math.floor(ctx.definition.damage * travelPercent / 100))
 
 	callbacks.playAbility(ABILITY_ID)
+	local length = callbacks.getAbilityLength(ABILITY_ID)
+	local lockFor = CombatConfig.SWORD_WAVE_ANIM_FALLBACK
+	if type(length) == "number" and length > 0 then
+		lockFor = length
+	end
+	callbacks.lockExclusive(lockFor)
+	callbacks.lockCore(lockFor)
 	task.spawn(function()
 		local ok, err = pcall(function()
 			task.wait(clipWait(callbacks))

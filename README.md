@@ -33,7 +33,7 @@ desert) on later stretches.
 | ----- | ---- |
 | [Roblox Studio](https://create.roblox.com) | Place, playtests, Toolbox assets |
 | [Luau](https://luau.org) (`--!strict`) | All game code |
-| [Rojo](https://github.com/rojo-rbx/rojo) 7.6.1 | Filesystem ↔ Studio sync (`aftman.toml`) |
+| [Rojo](https://github.com/rojo-rbx/rojo) 7.7.0 | Filesystem ↔ Studio sync (`aftman.toml`) |
 | [Cursor](https://cursor.com) | Editor + agent workflow |
 
 Gameplay values live in `Shared.Config` and data registries (`Brainrots`,

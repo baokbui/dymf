@@ -5,6 +5,7 @@
 ]]
 
 local RangedRampage = {}
+RangedRampage.exclusive = false
 
 function RangedRampage.tryAct(ctx, _callbacks)
 	local params = ctx.extraParams

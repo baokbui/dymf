@@ -16,11 +16,8 @@ function ThrowKnife.tryAct(ctx, callbacks)
 
 	callbacks.pulseAttack()
 
-	local pierceCount = 0
-	if ctx.buffs.pierceNext then
-		pierceCount = 1
-		ctx.buffs.pierceNext = false
-	end
+	local piercing = os.clock() < ctx.buffs.pierceUntil
+	local pierceCount = if piercing then 1 else 0
 
 	ctx.buffs.attackCount += 1
 	local damage = ctx.definition.damage

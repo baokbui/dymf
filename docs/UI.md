@@ -117,7 +117,8 @@ hardcode a second palette in new UI.
   counts down to 0, then hides when the day goes Active.
 - **Settings** ✅ M13 — bottom-left bare icon + name opens the
   modal. Mute,
-  music/SFX volume, Brainrot SFX toggle, statistics, **Danger Zone → Reset
+  music/SFX volume, Brainrot SFX toggle, **High Quality VFX** (On = full combat
+  effects, Off = simpler VFX for framerate), statistics, **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time

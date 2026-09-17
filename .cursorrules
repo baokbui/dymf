@@ -358,8 +358,8 @@ Avoid unnecessary Instance creation.
 Reuse objects when practical.
 
 Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
-Jackpot burst) go through `Shared.Utilities.VfxLoad`. Full quality until
-`VfxConfig.HEAVY_VFX_FULL_UNTIL`, then Reduced, then Minimal. Damage,
+Jackpot burst) go through `Shared.Utilities.VfxLoad`. Quality is a client
+Settings toggle (High Quality VFX On = Full, Off = Minimal). Damage,
 targeting, and animations are never throttled.
 
 ---

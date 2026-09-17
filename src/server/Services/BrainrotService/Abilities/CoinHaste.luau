@@ -5,6 +5,7 @@
 ]]
 
 local CoinHaste = {}
+CoinHaste.exclusive = false
 
 function CoinHaste.tryAct(ctx, _callbacks)
 	local params = ctx.extraParams

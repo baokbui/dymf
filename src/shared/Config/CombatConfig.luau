@@ -20,14 +20,15 @@ local CombatConfig = {
 	-- procedural star is the fallback if the template is missing.
 	SHURIKEN_MODEL_ID = "Shuriken",
 	SHURIKEN_TARGET_EXTENT = 2.2, -- max horizontal size after clone ScaleTo
-	-- Local Euler applied each frame before +Y spin (tune if the mesh faces wrong).
+	-- Extra local Euler after the baked upright stand, before +Z cartwheel.
+	-- Stand is measured per mesh (thinnest axis across the row so the sharp
+	-- rim leads down the lane).
 	SHURIKEN_MODEL_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
 	SHURIKEN_BLADE_SIZE = Vector3.new(2.2, 0.14, 2.2), -- procedural fallback span × thickness
 	SHURIKEN_HUB_SIZE = Vector3.new(0.55, 0.18, 0.55),
 	SHURIKEN_BLADE_COLOR = Color3.fromRGB(210, 215, 225),
 	SHURIKEN_HUB_COLOR = Color3.fromRGB(60, 60, 68),
-	SHURIKEN_SPIN_RADIANS_PER_SECOND = math.pi * 14, -- 7 turns/sec
-	-- Flat disc needs less clearance than the old cartwheeling sword.
+	SHURIKEN_SPIN_RADIANS_PER_SECOND = math.pi * 14, -- 7 turns/sec vertical cartwheel
 	SHURIKEN_PROJECTILE_HEIGHT_OFFSET = 3.2,
 
 	-- Tralalero bubble projectile (cyan soap bubble; no trail streaks).
@@ -75,11 +76,11 @@ local CombatConfig = {
 	-- Ult only fires if the row has this many combat targets, or a boss.
 	WRATH_MIN_ENEMIES = 4,
 
-	-- Shadow Requiem (Cappuccino GOD): two vertical ")" crescents.
-	-- White fill, black outline + black streaks. Width stays large; height
-	-- grows slowly with travel. Stop on the last lawn tile, then explode
-	-- into a white light pillar (black flame streaks) that expands to one
-	-- tile, then fades out over ~3s.
+	-- Shadow Requiem (Cappuccino GOD): one vertical ")" crescent, sized like
+	-- the old dual slash. White fill, black outline + black streaks. Width
+	-- stays large; height grows with travel. Stop on the last lawn tile,
+	-- then explode into a white light pillar that expands to one tile and
+	-- fades over ~3s.
 	-- Pierce every monster and grave for 2000%, plus 100% more of current
 	-- knife damage per tile past the first. Last-tile pillar finisher is a
 	-- flat extra 1000% (not ramped).
@@ -94,9 +95,11 @@ local CombatConfig = {
 	SWORD_WAVE_PIERCE_COUNT = 64,
 	SWORD_WAVE_ANIM_FALLBACK = 1.85, -- seconds if the clip Length is not ready
 	SWORD_WAVE_RELEASE_LEAD = 0.04, -- fire this many seconds before clip end
-	SWORD_WAVE_FALLBACK_Z = 1.15, -- studs off visual center when swords are missing
 	SWORD_WAVE_FALLBACK_EAST = 1.1,
 	SWORD_WAVE_FALLBACK_UP = 0.85,
+
+	-- Piercing Brew (Cappuccino Legendary): window of piercing knives.
+	PIERCE_BREW_DURATION = 6,
 
 	-- Jackpot (Ballerina GOD): 3× coin interval for duration; extra spit chance.
 	JACKPOT_DURATION = 10,

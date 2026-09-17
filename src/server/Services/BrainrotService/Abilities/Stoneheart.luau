@@ -8,6 +8,7 @@
 local BrainrotFeedback = require(script.Parent.Parent.BrainrotFeedback)
 
 local Stoneheart = {}
+Stoneheart.exclusive = false
 
 function Stoneheart.tryAct(ctx, _callbacks)
 	if ctx.buffs.stoneTriggered then

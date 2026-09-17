@@ -12,6 +12,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local BrainrotFeedback = require(script.Parent.Parent.BrainrotFeedback)
 
 local PrimalRetaliation = {}
+PrimalRetaliation.exclusive = false
 
 function PrimalRetaliation.tryAct(ctx, callbacks)
 	local params = ctx.extraParams

@@ -421,7 +421,7 @@ Persist player progress.
 - Level display ✅ (Day panel). Level Select in Settings was **not** shipped —
   deferred to a dedicated UI (`SelectLevel` remote remains)
 - Health ✅ 5 hearts; −1 per house breach; defeat at 0
-- Settings ✅ mute, music/SFX volume, Brainrot SFX toggle (bottom-left HUD)
+- Settings ✅ mute, music/SFX volume, Brainrot SFX toggle, High Quality VFX (bottom-left HUD)
 - Reset Progress ✅ double-confirm in Settings → `ResetProgress`
 - Statistics ✅ levels cleared, placements, kills, brains earned, time played
 

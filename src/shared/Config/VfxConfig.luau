@@ -196,6 +196,13 @@ local VfxConfig = {
 	PIERCE_SHURIKEN_TRAIL_LIGHT_EMISSION = 0.22,
 	PIERCE_SHURIKEN_GLOW_BRIGHTNESS = 4.2,
 	PIERCE_SHURIKEN_GLOW_RANGE = 14,
+	PIERCE_SHURIKEN_SPARK_RATE = 72,
+	PIERCE_SHURIKEN_SPARK_SPEED = NumberRange.new(2.5, 8),
+	PIERCE_SHURIKEN_SPARK_LIFETIME = NumberRange.new(0.22, 0.48),
+	PIERCE_SHURIKEN_SPARK_SIZE = 0.7,
+	PIERCE_SHURIKEN_EMBER_RATE = 38,
+	PIERCE_SHURIKEN_EMBER_SPEED = NumberRange.new(6, 14),
+	PIERCE_SHURIKEN_EMBER_LIFETIME = NumberRange.new(0.16, 0.32),
 
 	-- Banana Bastion shield bubble (server-replicated on the plant).
 	SHIELD_BUBBLE_COLOR = Color3.fromRGB(70, 175, 255),
@@ -222,12 +229,14 @@ local VfxConfig = {
 	SWORD_WAVE_COLOR = Color3.fromRGB(8, 8, 10), -- outline + streaks
 	SWORD_WAVE_COLOR_INNER = Color3.fromRGB(255, 255, 255), -- crescent fill
 	SWORD_WAVE_COLOR_EDGE = Color3.fromRGB(8, 8, 10),
-	SWORD_WAVE_WIDTH = TILE * 0.1, -- Z thickness
+	SWORD_WAVE_WIDTH = TILE * 0.2, -- Z thickness (one wave, same span as the old pair)
 	SWORD_WAVE_STROKE = 1.35, -- XY ribbon thickness (volume on the leading edge)
 	SWORD_WAVE_WAKE_STROKE = 2.1, -- black outline thickness around the white fill
 	SWORD_WAVE_START_HEIGHT = TILE * 0.32, -- Y span at spawn
 	SWORD_WAVE_END_HEIGHT = TILE * 1.85, -- Y span at full travel
 	SWORD_WAVE_BOW = TILE * 0.48, -- how far the tips sit west of the bulge
+	SWORD_WAVE_TIP_START = 0.52, -- |t| where the blade begins thinning
+	SWORD_WAVE_TIP_MIN = 0.05, -- stroke/width scale at the crescent points
 	SWORD_WAVE_SEGMENTS = 18,
 	SWORD_WAVE_GLOW_BRIGHTNESS = 3.2,
 	SWORD_WAVE_GLOW_RANGE = 16,
@@ -255,16 +264,14 @@ local VfxConfig = {
 	SWORD_WAVE_PILLAR_FLAME_RATE = 34,
 	SWORD_WAVE_PILLAR_FLAME_BURST = 10, -- extra particles per emitter on explode
 
-	-- Heavy GOD-ult VFX budget (4-player server). Load is the sum of
-	-- HEAVY_VFX_* costs of effects still alive. New effects stay Full until
-	-- FULL_UNTIL, then Reduced, then Minimal. Combat math is unchanged.
-	HEAVY_VFX_FULL_UNTIL = 10,
-	HEAVY_VFX_REDUCED_UNTIL = 22,
+	-- Heavy GOD-ult VFX. Quality is a Settings toggle (VfxLoad), not an
+	-- automatic budget. Costs are still passed into acquire() for the API.
+	-- Combat math is unchanged.
 	HEAVY_VFX_SWORD_WAVE = 2,
 	HEAVY_VFX_PILLAR = 5,
 	HEAVY_VFX_BAT_SLAM = 2,
 	HEAVY_VFX_JACKPOT = 1,
-	HEAVY_VFX_BAT_SLAM_RELEASE = 1.8, -- seconds the slam still occupies the budget
+	HEAVY_VFX_BAT_SLAM_RELEASE = 1.8,
 	HEAVY_VFX_JACKPOT_RELEASE = 0.7,
 
 	-- Jackpot (Ballerina GOD) gold burst at the plant.

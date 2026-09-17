@@ -129,7 +129,7 @@ on the sheet (TBD).
 | Epic | Wallet Ballet | Coin interval **12s** (from 18s). |
 | Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
-| Immortal | Golden Discount | When producing a coin, the next Brainrot plant (**any** unit) costs **50%**. One pending charge; producing again **refreshes** it (does not stack to 25%). Consumed on a successful plant. Plot `PlantDiscountFactor` so the shop shows the discounted cost. |
+| Immortal | Golden Discount | Next plant of **any** Brainrot costs **50%**. One charge; producing a coin refreshes it. |
 | GOD | Jackpot | Produce coins **3×** faster for **10s**; each coin during the ultimate **33%** extra coin (independent of Encore). **30s** CD. |
 
 ### Chimpanzini Bananini
@@ -139,18 +139,18 @@ on the sheet (TBD).
 | Epic | Goliath | **4000** HP (from 2000). |
 | Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
-| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. The plant reads as **granite** (aura Highlight wash + `Rock` material; flames pause). Cannot use active or ultimate while stone. |
-| GOD | Primal Retaliation | **15s**: reflect **25%** of chew/attack damage to that monster. A small **Mirror** from `Assets.Projectiles` orbits Chimpanzini. **30s** CD. |
+| Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Can't act while stone. |
+| GOD | Primal Retaliation | **15s**: reflect **25%** of chew damage to that monster. **30s** CD. |
 
 ### Tung Tung Sahur
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Tung Tung Training | **1500** HP / **100** dmg (from 1200 / 55). |
-| Legendary | Ranged Rampage | Throws a spinning bat from the **left hand** down the **whole row** for **10s**. Hits on the lawn knock monsters back **half a tile** (off-plot / forest: damage only). **20s** CD. |
+| Legendary | Ranged Rampage | Throw a spinning bat down the **whole row** for **10s**. Lawn hits knock back **half a tile**. **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
-| Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**; stun-immune while shielded. A small **Shield** from `Assets.Projectiles` orbits Tung (not a bubble). |
-| GOD | Sahur's Wrath | A **Tung Bat** grows **vertically above him** (wide club, as tall as the remaining lane), then his **melee swing** arcs it onto the ground covering **every tile from him to the east plot edge** (yellow ring **at each monster hit**). Fires only if the row has **4+** enemies **or a boss**. If several GOD Tungs in the row are ready, the **easternmost** (closest to incoming monsters) slams first; others stay ready. **1000%** of his current bat damage. **30s** CD. |
+| Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**. Stun-immune while shielded. |
+| GOD | Sahur's Wrath | Giant bat slams the **whole row** to the plot edge for **1000%** damage. Needs **4+** enemies **or a boss**. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -167,10 +167,10 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Espresso Rush | **+50%** attack speed. |
-| Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind (flies through graves). **10s** CD. |
+| Legendary | Piercing Brew | For **6s**, knives pierce the first monster and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | At the end of the dual-slash, two sword waves (**white fill**, **black outline** and streaks) fly down the row, grow with distance, stop on the last tile, and explode into a **white light pillar** that expands to **one tile**, with **black flames** corkscrewing around it as it rises, then fades over **~3s**. Crescent **2000%** at 1 tile, **+100%** per extra tile (6 tiles = **2500%**; from column 1 the last tile is **8 away** → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD. |
+| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. **45s** CD. |
 
 ### Lirili Larila
 
@@ -179,7 +179,7 @@ on the sheet (TBD).
 | Epic | Cryocycle | Plant recharge **15s** (from 20s). |
 | Legendary | Winter's Grasp | Freeze a **whole lane**. |
 | Mythic | Permafrost | Freeze duration **7s**. |
-| Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row. Picks the neighbor with more monsters; ties go to the **lower** row. |
+| Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row (more monsters; ties go **lower**). |
 | GOD | Glacial Dominion | Freeze the **whole lawn** (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
 
 ---
@@ -202,7 +202,12 @@ mutations stay in M19 or slip to a later pass.
   campaign `currentLevel` / `highestLevel`. **Epic** stats compose onto
   placements via `Evolutions.applyStats` + `BrainrotService.applyEvolutionStats`.
   **Legendary** extras tick via `Evolutions.claimedExtras` +
-  `BrainrotBehavior.tickExtras` (ability ids, never unit names). **Mythic**
+  `BrainrotBehavior.tickExtras` (ability ids, never unit names). Exclusive
+  extras (Piercing Brew, Shadow Requiem, Sahur's Wrath, Bubble Barrage) never
+  overlap each other or the core attack; GOD wins the slot if two are ready.
+  Ballerina **Golden Waltz** / **Jackpot** set `exclusive = false` so they can
+  stack with coin spit (and each other). Silent passives (shields, regen,
+  stone, Tenfold, fury, Primal Retaliation, Ranged Rampage) also overlay. **Mythic**
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
   `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,

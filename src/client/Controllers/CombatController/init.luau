@@ -207,6 +207,25 @@ local function watchProjectile(instance: Instance)
 	if part then
 		VfxUtil.decorateProjectile(part)
 	end
+	if instance.Name == "SwordWaveProjectile" or instance.Name == "SwordWavePillar" then
+		VfxUtil.applyHeavyQuality(instance, VfxLoad.isHighQuality())
+	end
+end
+
+local function refreshHeavyProjectiles()
+	local plotModel = PlotUtil.getLocalPlotModel()
+	if not plotModel then
+		return
+	end
+	local folder = plotModel:FindFirstChild("Projectiles")
+	if not folder then
+		return
+	end
+	for _, child in folder:GetChildren() do
+		if child.Name == "SwordWaveProjectile" or child.Name == "SwordWavePillar" then
+			VfxUtil.applyHeavyQuality(child, VfxLoad.isHighQuality())
+		end
+	end
 end
 
 -- Non-blocking: never WaitForChild here — that delayed Death SFX by seconds when
@@ -374,6 +393,9 @@ end
 
 function CombatController.start()
 	Remotes.getEvent("CombatVisual").OnClientEvent:Connect(onCombatVisual)
+	VfxLoad.onHighQualityChanged(function()
+		refreshHeavyProjectiles()
+	end)
 
 	task.spawn(function()
 		for _ = 1, 40 do

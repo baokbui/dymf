@@ -192,6 +192,18 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 				brainrotId = placement.brainrotId,
 			})
 		end,
+		lockExclusive = function(duration: number)
+			local untilTime = os.clock() + math.max(0, duration)
+			if untilTime > placement.buffs.exclusiveUntil then
+				placement.buffs.exclusiveUntil = untilTime
+			end
+		end,
+		lockCore = function(duration: number)
+			local untilTime = os.clock() + math.max(0, duration)
+			if untilTime > placement.buffs.coreLockUntil then
+				placement.buffs.coreLockUntil = untilTime
+			end
+		end,
 	}
 end
 
@@ -320,19 +332,30 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		ProgressService.getClaimedEvolutions(player, placement.brainrotId)
 	)
 	local stoned = os.clock() < placement.buffs.stoneUntil
+	local overlayExtras: { Evolutions.ExtraAbility } = {}
+	local exclusiveExtras: { Evolutions.ExtraAbility } = {}
 	for _, extra in extras do
+		local handler = Abilities.get(extra.ability)
+		if handler and handler.exclusive == false then
+			table.insert(overlayExtras, extra)
+		else
+			table.insert(exclusiveExtras, extra)
+		end
+	end
+
+	local function runExtra(extra: Evolutions.ExtraAbility): boolean
 		local remaining = (placement.extraCooldowns[extra.ability] or 0) - dt
 		if remaining > 0 then
 			placement.extraCooldowns[extra.ability] = remaining
-			continue
+			return false
 		end
 		if stoned then
-			continue
+			return false
 		end
 		local handler = Abilities.get(extra.ability)
 		if not handler or not handler.tryAct then
 			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
-			continue
+			return false
 		end
 		local ctx = buildContext(placement)
 		ctx.extraParams = extra.params
@@ -340,10 +363,36 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		if not ok then
 			log:warn("extra ability error", extra.ability, acted)
 			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
-			continue
+			return false
 		end
 		if acted then
 			placement.extraCooldowns[extra.ability] = extra.params.cooldown or 10
+			return true
+		end
+		return false
+	end
+
+	for _, extra in overlayExtras do
+		runExtra(extra)
+	end
+
+	local exclusiveBusy = os.clock() < placement.buffs.exclusiveUntil
+	local exclusiveStarted = false
+	-- God rows are last in claimedExtras; run them first so ultimates win the slot.
+	for index = #exclusiveExtras, 1, -1 do
+		if exclusiveBusy or exclusiveStarted then
+			local extra = exclusiveExtras[index]
+			local remaining = (placement.extraCooldowns[extra.ability] or 0) - dt
+			if remaining > 0 then
+				placement.extraCooldowns[extra.ability] = remaining
+			end
+			continue
+		end
+		if runExtra(exclusiveExtras[index]) then
+			exclusiveStarted = true
+			if placement.buffs.exclusiveUntil <= os.clock() then
+				placement.buffs.exclusiveUntil = os.clock() + 0.05
+			end
 		end
 	end
 end
@@ -437,6 +486,10 @@ function BrainrotBehavior.tick(dt: number)
 		end
 
 		tickExtras(placement, dt)
+
+		if now < placement.buffs.coreLockUntil then
+			continue
+		end
 
 		if now < placement.buffs.stoneUntil then
 			continue

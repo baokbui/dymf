@@ -5,6 +5,7 @@
 ]]
 
 local DesperateFury = {}
+DesperateFury.exclusive = false
 
 function DesperateFury.tryAct(ctx, _callbacks)
 	if ctx.buffs.furyTriggered then

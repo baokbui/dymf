@@ -9,6 +9,7 @@
 local BrainrotFeedback = require(script.Parent.Parent.BrainrotFeedback)
 
 local TenfoldGuard = {}
+TenfoldGuard.exclusive = false
 
 function TenfoldGuard.tryAct(ctx, _callbacks)
 	local params = ctx.extraParams

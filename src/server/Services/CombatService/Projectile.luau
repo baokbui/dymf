@@ -202,6 +202,23 @@ local function pickPrimary(model: Model): BasePart?
 	return best
 end
 
+-- Stand the star so its thinnest axis is +Z (across the row). The disc sits
+-- in XY: upright, sharp rim leading +X toward monsters. Spin about +Z.
+local function bakeShurikenStand(model: Model, hub: BasePart)
+	model:PivotTo(CFrame.new())
+	local size = select(1, ModelUtil.getVisualSizeAndCenter(model))
+	local stand = CFrame.Angles(math.rad(90), 0, 0)
+	if size.Z <= size.X and size.Z <= size.Y then
+		stand = CFrame.new()
+	elseif size.X <= size.Y and size.X <= size.Z then
+		stand = CFrame.Angles(0, math.rad(90), 0)
+	end
+	local rx, ry, rz = stand:ToEulerAnglesXYZ()
+	hub:SetAttribute("ShurikenStandX", math.deg(rx))
+	hub:SetAttribute("ShurikenStandY", math.deg(ry))
+	hub:SetAttribute("ShurikenStandZ", math.deg(rz))
+end
+
 local function prepareAuthoredShuriken(model: Model): BasePart?
 	stripScripts(model)
 	local primary = pickPrimary(model)
@@ -245,6 +262,7 @@ local function prepareAuthoredShuriken(model: Model): BasePart?
 	model.Name = "ShurikenProjectile"
 	model:SetAttribute("ProjectileKind", "Shuriken")
 	primary:SetAttribute("ProjectileKind", "Shuriken")
+	bakeShurikenStand(model, primary)
 	return primary
 end
 
@@ -258,11 +276,15 @@ local function createProceduralShuriken(): (Model, BasePart)
 
 	local hub = Instance.new("Part")
 	hub.Name = "Hub"
-	hub.Shape = Enum.PartType.Cylinder
-	hub.Size = CombatConfig.SHURIKEN_HUB_SIZE
+	hub.Shape = Enum.PartType.Ball
+	hub.Size = Vector3.new(
+		CombatConfig.SHURIKEN_HUB_SIZE.Y,
+		CombatConfig.SHURIKEN_HUB_SIZE.Y,
+		CombatConfig.SHURIKEN_HUB_SIZE.Y
+	)
 	hub.Material = Enum.Material.Metal
 	hub.Color = CombatConfig.SHURIKEN_HUB_COLOR
-	hub.CFrame = CFrame.new() * CFrame.Angles(0, 0, math.rad(90))
+	hub.CFrame = CFrame.new()
 	hub.Parent = model
 	hardenRoot(hub)
 
@@ -287,6 +309,7 @@ local function createProceduralShuriken(): (Model, BasePart)
 	model.PrimaryPart = hub
 	model:SetAttribute("ProjectileKind", "Shuriken")
 	hub:SetAttribute("ProjectileKind", "Shuriken")
+	bakeShurikenStand(model, hub)
 	return model, hub
 end
 
@@ -424,49 +447,94 @@ local function batFlightCFrame(position: Vector3, spinRadians: number): CFrame
 	return CFrame.new(position) * CFrame.fromAxisAngle(Vector3.zAxis, spinRadians) * orient
 end
 
+local function goldSparkSequence(aura: Color3): ColorSequence
+	return ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 230)),
+		ColorSequenceKeypoint.new(0.4, aura),
+		ColorSequenceKeypoint.new(1, aura:Lerp(Color3.fromRGB(255, 120, 30), 0.3)),
+	})
+end
+
+local function addPierceSparkCloud(hub: BasePart, aura: Color3)
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Name = "PierceSparks"
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Color = goldSparkSequence(aura)
+	sparks.LightEmission = 0.85
+	sparks.Brightness = 4
+	sparks.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, VfxConfig.PIERCE_SHURIKEN_SPARK_SIZE),
+		NumberSequenceKeypoint.new(0.45, VfxConfig.PIERCE_SHURIKEN_SPARK_SIZE * 0.55),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	sparks.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.04),
+		NumberSequenceKeypoint.new(0.65, 0.25),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	sparks.Lifetime = VfxConfig.PIERCE_SHURIKEN_SPARK_LIFETIME
+	sparks.Speed = VfxConfig.PIERCE_SHURIKEN_SPARK_SPEED
+	sparks.SpreadAngle = Vector2.new(180, 180)
+	sparks.Rate = VfxConfig.PIERCE_SHURIKEN_SPARK_RATE
+	sparks.Rotation = NumberRange.new(0, 360)
+	sparks.RotSpeed = NumberRange.new(-180, 180)
+	sparks.Drag = 2.4
+	sparks.Acceleration = Vector3.new(0, 6, 0)
+	sparks.Shape = Enum.ParticleEmitterShape.Sphere
+	sparks.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	sparks.LockedToPart = false
+	sparks.ZOffset = 1.4
+	sparks.Parent = hub
+
+	local embers = Instance.new("ParticleEmitter")
+	embers.Name = "PierceEmbers"
+	embers.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	embers.Color = goldSparkSequence(aura)
+	embers.LightEmission = 1
+	embers.Brightness = 5.5
+	embers.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.28),
+		NumberSequenceKeypoint.new(0.35, 0.16),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	embers.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.02),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	embers.Lifetime = VfxConfig.PIERCE_SHURIKEN_EMBER_LIFETIME
+	embers.Speed = VfxConfig.PIERCE_SHURIKEN_EMBER_SPEED
+	embers.SpreadAngle = Vector2.new(180, 180)
+	embers.Rate = VfxConfig.PIERCE_SHURIKEN_EMBER_RATE
+	embers.Squash = NumberSequence.new(-1.4)
+	embers.Orientation = Enum.ParticleOrientation.VelocityParallel
+	embers.Drag = 3.2
+	embers.Acceleration = Vector3.new(-10, 2, 0)
+	embers.Shape = Enum.ParticleEmitterShape.Sphere
+	embers.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+	embers.LockedToPart = false
+	embers.ZOffset = 1.8
+	embers.Parent = hub
+
+	sparks:Emit(12)
+	embers:Emit(8)
+end
+
 local function applyPierceAura(model: Model, hub: BasePart)
 	model:SetAttribute("PiercingBrew", true)
 	hub:SetAttribute("PiercingBrew", true)
 
-	local gold = VfxConfig.PIERCE_SHURIKEN_AURA_COLOR
+	local auraGold = VfxConfig.PIERCE_SHURIKEN_AURA_COLOR
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "PierceAura"
 	highlight.Adornee = model
-	highlight.FillColor = gold
+	highlight.FillColor = auraGold
 	highlight.FillTransparency = 0.78
-	highlight.OutlineColor = gold:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
+	highlight.OutlineColor = auraGold:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
 	highlight.OutlineTransparency = 0.05
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model
 
-	local sparks = Instance.new("ParticleEmitter")
-	sparks.Name = "PierceSparks"
-	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	sparks.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 230)),
-		ColorSequenceKeypoint.new(0.45, gold),
-		ColorSequenceKeypoint.new(1, gold:Lerp(Color3.fromRGB(255, 120, 30), 0.25)),
-	})
-	sparks.LightEmission = 1
-	sparks.Brightness = 3.4
-	sparks.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.42),
-		NumberSequenceKeypoint.new(0.55, 0.22),
-		NumberSequenceKeypoint.new(1, 0),
-	})
-	sparks.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.08),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	sparks.Lifetime = NumberRange.new(0.18, 0.4)
-	sparks.Speed = NumberRange.new(1.5, 5)
-	sparks.SpreadAngle = Vector2.new(180, 180)
-	sparks.Rate = 36
-	sparks.Rotation = NumberRange.new(0, 360)
-	sparks.RotSpeed = NumberRange.new(-120, 120)
-	sparks.Drag = 1.2
-	sparks.ZOffset = 2
-	sparks.Parent = hub
+	addPierceSparkCloud(hub, auraGold)
 
 	-- Ribbon perpendicular to +X travel so the gold trail actually has area.
 	-- Authored shurikens often ship a silver Trail — replace it so only gold shows.
@@ -621,9 +689,27 @@ local function poseArcSegment(
 end
 
 -- Vertical backwards-C: bulge at the hub (east / +X), tips west and up/down.
+-- Extra west pull near |t|=1 so the last chord aims into a needle.
 local function swordWavePoint(hub: Vector3, height: number, bow: number, t: number): Vector3
-	local back = bow * (t * t)
+	local u = math.abs(t)
+	local back = bow * (u * u * (1 + 0.7 * u * u)) / 1.7
 	return hub + Vector3.new(-back, t * height * 0.5, 0)
+end
+
+-- Cluster samples at ±1 so tip chords stay short.
+local function swordWaveSampleT(i: number, segments: number): number
+	return -math.cos(math.pi * i / segments)
+end
+
+local function swordWaveTaper(t: number): number
+	local u = math.abs(t)
+	local start = VfxConfig.SWORD_WAVE_TIP_START
+	if u <= start then
+		return 1
+	end
+	local v = (u - start) / math.max(1 - start, 0.01)
+	local minScale = VfxConfig.SWORD_WAVE_TIP_MIN
+	return minScale + (1 - minScale) * (1 - v) * (1 - v)
 end
 
 local function addFlameStreak(parent: BasePart)
@@ -803,10 +889,14 @@ local function applySwordWaveLook(projectile: ActiveProjectile, dt: number)
 		if not (seg and seg:IsA("BasePart")) then
 			continue
 		end
-		local t0 = -1 + (2 * (i - 1)) / segments
-		local t1 = -1 + (2 * i) / segments
+		local t0 = swordWaveSampleT(i - 1, segments)
+		local t1 = swordWaveSampleT(i, segments)
 		local a = swordWavePoint(hubPos, height, bow, t0)
 		local b = swordWavePoint(hubPos, height, bow, t1)
+		local taper = swordWaveTaper(math.max(math.abs(t0), math.abs(t1)))
+		local tipStroke = stroke * taper
+		local tipWake = wakeStroke * taper
+		local tipWidth = width * (0.18 + 0.82 * taper)
 		-- Thicker black crescent first so it reads as the wave outline.
 		local wake = model:FindFirstChild(string.format("WaveWake%d", i))
 		if wake and wake:IsA("BasePart") then
@@ -814,31 +904,38 @@ local function applySwordWaveLook(projectile: ActiveProjectile, dt: number)
 				wake,
 				a,
 				b,
-				wakeStroke,
-				width * 1.2,
+				tipWake,
+				tipWidth * 1.2,
 				ink,
 				math.clamp(transparency * 0.55, 0, 1)
 			)
 		end
-		poseArcSegment(seg, a, b, stroke, width, inner, transparency)
+		poseArcSegment(seg, a, b, tipStroke, tipWidth, inner, transparency)
 
 		local flameAtt = seg:FindFirstChild("FlameAtt")
 		if flameAtt and flameAtt:IsA("Attachment") then
 			flameAtt.WorldCFrame = CFrame.lookAt(seg.Position, seg.Position + Vector3.new(-1, 0, 0))
 			local flame = flameAtt:FindFirstChild("SwordWaveFlame")
 			if flame and flame:IsA("ParticleEmitter") then
-				flame.Rate = VfxConfig.SWORD_WAVE_FLAME_RATE * (1 - fade)
-				flame.Enabled = fade < 0.95
+				local flameOn = fade < 0.95 and taper > 0.28
+				flame.Enabled = flameOn
+				flame.Rate = if flameOn
+					then VfxConfig.SWORD_WAVE_FLAME_RATE * (1 - fade) * taper
+					else 0
 			end
 		end
 		local trailB = seg:FindFirstChild("WakeTrailB")
 		if trailB and trailB:IsA("Attachment") then
-			trailB.Position = seg.CFrame:VectorToObjectSpace(Vector3.new(-4.6, 0, 0))
+			trailB.Position = seg.CFrame:VectorToObjectSpace(Vector3.new(-4.6 * taper, 0, 0))
 		end
 		local trail = seg:FindFirstChild("WakeTrail")
 		if trail and trail:IsA("Trail") then
 			trail.Color = blackSequence()
 			trail.Transparency = NumberSequence.new(math.clamp(0.12 + fade * 0.85, 0, 1), 1)
+			trail.WidthScale = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, VfxConfig.SWORD_WAVE_TRAIL_WIDTH * taper),
+				NumberSequenceKeypoint.new(1, 0.15 * taper),
+			})
 		end
 	end
 
@@ -1209,10 +1306,24 @@ local function destroyProjectile(projectile: ActiveProjectile)
 	end
 end
 
-local function shurikenFlightCFrame(position: Vector3, spinRadians: number): CFrame
+local function shurikenStandCFrame(part: BasePart): CFrame
+	local sx = part:GetAttribute("ShurikenStandX")
+	local sy = part:GetAttribute("ShurikenStandY")
+	local sz = part:GetAttribute("ShurikenStandZ")
+	return CFrame.Angles(
+		math.rad(if type(sx) == "number" then sx else 90),
+		math.rad(if type(sy) == "number" then sy else 0),
+		math.rad(if type(sz) == "number" then sz else 0)
+	)
+end
+
+local function shurikenFlightCFrame(part: BasePart, position: Vector3, spinRadians: number): CFrame
 	local o = CombatConfig.SHURIKEN_MODEL_ORIENTATION_DEGREES
 	local orient = CFrame.Angles(math.rad(o.X), math.rad(o.Y), math.rad(o.Z))
-	return CFrame.new(position) * CFrame.fromAxisAngle(Vector3.yAxis, spinRadians) * orient
+	return CFrame.new(position)
+		* CFrame.fromAxisAngle(Vector3.zAxis, spinRadians)
+		* shurikenStandCFrame(part)
+		* orient
 end
 
 local function applyHeldZ(part: BasePart, worldY: number, worldZ: number?): Vector3
@@ -1295,7 +1406,7 @@ function Projectile.launch(
 		elseif kind == "SwordWave" then
 			part.CFrame = swordWaveCFrame(if spec.originWorld then spec.originWorld else held)
 		else
-			part.CFrame = shurikenFlightCFrame(held, 0)
+			part.CFrame = shurikenFlightCFrame(part, held, 0)
 		end
 	elseif spec.worldZ ~= nil then
 		part.CFrame = CFrame.new(held)
@@ -1392,7 +1503,7 @@ function Projectile.tick(
 				applySwordWaveLook(projectile, dt)
 			else
 				projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
-				projectile.part.CFrame = shurikenFlightCFrame(held, projectile.spinRadians)
+				projectile.part.CFrame = shurikenFlightCFrame(projectile.part, held, projectile.spinRadians)
 			end
 		elseif travelZ ~= nil then
 			projectile.part.CFrame = CFrame.new(held)

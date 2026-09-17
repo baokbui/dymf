@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
+local VfxLoad = require(ReplicatedStorage.Shared.Utilities.VfxLoad)
 
 local VfxUtil = {}
 
@@ -1431,6 +1432,9 @@ end
 	frequency. A new call cancels the previous loop.
 ]]
 function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius: number?)
+	if not VfxLoad.isHighQuality() then
+		return
+	end
 	magnetWaveToken += 1
 	local token = magnetWaveToken
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -1455,5 +1459,52 @@ function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius
 		end
 	end)
 end
+
+--[[
+	Strip or restore heavy particles/trails on a replicated GOD-ult model.
+	Server always authors Full and may rewrite Enabled each frame; Performance
+	mode keeps a local guard so particles stay off on this client.
+]]
+local qualityGuards: { [Instance]: RBXScriptConnection } = {}
+
+local function clearQualityGuard(inst: Instance)
+	local conn = qualityGuards[inst]
+	if conn then
+		conn:Disconnect()
+		qualityGuards[inst] = nil
+	end
+end
+
+function VfxUtil.applyHeavyQuality(root: Instance, highQuality: boolean)
+	for _, descendant in root:GetDescendants() do
+		if not (descendant:IsA("ParticleEmitter") or descendant:IsA("Trail") or descendant:IsA("Beam")) then
+			continue
+		end
+		clearQualityGuard(descendant)
+		if highQuality then
+			descendant.Enabled = true
+			continue
+		end
+		descendant.Enabled = false
+		if descendant:IsA("ParticleEmitter") then
+			descendant:Clear()
+		end
+		qualityGuards[descendant] = descendant:GetPropertyChangedSignal("Enabled"):Connect(function()
+			if VfxLoad.isHighQuality() or not descendant.Enabled then
+				return
+			end
+			descendant.Enabled = false
+			if descendant:IsA("ParticleEmitter") then
+				descendant:Clear()
+			end
+		end)
+	end
+end
+
+VfxLoad.onHighQualityChanged(function(enabled)
+	if not enabled then
+		VfxUtil.stopMagnetWaves()
+	end
+end)
 
 return VfxUtil

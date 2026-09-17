@@ -28,6 +28,10 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 	end
 
 	callbacks.pulseAttack()
+	local hitDelay = ctx.definition.attackHitDelay
+	local lockFor = if type(hitDelay) == "number" and hitDelay > 0 then hitDelay else 0.35
+	callbacks.lockExclusive(lockFor)
+	callbacks.lockCore(lockFor)
 
 	local options = {
 		kind = "Bubble",
@@ -56,7 +60,6 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 		)
 	end
 
-	local hitDelay = ctx.definition.attackHitDelay
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
 		task.delay(hitDelay, function()

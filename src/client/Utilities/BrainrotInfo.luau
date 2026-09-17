@@ -28,11 +28,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	RangedRampage = {
 		label = "Ranged Rampage",
-		description = "Throws a spinning bat from the left hand down the whole row. Hits on the lawn knock monsters back half a tile.",
+		description = "Throws a spinning bat down the row. Lawn hits knock back half a tile.",
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",
-		description = "A giant bat grows above Tung, then his melee swing arcs it onto the row covering every tile to the plot edge. Needs 4+ enemies or a boss in the row; the Tung closest to the enemies slams first.",
+		description = "Giant bat slams the whole row to the plot edge. Needs 4+ enemies or a boss.",
 	},
 	BubbleTrap = {
 		label = "Bubble Trap",
@@ -56,11 +56,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	Stoneheart = {
 		label = "Stoneheart",
-		description = "Once per plant: below 10% HP, turns to stone and is invulnerable for 10s. Cannot use active or ultimate while stone.",
+		description = "Once per plant: below 10% HP, turn to stone and become invulnerable for 10s. Can't act while stone.",
 	},
 	TenfoldGuard = {
 		label = "Tenfold Guard",
-		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while that shield lasts. A small shield orbits Tung.",
+		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while shielded.",
 	},
 	ClearFogRow = {
 		label = "Clear Fog",
@@ -72,7 +72,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	PierceBrew = {
 		label = "Piercing Brew",
-		description = "Next shuriken flies through graves and hits the monster behind the first. The grave takes no damage.",
+		description = "For 6s, knives pierce the first monster and the one behind. Flies through graves. 10s cooldown.",
 	},
 	Jackpot = {
 		label = "Jackpot",
@@ -80,11 +80,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	PrimalRetaliation = {
 		label = "Primal Retaliation",
-		description = "For 15s, reflect 25% of chew damage back to that monster. A small mirror orbits Chimpanzini. 30s cooldown.",
+		description = "For 15s, reflect 25% of chew damage to that monster. 30s cooldown.",
 	},
 	ShadowRequiem = {
 		label = "Shadow Requiem",
-		description = "Two sword waves leave Cappuccino's blades (white fill, black outline and streaks), grow with distance, stop on the last tile, and explode into a white light pillar that expands to one tile, with black flames corkscrewing around it as it rises, then fades. Crescent damage is 2000% at 1 tile, plus 100% per extra tile (8 tiles away = 2700%). Last-tile pillar bonus is a flat extra 1000%. 45s cooldown.",
+		description = "A sword wave flies down the row, growing as it goes. 2000% plus 100% per tile, then a last-tile pillar for +1000%. 45s cooldown.",
 	},
 }
 
