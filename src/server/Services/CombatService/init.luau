@@ -335,10 +335,15 @@ export type ProjectileLaunchOptions = {
 	pierceCount: number?,
 	-- Fly through graves; the stone takes no HP. Implied when pierceCount > 0.
 	pierceGraves: boolean?,
-	-- Keep flying through every remaining monster, then off the east plot edge.
+	-- Keep flying through every remaining monster, then to the last lawn tile.
 	pierceAll: boolean?,
 	-- Shared id so two Shadow Requiem waves don't double-hit the same monster.
 	waveGroupId: string?,
+	-- Extra last-tile damage when a SwordWave detonates into the light pillar.
+	laneEndBonus: number?,
+	-- Plant tile for travel ramp; extra HP per tile past the first.
+	waveOriginColumn: number?,
+	waveTravelBonus: number?,
 	-- Bubble Barrage / Double Bubble extras after the seed splits.
 	extraBubbleChance: number?,
 }
@@ -560,9 +565,11 @@ function CombatService.launchSpreadingBubble(
 	return true
 end
 
--- Rainbow sword wave: always flies to the east plot edge. Damage is applied
--- as the wave's column passes each monster (graves never block). Origin stays
--- at the sword's world Z/Y so two waves can leave Cappuccino's two blades.
+-- Shadow Requiem sword wave: always flies to the last lawn tile. Damage is
+-- applied as the wave's column passes each monster (graves never block),
+-- ramped per tile past the first. Origin stays at the sword's world Z/Y so
+-- two waves can leave Cappuccino's two blades. On arrival both waves share
+-- one last-tile finale (white pillar + flat bonus).
 function CombatService.launchSwordWave(
 	plotModel: Model,
 	position: Types.GridPosition,
@@ -582,7 +589,7 @@ function CombatService.launchSwordWave(
 		startColumn = fromX
 	end
 
-	local eastEdge = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
+	local lastTile = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
 	local impact: Projectile.ImpactSpec = {
 		soundKey = if options then options.soundKey else nil,
 		sourceBrainrotId = if options then options.sourceBrainrotId else nil,
@@ -590,7 +597,13 @@ function CombatService.launchSwordWave(
 		pierceCount = CombatConfig.SWORD_WAVE_PIERCE_COUNT,
 		pierceGraves = true,
 		pierceAll = true,
+		waveFinale = true,
 		waveGroupId = if options then options.waveGroupId else nil,
+		laneEndBonus = if options then options.laneEndBonus else nil,
+		waveOriginColumn = if options and type(options.waveOriginColumn) == "number"
+			then options.waveOriginColumn
+			else position.column,
+		waveTravelBonus = if options then options.waveTravelBonus else nil,
 	}
 
 	Projectile.launch(
@@ -599,7 +612,7 @@ function CombatService.launchSwordWave(
 			row = position.row,
 			startColumn = startColumn,
 			targetInstanceId = "LaneEnd",
-			targetColumn = eastEdge,
+			targetColumn = lastTile,
 			damage = damage,
 			ownerUserId = ownerUserId,
 			kind = "SwordWave",
@@ -1177,6 +1190,51 @@ local function claimWaveHit(waveGroupId: string?, monsterId: string): boolean
 	return true
 end
 
+local WAVE_FINALE_KEY = "__finale"
+
+local function detonateSwordWaveFinale(
+	plotModel: Model,
+	row: number,
+	ownerUserId: number,
+	impact: Projectile.ImpactSpec?
+)
+	if not (impact and impact.waveFinale == true) then
+		return
+	end
+	if not claimWaveHit(impact.waveGroupId, WAVE_FINALE_KEY) then
+		return
+	end
+
+	local GridService = require(script.Parent.GridService)
+	local lastTile = GridConfig.COLUMNS
+	local worldPos = GridService.getWorldPositionAtColumn(plotModel, row, lastTile)
+	if worldPos then
+		Projectile.playSwordWaveFinale(plotModel, worldPos)
+	end
+
+	local bonus = impact.laneEndBonus
+	if type(bonus) ~= "number" or bonus <= 0 then
+		return
+	end
+
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		local monsterColumn = monsterColumnOf(monsterId)
+		if type(monsterColumn) ~= "number" then
+			continue
+		end
+		local span = monsterLaneSpanOf(monsterId)
+		if not GridUtil.columnOverlapsTileBand(monsterColumn, span, lastTile, lastTile) then
+			continue
+		end
+		CombatService.damageMonster(monsterId, bonus, impact.sourceBrainrotId)
+		fireCombatVisual(ownerUserId, {
+			kind = "Hit",
+			instanceId = monsterId,
+			soundKey = impact.soundKey,
+		})
+	end
+end
+
 local function nextPierceTarget(
 	plotModel: Model,
 	row: number,
@@ -1207,6 +1265,24 @@ local function pierceContinue(
 	return nil
 end
 
+local function swordWaveHitDamage(
+	baseDamage: number,
+	monsterColumn: number,
+	impact: Projectile.ImpactSpec?
+): number
+	if not impact then
+		return baseDamage
+	end
+	local origin = impact.waveOriginColumn
+	local bonus = impact.waveTravelBonus
+	if type(origin) ~= "number" or type(bonus) ~= "number" or bonus <= 0 then
+		return baseDamage
+	end
+	local tilesAway = GridUtil.tileAtColumn(monsterColumn) - origin
+	local extraTiles = math.max(0, tilesAway - 1)
+	return math.max(1, baseDamage + extraTiles * bonus)
+end
+
 local function onWaveSweep(
 	plotModel: Model,
 	row: number,
@@ -1233,7 +1309,8 @@ local function onWaveSweep(
 		if not claimWaveHit(waveId, monsterId) then
 			continue
 		end
-		CombatService.damageMonster(monsterId, damage, if impact then impact.sourceBrainrotId else nil)
+		local hitDamage = swordWaveHitDamage(damage, column, impact)
+		CombatService.damageMonster(monsterId, hitDamage, if impact then impact.sourceBrainrotId else nil)
 		fireCombatVisual(ownerUserId, {
 			kind = "Hit",
 			instanceId = monsterId,
@@ -1311,6 +1388,9 @@ local function onProjectileImpact(
 				kind = "Hit",
 				soundKey = if impact and impact.soundKey then impact.soundKey else "ThrowKnifeHit",
 			})
+		end
+		if targetKind == "LaneEnd" and plotModel and type(row) == "number" then
+			detonateSwordWaveFinale(plotModel, row, ownerUserId, impact)
 		end
 		return false, nil
 	end

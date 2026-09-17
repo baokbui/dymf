@@ -19,6 +19,7 @@ local VfxConfig = require(Shared.Config.VfxConfig)
 local Constants = require(Shared.Constants)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
+local VfxLoad = require(Shared.Utilities.VfxLoad)
 
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
@@ -180,7 +181,7 @@ local function playExplosion(row: number?, column: number?, entireRow: boolean?,
 	end
 end
 
-local function playBatSlam(data: { [string]: any })
+local function playBatSlam(data: { [string]: any }, quality: VfxLoad.Quality)
 	local raw = data.hits
 	if type(raw) ~= "table" then
 		return
@@ -190,7 +191,7 @@ local function playBatSlam(data: { [string]: any })
 		if type(packed) == "table" then
 			local item = packed :: { [string]: any }
 			if type(item.x) == "number" and type(item.y) == "number" and type(item.z) == "number" then
-				VfxUtil.playBatSlam(Vector3.new(item.x, item.y, item.z))
+				VfxUtil.playBatSlam(Vector3.new(item.x, item.y, item.z), quality)
 			end
 		end
 	end
@@ -335,11 +336,15 @@ local function onCombatVisual(payload: unknown)
 		playExplosion(data.row, data.column, data.entireRow == true, data.stagger)
 	elseif kind == "BatSlam" then
 		AudioController.play("Explosion")
-		playBatSlam(data)
+		local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_BAT_SLAM)
+		playBatSlam(data, quality)
+		task.delay(VfxConfig.HEAVY_VFX_BAT_SLAM_RELEASE, release)
 	elseif kind == "Jackpot" then
 		local origin = asVector3(data.x or data.X, data.y or data.Y, data.z or data.Z)
 		if origin then
-			VfxUtil.playJackpotBurst(origin)
+			local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_JACKPOT)
+			VfxUtil.playJackpotBurst(origin, quality)
+			task.delay(VfxConfig.HEAVY_VFX_JACKPOT_RELEASE, release)
 		end
 	elseif kind == "Terrify" then
 		AudioController.play("Terrify")

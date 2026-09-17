@@ -206,9 +206,9 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Shadow Requiem",
-			description = "At the end of the dual-slash, two black sword waves fly down the row, grow, fade off the plot, and pierce every monster and grave for 2000% dmg. 45s cooldown.",
+			description = "At the end of the dual-slash, two sword waves (white fill, black outline and streaks) fly down the row, grow, stop on the last tile, and explode into a white light pillar that expands to one tile, with black flames corkscrewing around it as it rises, then fades. Crescent damage is 2000% at 1 tile, plus 100% per extra tile (8 tiles away = 2700%). Last-tile pillar bonus is a flat extra 1000%. 45s cooldown.",
 			ability = "ShadowRequiem",
-			abilityParams = { cooldown = 45, damagePercent = 2000 },
+			abilityParams = { cooldown = 45, damagePercent = 2000, travelPercent = 100, finisherPercent = 1000 },
 		},
 	},
 	LiriliLarila = {

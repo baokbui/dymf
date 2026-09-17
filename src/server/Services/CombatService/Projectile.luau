@@ -7,6 +7,8 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
@@ -14,6 +16,7 @@ local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
+local VfxLoad = require(ReplicatedStorage.Shared.Utilities.VfxLoad)
 
 local LANE_END_ID = "LaneEnd"
 
@@ -36,10 +39,16 @@ export type ImpactSpec = {
 	pierceCount: number?,
 	-- Piercing Brew: fly through graves (no grave HP / shake) to the next monster.
 	pierceGraves: boolean?,
-	-- Keep flying through every remaining monster, then to the east plot edge.
+	-- Keep flying through every remaining monster, then to the last lawn tile.
 	pierceAll: boolean?,
 	-- Two Shadow Requiem waves share this so each monster is damaged once.
 	waveGroupId: string?,
+	-- Last-tile white pillar + optional extra damage (once per waveGroupId).
+	waveFinale: boolean?,
+	laneEndBonus: number?,
+	-- Shadow Requiem: plant tile + extra HP per lawn tile past the first.
+	waveOriginColumn: number?,
+	waveTravelBonus: number?,
 	-- Bubble Barrage: this projectile is the seed; on Split, spawn one child per row.
 	splitBarrage: {
 		rangeTiles: number,
@@ -90,10 +99,16 @@ export type ActiveProjectile = {
 	zEnd: number?,
 	zLerpColumns: number?,
 	waveHue: number?,
+	finaleAt: number?,
+	releaseVfx: (() -> ())?,
 }
 
 local function impactPiercesAll(impact: ImpactSpec?): boolean
 	return impact ~= nil and impact.pierceAll == true
+end
+
+local function swordWaveLaneEndColumn(): number
+	return GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
 end
 
 -- Returns killed, then an optional next instance id so piercing shots keep flying.
@@ -673,10 +688,10 @@ local function applySwordWaveAura(model: Model, hub: BasePart)
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "SwordWaveRim"
 	highlight.Adornee = model
-	highlight.FillColor = VfxConfig.SWORD_WAVE_COLOR
-	highlight.FillTransparency = 0.35
-	highlight.OutlineColor = VfxConfig.SWORD_WAVE_COLOR_EDGE
-	highlight.OutlineTransparency = 0.45
+	highlight.FillColor = VfxConfig.SWORD_WAVE_COLOR_INNER
+	highlight.FillTransparency = 1
+	highlight.OutlineColor = VfxConfig.SWORD_WAVE_COLOR
+	highlight.OutlineTransparency = 0.12
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Parent = model
 
@@ -684,11 +699,11 @@ local function applySwordWaveAura(model: Model, hub: BasePart)
 	glow.Name = "SwordWaveGlow"
 	glow.Brightness = 0
 	glow.Range = VfxConfig.SWORD_WAVE_GLOW_RANGE
-	glow.Color = VfxConfig.SWORD_WAVE_COLOR
+	glow.Color = VfxConfig.SWORD_WAVE_COLOR_INNER
 	glow.Parent = hub
 end
 
-local function createSwordWaveModel(): (Model, BasePart)
+local function createSwordWaveModel(quality: VfxLoad.Quality): (Model, BasePart)
 	local model = Instance.new("Model")
 	model.Name = "SwordWaveProjectile"
 
@@ -702,17 +717,25 @@ local function createSwordWaveModel(): (Model, BasePart)
 	hardenRoot(hub)
 	model.PrimaryPart = hub
 
+	local flameEvery = math.max(1, VfxConfig.SWORD_WAVE_FLAME_EVERY)
+	if quality == "Reduced" then
+		flameEvery = math.max(flameEvery * 2, 4)
+	end
+	local spawnFlames = quality ~= "Minimal"
+
 	local segments = VfxConfig.SWORD_WAVE_SEGMENTS
 	for i = 1, segments do
 		local seg = Instance.new("Part")
 		seg.Name = string.format("WaveSeg%d", i)
 		seg.Size = Vector3.new(VfxConfig.SWORD_WAVE_STROKE, VfxConfig.SWORD_WAVE_WIDTH, 1)
-		seg.Material = Enum.Material.SmoothPlastic
-		seg.Color = VfxConfig.SWORD_WAVE_COLOR
+		seg.Material = Enum.Material.Neon
+		seg.Color = VfxConfig.SWORD_WAVE_COLOR_INNER
 		seg.Transparency = CombatConfig.SWORD_WAVE_TRANSPARENCY
 		seg.Parent = model
 		hardenRoot(seg)
-		addFlameStreak(seg)
+		if spawnFlames and (i - 1) % flameEvery == 0 then
+			addFlameStreak(seg)
+		end
 
 		local wake = Instance.new("Part")
 		wake.Name = string.format("WaveWake%d", i)
@@ -722,6 +745,14 @@ local function createSwordWaveModel(): (Model, BasePart)
 		wake.Transparency = 0.45
 		wake.Parent = model
 		hardenRoot(wake)
+	end
+
+	if quality == "Reduced" then
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("ParticleEmitter") then
+				descendant.Rate = descendant.Rate * 0.5
+			end
+		end
 	end
 
 	applySwordWaveAura(model, hub)
@@ -751,16 +782,20 @@ local function applySwordWaveLook(projectile: ActiveProjectile, dt: number)
 	local width = VfxConfig.SWORD_WAVE_WIDTH
 	local stroke = VfxConfig.SWORD_WAVE_STROKE
 	local wakeStroke = VfxConfig.SWORD_WAVE_WAKE_STROKE
-	local wakeOffset = VfxConfig.SWORD_WAVE_WAKE_OFFSET
 
-	local eastEdge = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
-	local fadeFrom = GridConfig.COLUMNS - CombatConfig.SWORD_WAVE_FADE_COLUMNS
-	local fadeSpan = math.max(eastEdge - fadeFrom, 0.01)
-	local fade = math.clamp((projectile.column - fadeFrom) / fadeSpan, 0, 1)
+	local fade = 0
+	local fadeColumns = CombatConfig.SWORD_WAVE_FADE_COLUMNS
+	if fadeColumns > 0 then
+		local eastEdge = swordWaveLaneEndColumn()
+		local fadeFrom = GridConfig.COLUMNS - fadeColumns
+		local fadeSpan = math.max(eastEdge - fadeFrom, 0.01)
+		fade = math.clamp((projectile.column - fadeFrom) / fadeSpan, 0, 1)
+	end
 	local baseT = CombatConfig.SWORD_WAVE_TRANSPARENCY
 	local transparency = baseT + (1 - baseT) * fade
 
 	local ink = VfxConfig.SWORD_WAVE_COLOR
+	local inner = VfxConfig.SWORD_WAVE_COLOR_INNER
 	local hubPos = projectile.part.Position
 	local segments = VfxConfig.SWORD_WAVE_SEGMENTS
 	for i = 1, segments do
@@ -772,7 +807,20 @@ local function applySwordWaveLook(projectile: ActiveProjectile, dt: number)
 		local t1 = -1 + (2 * i) / segments
 		local a = swordWavePoint(hubPos, height, bow, t0)
 		local b = swordWavePoint(hubPos, height, bow, t1)
-		poseArcSegment(seg, a, b, stroke, width, ink, transparency)
+		-- Thicker black crescent first so it reads as the wave outline.
+		local wake = model:FindFirstChild(string.format("WaveWake%d", i))
+		if wake and wake:IsA("BasePart") then
+			poseArcSegment(
+				wake,
+				a,
+				b,
+				wakeStroke,
+				width * 1.2,
+				ink,
+				math.clamp(transparency * 0.55, 0, 1)
+			)
+		end
+		poseArcSegment(seg, a, b, stroke, width, inner, transparency)
 
 		local flameAtt = seg:FindFirstChild("FlameAtt")
 		if flameAtt and flameAtt:IsA("Attachment") then
@@ -789,37 +837,273 @@ local function applySwordWaveLook(projectile: ActiveProjectile, dt: number)
 		end
 		local trail = seg:FindFirstChild("WakeTrail")
 		if trail and trail:IsA("Trail") then
+			trail.Color = blackSequence()
 			trail.Transparency = NumberSequence.new(math.clamp(0.12 + fade * 0.85, 0, 1), 1)
-		end
-
-		local wake = model:FindFirstChild(string.format("WaveWake%d", i))
-		if wake and wake:IsA("BasePart") then
-			local wakeHub = hubPos + Vector3.new(-wakeOffset, 0, 0)
-			local wa = swordWavePoint(wakeHub, height * 0.9, bow * 0.82, t0)
-			local wb = swordWavePoint(wakeHub, height * 0.9, bow * 0.82, t1)
-			poseArcSegment(
-				wake,
-				wa,
-				wb,
-				wakeStroke,
-				width * 0.9,
-				ink,
-				math.clamp(transparency * 0.45 + 0.38, 0, 1)
-			)
 		end
 	end
 
 	local glow = projectile.part:FindFirstChild("SwordWaveGlow")
 	if glow and glow:IsA("PointLight") then
+		glow.Color = inner
 		glow.Brightness = 0
 	end
 	local highlight = model:FindFirstChild("SwordWaveRim")
 	if highlight and highlight:IsA("Highlight") then
-		highlight.FillColor = ink
-		highlight.FillTransparency = 0.35 + 0.65 * fade
-		highlight.OutlineColor = VfxConfig.SWORD_WAVE_COLOR_EDGE
-		highlight.OutlineTransparency = 0.45 + 0.55 * fade
+		highlight.FillColor = inner
+		highlight.FillTransparency = 1
+		highlight.OutlineColor = ink
+		highlight.OutlineTransparency = 0.12 + 0.88 * fade
 	end
+end
+
+local function makePillarCylinder(name: string, height: number, diameter: number, transparency: number): BasePart
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Shape = Enum.PartType.Cylinder
+	part.Size = Vector3.new(height, diameter, diameter)
+	part.Material = Enum.Material.Neon
+	part.Color = VfxConfig.SWORD_WAVE_COLOR_INNER
+	part.Transparency = transparency
+	hardenRoot(part)
+	return part
+end
+
+local function addPillarFlame(parent: BasePart, offset: Vector3): Attachment
+	local att = Instance.new("Attachment")
+	att.Name = "PillarFlameAtt"
+	att.CFrame = CFrame.new(offset)
+	att.Parent = parent
+
+	local fire = Instance.new("ParticleEmitter")
+	fire.Name = "SwordWaveFlame"
+	fire.Texture = "rbxasset://textures/particles/fire_main.dds"
+	fire.Color = blackSequence()
+	fire.LightEmission = 0
+	fire.Brightness = 0.85
+	fire.Orientation = Enum.ParticleOrientation.VelocityParallel
+	fire.Squash = NumberSequence.new(-1.7)
+	fire.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.15),
+		NumberSequenceKeypoint.new(0.32, 1.6),
+		NumberSequenceKeypoint.new(1, 0.14),
+	})
+	fire.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.04),
+		NumberSequenceKeypoint.new(0.4, 0.22),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	fire.Lifetime = VfxConfig.SWORD_WAVE_FLAME_LIFETIME
+	fire.Speed = VfxConfig.SWORD_WAVE_FLAME_SPEED
+	fire.SpreadAngle = Vector2.new(10, 16)
+	fire.Rate = VfxConfig.SWORD_WAVE_PILLAR_FLAME_RATE
+	fire.Acceleration = Vector3.new(0, 22, 0)
+	fire.Drag = 1.2
+	fire.EmissionDirection = Enum.NormalId.Front
+	fire.LockedToPart = false
+	fire.ZOffset = 1.2
+	fire.Parent = att
+	return att
+end
+
+type PillarFlameSlot = {
+	att: Attachment,
+	t: number,
+	angleOffset: number,
+	radiusScale: number,
+}
+
+local function posePillarFlames(slots: { PillarFlameSlot }, diameter: number, spin: number, rise: number, fullHeight: number)
+	local radius = diameter * 0.5
+	local visibleHeight = fullHeight * math.clamp(rise, 0.08, 1)
+	local turns = VfxConfig.SWORD_WAVE_PILLAR_FLAME_TURNS
+	local twist = turns * math.pi * 2
+	local dAngle = twist / math.max(visibleHeight, 0.01)
+	for _, slot in slots do
+		local y = slot.t * visibleHeight
+		local angle = slot.angleOffset + slot.t * twist + spin
+		local r = radius * slot.radiusScale
+		local pos = Vector3.new(math.cos(angle) * r, y, math.sin(angle) * r)
+		local tangent = Vector3.new(-math.sin(angle) * r * dAngle, 1, math.cos(angle) * r * dAngle)
+		if tangent.Magnitude < 0.05 then
+			tangent = Vector3.yAxis
+		end
+		slot.att.CFrame = CFrame.lookAt(pos, pos + tangent)
+	end
+end
+
+function Projectile.playSwordWaveFinale(plotModel: Model, worldPos: Vector3)
+	local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_PILLAR)
+	local folder = projectilesFolder(plotModel)
+	local height = VfxConfig.SWORD_WAVE_PILLAR_HEIGHT
+	local startDiam = VfxConfig.SWORD_WAVE_PILLAR_START_RADIUS * 2
+	local endDiam = VfxConfig.SWORD_WAVE_PILLAR_END_RADIUS * 2
+	local coreRatio = VfxConfig.SWORD_WAVE_PILLAR_CORE_RATIO
+	local expandTime = CombatConfig.SWORD_WAVE_PILLAR_EXPAND
+	local fadeTime = CombatConfig.SWORD_WAVE_PILLAR_FADE
+
+	local model = Instance.new("Model")
+	model.Name = "SwordWavePillar"
+
+	local stand = CFrame.new(worldPos + Vector3.new(0, height * 0.5, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	local halo = makePillarCylinder("PillarHalo", height, startDiam, 0.55)
+	halo.CFrame = stand
+	halo.Parent = model
+
+	local core = makePillarCylinder("PillarCore", height * 0.98, startDiam * coreRatio, VfxConfig.SWORD_WAVE_PILLAR_TRANSPARENCY)
+	core.CFrame = stand
+	core.Parent = model
+	model.PrimaryPart = core
+
+	local glow = Instance.new("PointLight")
+	glow.Name = "PillarGlow"
+	glow.Brightness = VfxConfig.SWORD_WAVE_PILLAR_GLOW_BRIGHTNESS
+	glow.Range = VfxConfig.SWORD_WAVE_PILLAR_GLOW_RANGE
+	glow.Color = VfxConfig.SWORD_WAVE_COLOR_INNER
+	glow.Parent = core
+
+	local flameAnchor = Instance.new("Part")
+	flameAnchor.Name = "PillarFlameAnchor"
+	flameAnchor.Size = Vector3.new(0.2, 0.2, 0.2)
+	flameAnchor.Transparency = 1
+	flameAnchor.CFrame = CFrame.new(worldPos)
+	hardenRoot(flameAnchor)
+	flameAnchor.Parent = model
+
+	local slots: { PillarFlameSlot } = {}
+	local spawnFlames = quality ~= "Minimal"
+	local points = math.max(2, VfxConfig.SWORD_WAVE_PILLAR_FLAME_POINTS)
+	local innerStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_INNER_STRANDS
+	local midStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_STRANDS
+	local outerStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_OUTER_STRANDS
+	if quality == "Reduced" then
+		points = math.max(2, math.ceil(points * 0.5))
+		innerStrands = math.max(1, math.ceil(innerStrands * 0.5))
+		midStrands = math.max(1, math.ceil(midStrands * 0.5))
+		outerStrands = math.max(1, math.ceil(outerStrands * 0.5))
+	end
+
+	local function addHelix(strandCount: number, radiusScale: number, phase: number)
+		local strands = math.max(1, strandCount)
+		for s = 1, strands do
+			local strandPhase = phase + (s / strands) * math.pi * 2
+			for p = 0, points - 1 do
+				local att = addPillarFlame(flameAnchor, Vector3.zero)
+				table.insert(slots, {
+					att = att,
+					t = p / (points - 1),
+					angleOffset = strandPhase,
+					radiusScale = radiusScale,
+				})
+			end
+		end
+	end
+
+	if spawnFlames then
+		addHelix(innerStrands, 0.82, 0)
+		addHelix(midStrands, 1.06, 0.35)
+		addHelix(outerStrands, 1.32, 0.7)
+		if quality == "Reduced" then
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("ParticleEmitter") then
+					descendant.Rate = descendant.Rate * 0.5
+				end
+			end
+		end
+	end
+
+	local currentDiam = startDiam
+	local rise = 0.12
+	local spawnedAt = os.clock()
+	if spawnFlames then
+		posePillarFlames(slots, currentDiam, 0, rise, height)
+	end
+
+	model.Parent = folder
+	model.Destroying:Connect(function()
+		release()
+	end)
+
+	if spawnFlames then
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("ParticleEmitter") then
+				descendant:Emit(VfxConfig.SWORD_WAVE_PILLAR_FLAME_BURST)
+			end
+		end
+
+		local spinConn = RunService.Heartbeat:Connect(function()
+			if not model.Parent then
+				return
+			end
+			local spin = (os.clock() - spawnedAt) * VfxConfig.SWORD_WAVE_PILLAR_FLAME_SPIN
+			posePillarFlames(slots, currentDiam, spin, rise, height)
+		end)
+		model.Destroying:Connect(function()
+			spinConn:Disconnect()
+		end)
+	end
+
+	local function applyDiameter(diameter: number)
+		if not model.Parent then
+			return
+		end
+		currentDiam = diameter
+		halo.Size = Vector3.new(height, diameter, diameter)
+		halo.CFrame = stand
+		core.Size = Vector3.new(height * 0.98, diameter * coreRatio, diameter * coreRatio)
+		core.CFrame = stand
+		local grow = 0
+		if endDiam > startDiam then
+			grow = math.clamp((diameter - startDiam) / (endDiam - startDiam), 0, 1)
+		end
+		glow.Range = VfxConfig.SWORD_WAVE_PILLAR_GLOW_RANGE
+			+ (VfxConfig.SWORD_WAVE_PILLAR_GLOW_RANGE_MAX - VfxConfig.SWORD_WAVE_PILLAR_GLOW_RANGE) * grow
+	end
+
+	local function startFade()
+		if not model.Parent then
+			return
+		end
+		local fadeInfo = TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		TweenService:Create(halo, fadeInfo, { Transparency = 1 }):Play()
+		TweenService:Create(core, fadeInfo, { Transparency = 1 }):Play()
+		TweenService:Create(glow, fadeInfo, { Brightness = 0 }):Play()
+		task.delay(fadeTime * 0.7, function()
+			if not model.Parent then
+				return
+			end
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("ParticleEmitter") then
+					descendant.Enabled = false
+				end
+			end
+		end)
+		task.delay(fadeTime + 0.25, function()
+			if model.Parent then
+				model:Destroy()
+			end
+		end)
+	end
+
+	local progress = Instance.new("NumberValue")
+	progress.Name = "Expand"
+	progress.Value = 0
+	progress.Parent = model
+	progress.Changed:Connect(function(alpha)
+		rise = math.max(alpha, 0.12)
+		applyDiameter(startDiam + (endDiam - startDiam) * alpha)
+	end)
+
+	local expandInfo = TweenInfo.new(expandTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local expandTween = TweenService:Create(progress, expandInfo, { Value = 1 })
+	expandTween.Completed:Connect(function(playback)
+		if playback ~= Enum.PlaybackState.Completed then
+			return
+		end
+		rise = 1
+		applyDiameter(endDiam)
+		startFade()
+	end)
+	expandTween:Play()
 end
 
 local function createBoltPart(): BasePart
@@ -914,6 +1198,10 @@ local function applyBarrageStreak(model: Model, hub: BasePart)
 end
 
 local function destroyProjectile(projectile: ActiveProjectile)
+	if projectile.releaseVfx then
+		projectile.releaseVfx()
+		projectile.releaseVfx = nil
+	end
 	if projectile.model then
 		projectile.model:Destroy()
 	elseif projectile.part.Parent then
@@ -947,6 +1235,7 @@ function Projectile.launch(
 
 	local part: BasePart
 	local model: Model? = nil
+	local releaseVfx: (() -> ())? = nil
 
 	if kind == "Shuriken" then
 		local shurikenModel, hub = createShurikenModel()
@@ -979,10 +1268,12 @@ function Projectile.launch(
 		end
 		bubbleModel.Parent = folder
 	elseif kind == "SwordWave" then
-		local waveModel, hub = createSwordWaveModel()
+		local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_SWORD_WAVE)
+		local waveModel, hub = createSwordWaveModel(quality)
 		model = waveModel
 		part = hub
 		waveModel.Parent = folder
+		releaseVfx = release
 	else
 		part = createBoltPart()
 		part.Parent = folder
@@ -1023,6 +1314,7 @@ function Projectile.launch(
 		zEnd = spec.worldZEnd,
 		zLerpColumns = spec.zLerpColumns,
 		waveHue = if kind == "SwordWave" then 0 else nil,
+		releaseVfx = releaseVfx,
 	}
 	if kind == "SwordWave" then
 		applySwordWaveLook(active[id], 0)
@@ -1052,7 +1344,21 @@ function Projectile.tick(
 		local dir = projectile.spec.columnDirection or 1
 		local speed = projectile.spec.columnsPerSecond or CombatConfig.PROJECTILE_COLUMNS_PER_SECOND
 		local prevColumn = projectile.column
-		projectile.column += speed * dt * dir
+		local holdingFinale = type(projectile.finaleAt) == "number"
+		if holdingFinale then
+			projectile.column = liveColumn
+		else
+			projectile.column += speed * dt * dir
+			local wouldReach = if dir < 0
+				then projectile.column <= liveColumn
+				else projectile.column >= liveColumn
+			if wouldReach
+				and (projectile.spec.kind or "Knife") == "SwordWave"
+				and projectile.spec.targetKind == "LaneEnd"
+			then
+				projectile.column = liveColumn
+			end
+		end
 		setWorldPosition(
 			projectile.part,
 			projectile.spec.plotModel,
@@ -1092,7 +1398,7 @@ function Projectile.tick(
 			projectile.part.CFrame = CFrame.new(held)
 		end
 
-		if onSweep and impactPiercesAll(projectile.spec.impact) then
+		if onSweep and not holdingFinale and impactPiercesAll(projectile.spec.impact) then
 			onSweep(
 				projectile.spec.plotModel,
 				projectile.spec.row,
@@ -1108,6 +1414,18 @@ function Projectile.tick(
 			then projectile.column <= liveColumn
 			else projectile.column >= liveColumn
 		if reached then
+			local isWaveFinale = kind == "SwordWave" and projectile.spec.targetKind == "LaneEnd"
+			local hold = CombatConfig.SWORD_WAVE_PILLAR_HOLD
+			if isWaveFinale and hold > 0 then
+				projectile.column = liveColumn
+				if type(projectile.finaleAt) ~= "number" then
+					projectile.finaleAt = os.clock() + hold
+					continue
+				end
+				if os.clock() < projectile.finaleAt then
+					continue
+				end
+			end
 			local _killed, pierceNextId = onImpact(
 				projectile.spec.targetInstanceId,
 				projectile.spec.damage,
@@ -1122,7 +1440,7 @@ function Projectile.tick(
 				if pierceNextId == LANE_END_ID then
 					projectile.spec.targetInstanceId = LANE_END_ID
 					projectile.spec.targetKind = "LaneEnd"
-					projectile.spec.targetColumn = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
+					projectile.spec.targetColumn = swordWaveLaneEndColumn()
 					continue
 				end
 				local nextColumn = getColumn(pierceNextId, nil)
@@ -1139,7 +1457,7 @@ function Projectile.tick(
 				if impactPiercesAll(projectile.spec.impact) then
 					projectile.spec.targetInstanceId = LANE_END_ID
 					projectile.spec.targetKind = "LaneEnd"
-					projectile.spec.targetColumn = GridConfig.COLUMNS + CombatConfig.SWORD_WAVE_EAST_EDGE
+					projectile.spec.targetColumn = swordWaveLaneEndColumn()
 					continue
 				end
 			end

@@ -69,11 +69,17 @@ function VfxUtil.playHitBurst(position: Vector3)
 	)
 end
 
-function VfxUtil.playJackpotBurst(position: Vector3)
+function VfxUtil.playJackpotBurst(position: Vector3, quality: string?)
+	local count = VfxConfig.JACKPOT_BURST_COUNT
+	if quality == "Reduced" then
+		count = math.max(6, math.ceil(count * 0.5))
+	elseif quality == "Minimal" then
+		count = 6
+	end
 	emitBurst(
 		position,
 		VfxConfig.JACKPOT_COLOR,
-		VfxConfig.JACKPOT_BURST_COUNT,
+		count,
 		VfxConfig.JACKPOT_BURST_SPEED,
 		VfxConfig.JACKPOT_BURST_SIZE,
 		VfxConfig.JACKPOT_BURST_LIFETIME
@@ -468,9 +474,15 @@ local function emitEnergyBurst(
 	end
 end
 
-function VfxUtil.playBatSlam(position: Vector3)
+function VfxUtil.playBatSlam(position: Vector3, quality: string?)
 	local ground = position + Vector3.new(0, 0.2, 0)
-	for w = 1, VfxConfig.BAT_SLAM_WAVE_COUNT do
+	local waves = VfxConfig.BAT_SLAM_WAVE_COUNT
+	if quality == "Reduced" then
+		waves = math.max(1, math.ceil(waves / 2))
+	elseif quality == "Minimal" then
+		waves = 1
+	end
+	for w = 1, waves do
 		local pulseSpread = 1 + (w - 1) * VfxConfig.BAT_SLAM_WIDEN_PER_WAVE
 		emitEnergyBurst(
 			ground,

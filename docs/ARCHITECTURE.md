@@ -71,7 +71,7 @@ ReplicatedStorage/Shared/
     Config/        Grid, Economy, Level, Plot, Progress, Store, House, Magnet, Grave, Combat, Evolution, Weather, Audio, UI + aggregator init
     Constants/     structural keys (save version, tags, phases, folder names)
     Types/         shared Luau type definitions
-    Utilities/     Logger, GridUtil, WeatherUtil + aggregator init
+    Utilities/     Logger, GridUtil, WeatherUtil, VfxLoad + aggregator init
     Brainrots/     data-driven Brainrot registry
     Monsters/      data-driven Monster registry
     Levels/        data-driven campaign level registry
@@ -415,7 +415,10 @@ Full details in `MONSTERS.md` / `LEVELS.md`. Summary:
 
 Full details in `COMBAT.md`. Summary:
 
-- **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime).
+- **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime) plus
+  `HEAVY_VFX_*` load thresholds for GOD ultimates.
+- **`VfxLoad`** — shared budget: Full → Reduced → Minimal once too many heavy
+  effects are alive (4-player overlap). Damage is never throttled.
 - **`VfxUtil`** + **`PlotUtil`** (client utilities) — ephemeral particles and plot helpers.
 - **`CombatController`** — hit/death particles, line-bomb explosions (`Explosion`
   payload), Sahur’s Wrath landing (`BatSlam`), projectile trail/glow on `plot.Projectiles` parts.
@@ -491,7 +494,7 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
   at GOD. **GOD ultimates:** Tung Tung `SahurWrath`, Ballerina `Jackpot`,
   Chimpanzini `PrimalRetaliation` ✅; Lirili Glacial Dominion (on plant) ✅;
-  Cappuccino `ShadowRequiem` ✅; Tralalero 🔜.
+  Cappuccino `ShadowRequiem` ✅ (ramped crescent + last-tile pillar); Tralalero 🔜.
 
 ### Milestone 12 — Audio ✅
 

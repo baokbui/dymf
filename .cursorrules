@@ -150,7 +150,7 @@ registries (`Shared.Brainrots` / `Monsters` / `Levels`).
 
 Examples:
 
-- Cost, health, damage, range, cooldown, attack interval
+- Cost, health, damage, range, cooldown / attack interval
 - Coin generation / day purse (`EconomyConfig.STARTING_COINS`, `REWIND_COINS`)
 - Player walk speed (`PlayerConfig.WALK_SPEED`) and store catalogs (`ProgressConfig`)
 - Progression shop kinds / Brainrot stall placement (`StoreConfig`)
@@ -158,6 +158,9 @@ Examples:
 - House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
 - Magnet cooldown / pull range (`MagnetConfig`)
 - Weather, graves, VFX, audio
+- GOD ult percents in `Shared.Evolutions` `abilityParams` (e.g. Shadow Requiem
+  `damagePercent` / `travelPercent` / `finisherPercent`); travel/pillar timing
+  in `CombatConfig.SWORD_WAVE_*`; visuals in `VfxConfig`
 
 Studio-only playtest cheats live in `DevConfig`. `isActive()` = ENABLED and
 Studio only (never live). Do not ship with cheats on.
@@ -219,6 +222,9 @@ via handlers registered with CombatService (`docs/COMBAT.md`).
 
 Units never write another object's health directly. Route damage (and heals)
 through CombatService APIs so those handlers run.
+
+GOD ultimates (Shadow Requiem sword waves + last-tile pillar, Sahur's Wrath
+row slam, …) still go through those APIs — never client-trusted damage.
 
 Client `CombatController` is visuals / SFX only.
 
@@ -350,6 +356,11 @@ Cache services.
 Avoid unnecessary Instance creation.
 
 Reuse objects when practical.
+
+Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
+Jackpot burst) go through `Shared.Utilities.VfxLoad`. Full quality until
+`VfxConfig.HEAVY_VFX_FULL_UNTIL`, then Reduced, then Minimal. Damage,
+targeting, and animations are never throttled.
 
 ---
 

@@ -215,26 +215,57 @@ local VfxConfig = {
 	MIRROR_ORBIT_LIFT = 1.3,
 	MIRROR_ORBIT_PERIOD = 1.5,
 
-	-- Shadow Requiem: vertical backwards-C ")" (bulge leads +X). Black slash;
-	-- Y height grows with travel.
-	SWORD_WAVE_COLOR = Color3.fromRGB(8, 8, 10),
-	SWORD_WAVE_COLOR_EDGE = Color3.fromRGB(22, 22, 26),
+	-- Shadow Requiem: vertical backwards-C ")" (bulge leads +X). White fill,
+	-- black outline + black flame/trail streaks. Y height grows with travel.
+	-- Last-tile finale is a tall white neon pillar; black flames corkscrew
+	-- around it and keep revolving as the column rises and expands.
+	SWORD_WAVE_COLOR = Color3.fromRGB(8, 8, 10), -- outline + streaks
+	SWORD_WAVE_COLOR_INNER = Color3.fromRGB(255, 255, 255), -- crescent fill
+	SWORD_WAVE_COLOR_EDGE = Color3.fromRGB(8, 8, 10),
 	SWORD_WAVE_WIDTH = TILE * 0.1, -- Z thickness
 	SWORD_WAVE_STROKE = 1.35, -- XY ribbon thickness (volume on the leading edge)
-	SWORD_WAVE_WAKE_OFFSET = 2.4, -- studs west of the leading crescent
-	SWORD_WAVE_WAKE_STROKE = 2.1,
+	SWORD_WAVE_WAKE_STROKE = 2.1, -- black outline thickness around the white fill
 	SWORD_WAVE_START_HEIGHT = TILE * 0.32, -- Y span at spawn
 	SWORD_WAVE_END_HEIGHT = TILE * 1.85, -- Y span at full travel
 	SWORD_WAVE_BOW = TILE * 0.48, -- how far the tips sit west of the bulge
 	SWORD_WAVE_SEGMENTS = 18,
 	SWORD_WAVE_GLOW_BRIGHTNESS = 3.2,
 	SWORD_WAVE_GLOW_RANGE = 16,
-	SWORD_WAVE_FLAME_RATE = 40,
+	SWORD_WAVE_FLAME_RATE = 24,
+	SWORD_WAVE_FLAME_EVERY = 2, -- flame on every Nth crescent segment
 	SWORD_WAVE_FLAME_SPEED = NumberRange.new(22, 42),
 	SWORD_WAVE_FLAME_LIFETIME = NumberRange.new(0.28, 0.52),
 	SWORD_WAVE_FLAME_SPREAD = Vector2.new(24, 42),
 	SWORD_WAVE_TRAIL_LIFETIME = 0.48,
 	SWORD_WAVE_TRAIL_WIDTH = 1.25,
+	SWORD_WAVE_PILLAR_HEIGHT = TILE * 3.8,
+	SWORD_WAVE_PILLAR_START_RADIUS = TILE * 0.1, -- spawn thin, then expand
+	SWORD_WAVE_PILLAR_END_RADIUS = TILE * 0.5, -- diameter = one lawn tile
+	SWORD_WAVE_PILLAR_CORE_RATIO = 0.78, -- core diameter vs halo
+	SWORD_WAVE_PILLAR_TRANSPARENCY = 0.08,
+	SWORD_WAVE_PILLAR_GLOW_BRIGHTNESS = 9,
+	SWORD_WAVE_PILLAR_GLOW_RANGE = 22, -- at spawn; scales up with expand
+	SWORD_WAVE_PILLAR_GLOW_RANGE_MAX = 42,
+	SWORD_WAVE_PILLAR_FLAME_STRANDS = 5,
+	SWORD_WAVE_PILLAR_FLAME_INNER_STRANDS = 4,
+	SWORD_WAVE_PILLAR_FLAME_OUTER_STRANDS = 4,
+	SWORD_WAVE_PILLAR_FLAME_POINTS = 12, -- emitters along each helical arm
+	SWORD_WAVE_PILLAR_FLAME_TURNS = 2.5, -- corkscrew revolutions over the height
+	SWORD_WAVE_PILLAR_FLAME_SPIN = 2.6, -- rad/s the spiral revolves
+	SWORD_WAVE_PILLAR_FLAME_RATE = 34,
+	SWORD_WAVE_PILLAR_FLAME_BURST = 10, -- extra particles per emitter on explode
+
+	-- Heavy GOD-ult VFX budget (4-player server). Load is the sum of
+	-- HEAVY_VFX_* costs of effects still alive. New effects stay Full until
+	-- FULL_UNTIL, then Reduced, then Minimal. Combat math is unchanged.
+	HEAVY_VFX_FULL_UNTIL = 10,
+	HEAVY_VFX_REDUCED_UNTIL = 22,
+	HEAVY_VFX_SWORD_WAVE = 2,
+	HEAVY_VFX_PILLAR = 5,
+	HEAVY_VFX_BAT_SLAM = 2,
+	HEAVY_VFX_JACKPOT = 1,
+	HEAVY_VFX_BAT_SLAM_RELEASE = 1.8, -- seconds the slam still occupies the budget
+	HEAVY_VFX_JACKPOT_RELEASE = 0.7,
 
 	-- Jackpot (Ballerina GOD) gold burst at the plant.
 	JACKPOT_COLOR = Color3.fromRGB(255, 205, 40),

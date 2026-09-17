@@ -170,7 +170,7 @@ on the sheet (TBD).
 | Legendary | Piercing Brew | Attack pierces the first monster: **100%** dmg to it and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | At the end of the dual-slash, two black sword waves fly down the row, grow with distance, fade off the plot, and pierce every monster and grave for **2000%** dmg. **45s** CD. |
+| GOD | Shadow Requiem | At the end of the dual-slash, two sword waves (**white fill**, **black outline** and streaks) fly down the row, grow with distance, stop on the last tile, and explode into a **white light pillar** that expands to **one tile**, with **black flames** corkscrewing around it as it rises, then fades over **~3s**. Crescent **2000%** at 1 tile, **+100%** per extra tile (6 tiles = **2500%**; from column 1 the last tile is **8 away** → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD. |
 
 ### Lirili Larila
 

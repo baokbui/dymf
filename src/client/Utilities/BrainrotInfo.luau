@@ -84,7 +84,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	ShadowRequiem = {
 		label = "Shadow Requiem",
-		description = "Two black sword waves leave Cappuccino's blades, grow with distance, fade off the plot, and pierce every monster and grave for 2000% damage. 45s cooldown.",
+		description = "Two sword waves leave Cappuccino's blades (white fill, black outline and streaks), grow with distance, stop on the last tile, and explode into a white light pillar that expands to one tile, with black flames corkscrewing around it as it rises, then fades. Crescent damage is 2000% at 1 tile, plus 100% per extra tile (8 tiles away = 2700%). Last-tile pillar bonus is a flat extra 1000%. 45s cooldown.",
 	},
 }
 

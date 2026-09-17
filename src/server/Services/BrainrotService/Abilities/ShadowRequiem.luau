@@ -1,10 +1,15 @@
 --!strict
 --[[
 	ShadowRequiem (Cappuccino GOD)
-	Plays the dual-slash clip, then at the end of that animation two black
-	sword waves leave Cappuccino's blades. They start small, grow with
-	distance, fade off the east plot edge, and pierce every monster and grave.
-	Both waves share one hit group so each monster takes 2000% once.
+	Plays the dual-slash clip, then at the end of that animation two
+	sword waves leave Cappuccino's blades (white fill, black outline and
+	streaks). They start small, grow with distance, stop on the last lawn
+	tile, and explode into a white light pillar that expands to one tile
+	wide, with black flames corkscrewing around it as it rises, then fades
+	over ~3s. Pierce every monster and grave.
+	Both waves share one hit group so each monster is hit once.
+	Crescent damage is 2000% at 1 tile, plus 100% per extra tile of travel
+	(8 tiles away = 2700%). The last-tile pillar bonus stays a flat extra 1000%.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -101,7 +106,7 @@ local function clipWait(callbacks): number
 	return CombatConfig.SWORD_WAVE_ANIM_FALLBACK
 end
 
-local function fireWaves(ctx, damage: number)
+local function fireWaves(ctx, damage: number, laneEndBonus: number, travelBonus: number)
 	if not ctx.plotModel.Parent or not ctx.model.Parent then
 		return
 	end
@@ -115,6 +120,9 @@ local function fireWaves(ctx, damage: number)
 		pierceGraves = true,
 		pierceAll = true,
 		waveGroupId = waveGroupId,
+		laneEndBonus = laneEndBonus,
+		waveOriginColumn = ctx.position.column,
+		waveTravelBonus = travelBonus,
 	}
 
 	CombatService.launchSwordWave(ctx.plotModel, ctx.position, damage, ctx.ownerUserId, originA, options)
@@ -133,11 +141,23 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 	end
 
 	local percent = 2000
+	local finisherPercent = 1000
+	local travelPercent = 100
 	local params = ctx.extraParams
-	if type(params) == "table" and type(params.damagePercent) == "number" then
-		percent = params.damagePercent
+	if type(params) == "table" then
+		if type(params.damagePercent) == "number" then
+			percent = params.damagePercent
+		end
+		if type(params.finisherPercent) == "number" then
+			finisherPercent = params.finisherPercent
+		end
+		if type(params.travelPercent) == "number" then
+			travelPercent = params.travelPercent
+		end
 	end
 	local damage = math.max(1, math.floor(ctx.definition.damage * percent / 100))
+	local laneEndBonus = math.max(0, math.floor(ctx.definition.damage * finisherPercent / 100))
+	local travelBonus = math.max(0, math.floor(ctx.definition.damage * travelPercent / 100))
 
 	callbacks.playAbility(ABILITY_ID)
 	task.spawn(function()
@@ -147,7 +167,7 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 				return
 			end
 			callbacks.playSound("ThrowKnifeHit")
-			fireWaves(ctx, damage)
+			fireWaves(ctx, damage, laneEndBonus, travelBonus)
 		end)
 		if not ok then
 			log:warn(err)

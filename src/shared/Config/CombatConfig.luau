@@ -75,12 +75,20 @@ local CombatConfig = {
 	-- Ult only fires if the row has this many combat targets, or a boss.
 	WRATH_MIN_ENEMIES = 4,
 
-	-- Shadow Requiem (Cappuccino GOD): two vertical black ")" crescents.
-	-- Width stays large; height grows slowly with travel. Fade off the east
-	-- plot edge; pierce every monster and grave. 2000% of current knife damage.
+	-- Shadow Requiem (Cappuccino GOD): two vertical ")" crescents.
+	-- White fill, black outline + black streaks. Width stays large; height
+	-- grows slowly with travel. Stop on the last lawn tile, then explode
+	-- into a white light pillar (black flame streaks) that expands to one
+	-- tile, then fades out over ~3s.
+	-- Pierce every monster and grave for 2000%, plus 100% more of current
+	-- knife damage per tile past the first. Last-tile pillar finisher is a
+	-- flat extra 1000% (not ramped).
 	SWORD_WAVE_GROW_COLUMNS = 3, -- tiles of travel to reach full height
-	SWORD_WAVE_FADE_COLUMNS = 1.1, -- start fading this many columns before the east edge
-	SWORD_WAVE_EAST_EDGE = 0.55, -- destroy at COLUMNS + this
+	SWORD_WAVE_FADE_COLUMNS = 0, -- 0 = stay solid until the last-tile pillar
+	SWORD_WAVE_EAST_EDGE = 0, -- 0 = last lawn tile center (COLUMNS + this)
+	SWORD_WAVE_PILLAR_HOLD = 0.08, -- seconds the waves sit on the last tile
+	SWORD_WAVE_PILLAR_EXPAND = 0.5, -- seconds to grow to one tile wide
+	SWORD_WAVE_PILLAR_FADE = 3, -- seconds the light pillar takes to fade after max size
 	SWORD_WAVE_TRANSPARENCY = 0.12,
 	SWORD_WAVE_COLUMNS_PER_SECOND = 8,
 	SWORD_WAVE_PIERCE_COUNT = 64,

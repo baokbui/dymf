@@ -22,8 +22,9 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 registry id on the plot owner's lawn. Broadcasts `DamageMeterUpdated` (coalesced).
 Resets when the day goes **Active**. Every Brainrot hit that goes through
 `CombatService.damageMonster` with a `sourceBrainrotId` ranks: knives (incl.
-Piercing Brew / fifth strike / execute leftover HP), Shadow Requiem waves, melee
-bat, Ranged Rampage bats, Tralalero bubbles / barrage, Bombardino column bombs.
+Piercing Brew / fifth strike / execute leftover HP), Shadow Requiem waves and
+last-tile pillar, melee bat, Ranged Rampage bats, Tralalero bubbles / barrage,
+Bombardino column bombs.
 Status DoT without a source species is not ranked. Client HUD is display-only.
 
 ---
@@ -96,7 +97,7 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback); spins about +Y | Damage + `ThrowKnifeHit`. Optional `pierceCount` also damages the next monster east (100%) and **continues through graves** with no grave HP. Piercing shots carry a gold aura + gold trail (`PiercingBrew`) so they read as Piercing Brew. |
-| Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — two **vertical** black **backwards-C** (`")"`) crescents from Cappuccino’s swords (bulge leads +X; tips sit west). Width is large from spawn; **height** grows with travel; fade off the east plot edge. Always fly to `LaneEnd`; damage is applied as each wave’s column passes a monster (`pierceAll`). Graves never block. Both waves share a `waveGroupId` so each monster takes **2000%** once. | `ThrowKnifeHit` at release + `Hit` sparks per monster. **45s** CD. Does not fire (or start CD) if the row has no combat target. |
+| Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — two **vertical** **backwards-C** (`")"`) crescents from Cappuccino’s swords (bulge leads +X; tips sit west). **White fill**, **black outline**, **black** flame/trail streaks. Width is large from spawn; **height** grows with travel. Stop on the **last lawn tile**, then explode into a **tall white light pillar** that **expands to one tile wide**; **black flames corkscrew** around it as it rises, then the pillar fades over **~3s**. Always fly to `LaneEnd`; damage is applied as each wave’s column passes a monster (`pierceAll`). Graves never block. Both waves share a `waveGroupId` so each monster is hit once. Crescent damage is **2000%** at **1 tile**, plus **100%** per extra tile (`travelPercent`). From column 1 the last tile is **8 tiles** away → **2700%**, plus a flat **1000%** pillar (`finisherPercent`, not ramped; once per `waveGroupId`; footprint overlap on the last tile). | `ThrowKnifeHit` at release + `Hit` sparks per monster. **45s** CD. Does not fire (or start CD) if the row has no combat target. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) if the row has **4+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each hit monster**) on impact |
 | Ballerina GOD (`Jackpot`) | Extra ability; no projectile | **10s**: coin interval **3×** faster (max with Golden Waltz); each spit **33%** extra coin (independent of Encore). `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst. **30s** CD |
@@ -108,8 +109,18 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
 `BAT_MODEL_ORIENTATION_DEGREES`, `BAT_KNOCKBACK_TILES`, `WRATH_*` slam timing,
-`SWORD_WAVE_*` grow / fade / speed, bubble size) +
-`VfxConfig` bubble colors (cyan trap / gold barrage) and sword-wave black ink.
+`SWORD_WAVE_*` grow / last-tile stop / pillar expand+fade / speed, bubble size) +
+`VfxConfig` bubble colors (cyan trap / gold barrage) and sword-wave white fill / black outline / corkscrew pillar.
+Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
+`travelPercent`, `finisherPercent`).
+
+**Heavy VFX budget** ✅ — `VfxLoad` caps simultaneous GOD-ult FX so a 4-player
+server full of Cappuccinos / Tungs does not replicate hundreds of particle
+emitters at once. New effects stay **Full** while live load is below
+`HEAVY_VFX_FULL_UNTIL` (10), **Reduced** until `HEAVY_VFX_REDUCED_UNTIL` (22),
+then **Minimal** (geometry + light, no flame particles / corkscrew Heartbeat).
+Costs: sword wave 2, pillar 5, bat slam 2, jackpot 1. Combat math is unchanged.
+
 Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles, thrown bats, and `SwordWave` skip extra
 client trails (waves already carry a black trail). Bubble Barrage adds a gold light-streak.
@@ -159,7 +170,7 @@ Uses the default tip-over death like other monsters.
 - **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
-- **Shadow Requiem** — `ShadowRequiem` extra. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches two `SwordWave` projectiles from Cappuccino’s swords. Waves grow, fade off the plot, pierce every on-plot monster in the row and every grave, **2000%** (once per monster). **45s** CD.
+- **Shadow Requiem** — `ShadowRequiem` extra. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches two `SwordWave` projectiles from Cappuccino’s swords (**white fill**, **black outline** and streaks). Waves grow, stop on the last lawn tile, and explode into a **white light pillar**. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (6 tiles = **2500%**; from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
