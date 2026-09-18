@@ -29,6 +29,8 @@ local EvolutionConfig = {
 
 	-- Support jobs (ability id, not unit name). Smaller than a last-hit kill.
 	COIN_XP = 5, -- GenerateCoins: per coin actually dropped
+	-- Golden Discount: shared plot cooldown after a Ballerina grants the charge.
+	PLANT_DISCOUNT_COOLDOWN = 20,
 	SOAK_XP = 4, -- Wall: per chew / damage tick that lands
 	FREEZE_XP = 20, -- FreezeTime: per monster frozen on that cast (Lirili is one-shot; no last-hit)
 	BUBBLE_XP = 8, -- BubbleTrap: per BUBBLE_XP_HITS landed attacks (not last-hit)

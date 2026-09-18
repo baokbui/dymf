@@ -212,6 +212,15 @@ local function watchProjectile(instance: Instance)
 	end
 end
 
+-- Pillar SFX follow the replicated VFX so the crescent whoosh (started 1s
+-- before launch) cuts the moment the last-tile light pillar appears.
+local function playSwordWaveAudio(instance: Instance)
+	if instance.Name == "SwordWavePillar" then
+		AudioController.stopSfx("SwordWave")
+		AudioController.play("SwordWavePillar")
+	end
+end
+
 local function refreshHeavyProjectiles()
 	local plotModel = PlotUtil.getLocalPlotModel()
 	if not plotModel then
@@ -248,7 +257,10 @@ local function tryConnectProjectileWatcher(): boolean
 	for _, child in folder:GetChildren() do
 		watchProjectile(child)
 	end
-	folder.ChildAdded:Connect(watchProjectile)
+	folder.ChildAdded:Connect(function(child)
+		watchProjectile(child)
+		playSwordWaveAudio(child)
+	end)
 	return true
 end
 

@@ -17,6 +17,8 @@ export type SoundDef = {
 	MaxDuration: number?,
 	-- Skip leading silence in the asset (seconds).
 	StartOffset: number?,
+	-- Skip the oldest-instance cap until `AudioController.stopSfx`.
+	KeepUntilStopped: boolean?,
 }
 
 local AudioConfig = {
@@ -74,6 +76,9 @@ local AudioConfig = {
 		"WindGust",
 		"GraveShake",
 		"GraveCollapse",
+		"SwordWave",
+		"SwordWavePillar",
+		"SahurWrath",
 	},
 
 	MUSIC = {
@@ -310,6 +315,11 @@ local AudioConfig = {
 			SoundId = "rbxassetid://173818824",
 			Volume = 0.8,
 		},
+		-- Tung Tung GOD: bat grows vertically before the slam.
+		SahurWrath = {
+			SoundId = "rbxassetid://137463821",
+			Volume = 0.85,
+		},
 		BubbleTrap = {
 			SoundId = "rbxassetid://5852470908",
 			Volume = 0.75,
@@ -329,6 +339,17 @@ local AudioConfig = {
 		ThrowKnifeHit = {
 			SoundId = "rbxassetid://137287949709499",
 			Volume = 0.75,
+		},
+		-- Cappuccino GOD Shadow Requiem: crescent whoosh (starts 1s before launch; cut when the pillar starts).
+		SwordWave = {
+			SoundId = "rbxassetid://135712825042019",
+			Volume = 0.85,
+			KeepUntilStopped = true,
+		},
+		-- Last-tile light-pillar detonation.
+		SwordWavePillar = {
+			SoundId = "rbxassetid://119977062667102",
+			Volume = 0.9,
 		},
 		-- Giraffa Celeste gust after the place animation.
 		WindGust = {

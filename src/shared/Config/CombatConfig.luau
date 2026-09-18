@@ -74,7 +74,10 @@ local CombatConfig = {
 	-- East end of the landed bat, in fractional columns (COLUMNS + this).
 	WRATH_EAST_EDGE = 0.5,
 	-- Ult only fires if the row has this many combat targets, or a boss.
-	WRATH_MIN_ENEMIES = 4,
+	WRATH_MIN_ENEMIES = 3,
+	-- Adjacent rows (left/right lanes) take this % of current bat damage.
+	WRATH_SPLASH_PERCENT = 500,
+	WRATH_SPLASH_ROWS = 1,
 
 	-- Shadow Requiem (Cappuccino GOD): one vertical ")" crescent, sized like
 	-- the old dual slash. White fill, black outline + black streaks. Width
@@ -83,7 +86,9 @@ local CombatConfig = {
 	-- fades over ~3s.
 	-- Pierce every monster and grave for 2000%, plus 100% more of current
 	-- knife damage per tile past the first. Last-tile pillar finisher is a
-	-- flat extra 1000% (not ramped).
+	-- flat extra 1000% (not ramped). Needs 3+ enemies or a boss; easternmost
+	-- ready Cappuccino fires first.
+	SWORD_WAVE_MIN_ENEMIES = 3,
 	SWORD_WAVE_GROW_COLUMNS = 3, -- tiles of travel to reach full height
 	SWORD_WAVE_FADE_COLUMNS = 0, -- 0 = stay solid until the last-tile pillar
 	SWORD_WAVE_EAST_EDGE = 0, -- 0 = last lawn tile center (COLUMNS + this)
@@ -91,10 +96,11 @@ local CombatConfig = {
 	SWORD_WAVE_PILLAR_EXPAND = 0.5, -- seconds to grow to one tile wide
 	SWORD_WAVE_PILLAR_FADE = 3, -- seconds the light pillar takes to fade after max size
 	SWORD_WAVE_TRANSPARENCY = 0.12,
-	SWORD_WAVE_COLUMNS_PER_SECOND = 8,
+	SWORD_WAVE_COLUMNS_PER_SECOND = 6.5,
 	SWORD_WAVE_PIERCE_COUNT = 64,
 	SWORD_WAVE_ANIM_FALLBACK = 1.85, -- seconds if the clip Length is not ready
 	SWORD_WAVE_RELEASE_LEAD = 0.04, -- fire this many seconds before clip end
+	SWORD_WAVE_SOUND_LEAD = 1, -- crescent whoosh this many seconds before the wave launches
 	SWORD_WAVE_FALLBACK_EAST = 1.1,
 	SWORD_WAVE_FALLBACK_UP = 0.85,
 

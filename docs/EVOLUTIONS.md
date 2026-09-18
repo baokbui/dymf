@@ -129,7 +129,7 @@ on the sheet (TBD).
 | Epic | Wallet Ballet | Coin interval **12s** (from 18s). |
 | Legendary | Golden Waltz | Every **30s**, produce coins **2×** faster for **6s**. |
 | Mythic | Encore | Each coin produced: **30%** chance to produce one extra. |
-| Immortal | Golden Discount | Next plant of **any** Brainrot costs **50%**. One charge; producing a coin refreshes it. |
+| Immortal | Golden Discount | Next plant of **any** Brainrot costs **50%**. **20s** cooldown shared by every planted Ballerina. |
 | GOD | Jackpot | Produce coins **3×** faster for **10s**; each coin during the ultimate **33%** extra coin (independent of Encore). **30s** CD. |
 
 ### Chimpanzini Bananini
@@ -150,7 +150,7 @@ on the sheet (TBD).
 | Legendary | Ranged Rampage | Throw a spinning bat down the **whole row** for **10s**. Lawn hits knock back **half a tile**. **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
 | Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**. Stun-immune while shielded. |
-| GOD | Sahur's Wrath | Giant bat slams the **whole row** to the plot edge for **1000%** damage. Needs **4+** enemies **or a boss**. **30s** CD. |
+| GOD | Sahur's Wrath | Giant bat slams the **whole row** to the plot edge for **1000%** damage, plus **500%** on the adjacent rows. Needs **3+** enemies **or a boss**. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -170,7 +170,7 @@ on the sheet (TBD).
 | Legendary | Piercing Brew | For **6s**, knives pierce the first monster and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. **45s** CD. |
+| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. Needs **3+** enemies **or a boss**. Easternmost ready Cappuccino fires first. **45s** CD. |
 
 ### Lirili Larila
 

@@ -128,7 +128,8 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 						percent = placement.definition.abilityParams.plantDiscountPercent or 0
 					end
 					if percent > 0 then
-						require(script.Parent).setPlantDiscount(placement.plotModel, percent)
+						local cooldown = placement.definition.abilityParams.plantDiscountCooldown
+						require(script.Parent).setPlantDiscount(placement.plotModel, percent, cooldown)
 					end
 				end
 				return dropped
@@ -282,8 +283,8 @@ local function hasClaimedExtra(placement: RuntimePlacement, abilityId: string): 
 end
 
 -- True when another living plant on the same row has this extra ready and sits
--- further east (closer to incoming monsters). Used so Sahur's Wrath doesn't
--- double-cast; the easternmost ready Tung goes first.
+-- further east (closer to incoming monsters). Used so Sahur's Wrath and
+-- Shadow Requiem don't double-cast; the easternmost ready unit goes first.
 function BrainrotBehavior.hasCloserReadyAlly(instanceId: string, abilityId: string): boolean
 	local placement = active[instanceId]
 	if not placement then

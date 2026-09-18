@@ -32,7 +32,6 @@ function Jackpot.tryAct(ctx, callbacks)
 	ctx.buffs.jackpotExtraChance = math.max(0, extraChance)
 
 	callbacks.pulseAttack()
-	callbacks.playSound("PurchaseKaching")
 
 	local _, center = ModelUtil.getVisualSizeAndCenter(ctx.model)
 	CombatService.fireJackpot(ctx.ownerUserId, center)

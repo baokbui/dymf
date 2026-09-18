@@ -32,7 +32,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",
-		description = "Giant bat slams the whole row to the plot edge. Needs 4+ enemies or a boss.",
+		description = "Giant bat slams the whole row to the plot edge for 1000%, plus 500% on adjacent rows. Needs 3+ enemies or a boss.",
 	},
 	BubbleTrap = {
 		label = "Bubble Trap",
@@ -84,7 +84,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	ShadowRequiem = {
 		label = "Shadow Requiem",
-		description = "A sword wave flies down the row, growing as it goes. 2000% plus 100% per tile, then a last-tile pillar for +1000%. 45s cooldown.",
+		description = "A sword wave flies down the row, growing as it goes. 2000% plus 100% per tile, then a last-tile pillar for +1000%. Needs 3+ enemies or a boss. 45s cooldown.",
 	},
 }
 

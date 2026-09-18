@@ -798,21 +798,32 @@ function CombatService.fireTileExplosion(
 	})
 end
 
-function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number)
+function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number, splashRows: number?)
 	local GridService = require(script.Parent.GridService)
 	local hits: { { x: number, y: number, z: number } } = {}
-	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
-		local column = monsterColumnOf(monsterId)
-		if type(column) ~= "number" then
+	local seen: { [string]: boolean } = {}
+	local span = math.max(0, math.floor(splashRows or 0))
+	for splashRow = row - span, row + span do
+		if splashRow < 1 or splashRow > GridConfig.ROWS then
 			continue
 		end
-		local pos = GridService.getWorldPositionAtColumn(plotModel, row, column)
-		if pos then
-			table.insert(hits, {
-				x = pos.X,
-				y = pos.Y,
-				z = pos.Z,
-			})
+		for _, monsterId in CombatService.getAllMonstersInRow(plotModel, splashRow) do
+			if seen[monsterId] then
+				continue
+			end
+			seen[monsterId] = true
+			local column = monsterColumnOf(monsterId)
+			if type(column) ~= "number" then
+				continue
+			end
+			local pos = GridService.getWorldPositionAtColumn(plotModel, splashRow, column)
+			if pos then
+				table.insert(hits, {
+					x = pos.X,
+					y = pos.Y,
+					z = pos.Z,
+				})
+			end
 		end
 	end
 	if #hits == 0 then
@@ -859,10 +870,14 @@ function CombatService.dealEntireRowDamage(
 	originColumn: number,
 	damage: number,
 	ownerUserId: number,
-	options: { skipExplosion: boolean?, explosionStagger: number?, muteExplosionSound: boolean?, sourceBrainrotId: string? }?
+	options: { skipExplosion: boolean?, explosionStagger: number?, muteExplosionSound: boolean?, sourceBrainrotId: string?, ignoreIds: { [string]: boolean }? }?
 )
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
+	local ignoreIds = if options then options.ignoreIds else nil
 	for _, monsterId in targets do
+		if ignoreIds and ignoreIds[monsterId] then
+			continue
+		end
 		CombatService.damageMonster(monsterId, damage, options and options.sourceBrainrotId)
 		fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
 	end

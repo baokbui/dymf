@@ -64,7 +64,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `BigWave` | First frame of big-wave warning |
 | `Victory` / `Defeat` | Level phase change |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
-| `PurchaseKaching` | Store purchase succeeded (cash register); Ballerina Jackpot via `BrainrotAction` |
+| `PurchaseKaching` | Store purchase succeeded (cash register) |
 | `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
 | `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
@@ -75,6 +75,8 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `GraveCollapse` | Grave destroyed by the last Patapim smash |
 | `Hit` | Generic `CombatVisual` Hit (when no `soundKey`) |
 | `ThrowKnifeHit` | Cappuccino knife impact (`CombatVisual.soundKey`) |
+| `SwordWave` | Shadow Requiem crescent whoosh, **1s** before the wave launches (stops early if the last-tile pillar starts first) |
+| `SwordWavePillar` | Shadow Requiem last-tile light-pillar detonation |
 | `Death` | Generic monster death |
 | `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`, `Death_SmallMummy`, `Death_PharaohMummy`) |
 | `MonsterAttack` | Generic monster chew (`CombatVisual` kind `MonsterAttack`) |
@@ -84,6 +86,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `SandTornado` | Pharaoh steal tornado (`CombatVisual` kind `SandTornado`) |
 | `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
 | `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |
+| `SahurWrath` | Tung Tung GOD: bat stretch/grow at the start of Sahur's Wrath |
 | `FreezeTime` | Lirili Larila cast on place (with attack anim) |
 | `FreezeTimeEnd` | Lirili Larila thaw when freeze duration ends |
 | `BubbleTrap` | Tralalero bubble impact via `CombatVisual.soundKey` |
@@ -96,6 +99,7 @@ Optional per-SFX fields in `AudioConfig.SoundDef`:
 | ----- | ------- |
 | `MaxDuration` | Hard-stop playback after N seconds (long asset tails) |
 | `StartOffset` | Skip leading silence (`TimePosition` on Play) |
+| `KeepUntilStopped` | Skip the oldest-instance cap until `AudioController.stopSfx` |
 
 `AudioConfig.PRELOAD_SFX` lists keys preloaded on join via `ContentProvider` so
 first combat hits are not delayed by asset download.
@@ -110,9 +114,12 @@ ids stay silent.
 | Event | Path |
 | ----- | ---- |
 | Melee bat hit (incl. kill) | `MeleeBat` ability → (optional `attackHitDelay`) → `BrainrotAction` → `AudioController.play("MeleeBat")`; client ScaleTo pulse skipped when `animated` |
+| Sahur’s Wrath stretch | `SahurWrath` extra → `BrainrotAction` `SahurWrath` as the bat grows |
 | Sahur’s Wrath land | `BrainrotAction` `MeleeBat` + `CombatVisual` `BatSlam` → `AudioController.play("Explosion")` (ground boom, once) |
-| Jackpot | `Jackpot` extra → `BrainrotAction` `PurchaseKaching` + `CombatVisual` `Jackpot` gold burst |
+| Jackpot | `Jackpot` extra → `CombatVisual` `Jackpot` gold burst (no kaching SFX) |
 | Knife impact | `CombatVisual` Hit with `soundKey = "ThrowKnifeHit"` |
+| Shadow Requiem crescent | `ShadowRequiem` → `BrainrotAction` `SwordWave` **1s** before launch |
+| Shadow Requiem pillar | Watcher stops `SwordWave`, then `AudioController.play("SwordWavePillar")` |
 | Bubble projectile impact | `CombatVisual` Hit with `soundKey = "BubbleTrap"` (after travel) |
 | Generic hit particles | `CombatVisual` Hit (`muteSound` skips SFX when bat already played) |
 | Monster death | `CombatVisual` Death with `monsterId` → `Death_<id>` or `Death` |

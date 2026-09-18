@@ -3,8 +3,10 @@
 	PlantCost
 	Match-currency plant price after a plot-wide Golden Discount charge.
 	Server sets `PlantDiscountFactor` on the plot (0.5 = 50% off). One
-	pending charge; does not stack. Client reads the same attribute so the
-	shop / ghost stay in sync with CoinService.trySpend.
+	pending charge; does not stack. After a Ballerina grants it, all planted
+	Ballerinas share a cooldown before another grant (`plantDiscountCooldown`).
+	Client reads the same attribute so the shop / ghost stay in sync with
+	CoinService.trySpend.
 ]]
 
 local PlantCost = {}

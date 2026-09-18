@@ -5,7 +5,8 @@
 	club) to the remaining lane length, then Tung's melee swing arcs it
 	onto the row so it covers every tile from him to the east plot edge.
 
-	Gates: 4+ combat targets in the row, or a boss occupying the row.
+	Gates: 3+ combat targets in the row, or a boss occupying the row.
+	The slam is 1000% on that row and 500% on the adjacent rows (left/right).
 	If several GOD Tungs in the same row are ready, the easternmost (closest
 	to incoming monsters) slams first; others stay ready until it finishes.
 ]]
@@ -230,6 +231,7 @@ local function runSlam(ctx, callbacks, damage: number)
 	local originHover = CFrame.new(originX, headY, z)
 	local rests = captureRest(bat, originHover)
 
+	callbacks.playSound("SahurWrath")
 	tweenAlpha(CombatConfig.WRATH_EXPAND_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function(alpha)
 		if bat.Parent then
 			applyPose(
@@ -265,7 +267,12 @@ local function runSlam(ctx, callbacks, damage: number)
 	end
 
 	callbacks.playSound("MeleeBat")
-	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row)
+	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row, CombatConfig.WRATH_SPLASH_ROWS)
+
+	local ignoreIds: { [string]: boolean } = {}
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, ctx.position.row) do
+		ignoreIds[monsterId] = true
+	end
 	CombatService.dealEntireRowDamage(
 		plotModel,
 		ctx.position.row,
@@ -277,6 +284,36 @@ local function runSlam(ctx, callbacks, damage: number)
 			sourceBrainrotId = ctx.definition.id,
 		}
 	)
+
+	local splashPercent = CombatConfig.WRATH_SPLASH_PERCENT
+	local params = ctx.extraParams
+	if type(params) == "table" and type(params.splashPercent) == "number" then
+		splashPercent = params.splashPercent
+	end
+	local splashDamage = math.max(1, math.floor(ctx.definition.damage * splashPercent / 100))
+	local splashRows = CombatConfig.WRATH_SPLASH_ROWS
+	if splashDamage > 0 and splashRows > 0 then
+		for splashRow = ctx.position.row - splashRows, ctx.position.row + splashRows do
+			if splashRow == ctx.position.row then
+				continue
+			end
+			if splashRow < 1 or splashRow > GridConfig.ROWS then
+				continue
+			end
+			CombatService.dealEntireRowDamage(
+				plotModel,
+				splashRow,
+				ctx.position.column,
+				splashDamage,
+				ctx.ownerUserId,
+				{
+					skipExplosion = true,
+					sourceBrainrotId = ctx.definition.id,
+					ignoreIds = ignoreIds,
+				}
+			)
+		end
+	end
 
 	task.wait(CombatConfig.WRATH_LINGER)
 	if bat.Parent then

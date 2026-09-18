@@ -183,7 +183,8 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Leftover coins → brains | `EconomyConfig.COINS_PER_LEFTOVER_BRAIN` |
 | Level UX pacing | `LevelConfig` |
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
-| GOD ult percents | `Shared.Evolutions` `abilityParams` (`damagePercent`, `travelPercent`, `finisherPercent`, …) |
+| GOD ult percents | `Shared.Evolutions` `abilityParams` (`damagePercent`, `travelPercent`, `finisherPercent`, `splashPercent`, `minEnemies`, …) |
+| Golden Discount | `EvolutionConfig.PLANT_DISCOUNT_COOLDOWN` + `abilityParams.plantDiscountCooldown` (plot-wide, all Ballerinas) |
 | Sword-wave / pillar look | `VfxConfig.SWORD_WAVE_*`; timing in `CombatConfig.SWORD_WAVE_*` |
 | Heavy ult VFX | Settings **High Quality VFX**; `VfxConfig.HEAVY_VFX_*` costs for `VfxLoad.acquire` |
 | Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |

@@ -69,6 +69,8 @@ type Placement = BrainrotBehavior.RuntimePlacement
 local placements: { [string]: Placement } = {}
 -- In-flight PlaceBrainrot reservations so two clicks cannot exceed maxOnPlot.
 local pendingPlotCaps: { [Model]: { [string]: number } } = {}
+-- Plot-wide Golden Discount: next grant allowed at this os.clock().
+local plantDiscountReadyAt: { [Model]: number } = {}
 -- userId -> brainrotId -> readyAt (Workspace:GetServerTimeNow)
 local plantReadyAt: { [number]: { [string]: number } } = {}
 local nextInstanceId = 0
@@ -817,8 +819,13 @@ function BrainrotService.syncNameplates(player: Player, brainrotId: string?)
 	end
 end
 
-function BrainrotService.setPlantDiscount(plotModel: Model, percent: number)
+function BrainrotService.setPlantDiscount(plotModel: Model, percent: number, cooldown: number?)
 	if percent <= 0 then
+		return
+	end
+	local now = os.clock()
+	local readyAt = plantDiscountReadyAt[plotModel]
+	if type(readyAt) == "number" and now < readyAt then
 		return
 	end
 	local factor = math.clamp(1 - percent / 100, 0.01, 0.99)
@@ -828,6 +835,13 @@ function BrainrotService.setPlantDiscount(plotModel: Model, percent: number)
 		return
 	end
 	plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, factor)
+	local cd = cooldown
+	if type(cd) ~= "number" then
+		cd = EvolutionConfig.PLANT_DISCOUNT_COOLDOWN
+	end
+	if cd > 0 then
+		plantDiscountReadyAt[plotModel] = now + cd
+	end
 end
 
 -- Removes every Brainrot on a plot and frees its tiles (level end / reset).
@@ -848,6 +862,7 @@ function BrainrotService.clearPlot(plotModel: Model)
 		(lineBomb :: any).clearPlot(plotModel)
 	end
 	plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, nil)
+	plantDiscountReadyAt[plotModel] = nil
 end
 
 -- Remove Brainrots standing on NightFog-blocked lawn columns (east fog zone).

@@ -55,7 +55,19 @@ local function pruneSfx()
 	activeSfx = alive
 
 	while #activeSfx >= AudioConfig.MAX_SFX_INSTANCES do
-		local oldest = table.remove(activeSfx, 1)
+		local dropIndex: number? = nil
+		for index, sound in activeSfx do
+			local key = if string.sub(sound.Name, 1, 4) == "Sfx_" then string.sub(sound.Name, 5) else sound.Name
+			local def = AudioConfig.SFX[key]
+			if not (def and def.KeepUntilStopped == true) then
+				dropIndex = index
+				break
+			end
+		end
+		if not dropIndex then
+			break
+		end
+		local oldest = table.remove(activeSfx, dropIndex)
 		if oldest then
 			oldest:Stop()
 			oldest:Destroy()

@@ -7,11 +7,12 @@
 	explodes into a white light pillar. Pierce every monster and grave.
 	Crescent damage is 2000% at 1 tile, plus 100% per extra tile of travel.
 	The last-tile pillar bonus stays a flat extra 1000%.
+	Needs 3+ enemies in the row, or a boss. If several GOD Cappuccinos in the
+	same row are ready, the easternmost (closest to incoming monsters) fires first.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
@@ -23,7 +24,40 @@ local ShadowRequiem = {}
 local log = Logger.new("ShadowRequiem")
 
 local ABILITY_ID = "ShadowRequiem"
-local FULL_LINE = BrainrotConfig.FULL_LINE_RANGE
+
+-- One Requiem at a time per plot row so two ready Cappuccinos cannot overlap.
+local rowBusy: { [Model]: { [number]: boolean } } = {}
+
+local function setRowBusy(plotModel: Model, row: number, busy: boolean)
+	local rows = rowBusy[plotModel]
+	if busy then
+		if not rows then
+			rows = {}
+			rowBusy[plotModel] = rows
+		end
+		rows[row] = true
+		return
+	end
+	if not rows then
+		return
+	end
+	rows[row] = nil
+	if next(rows) == nil then
+		rowBusy[plotModel] = nil
+	end
+end
+
+local function isRowBusy(plotModel: Model, row: number): boolean
+	local rows = rowBusy[plotModel]
+	return rows ~= nil and rows[row] == true
+end
+
+local function rowQualifies(plotModel: Model, row: number, minEnemies: number): boolean
+	if CombatService.rowHasBoss(plotModel, row) then
+		return true
+	end
+	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+end
 
 local SWORD_KEYS = { "sword", "blade", "katana", "saber", "scimitar", "ninjato", "wakizashi" }
 local IGNORE_PARTS: { [string]: boolean } = {
@@ -121,20 +155,27 @@ local function fireWaves(ctx, damage: number, laneEndBonus: number, travelBonus:
 end
 
 function ShadowRequiem.tryAct(ctx, callbacks)
-	local target = CombatService.getFirstMonsterInRow(
-		ctx.plotModel,
-		ctx.position.row,
-		ctx.position.column,
-		FULL_LINE
-	)
-	if not target then
+	local minEnemies = CombatConfig.SWORD_WAVE_MIN_ENEMIES
+	local params = ctx.extraParams
+	if type(params) == "table" and type(params.minEnemies) == "number" then
+		minEnemies = params.minEnemies
+	end
+
+	if isRowBusy(ctx.plotModel, ctx.position.row) then
+		return false
+	end
+	if not rowQualifies(ctx.plotModel, ctx.position.row, minEnemies) then
+		return false
+	end
+
+	local BrainrotBehavior = require(script.Parent.Parent.BrainrotBehavior)
+	if BrainrotBehavior.hasCloserReadyAlly(ctx.instanceId, ABILITY_ID) then
 		return false
 	end
 
 	local percent = 2000
 	local finisherPercent = 1000
 	local travelPercent = 100
-	local params = ctx.extraParams
 	if type(params) == "table" then
 		if type(params.damagePercent) == "number" then
 			percent = params.damagePercent
@@ -158,15 +199,29 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 	end
 	callbacks.lockExclusive(lockFor)
 	callbacks.lockCore(lockFor)
+	setRowBusy(ctx.plotModel, ctx.position.row, true)
 	task.spawn(function()
 		local ok, err = pcall(function()
-			task.wait(clipWait(callbacks))
+			local untilWave = clipWait(callbacks)
+			local lead = math.max(0, CombatConfig.SWORD_WAVE_SOUND_LEAD)
+			if untilWave > lead then
+				task.wait(untilWave - lead)
+			end
 			if not ctx.plotModel.Parent or not ctx.model.Parent then
 				return
 			end
-			callbacks.playSound("ThrowKnifeHit")
+			callbacks.playSound("SwordWave")
+			if untilWave > lead then
+				task.wait(lead)
+			elseif untilWave > 0 then
+				task.wait(untilWave)
+			end
+			if not ctx.plotModel.Parent or not ctx.model.Parent then
+				return
+			end
 			fireWaves(ctx, damage, laneEndBonus, travelBonus)
 		end)
+		setRowBusy(ctx.plotModel, ctx.position.row, false)
 		if not ok then
 			log:warn(err)
 		end

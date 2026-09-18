@@ -48,6 +48,7 @@ local brainrotSfxEnabled = true
 
 local BRAINROT_SFX: { [string]: boolean } = {
 	MeleeBat = true,
+	SahurWrath = true,
 	FreezeTime = true,
 	FreezeTimeEnd = true,
 	BubbleTrap = true,
@@ -67,6 +68,8 @@ local BRAINROT_SFX: { [string]: boolean } = {
 	GraveCollapse = true,
 	RemoveBrainrot = true,
 	ThrowKnifeHit = true,
+	SwordWave = true,
+	SwordWavePillar = true,
 }
 
 local function applyGroupVolumes()
