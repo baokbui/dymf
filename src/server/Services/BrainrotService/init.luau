@@ -677,11 +677,16 @@ function BrainrotService.noteLandedAttack(instanceId: string)
 	BrainrotBehavior.noteLandedAttack(instanceId)
 end
 
--- Removes a living Brainrot from the lawn (Pharaoh steal). Optional yank toward
--- `destination` then destroy the model.
+-- Removes a living Brainrot from the lawn (Pharaoh steal and any later
+-- displacement). Immovable plants stay on their tile.
+function BrainrotService.isImmovable(instanceId: string): boolean
+	local placement = placements[instanceId]
+	return placement ~= nil and placement.definition.immovable == true
+end
+
 function BrainrotService.stealPlacement(instanceId: string, destination: Vector3?): boolean
 	local placement = placements[instanceId]
-	if not placement or placement.health <= 0 then
+	if not placement or placement.health <= 0 or placement.definition.immovable == true then
 		return false
 	end
 

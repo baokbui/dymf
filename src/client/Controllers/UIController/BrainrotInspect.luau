@@ -709,9 +709,10 @@ local function mountHeader(
 		window,
 		definition,
 		UDim2.fromScale(1, 1),
-		UDim2.new(0.5, 0, 0, 0)
+		UDim2.new(0.5, 0, 0, 0),
+		true
 	)
-	if preview:IsA("ViewportFrame") or preview:IsA("Frame") then
+	if preview:IsA("ViewportFrame") then
 		preview.BackgroundTransparency = 1
 		preview.BorderSizePixel = 0
 	end

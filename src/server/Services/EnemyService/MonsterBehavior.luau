@@ -622,7 +622,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 
 					-- Multi-lane units cleave every occupied row on this tile, not
 					-- just the Brainrot that first drew them in (e.g. Goblin Elite
-					-- one-shots Brainrots in both of its lanes).
+					-- one-shots Brainrots in all three of its lanes).
 					local targets = brainrotsAtColumn(runtime, brainrotColumn)
 					local hitDelay = resolveAttackHitDelay(runtime.definition)
 					local instanceId = runtime.instanceId

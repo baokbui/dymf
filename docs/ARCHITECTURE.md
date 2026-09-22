@@ -417,8 +417,9 @@ Full details in `COMBAT.md`. Summary:
 
 - **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime) plus
   per-effect `HEAVY_VFX_*` ids for GOD ultimates.
-- **`VfxLoad`** — Settings **High Quality VFX** toggle (On = Full, Off = Minimal).
-  No automatic Full → Reduced → Minimal cap. Damage is never throttled.
+- **`VfxLoad`** — Settings **VFX** choice (High = Full, Low = Reduced, Off = Minimal).
+  Off flattens shop / inventory / index portraits and freezes evolution shine.
+  Inspect portraits stay 3D. No automatic cap. Damage is never throttled.
 - **`VfxUtil`** + **`PlotUtil`** (client utilities) — ephemeral particles and plot helpers.
 - **`CombatController`** — hit/death particles, line-bomb explosions (`Explosion`
   payload), Sahur’s Wrath landing (`BatSlam`), projectile trail/glow on `plot.Projectiles` parts.
@@ -440,7 +441,7 @@ Full details in `UI.md`. Summary:
   `BRAINROTS.md`.
 - **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
 - **Settings** — bottom-left bare icon + name; mute, volume steps, Brainrot SFX toggle,
-  High Quality VFX toggle, statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
+  VFX choice (High / Low / Off), statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
 - **Inventory** — bottom-left bare icon + name (left of Index) + modal; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
   stats + gray/lit evolutions, Equip / Equipped). Clicking a planted unit

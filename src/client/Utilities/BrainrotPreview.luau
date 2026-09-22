@@ -3,6 +3,9 @@
 	BrainrotPreview
 	Client-only ViewportFrame previews of Assets.Brainrots templates for Shop
 	(and similar UI). Display-only — no gameplay authority.
+
+	VFX Off uses a flat color swatch instead of a ViewportFrame, except inspect
+	portraits (`keepModel`), which stay 3D on every setting.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local Types = require(Shared.Types)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
+local VfxLoad = require(Shared.Utilities.VfxLoad)
 
 local BrainrotPreview = {}
 
@@ -56,40 +60,84 @@ local function frameModel(camera: Camera, model: Model, focusOffset: Vector3?)
 	camera.CFrame = CFrame.lookAt(lookFrom, center)
 end
 
---[[
-	Fills `parent` with a ViewportFrame preview for `definition`.
-	Falls back to a colored Frame swatch when the Assets template is missing.
-	Returns the preview GuiObject (ViewportFrame or Frame).
-]]
-function BrainrotPreview.mount(
-	parent: GuiObject,
+local SILHOUETTE = Color3.fromRGB(10, 10, 14)
+
+type Layout = {
+	size: UDim2,
+	position: UDim2,
+	anchor: Vector2,
+	zindex: number,
+	corner: UICorner?,
+}
+
+type Mount = {
+	gui: GuiObject,
 	definition: Types.BrainrotDefinition,
-	size: UDim2?,
-	position: UDim2?
-): GuiObject
-	local resolvedSize = size or UDim2.fromScale(1, 1)
-	local resolvedPosition = position or UDim2.new(0.5, 0, 0, 0)
+	viewportTransparency: number?,
+	silhouette: boolean,
+	keepModel: boolean,
+}
+
+local mounts: { Mount } = {}
+
+local function paintSilhouette(root: Instance)
+	for _, descendant in root:GetDescendants() do
+		if descendant:IsA("SurfaceAppearance") or descendant:IsA("Texture") or descendant:IsA("Decal") then
+			descendant:Destroy()
+		elseif descendant:IsA("BasePart") then
+			descendant.Color = SILHOUETTE
+			descendant.Material = Enum.Material.SmoothPlastic
+		elseif descendant:IsA("ParticleEmitter") or descendant:IsA("Fire") or descendant:IsA("Smoke") or descendant:IsA("Highlight") then
+			descendant.Enabled = false
+		end
+	end
+end
+
+local function takeLayout(gui: GuiObject): Layout
+	local corner = gui:FindFirstChildOfClass("UICorner")
+	return {
+		size = gui.Size,
+		position = gui.Position,
+		anchor = gui.AnchorPoint,
+		zindex = gui.ZIndex,
+		corner = if corner then corner:Clone() else nil,
+	}
+end
+
+local function applyLayout(gui: GuiObject, layout: Layout)
+	gui.Size = layout.size
+	gui.Position = layout.position
+	gui.AnchorPoint = layout.anchor
+	gui.ZIndex = layout.zindex
+	if layout.corner then
+		layout.corner.Parent = gui
+	end
+end
+
+local function makeSwatch(definition: Types.BrainrotDefinition, silhouette: boolean): Frame
+	local swatch = Instance.new("Frame")
+	swatch.Name = "Swatch"
+	swatch.BackgroundColor3 = if silhouette
+		then SILHOUETTE
+		else (definition.color or Color3.fromRGB(180, 140, 220))
+	swatch.BackgroundTransparency = 0
+	swatch.BorderSizePixel = 0
+	swatch.Active = false
+	if silhouette then
+		swatch:SetAttribute("PreviewSilhouette", true)
+	end
+	return swatch
+end
+
+local function makeViewport(definition: Types.BrainrotDefinition, silhouette: boolean): GuiObject
 	local modelId = definition.modelId or definition.id
 	local template = ModelUtil.findBrainrotTemplate(modelId)
-
 	if not template then
-		local swatch = Instance.new("Frame")
-		swatch.Name = "Swatch"
-		swatch.AnchorPoint = Vector2.new(0.5, 0)
-		swatch.Position = resolvedPosition
-		swatch.Size = resolvedSize
-		swatch.BackgroundColor3 = definition.color or Color3.fromRGB(180, 140, 220)
-		swatch.BorderSizePixel = 0
-		swatch.Active = false
-		swatch.Parent = parent
-		return swatch
+		return makeSwatch(definition, silhouette)
 	end
 
 	local viewport = Instance.new("ViewportFrame")
 	viewport.Name = "Preview"
-	viewport.AnchorPoint = Vector2.new(0.5, 0)
-	viewport.Position = resolvedPosition
-	viewport.Size = resolvedSize
 	viewport.BackgroundColor3 = Color3.fromRGB(75, 155, 220)
 	viewport.BackgroundTransparency = 0.4
 	viewport.BorderSizePixel = 0
@@ -98,7 +146,12 @@ function BrainrotPreview.mount(
 	viewport.LightColor = Color3.fromRGB(255, 255, 255)
 	-- Match the 3/4 front camera so faces are lit, not backlit.
 	viewport.LightDirection = Vector3.new(-0.85, -0.45, -0.3)
-	viewport.Parent = parent
+	if silhouette then
+		viewport.Ambient = Color3.new(0, 0, 0)
+		viewport.LightColor = Color3.fromRGB(28, 28, 32)
+		viewport.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+		viewport:SetAttribute("PreviewSilhouette", true)
+	end
 
 	local world = Instance.new("WorldModel")
 	world.Parent = viewport
@@ -120,7 +173,87 @@ function BrainrotPreview.mount(
 	model.Parent = world
 	centerAtOrigin(model)
 	frameModel(camera, model, definition.previewFocusOffset)
+	if silhouette then
+		paintSilhouette(model)
+	end
 	return viewport
 end
+
+local function realize(mount: Mount, layout: Layout): GuiObject
+	local gui = if VfxLoad.usesModelPortrait(mount.keepModel)
+		then makeViewport(mount.definition, mount.silhouette)
+		else makeSwatch(mount.definition, mount.silhouette)
+	applyLayout(gui, layout)
+	if gui:IsA("ViewportFrame") then
+		gui.BackgroundTransparency = mount.viewportTransparency or gui.BackgroundTransparency
+	end
+	return gui
+end
+
+local function refreshMounts()
+	local alive: { Mount } = {}
+	for _, mount in mounts do
+		local gui = mount.gui
+		local parent = gui.Parent
+		if not parent then
+			continue
+		end
+		if gui:GetAttribute("PreviewSilhouette") == true then
+			mount.silhouette = true
+		end
+		local wantModel = VfxLoad.usesModelPortrait(mount.keepModel)
+		if wantModel == gui:IsA("ViewportFrame") then
+			table.insert(alive, mount)
+			continue
+		end
+		if gui:IsA("ViewportFrame") then
+			mount.viewportTransparency = gui.BackgroundTransparency
+		end
+		local layout = takeLayout(gui)
+		gui:Destroy()
+		local nextGui = realize(mount, layout)
+		nextGui.Parent = parent
+		mount.gui = nextGui
+		table.insert(alive, mount)
+	end
+	mounts = alive
+end
+
+--[[
+	Fills `parent` with a ViewportFrame preview for `definition`.
+	Falls back to a colored Frame swatch when the Assets template is missing.
+	VFX Off also uses that swatch, unless `keepModel` is true (inspect).
+	Returns the preview GuiObject (ViewportFrame or Frame).
+]]
+function BrainrotPreview.mount(
+	parent: GuiObject,
+	definition: Types.BrainrotDefinition,
+	size: UDim2?,
+	position: UDim2?,
+	keepModel: boolean?
+): GuiObject
+	local mount: Mount = {
+		gui = nil :: any,
+		definition = definition,
+		viewportTransparency = nil,
+		silhouette = false,
+		keepModel = keepModel == true,
+	}
+	local gui = realize(mount, {
+		size = size or UDim2.fromScale(1, 1),
+		position = position or UDim2.new(0.5, 0, 0, 0),
+		anchor = Vector2.new(0.5, 0),
+		zindex = 1,
+		corner = nil,
+	})
+	gui.Parent = parent
+	mount.gui = gui
+	table.insert(mounts, mount)
+	return gui
+end
+
+VfxLoad.onChanged(function()
+	refreshMounts()
+end)
 
 return BrainrotPreview

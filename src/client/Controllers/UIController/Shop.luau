@@ -15,10 +15,12 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Brainrots = require(Shared.Brainrots)
 local Evolutions = require(Shared.Evolutions)
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
+local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Types = require(Shared.Types)
 
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
+local TextShine = require(script.Parent.Parent.Parent.Utilities.TextShine)
 local PlotUtil = require(script.Parent.Parent.Parent.Utilities.PlotUtil)
 local PlantCost = require(Shared.Utilities.PlantCost)
 
@@ -54,6 +56,7 @@ type Card = {
 	cooldownCover: Frame,
 	cooldownLabel: TextLabel,
 	definition: Types.BrainrotDefinition,
+	chromeKey: string,
 }
 
 export type ShopCallbacks = {
@@ -287,6 +290,30 @@ function Shop.styleCard(button: GuiObject, selected: boolean?)
 	UITheme.applyStroke(button, CARD_STROKE)
 end
 
+-- Claimed rarity fills the card with the saturated aura (not the dark
+-- inspect mix) plus the top-left → bottom-right gleam. No claim stays yellow.
+local function applyCardChrome(button: GuiObject, claimed: { string }?, selected: boolean)
+	local rarity = Evolutions.highestClaimedRarity(claimed)
+	TextShine.clear(button)
+	if not rarity then
+		button.BackgroundColor3 = if selected then UITheme.CARD_SELECTED_BG else UITheme.CARD_BG
+		return
+	end
+	if EvolutionConfig.isRainbow(rarity) then
+		TextShine.applyRainbowPanel(button)
+		return
+	end
+	TextShine.applyPanel(button, EvolutionConfig.worldAura(rarity))
+end
+
+local function cardChromeKey(claimed: { string }?, selected: boolean): string
+	local rarity = Evolutions.highestClaimedRarity(claimed)
+	if rarity then
+		return rarity
+	end
+	return if selected then "selected" else "plain"
+end
+
 function Shop.buildCard(self: Shop, parent: Instance, order: number, definition: Types.BrainrotDefinition)
 	local button = Instance.new("TextButton")
 	button.Name = definition.id
@@ -305,7 +332,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	)
 	-- Soft inset only — no second black ring inside the card.
 	UITheme.styleCorner(preview, 8)
-	if preview:IsA("ViewportFrame") or preview:IsA("Frame") then
+	if preview:IsA("ViewportFrame") then
 		preview.BackgroundTransparency = 0.45
 	end
 	passthrough(preview)
@@ -406,6 +433,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 		cooldownCover = cooldownCover,
 		cooldownLabel = cooldownLabel,
 		definition = definition,
+		chromeKey = "",
 	})
 end
 
@@ -418,8 +446,14 @@ function Shop.refresh(self: Shop)
 		local plantCost = PlantCost.coins(card.definition.cost, PlotUtil.getLocalPlotModel())
 		local affordable = self.balance >= plantCost
 		local selected = self.selectedId == card.definition.id
-
-		Shop.styleCard(card.button, selected and not onCooldown)
+		local claimed = self.evolutions[card.definition.id]
+		local showSelected = selected and not onCooldown
+		local chromeKey = cardChromeKey(claimed, showSelected)
+		if card.chromeKey ~= chromeKey then
+			card.chromeKey = chromeKey
+			applyCardChrome(card.button, claimed, showSelected)
+		end
+		UITheme.applyStroke(card.button, if showSelected then UITheme.STROKE_PANEL else CARD_STROKE)
 		card.button.BackgroundTransparency = if (affordable and not onCooldown) then 0 else 0.35
 		if affordable and not onCooldown then
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.GOLD_TEXT)

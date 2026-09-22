@@ -267,7 +267,7 @@ local function runSlam(ctx, callbacks, damage: number)
 	end
 
 	callbacks.playSound("MeleeBat")
-	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row, CombatConfig.WRATH_SPLASH_ROWS)
+	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row)
 
 	local ignoreIds: { [string]: boolean } = {}
 	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, ctx.position.row) do

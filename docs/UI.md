@@ -99,9 +99,15 @@ hardcode a second palette in new UI.
   the equipped list changes — XP / kill `ProfileUpdated` ticks restyle in place
   so a click is not dropped. Each card mounts a
   3D model preview via `BrainrotPreview` (`Assets.Brainrots` / `modelId`).
+  **VFX Off** swaps those previews for flat color swatches. **Low** and **High**
+  keep the 3D preview. Low and Off freeze the evolution gleam (color stays, the
+  slash does not travel). Inspect portraits stay 3D on every setting.
   Cards use wider gaps, thinner outlines, and pulled-back previews (no nested
-  stroke on the viewport) so the row stays readable. Names and costs use
-  outlined title text (same as HUD) so they stay readable on the yellow cards.
+  stroke on the viewport) so the row stays readable.   Names and costs use
+  outlined title text (same as HUD) so they stay readable. A card with no claimed
+  evolution stays yellow (green while selected). Once a tier is claimed, the
+  background uses that rarity’s saturated aura and the inspect-card gleam
+  (`TextShine.applyPanel`; GOD uses the rainbow panel).
   Units with `maxOnPlot` (Ballerina) show a live **n/max** count under the name
   (`2/10`); card and shop size stay the same. Long names wrap the rest under the first word (card width unchanged). Framing uses visual AABB
   + optional `previewFocusOffset`; animated rigs stay posed (no idle playback
@@ -117,8 +123,10 @@ hardcode a second palette in new UI.
   counts down to 0, then hides when the day goes Active.
 - **Settings** ✅ M13 — bottom-left bare icon + name opens the
   modal. Mute,
-  music/SFX volume, Brainrot SFX toggle, **High Quality VFX** (On = full combat
-  effects, Off = simpler VFX for framerate), statistics, **Danger Zone → Reset
+  music/SFX volume, Brainrot SFX toggle, **VFX** (**High** / **Low** / **Off**).
+  High is full combat effects and a moving shine. Low simplifies combat effects
+  and stops the shine. Off also turns shop, inventory, and index portraits into
+  color swatches. Inspect portraits stay 3D on every setting. Statistics, **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time

@@ -193,31 +193,29 @@ function Settings.new(parent: Frame): SettingsPanel
 	end)
 
 	local graphicsSection = section("Graphics", 2)
-	local qualityButton = makeButton(graphicsSection, "High Quality VFX: On", UITheme.BUTTON_BG)
+	local qualityButton = makeButton(graphicsSection, "VFX: High", UITheme.BUTTON_BG)
 	qualityButton.LayoutOrder = 1
 	qualityButton.TextSize = 13
 	local qualityHint = Instance.new("TextLabel")
 	qualityHint.BackgroundTransparency = 1
-	qualityHint.Size = UDim2.new(1, 0, 0, 32)
+	qualityHint.Size = UDim2.new(1, 0, 0, 72)
 	qualityHint.LayoutOrder = 2
 	qualityHint.TextSize = 13
 	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
 	qualityHint.TextYAlignment = Enum.TextYAlignment.Top
 	qualityHint.TextWrapped = true
-	qualityHint.Text = "On keeps full combat effects. Off uses simpler VFX for higher framerate."
+	qualityHint.Text = "High is full effects and a moving shine. Low simplifies combat effects and stops the shine. Off also turns shop, inventory, and index portraits into color swatches. Inspect portraits stay."
 	qualityHint.Parent = graphicsSection
 	UITheme.applyOutlinedTitle(qualityHint, UITheme.TITLE)
 	qualityHint.TextSize = 13
 
-	local highQualityVfx = VfxLoad.isHighQuality()
 	local function applyGraphics()
-		VfxLoad.setHighQuality(highQualityVfx)
-		qualityButton.Text = if highQualityVfx then "High Quality VFX: On" else "High Quality VFX: Off"
+		qualityButton.Text = "VFX: " .. VfxLoad.label()
 		qualityButton.TextSize = 13
 	end
 	qualityButton.Activated:Connect(function()
 		AudioController.play("UiClick")
-		highQualityVfx = not highQualityVfx
+		VfxLoad.cycle()
 		applyGraphics()
 	end)
 	applyGraphics()

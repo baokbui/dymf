@@ -109,7 +109,7 @@ were raised so early boards need real DPS:
 | -- | ---- | -- | -------- | ---- |
 | `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
 | `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 110 / 1.0s |
-| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 6.2 | 8000 + one-shot; **laneSpan 2** |
+| `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 6.2 | 8000 + one-shot; **laneSpan 3** |
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
 | `DukeVampire` | Boss (L20; recurs L24/28/38; dual finale L40) | 8000 | 4.8 | 100 / 1.1s; last stand + Terrify |
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
@@ -185,8 +185,9 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Combat globals | `CombatConfig`, `BrainrotConfig`, `MonsterConfig` |
 | GOD ult percents | `Shared.Evolutions` `abilityParams` (`damagePercent`, `travelPercent`, `finisherPercent`, `splashPercent`, `minEnemies`, …) |
 | Golden Discount | `EvolutionConfig.PLANT_DISCOUNT_COOLDOWN` + `abilityParams.plantDiscountCooldown` (plot-wide, all Ballerinas) |
+| Tralalero CC vs size | `CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW` (25% per extra row; 5 rows immune) |
 | Sword-wave / pillar look | `VfxConfig.SWORD_WAVE_*`; timing in `CombatConfig.SWORD_WAVE_*` |
-| Heavy ult VFX | Settings **High Quality VFX**; `VfxConfig.HEAVY_VFX_*` costs for `VfxLoad.acquire` |
+| Heavy ult VFX | Settings **VFX** High / Low / Off; `VfxConfig.HEAVY_VFX_*` costs for `VfxLoad.acquire` |
 | Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |
 | Monster campaign HP scale | `MonsterConfig.STAT_SCALE_*` (non-boss HP only; intro day from `MONSTER_INTRO_SCHEDULE`) |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |

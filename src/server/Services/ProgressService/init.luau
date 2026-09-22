@@ -539,7 +539,9 @@ function ProgressService.canPlace(player: Player, brainrotId: string): boolean
 	return ProgressService.isUnlocked(player, brainrotId) and ProgressService.isEquipped(player, brainrotId)
 end
 
--- TEMP Studio cheat: unlock + equip every registry Brainrot (see DevConfig).
+-- TEMP Studio cheat: unlock every registry Brainrot (see DevConfig).
+-- The shop loadout stays whatever the player saved. A default is only filled
+-- when the profile has no equipped units.
 function ProgressService.applyDevRoster(player: Player)
 	if not DevConfig.isActive() or not DevConfig.UNLOCK_ALL_BRAINROTS then
 		return
@@ -557,7 +559,12 @@ function ProgressService.applyDevRoster(player: Player)
 	end
 	table.sort(allIds)
 	profile.unlocks = sanitizeIdList(allIds)
-	profile.equipped = sanitizeIdList(allIds, unlockSet(profile.unlocks), ProgressConfig.MAX_EQUIPPED)
+	local unlocked = unlockSet(profile.unlocks)
+	local kept = sanitizeIdList(profile.equipped, unlocked, ProgressConfig.MAX_EQUIPPED)
+	if #kept == 0 then
+		kept = sanitizeIdList(defaultEquipped(), unlocked, ProgressConfig.MAX_EQUIPPED)
+	end
+	profile.equipped = kept
 	broadcast(player)
 end
 
@@ -1026,6 +1033,10 @@ local function onSetEquipped(player: Player, raw: unknown)
 	end
 	profile.equipped = nextEquipped
 	broadcast(player)
+	-- Flush now. Studio stop often kills the process before the leave save
+	-- lands, which put the previous shop lineup back on the next Play.
+	local SaveService = require(script.Parent.SaveService)
+	SaveService.saveNow(player, "loadout")
 end
 
 local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unknown)

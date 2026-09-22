@@ -81,6 +81,7 @@ local function paintSilhouette(root: Instance)
 end
 
 local function applySilhouette(preview: GuiObject)
+	preview:SetAttribute("PreviewSilhouette", true)
 	if preview:IsA("ViewportFrame") then
 		preview.Ambient = Color3.new(0, 0, 0)
 		preview.LightColor = Color3.fromRGB(28, 28, 32)

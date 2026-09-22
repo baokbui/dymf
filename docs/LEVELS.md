@@ -173,6 +173,7 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 48    | Blood Linen       | Desert · mummy + scorpion · **21** |
 | 49    | Before the Tomb   | Desert · mummy + scorpion · **23** |
 | 50    | Pharaoh Mummy     | Desert · scorpion + **PharaohMummy** finale · **12** |
+| 51    | Sand Horde        | Playtest · Desert · **SmallMummy** + **Scorpion** only · **80** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
 Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;

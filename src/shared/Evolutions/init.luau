@@ -18,6 +18,7 @@ export type StatOverrides = {
 	health: number?,
 	damage: number?,
 	plantCooldown: number?,
+	immovable: boolean?,
 }
 
 export type EvolutionRow = {
@@ -69,8 +70,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Epic",
 			level = 10,
 			name = "Goliath",
-			description = "4000 HP (from 2000).",
-			stats = { maxHealth = 4000 },
+			description = "4000 HP (from 2000). Immovable: cannot be stolen or moved off its tile.",
+			stats = { maxHealth = 4000, immovable = true },
 		},
 		{
 			rarity = "Legendary",
@@ -110,7 +111,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Legendary",
 			level = 20,
 			name = "Ranged Rampage",
-			description = "Throw a spinning bat down the row for 10s. Lawn hits knock back half a tile.",
+			description = "Throw a spinning bat down the row for 10s. Lawn hits knock back a quarter tile.",
 			ability = "RangedRampage",
 			abilityParams = { cooldown = 20, duration = 10 },
 		},
@@ -144,8 +145,9 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Epic",
 			level = 10,
 			name = "Ocean's Rhythm",
-			description = "Attack interval 3s (from 5s).",
-			stats = { attackInterval = 3 },
+			description = "Attack interval 3s (from 5s), +10 damage (65, from 55), and +0.25s trap (0.75s, from 0.5s).",
+			stats = { attackInterval = 3, damage = 65 },
+			abilityParams = { trapDuration = 0.75 },
 		},
 		{
 			rarity = "Legendary",
@@ -176,9 +178,9 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Epic",
 			level = 10,
 			name = "Espresso Rush",
-			description = "+50% attack speed.",
-			-- 2s base / 1.5 = ~1.333s between knives.
-			stats = { attackInterval = 2 / 1.5 },
+			description = "+50% attack speed and +25 damage (75, from 50).",
+			-- 2s base / 1.5 = ~1.333s between knives. Damage is base 50 + 25.
+			stats = { attackInterval = 2 / 1.5, damage = 75 },
 		},
 		{
 			rarity = "Legendary",

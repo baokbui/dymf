@@ -349,7 +349,7 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 		UDim2.fromOffset(PREVIEW_SIZE - 8, PREVIEW_SIZE - 8),
 		UDim2.new(0.5, 0, 0, 4)
 	)
-	if preview:IsA("ViewportFrame") or preview:IsA("Frame") then
+	if preview:IsA("ViewportFrame") then
 		preview.BackgroundTransparency = 1
 	end
 

@@ -70,6 +70,44 @@ local function monsterLaneSpanOf(instanceId: string): number
 	return 1
 end
 
+-- Remaining strength of a Tralalero crowd-control effect (1 = full, 0 = immune).
+local function tralaleroCcKeep(laneSpan: number): number
+	local extraRows = math.max(0, math.floor(laneSpan) - 1)
+	local resist = math.clamp(extraRows * CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW, 0, 1)
+	return 1 - resist
+end
+
+-- Scales trap / stun duration, knockback tiles, and slow amount. Nil duration
+-- means the monster is immune and the status should not be applied.
+local function scaleTralaleroCrowdControl(
+	instanceId: string,
+	kind: Types.StatusEffectKind,
+	duration: number,
+	magnitude: number?
+): (number?, number?)
+	local keep = tralaleroCcKeep(monsterLaneSpanOf(instanceId))
+	if keep <= 0 then
+		return nil, nil
+	end
+	if kind == "Knockback" then
+		local tiles = (magnitude or CombatConfig.KNOCKBACK_TILES) * keep
+		if tiles <= 0 then
+			return nil, nil
+		end
+		return 0, tiles
+	end
+	local scaledDuration = duration * keep
+	if scaledDuration <= 0 then
+		return nil, nil
+	end
+	local scaledMagnitude = magnitude
+	if kind == "Slow" and type(magnitude) == "number" then
+		local slow = math.clamp(1 - magnitude, 0, 1)
+		scaledMagnitude = 1 - slow * keep
+	end
+	return scaledDuration, scaledMagnitude
+end
+
 -- If a grave sits between the shooter and this monster, shake the stone (no HP).
 local function absorbGraveBlock(plotModel: Model, row: number, fromColumn: number, targetColumn: number): boolean
 	return graveService().absorbLaneHit(plotModel, row, fromColumn, targetColumn)
@@ -798,32 +836,29 @@ function CombatService.fireTileExplosion(
 	})
 end
 
-function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number, splashRows: number?)
+function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number)
 	local GridService = require(script.Parent.GridService)
 	local hits: { { x: number, y: number, z: number } } = {}
 	local seen: { [string]: boolean } = {}
-	local span = math.max(0, math.floor(splashRows or 0))
-	for splashRow = row - span, row + span do
-		if splashRow < 1 or splashRow > GridConfig.ROWS then
+	if row < 1 or row > GridConfig.ROWS then
+		return
+	end
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		if seen[monsterId] then
 			continue
 		end
-		for _, monsterId in CombatService.getAllMonstersInRow(plotModel, splashRow) do
-			if seen[monsterId] then
-				continue
-			end
-			seen[monsterId] = true
-			local column = monsterColumnOf(monsterId)
-			if type(column) ~= "number" then
-				continue
-			end
-			local pos = GridService.getWorldPositionAtColumn(plotModel, splashRow, column)
-			if pos then
-				table.insert(hits, {
-					x = pos.X,
-					y = pos.Y,
-					z = pos.Z,
-				})
-			end
+		seen[monsterId] = true
+		local column = monsterColumnOf(monsterId)
+		if type(column) ~= "number" then
+			continue
+		end
+		local pos = GridService.getWorldPositionAtColumn(plotModel, row, column)
+		if pos then
+			table.insert(hits, {
+				x = pos.X,
+				y = pos.Y,
+				z = pos.Z,
+			})
 		end
 	end
 	if #hits == 0 then
@@ -1136,7 +1171,11 @@ function CombatService.applyBubbleExitSlow(plotModel: Model, monsterInstanceId: 
 		return
 	end
 	local factor = math.clamp(1 - percent / 100, 0.05, 1)
-	CombatService.applyStatusToMonster(monsterInstanceId, "Slow", duration, factor)
+	local scaledDuration, scaledFactor = scaleTralaleroCrowdControl(monsterInstanceId, "Slow", duration, factor)
+	if scaledDuration == nil then
+		return
+	end
+	CombatService.applyStatusToMonster(monsterInstanceId, "Slow", scaledDuration, scaledFactor)
 end
 
 function CombatService.noteLandedAttack(sourceInstanceId: string)
@@ -1442,14 +1481,29 @@ local function onProjectileImpact(
 		fireCombatVisual(ownerUserId, payload)
 
 		if not killed and impact and impact.statusKind then
-			local duration = impact.statusDuration
-			local isKnockback = impact.statusKind == "Knockback"
-			if isKnockback or (type(duration) == "number" and duration > 0) then
+			local duration = if type(impact.statusDuration) == "number" then impact.statusDuration else 0
+			local magnitude = impact.statusMagnitude
+			local applyStatus = impact.statusKind == "Knockback" or duration > 0
+			if applyStatus and impact.statusVisual == "Bubble" then
+				local scaledDuration, scaledMagnitude = scaleTralaleroCrowdControl(
+					instanceId,
+					impact.statusKind,
+					duration,
+					magnitude
+				)
+				if scaledDuration == nil then
+					applyStatus = false
+				else
+					duration = scaledDuration
+					magnitude = scaledMagnitude
+				end
+			end
+			if applyStatus then
 				CombatService.applyStatusToMonster(
 					instanceId,
 					impact.statusKind,
-					if type(duration) == "number" then duration else 0,
-					impact.statusMagnitude,
+					duration,
+					magnitude,
 					impact.statusVisual
 				)
 			end

@@ -22,7 +22,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	GoblinEliteClubOneShot = {
 		label = "Crushing Club",
-		description = "One-shots Brainrots across both lanes it occupies.",
+		description = "One-shots Brainrots across all three lanes it occupies.",
 	},
 	QueenSpiderStun = {
 		label = "Venom Stun",

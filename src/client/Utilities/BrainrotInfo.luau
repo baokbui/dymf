@@ -28,7 +28,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	RangedRampage = {
 		label = "Ranged Rampage",
-		description = "Throws a spinning bat down the row. Lawn hits knock back half a tile.",
+		description = "Throws a spinning bat down the row. Lawn hits knock back a quarter tile.",
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",

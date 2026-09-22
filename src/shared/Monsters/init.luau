@@ -106,9 +106,8 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 3.5,
 		isBoss = true,
 		abilities = { "GoblinEliteClubOneShot" },
-		-- Spans 2 rows: Brainrots on adjacent lanes can attack it. Model scales to match.
-		-- (Kept < 3 so more of the lawn's rows are valid random spawn anchors.)
-		laneSpan = 2,
+		-- Three lawn rows (anchor + 2). Model scales to match.
+		laneSpan = 3,
 		color = Color3.fromRGB(60, 100, 50),
 		walkAnimationId = "rbxassetid://135233369169455",
 		attackAnimationId = "rbxassetid://117829288192683",
@@ -271,6 +270,8 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		},
 		color = Color3.fromRGB(220, 170, 70),
 		modelId = "PharaohMummy",
+		-- Two lawn rows (anchor + 1). Size comes from laneSpan, not an extra modelScale.
+		laneSpan = 2,
 		walkAnimationId = "rbxassetid://72737313323934",
 		attackAnimationId = "rbxassetid://133284998118919",
 		abilityAnimationIds = {
@@ -278,7 +279,6 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			PharaohSteal = "rbxassetid://93082363577263",
 		},
 		spawnStyle = "RiseFromGround",
-		modelScale = 1.5,
 		auraColor = Color3.fromRGB(230, 190, 80),
 		auraScale = 1.5,
 	},

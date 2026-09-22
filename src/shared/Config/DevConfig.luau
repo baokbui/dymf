@@ -9,17 +9,18 @@
 local RunService = game:GetService("RunService")
 
 local DevConfig = {
-	ENABLED = true,
+	ENABLED = off,
 	COINS = 10000,
 	BRAINS = 10000,
+	-- Unlocks every playable Brainrot. Does not replace the saved shop loadout.
 	UNLOCK_ALL_BRAINROTS = true,
 	-- Skip PvZ seed-packet recharge after planting (server + shop overlay).
 	ZERO_PLANT_COOLDOWNS = true,
 	-- Join forces current day + unlock through this day.
-	FORCE_DAY = 41,
+	FORCE_DAY = 35,
 	-- Floor every playable Brainrot to this level and claim Epic→that tier
 	-- (40 = Immortal). 0 = skip. XP already above the floor is kept.
-	FORCE_BRAINROT_LEVEL = 50,
+	FORCE_BRAINROT_LEVEL = 20,
 }
 
 function DevConfig.isActive(): boolean

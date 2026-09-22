@@ -51,6 +51,8 @@ export type BrainrotDefinition = {
 	plantCooldown: number?, -- seconds before re-plant; nil = BrainrotConfig.plantCooldownFor(cost)
 	-- Cap of living plants of this id on one plot. Nil = unlimited.
 	maxOnPlot: number?,
+	-- Claimed evolution: cannot be stolen or moved off its tile.
+	immovable: boolean?,
 	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
 	modelId: string?, -- Assets.Brainrots child name; defaults to `id`
 	-- Local Euler degrees (X=pitch, Y=yaw, Z=roll) applied after clearing Assets rotation.

@@ -1432,7 +1432,7 @@ end
 	frequency. A new call cancels the previous loop.
 ]]
 function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius: number?)
-	if not VfxLoad.isHighQuality() then
+	if VfxLoad.quality() == "Minimal" then
 		return
 	end
 	magnetWaveToken += 1
@@ -1490,7 +1490,7 @@ function VfxUtil.applyHeavyQuality(root: Instance, highQuality: boolean)
 			descendant:Clear()
 		end
 		qualityGuards[descendant] = descendant:GetPropertyChangedSignal("Enabled"):Connect(function()
-			if VfxLoad.isHighQuality() or not descendant.Enabled then
+			if VfxLoad.quality() ~= "Minimal" or not descendant.Enabled then
 				return
 			end
 			descendant.Enabled = false
@@ -1501,8 +1501,8 @@ function VfxUtil.applyHeavyQuality(root: Instance, highQuality: boolean)
 	end
 end
 
-VfxLoad.onHighQualityChanged(function(enabled)
-	if not enabled then
+VfxLoad.onChanged(function(level)
+	if level == "Minimal" then
 		VfxUtil.stopMagnetWaves()
 	end
 end)

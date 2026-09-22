@@ -669,6 +669,19 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			{ monsterId = "PharaohMummy", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 		},
 	},
+
+	-- Playtest stress day: Small Mummy + Scorpion only, 80 spawns.
+	Level51 = {
+		id = "Level51",
+		number = 51,
+		name = "Sand Horde",
+		weather = "Desert",
+		groups = {
+			{ monsterId = "SmallMummy", count = 30, startDelay = 1.5, spawnInterval = 0.25 },
+			{ monsterId = "Scorpion", count = 20, startDelay = 1, spawnInterval = 0.25 },
+			{ monsterId = "SmallMummy", count = 30, startDelay = 1, spawnInterval = 0.25, isBigWave = true },
+		},
+	},
 }
 
 local ordered: { Types.LevelDefinition } = {}

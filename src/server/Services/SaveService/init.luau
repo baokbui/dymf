@@ -577,8 +577,25 @@ function SaveService.init()
 	-- PlayerRemoving handlers (PlotService / BrainrotService clear the lawn).
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	game:BindToClose(function()
-		for _, player in Players:GetPlayers() do
+		local players = Players:GetPlayers()
+		for _, player in players do
 			savePlayer(player, "shutdown")
+		end
+		-- A save already in flight only queues a resave and returns. Stay
+		-- alive until that resave writes, or Studio stop drops the new loadout.
+		local deadline = os.clock() + 20
+		while os.clock() < deadline do
+			local busy = false
+			for _, player in players do
+				if saveInFlight[player.UserId] then
+					busy = true
+					break
+				end
+			end
+			if not busy then
+				break
+			end
+			task.wait(0.1)
 		end
 	end)
 end

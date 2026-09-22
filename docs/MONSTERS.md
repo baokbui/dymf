@@ -49,7 +49,7 @@ From `Shared.Types.MonsterDefinition`:
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                        |
 | `abilityAnimationIds`     | `{ [string]: string }?` | One-shot clips keyed by ability id (`PharaohSummon` / `PharaohSteal`)  |
 | `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick) |
-| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin Elite = 2)    |
+| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Pharaoh Mummy = 2, Goblin Elite / Queen Spider = 3) |
 | `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
 | `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`               |
@@ -60,7 +60,7 @@ Movement is **grid-based**: monsters spawn deep in the east dark forest
 the house (−X), one tile per `secondsPerGrid` seconds. The march from forest
 to lawn is the day's plant/setup window.
 
-**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan` tiles across Z **and** X (uniform scale), and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). Freeze / row splash also treat the X footprint as on-plot once it overlaps the lawn, so a one-shot planted on the visual middle of Queen Spider still hits. The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in either of its two lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
+**Multi-lane bosses** (`laneSpan` > 1): the model scales to cover ~`laneSpan` tiles across Z **and** X (uniform scale), and Brainrots on any row in that span can target them (`GridUtil.occupiesLaneRow`). Freeze / row splash also treat the X footprint as on-plot once it overlaps the lawn, so a one-shot planted on the visual middle of Queen Spider still hits. The reverse also holds — a multi-lane unit's melee attack hits every Brainrot standing on its current tile across **all** occupied rows, not just its anchor row (`MonsterBehavior.brainrotsAtColumn`), so Goblin Elite's one-shot club can down Brainrots in all three of its lanes in a single swing. The spawn row is a random **anchor** (lowest row occupied) chosen so the full span stays on the lawn — e.g. span 2 on a 5-row grid picks anchor 1–4 (4 options, covering rows 1–2 up to 4–5), vs. a span-3 unit which only has 3 valid centered positions. Visual placement centers the model on the midpoint of its span (`GridUtil.laneCenterRow`).
 
 ---
 
@@ -165,7 +165,7 @@ M16 **Complete When** ✅ — campaign monsters in authored levels use real mode
 | Werewolf      | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
 | Skeleton      | 200    | 4.0      | 100    | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅                                              |
 | Goblin        | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
-| Goblin Elite  | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves both occupied lanes; **laneSpan 2**                                                                              |
+| Goblin Elite  | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves all occupied lanes; **laneSpan 3**                                                                              |
 | Spider        | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
 | Necromancer   | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
 | Goblin King   | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
@@ -173,7 +173,7 @@ M16 **Complete When** ✅ — campaign monsters in authored levels use real mode
 | Duke Vampire  | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 | Small Mummy   | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
 | Scorpion      | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅                       |
-| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | Rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s) ✅                                 |
+| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | **laneSpan 2**; rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.

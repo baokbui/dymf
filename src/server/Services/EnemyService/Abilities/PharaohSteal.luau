@@ -2,7 +2,7 @@
 --[[
 	PharaohSteal
 	On cooldown, pick `stealLaneCount` random rows and remove one random
-	Brainrot from each (skip empty lanes). Only while on the plot.
+	Brainrot from each (skip empty lanes and immovable plants). Only while on the plot.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,7 +38,7 @@ local function idsOnRow(plotModel: Model, row: number): { string }
 			end
 			local BrainrotService = require(script.Parent.Parent.Parent.BrainrotService)
 			local placement = BrainrotService.getPlacement(id)
-			if placement and placement.health > 0 then
+			if placement and placement.health > 0 and placement.definition.immovable ~= true then
 				seen[id] = true
 				table.insert(ids, id)
 			end
@@ -118,9 +118,10 @@ function PharaohSteal.onTick(ctx, state, dt: number, callbacks)
 		local origins: { Vector3 } = {}
 		for _, pick in picks do
 			local placement = BrainrotService.getPlacement(pick)
-			if placement then
-				table.insert(origins, placement.model:GetPivot().Position)
+			if not placement or BrainrotService.isImmovable(pick) then
+				continue
 			end
+			table.insert(origins, placement.model:GetPivot().Position)
 			BrainrotService.stealPlacement(pick, destination)
 		end
 		local ownerUserId = plotModel:GetAttribute("OwnerUserId")

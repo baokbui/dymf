@@ -50,7 +50,7 @@ a bat behind Ballerina, Lirili, Chimpanzini, etc. can still hit a monster chewin
 that unit. (Legacy fractional `MELEE_BAT_REACH` is unused.) Optional
 `attackHitDelay` starts the swing anim first, then re-acquires the target before
 damage — if nothing is still in range, the swing misses (cooldown already spent).
-**Ranged Rampage** (`rangedUntil`) throws a spinning `Bat` projectile (`Assets.Projectiles["Tung Bat"]`) from the left hand down the full lane instead of the close-range hit. Connecting hits on the lawn apply **half-tile** knockback (`CombatConfig.BAT_KNOCKBACK_TILES`). A bat that still lands after the monster has left the plot (forest / east of the last tile) deals damage only — no knockback.
+**Ranged Rampage** (`rangedUntil`) throws a spinning `Bat` projectile (`Assets.Projectiles["Tung Bat"]`) from the left hand down the full lane instead of the close-range hit. Connecting hits on the lawn apply **quarter-tile** knockback (`CombatConfig.BAT_KNOCKBACK_TILES`). A bat that still lands after the monster has left the plot (forest / east of the last tile) deals damage only — no knockback.
 
 Monsters still east of the lawn (`column > GridConfig.COLUMNS`, forest march)
 are **not** valid targets — Brainrots wait until the monster enters the plot.
@@ -68,7 +68,7 @@ shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
 valid targets for lane shots. Graves do not block westbound Skeleton arrows.
 
-Monsters with `laneSpan` > 1 (e.g. Goblin Elite = 2, Queen Spider = 3) occupy rows
+Monsters with `laneSpan` > 1 (e.g. Pharaoh Mummy = 2, Goblin Elite and Queen Spider = 3) occupy rows
 `[row, row + laneSpan − 1]` — `row` is the unit's lowest/anchor row, not a
 center — and are valid targets from **any** row in that range
 (`GridUtil.occupiesLaneRow`). Uniform scale also makes them ~`laneSpan` tiles
@@ -84,7 +84,7 @@ The reverse direction also respects the span: when a multi-lane unit attacks,
 it hits every Brainrot standing on its current tile across **all** occupied
 rows (`MonsterBehavior.brainrotsAtColumn`), not just its anchor row. This is
 what lets Goblin Elite's one-shot club (`GoblinEliteClubOneShot`) down
-Brainrots in either of its two lanes in the same swing.
+Brainrots in all three of its lanes in the same swing.
 
 ---
 
@@ -98,13 +98,13 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback). **Every** knife stands upright in the lane plane: **sharp rim** leads toward monsters, face looks across the row, cartwheel about **+Z**. | Damage + `ThrowKnifeHit`. **Piercing Brew** (**6s** window, **10s** CD): gold aura/trail/sparks, flies through graves (no grave HP), and hits the first monster and the one behind at the knife’s normal damage. Does not throw (or start its interval) while an exclusive extra such as **Shadow Requiem** is playing. |
 | Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — one **vertical** **backwards-C** (`")"`) crescent from the midpoint of Cappuccino’s swords (same Z span as the old dual slash). **White fill**, **black outline**, **black** flame/trail streaks. **Height** grows with travel. Stop on the **last lawn tile**, then explode into a **tall white light pillar**. Damage as the column passes each monster (`pierceAll`). Graves never block. Crescent **2000%** at **1 tile**, plus **100%** per extra tile, plus a flat **1000%** last-tile pillar. | `SwordWave` **1s** before the crescent launches (cut if the pillar starts first) + `SwordWavePillar` on detonation + `Hit` sparks per monster. Needs **3+** enemies in the row **or a boss**. Multiple ready Cappuccinos: easternmost fires first. **45s** CD. |
-| Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + half-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
-| Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) on that row, plus **500%** on the adjacent rows, if the row has **3+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `SahurWrath` SFX as the bat stretches; `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each hit monster**, including splash rows) on impact |
+| Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + quarter-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
+| Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) on that row, plus **500%** on the adjacent rows, if the row has **3+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `SahurWrath` SFX as the bat stretches; `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each monster on the slam row only**; adjacent rows take damage with no shockwave) on impact |
 | Ballerina GOD (`Jackpot`) | Extra ability; no projectile | **10s**: coin interval **3×** faster (max with Golden Waltz); each spit **33%** extra coin (independent of Encore). `CombatVisual` `Jackpot` gold burst. **30s** CD |
 | Chimpanzini GOD (`PrimalRetaliation`) | Extra ability; no projectile | **15s**: **25%** of incoming chew/arrow HP is dealt back to **that monster instance** through `CombatService.damageMonster`. A small `Assets.Projectiles.Mirror` orbits Chimpanzini. **30s** CD |
 | Lirili GOD (Glacial Dominion) | On plant (`freezeEntireLawn` params overlay; Lirili does not persist to tick extras) | Freeze **every lawn row** at the current freeze duration, then **25%** Slow (`slowFactor` 0.75) lasting freeze + **3s** so it is felt after thaw |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
-| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap` |
+| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap`. Crowd control (trap, knockback, slow, stun) shrinks with `laneSpan`: **2** rows **25%**, **3** **50%**, **4** **75%**, **5+** immune. Damage is unchanged. |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
@@ -114,9 +114,13 @@ Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 `travelPercent`, `finisherPercent`).
 
-**Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** toggle (**High Quality
-VFX** On / Off), not an automatic cap. On = **Full**. Off = **Minimal**
-(geometry + light; no flame particles / corkscrew trails locally). Server still
+**Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** choice (**VFX: High / Low /
+Off**), not an automatic cap. **High** = **Full** (full combat effects, moving
+evolution shine, 3D portraits). **Low** = **Reduced** (fewer client bursts;
+shine stays still; portraits stay 3D). **Off** = **Minimal** (geometry + light;
+no flame particles / corkscrew trails locally). Off also turns shop, inventory,
+and index portraits into color swatches. **Inspect portraits stay 3D** on every
+setting. Server still
 authors Full sword-wave / pillar models so combat looks the same for every
 plot; Performance mode strips particles and trails on the local client. Magnet
 rings also skip when Off. Combat math is unchanged.
@@ -155,9 +159,9 @@ Applied only through `CombatService.applyStatusToMonster` or
 | Effect | Monsters | Brainrots |
 | ------ | -------- | --------- |
 | Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. **Tenfold Guard** skips Stun while `shieldStunImmune` and shield HP remain. **Stoneheart** ignores Stun / Freeze while stone. |
-| Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). Lirili GOD Glacial Dominion applies Slow **25%** (`magnitude` 0.75) on every lawn row for freeze duration + **3s**. | — |
+| Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). That bubble slow (duration and slow amount) uses the same `laneSpan` resist as the trap. Lirili GOD Glacial Dominion applies Slow **25%** (`magnitude` 0.75) on every lawn row for freeze duration + **3s**. | — |
 | Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
-| Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.5). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
+| Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.25). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
 **Queen Spider** ✅ — **laneSpan 3** (random valid placement among anchors that
@@ -239,7 +243,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Melee bat swing | Server `BrainrotAnimation.playAttack` at windup start (`pulseAttack`) |
 | Death tip-over + linger + fade | Server `MonsterDeath` (default 3 tip styles); client burst + Thanos ash on fade |
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
-| Bat slam impact | `CombatVisual` kind `BatSlam` — Sahur’s Wrath landing: yellow ring **at each monster hit** (`VfxUtil.playBatSlam`) |
+| Bat slam impact | `CombatVisual` kind `BatSlam` — Sahur’s Wrath landing: yellow ring **at each monster on the slam row** (`VfxUtil.playBatSlam`). Adjacent-row splash has no shockwave. |
 | Jackpot burst | `CombatVisual` kind `Jackpot` — gold particle burst at Ballerina (`VfxUtil.playJackpotBurst`) |
 | Primal Retaliation | Server `BrainrotFeedback.setRetaliation` — small `Assets.Projectiles.Mirror` orbits Chimpanzini for the 15s window (Banana Bastion bubble stays) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, a gold spark cloud around the star, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
@@ -316,7 +320,7 @@ MonsterBehavior.attackBrainrot
 **Pharaoh Mummy** ✅ — `PharaohSummon` spawns a `SmallMummy` in every row (20s).
 `PharaohSteal` removes one living Brainrot from each of 3 random occupied lanes
 (15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
-boss) with a client sand-tornado suck (`CombatVisual` `SandTornado`). Steal is not Combat damage. Pharaoh and Small Mummy both use
+boss) with a client sand-tornado suck (`CombatVisual` `SandTornado`). Plants with `definition.immovable` (Chimpanzini **Goliath**) are skipped, and `stealPlacement` refuses them if called later. Steal is not Combat damage. Pharaoh occupies **2 rows** (`laneSpan`). Pharaoh and Small Mummy both use
 `spawnStyle = "RiseFromGround"` (buried, then tween up; invulnerable while rising).
 Pharaoh walk / chew / summon / steal clips live on the definition
 (`abilityAnimationIds` for summon + steal; chew uses the Small Mummy attack id).

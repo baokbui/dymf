@@ -208,7 +208,7 @@ local function watchProjectile(instance: Instance)
 		VfxUtil.decorateProjectile(part)
 	end
 	if instance.Name == "SwordWaveProjectile" or instance.Name == "SwordWavePillar" then
-		VfxUtil.applyHeavyQuality(instance, VfxLoad.isHighQuality())
+		VfxUtil.applyHeavyQuality(instance, VfxLoad.quality() ~= "Minimal")
 	end
 end
 
@@ -232,7 +232,7 @@ local function refreshHeavyProjectiles()
 	end
 	for _, child in folder:GetChildren() do
 		if child.Name == "SwordWaveProjectile" or child.Name == "SwordWavePillar" then
-			VfxUtil.applyHeavyQuality(child, VfxLoad.isHighQuality())
+			VfxUtil.applyHeavyQuality(child, VfxLoad.quality() ~= "Minimal")
 		end
 	end
 end

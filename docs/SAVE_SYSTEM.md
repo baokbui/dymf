@@ -83,7 +83,7 @@ Relevant constants (`Shared.Constants`):
 - Load a player's `SaveData` on join (defaulting new players from config:
   `EconomyConfig.STARTING_COINS`, `LevelConfig.STARTING_PLAYER_HEALTH`, level 1).
 - Migrate older `version` payloads forward.
-- Persist on leave, periodic autosave, day victory, and defeat (`saveNow`).
+- Persist on leave, periodic autosave, day victory, defeat, and **loadout changes** (`saveNow` as soon as the shop lineup is set). Shutdown waits for an in-flight save to finish so Studio stop does not drop that write.
 - Own a **committed lawn** checkpoint (`commitLawn` / `clearCommittedLawn` /
   `restoreCommittedLawn`): only victory / day-select wipe / load / reset update
   the checkpoint list; leave and autosave write that checkpoint, not mid-day

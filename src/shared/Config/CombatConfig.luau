@@ -39,6 +39,9 @@ local CombatConfig = {
 	BUBBLE_BARRAGE_SPLIT_TILES = 1.15,
 	-- Child bubbles ease Z from the split point into each lawn row.
 	BUBBLE_BARRAGE_Z_LERP_TILES = 1.7,
+	-- Crowd control vs laneSpan. Each extra row past 1 resists 25%
+	-- (2 → 25%, 3 → 50%, 4 → 75%, 5+ → immune). Damage is not reduced.
+	TRALALERO_CC_RESIST_PER_EXTRA_ROW = 0.25,
 
 	-- Ranged Rampage (Tung Tung Legendary): spinning bat from the left hand.
 	-- Prefer Assets.Projectiles[BAT_MODEL_ID]; procedural club is the fallback.
@@ -47,7 +50,7 @@ local CombatConfig = {
 	-- Local Euler applied each frame before +Z tumble (tune if the mesh faces wrong).
 	BAT_MODEL_ORIENTATION_DEGREES = Vector3.new(0, 0, 0),
 	BAT_SPIN_RADIANS_PER_SECOND = math.pi * 8, -- 4 turns/sec end-over-end
-	BAT_KNOCKBACK_TILES = 0.5, -- east push on a connecting hit (on-plot only)
+	BAT_KNOCKBACK_TILES = 0.25, -- east push on a connecting hit (on-plot only)
 	BAT_FALLBACK_HANDLE_SIZE = Vector3.new(2.6, 0.22, 0.22),
 	BAT_FALLBACK_HEAD_SIZE = Vector3.new(0.9, 0.48, 0.48),
 	BAT_FALLBACK_HANDLE_COLOR = Color3.fromRGB(139, 90, 43),

@@ -136,7 +136,7 @@ on the sheet (TBD).
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
-| Epic | Goliath | **4000** HP (from 2000). |
+| Epic | Goliath | **4000** HP (from 2000). **Immovable**: cannot be stolen or moved off its tile. |
 | Legendary | Banana Bastion | Shield **500** HP every **10s**. The rightmost 500 of the current HP bar paints blue (green returns when the shield drops); translucent blue bubble VFX on the plant. |
 | Mythic | Jungle Vitality | Heal **5%** max HP every **5s**. |
 | Immortal | Stoneheart | Once per plant: below **10%** HP, stone / invulnerable **10s**. Can't act while stone. |
@@ -147,7 +147,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Tung Tung Training | **1500** HP / **100** dmg (from 1200 / 55). |
-| Legendary | Ranged Rampage | Throw a spinning bat down the **whole row** for **10s**. Lawn hits knock back **half a tile**. **20s** CD. |
+| Legendary | Ranged Rampage | Throw a spinning bat down the **whole row** for **10s**. Lawn hits knock back a **quarter tile**. **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
 | Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**. Stun-immune while shielded. |
 | GOD | Sahur's Wrath | Giant bat slams the **whole row** to the plot edge for **1000%** damage, plus **500%** on the adjacent rows. Needs **3+** enemies **or a boss**. **30s** CD. |
@@ -156,17 +156,19 @@ on the sheet (TBD).
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
-| Epic | Ocean's Rhythm | Attack interval **3s** (from 5s). |
+| Epic | Ocean's Rhythm | Attack interval **3s** (from 5s), **+10** damage (**65**, from 55), and **+0.25s** trap (**0.75s**, from 0.5s). |
 | Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
 | GOD | Tidal Cataclysm | Lane tsunami: knockback + stun, then slow **30%** for **3s**. |
 
+Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is weaker on bigger monsters: **25%** less at **2** rows, **50%** at **3**, **75%** at **4**, and **immune** at **5**. Damage is not reduced (`CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW`).
+
 ### Cappuccino Assassino
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
-| Epic | Espresso Rush | **+50%** attack speed. |
+| Epic | Espresso Rush | **+50%** attack speed and **+25** damage (**75**, from 50). |
 | Legendary | Piercing Brew | For **6s**, knives pierce the first monster and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
