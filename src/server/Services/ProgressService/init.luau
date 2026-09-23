@@ -831,7 +831,7 @@ local function tryBuyBrainrot(player: Player, brainrotId: string)
 		return
 	end
 	if profile.brains < entry.brainsCost then
-		failPurchase(player, "Not enough brains")
+		failPurchase(player, "Not enough Brains.")
 		return
 	end
 	profile.brains -= entry.brainsCost
@@ -866,7 +866,7 @@ local function tryBuyUpgrade(player: Player, upgradeId: string)
 		return
 	end
 	if profile.brains < cost then
-		failPurchase(player, "Not enough brains")
+		failPurchase(player, "Not enough Brains.")
 		return
 	end
 	profile.brains -= cost
@@ -1016,7 +1016,7 @@ local function onSetEquipped(player: Player, raw: unknown)
 	if LevelService.isLevelActive(player) then
 		Remotes.getEvent("PlaceBrainrotFailed"):FireClient(
 			player,
-			"Unable to change loadout — the day has already started"
+			"You can't change your lineup once the day has started."
 		)
 		return
 	end
@@ -1053,17 +1053,17 @@ local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unkno
 		return
 	end
 	if not ProgressService.isUnlocked(player, brainrotId) then
-		failPurchase(player, "Unable to evolve — Brainrot not owned")
+		failPurchase(player, "You don't own this Brainrot.")
 		return
 	end
 	local row = Evolutions.rowFor(brainrotId, rarity)
 	if not row then
-		failPurchase(player, "Unable to evolve — unknown evolution")
+		failPurchase(player, "That evolution isn't available.")
 		return
 	end
 	local level = EvolutionConfig.parseXp(profile.brainrotXp[brainrotId] or 0).level
 	if not Evolutions.tierUnlocked(row, level) then
-		failPurchase(player, "Unable to evolve — Brainrot level too low")
+		failPurchase(player, "Level this Brainrot more first.")
 		return
 	end
 	local claimed = Evolutions.sanitizeClaimed(brainrotId, profile.evolutions[brainrotId])
@@ -1074,16 +1074,16 @@ local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unkno
 	end
 	local previous = Evolutions.previousRarity(rarity)
 	if previous and previous ~= "Common" and not claimedSet[previous] then
-		failPurchase(player, "Evolve the previous tier first")
+		failPurchase(player, "Unlock the earlier evolution first.")
 		return
 	end
 	local cost = EvolutionConfig.brainsCost(rarity)
 	if cost <= 0 then
-		failPurchase(player, "Unable to evolve — unknown evolution")
+		failPurchase(player, "That evolution isn't available.")
 		return
 	end
 	if profile.brains < cost then
-		failPurchase(player, "Not enough brains")
+		failPurchase(player, "Not enough Brains.")
 		return
 	end
 	profile.brains -= cost

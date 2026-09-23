@@ -119,6 +119,13 @@ local CombatConfig = {
 	REFLECT_DURATION = 15,
 	REFLECT_PERCENT = 25,
 
+	-- Abyssal Torrent (Tralalero GOD): mouth jet. Each full second in the
+	-- stream deals catalog base damage and knocks the monster east by this
+	-- many tiles. Needs 3+ enemies or a boss; easternmost ready Tralalero
+	-- fires first. Duration and cooldown live on the evolution row.
+	TORRENT_MIN_ENEMIES = 3,
+	TORRENT_KNOCKBACK_TILES = 0.25,
+
 	-- Status effect defaults when magnitude is omitted.
 	POISON_TICK_INTERVAL = 1,
 	POISON_DAMAGE_PER_TICK = 25,

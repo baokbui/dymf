@@ -332,7 +332,8 @@ Full details in `BRAINROTS.md`. Summary:
 - **`BrainrotFeedback`** — ScaleTo attack pulse (skipped when `animated`) +
   replicated hit flash on damage + rarity-tinted Super Saiyan aura.
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
-  pushes; ScaleTo pulse only for non-animated melee (gameplay stays server-side).
+  pushes; ScaleTo pulse only for non-animated melee (gameplay stays server-side);
+  local aura density (High dense, Low thin, Off flames off / outline kept).
 - **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
   Full combat: projectiles, target acquisition, status effects (M7).
 
@@ -470,7 +471,7 @@ Full details in `STORE.md` / `UI.md`. Summary:
   black silhouettes with **?**. Encountered from unlocks / intro lists (Day 1
   Zombie is always shown — no intro popup).
 
-### Milestone 19 — Brainrot leveling + evolutions 🔜 (ladder live; Tralalero GOD remaining)
+### Milestone 19 — Brainrot leveling + evolutions ✅ (ladder + GOD ultimates live)
 
 Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
 
@@ -488,14 +489,14 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   Legendary extras and Mythic / Immortal passives tick from evolution `ability` ids
   (`CoinHaste`, `ShieldPulse`, `RangedRampage`, `BubbleBarrage`, `PierceBrew`,
   `RegenPulse`, `DesperateFury`, `Stoneheart`, `TenfoldGuard`, `SahurWrath`,
-  `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`; Lirili’s
+  `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent`; Lirili’s
   `freezeEntireLane` / `freezeDuration` / `freezeAdjacentLane` /
   `freezeEntireLawn` / `lawnSlowPercent` and other
   params-only rows merge into `abilityParams`). Aura is purple at
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
   at GOD. **GOD ultimates:** Tung Tung `SahurWrath`, Ballerina `Jackpot`,
   Chimpanzini `PrimalRetaliation` ✅; Lirili Glacial Dominion (on plant) ✅;
-  Cappuccino `ShadowRequiem` ✅ (ramped crescent + last-tile pillar); Tralalero 🔜.
+  Cappuccino `ShadowRequiem` ✅ (ramped crescent + last-tile pillar); Tralalero `AbyssalTorrent` ✅ (mouth jet, base damage and 0.25-tile knockback per second, 3+ or a boss, easternmost ready first).
 
 ### Milestone 12 — Audio ✅
 

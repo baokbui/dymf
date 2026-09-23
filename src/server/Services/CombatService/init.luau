@@ -63,6 +63,10 @@ local function monsterColumnOf(instanceId: string): number?
 	return nil
 end
 
+function CombatService.getMonsterColumn(instanceId: string): number?
+	return monsterColumnOf(instanceId)
+end
+
 local function monsterLaneSpanOf(instanceId: string): number
 	if monsterHandlers then
 		return monsterHandlers.getMonsterLaneSpan(instanceId)

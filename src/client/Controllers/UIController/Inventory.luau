@@ -173,7 +173,7 @@ function Inventory.new(parent: Frame): InventoryPanel
 	hint.Position = UDim2.fromOffset(16, 48)
 	hint.TextSize = 13
 	hint.TextXAlignment = Enum.TextXAlignment.Left
-	hint.Text = string.format("Equip up to %d for the shop bar — click a packet for details", ProgressConfig.MAX_EQUIPPED)
+	hint.Text = string.format("Pick up to %d for your shop. Tap one for details.", ProgressConfig.MAX_EQUIPPED)
 	hint.Parent = parent
 	UITheme.applyBodyText(hint, UITheme.SUBTEXT)
 
@@ -240,8 +240,8 @@ function Inventory.new(parent: Frame): InventoryPanel
 	return self
 end
 
-local HINT_OPEN = string.format("Equip up to %d for the shop bar — click a packet for details", ProgressConfig.MAX_EQUIPPED)
-local HINT_LOCKED = "Loadout is locked while the day is underway"
+local HINT_OPEN = string.format("Pick up to %d for your shop. Tap one for details.", ProgressConfig.MAX_EQUIPPED)
+local HINT_LOCKED = "You can't change your lineup while the day is going."
 
 function Inventory.hideStats(self: InventoryPanel)
 	if self.inspect:isOpen() then
@@ -294,7 +294,7 @@ function Inventory.onEquipClicked(self: InventoryPanel)
 		return
 	end
 	if self.loadoutLocked then
-		UIEvents.firePlantFailed("Unable to change loadout — the day has already started")
+		UIEvents.firePlantFailed("You can't change your lineup once the day has started.")
 		return
 	end
 	if not self.inspect.equipButton.Active then

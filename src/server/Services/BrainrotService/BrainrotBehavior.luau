@@ -283,8 +283,9 @@ local function hasClaimedExtra(placement: RuntimePlacement, abilityId: string): 
 end
 
 -- True when another living plant on the same row has this extra ready and sits
--- further east (closer to incoming monsters). Used so Sahur's Wrath and
--- Shadow Requiem don't double-cast; the easternmost ready unit goes first.
+-- further east (closer to incoming monsters). Used so Sahur's Wrath,
+-- Shadow Requiem, and Abyssal Torrent don't double-cast; the easternmost
+-- ready unit goes first. One still on cooldown is skipped.
 function BrainrotBehavior.hasCloserReadyAlly(instanceId: string, abilityId: string): boolean
 	local placement = active[instanceId]
 	if not placement then

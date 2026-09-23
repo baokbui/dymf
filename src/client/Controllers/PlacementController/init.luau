@@ -196,9 +196,9 @@ end
 local function plotCapReason(definition: Types.BrainrotDefinition): string
 	local cap = definition.maxOnPlot
 	if type(cap) ~= "number" then
-		return "Unable to plant — plot limit reached"
+		return "You've placed as many as you can."
 	end
-	return string.format("Unable to plant — only %d %s on the plot", cap, definition.name)
+	return string.format("You can only place %d %s.", cap, definition.name)
 end
 
 local function updateGhost(tile: BasePart?)
@@ -481,7 +481,7 @@ local function onPrimaryAction(position: Vector2)
 		return
 	end
 	if not placementAllowed then
-		UIEvents.firePlantFailed("Unable to plant — start the day first")
+		UIEvents.firePlantFailed("Start the day first.")
 		return
 	end
 
@@ -499,11 +499,11 @@ local function onPrimaryAction(position: Vector2)
 	local occupied = tile:GetAttribute("Occupied") == true
 	if definition.plantOnGrave == true then
 		if not isGrave then
-			UIEvents.firePlantFailed("Unable to plant — plant this on a grave")
+			UIEvents.firePlantFailed("Plant this one on a grave.")
 			return
 		end
 	elseif occupied then
-		UIEvents.firePlantFailed("Unable to plant — that spot is already taken")
+		UIEvents.firePlantFailed("That spot is taken.")
 		return
 	end
 	local column = tile:GetAttribute("Column")
@@ -512,15 +512,15 @@ local function onPrimaryAction(position: Vector2)
 		and type(row) == "number"
 		and fogBlockedFor(definition, column, row)
 	then
-		UIEvents.firePlantFailed("Unable to plant — that tile is covered in fog")
+		UIEvents.firePlantFailed("That tile is covered in fog.")
 		return
 	end
 	if not canAfford() then
-		UIEvents.firePlantFailed("Unable to plant — not enough coins")
+		UIEvents.firePlantFailed("Not enough coins.")
 		return
 	end
 	if PlacementController.isOnCooldown(id) then
-		UIEvents.firePlantFailed("Unable to plant — still recharging")
+		UIEvents.firePlantFailed("Still recharging.")
 		return
 	end
 	if plotCapReached(definition) then

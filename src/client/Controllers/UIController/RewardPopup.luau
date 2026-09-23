@@ -166,9 +166,9 @@ function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains:
 	local leftover = leftoverBrains or 0
 	local total = dayBrains + leftover
 	self.title.Text = string.format("Day %d Cleared!", clearedLevel)
-	self.dayLine.Text = string.format("Brains earned from completing day: %d", dayBrains)
-	self.leftoverLine.Text = string.format("Brains earned from leftover gold: %d", leftover)
-	self.totalLine.Text = string.format("Total Brains Earned: %d", total)
+	self.dayLine.Text = string.format("Day reward: %d Brains", dayBrains)
+	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)
+	self.totalLine.Text = string.format("Total: %d Brains", total)
 
 	self.popToken += 1
 	local token = self.popToken

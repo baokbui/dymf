@@ -12,9 +12,9 @@
 
 	Server authority: the client only sends a CollectCoin *intent* for a coin id;
 	this service re-checks ownership, existence, distance, and Landed before
-	crediting. Magnet pulls (`pullCoinsInRange`) collect landed coins within
-	the player's level-scaled Chebyshev range after MagnetService validates
-	the ability. Balances are never set from client input.
+	crediting. Walking only collects landed coins. Magnet pulls
+	(`pullCoinsInRange`) also catch coins still raining or mid-spit when they
+	are within the player's level-scaled Chebyshev range. Balances are never set from client input.
 
 	Milestone 3.
 ]]
@@ -328,9 +328,6 @@ function CoinService.pullCoinsInRange(player: Player, originWorld: Vector3, rang
 			continue
 		end
 		if entry.pulling then
-			continue
-		end
-		if entry.part:GetAttribute("Landed") ~= true then
 			continue
 		end
 		local delta = entry.part.Position - originWorld

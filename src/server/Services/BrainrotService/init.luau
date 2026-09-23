@@ -443,9 +443,9 @@ end
 local function plotCapReason(definition: Types.BrainrotDefinition): string
 	local cap = definition.maxOnPlot
 	if type(cap) ~= "number" then
-		return "Unable to plant — plot limit reached"
+		return "You've placed as many as you can."
 	end
-	return string.format("Unable to plant — only %d %s on the plot", cap, definition.name)
+	return string.format("You can only place %d %s.", cap, definition.name)
 end
 
 local function tryReservePlotCap(plotModel: Model, brainrotId: string, cap: number): boolean
@@ -488,7 +488,7 @@ end
 local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition: unknown)
 	local LevelService = require(script.Parent.LevelService)
 	if not LevelService.isLevelActive(player) then
-		notifyPlaceFailed(player, "Unable to plant — start the day first")
+		notifyPlaceFailed(player, "Start the day first.")
 		return
 	end
 
@@ -507,13 +507,13 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	local ProgressService = require(script.Parent.ProgressService)
 	if not ProgressService.canPlace(player, brainrotId) then
-		notifyPlaceFailed(player, "Unable to plant — Brainrot not available")
+		notifyPlaceFailed(player, "That Brainrot isn't unlocked.")
 		return
 	end
 	definition = evolvedDefinition(player.UserId, definition)
 
 	if isPlantOnCooldown(player, brainrotId) then
-		notifyPlaceFailed(player, "Unable to plant — still recharging")
+		notifyPlaceFailed(player, "Still recharging.")
 		return
 	end
 
@@ -548,7 +548,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		definition.plantOnGrave
 	) then
 		releaseCap()
-		notifyPlaceFailed(player, "Unable to plant — that tile is covered in fog")
+		notifyPlaceFailed(player, "That tile is covered in fog.")
 		return
 	end
 
@@ -556,12 +556,12 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	if definition.plantOnGrave == true then
 		if not hasGrave then
 			releaseCap()
-			notifyPlaceFailed(player, "Unable to plant — plant this on a grave")
+			notifyPlaceFailed(player, "Plant this one on a grave.")
 			return
 		end
 	elseif hasGrave then
 		releaseCap()
-		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
+		notifyPlaceFailed(player, "That spot is taken.")
 		return
 	end
 
@@ -569,7 +569,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 	local cost = PlantCost.coins(definition.cost, plotModel)
 	if CoinService.getBalance(player) < cost then
 		releaseCap()
-		notifyPlaceFailed(player, "Unable to plant — not enough coins")
+		notifyPlaceFailed(player, "Not enough coins.")
 		return
 	end
 
@@ -582,7 +582,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 		else GridService.tryOccupy(plotModel, position, instanceId)
 	if not occupied then
 		releaseCap()
-		notifyPlaceFailed(player, "Unable to plant — that spot is already taken")
+		notifyPlaceFailed(player, "That spot is taken.")
 		return
 	end
 	if not CoinService.trySpend(player, cost) then
@@ -592,7 +592,7 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 			GridService.release(plotModel, position)
 		end
 		releaseCap()
-		notifyPlaceFailed(player, "Unable to plant — not enough coins")
+		notifyPlaceFailed(player, "Not enough coins.")
 		return
 	end
 

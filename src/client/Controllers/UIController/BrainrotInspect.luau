@@ -552,7 +552,7 @@ function BrainrotInspect.showEvolveConfirm(self: InspectCard, row: Evolutions.Ev
 	self.pendingRow = row
 	self.confirmTitle.Text = string.format("Evolve to %s?", EvolutionConfig.displayName(row.rarity))
 	self.confirmBody.Text = string.format(
-		"Spend %d brains to unlock %s?",
+		"Spend %d Brains to unlock %s?",
 		cost,
 		row.name
 	)

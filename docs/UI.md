@@ -123,18 +123,16 @@ hardcode a second palette in new UI.
   counts down to 0, then hides when the day goes Active.
 - **Settings** ✅ M13 — bottom-left bare icon + name opens the
   modal. Mute,
-  music/SFX volume, Brainrot SFX toggle, **VFX** (**High** / **Low** / **Off**).
-  High is full combat effects and a moving shine. Low simplifies combat effects
-  and stops the shine. Off also turns shop, inventory, and index portraits into
-  color swatches. Inspect portraits stay 3D on every setting. Statistics, **Danger Zone → Reset
+  music/SFX volume, Brainrot SFX toggle,   **VFX** (**High** / **Low** / **Off**). The hint reads: “High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots.”
+  Behind that: High is full combat effects and a dense aura; Low thins the aura and freezes shine; Off clears aura flames (outline stays) and swaps shop, inventory, and index portraits to color swatches. Inspect portraits stay 3D. Statistics, **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from
   `ProfileUpdated` / `RequestState`. Opening Settings re-pulls state so time
   played stays current. Day Select is deferred to a future dedicated UI.
 - **Magnet** ✅ — smaller square HUD chip at **bottom-center**
   (magnet icon, **Lv. N**, hotkey **1**). Starts at level **1** (max **5**).
-  Press **1** or click the chip during an **Active** day to pull landed coins
-  toward the player for **5s**, then cooldown (**90s** at level 1 → **20s** at
+  Press **1** or click the chip during an **Active** day to pull nearby coins
+  toward the player for **5s**, including coins still falling or mid-spit, then cooldown (**90s** at level 1 → **20s** at
   level 5, linear). Pull range is world Chebyshev from the player:
   **1.2 tiles** at level 1, **+1/5 tile per level**, **2 tiles** at level 5
   (`MagnetConfig.rangeTilesFor`). Rings spawn at that outer radius and collapse
@@ -189,9 +187,10 @@ hardcode a second palette in new UI.
   / plant recharge); **Legendary** extras and **Mythic** / **Immortal**
   passives tick in
   combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
-  red-orange / dark red / rainbow). GOD ultimates: Tung Tung
+  red-orange / dark red / rainbow). **High** shows the full flame column, **Low**
+  a thin core, and **Off** no flames — the rarity outline stays on every setting. GOD ultimates: Tung Tung
   **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini **Primal Retaliation**,
-  Lirili **Glacial Dominion**, Cappuccino **Shadow Requiem** ✅; Tralalero 🔜
+  Lirili **Glacial Dominion**, Cappuccino **Shadow Requiem**, Tralalero **Abyssal Torrent** ✅.
   (`Shared.Evolutions` + `EvolutionConfig`). Built from
   `Client.Utilities.BrainrotInfo` (display-only text keyed by ability id,
   resolved from the same `Shared.Brainrots` registry). **Clicking a planted
@@ -261,8 +260,8 @@ hardcode a second palette in new UI.
   Brainrots gray out with a red **SOLD** stamp. Clicking a row opens a
   **stats card** to the **right** of the shop (description, stats, buy/cost at
   the bottom, X to close). Clicking another row replaces the card. Buys play kaching + red `-{cost}`
-  on the brains HUD and a green “Purchased Successfully!” float. Broke
-  buys play an error SFX and a red “Purchase Unsuccessful…” message above the
+  on the brains HUD and a green “Bought!” float. Broke
+  buys play an error SFX and a red “Not enough Brains.” message above the
   Buy button. Repeat fails stack (new on top; older slide up and fade faster).
   Brainrot buys require standing at your stall; HUD Upgrades require owning a plot.
 

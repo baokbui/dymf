@@ -45,6 +45,7 @@ From `Shared.Types.MonsterDefinition`:
 | `color`                   | Color3?                 | Placeholder / fallback tint                                            |
 | `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)                  |
 | `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                    |
+| `modelHeightScale`        | number?                 | Height-only multiplier after the footprint fit (default 1). Pharaoh Mummy uses `0.82` so the 2-row width does not leave him as tall. |
 | `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                     |
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                        |
 | `abilityAnimationIds`     | `{ [string]: string }?` | One-shot clips keyed by ability id (`PharaohSummon` / `PharaohSteal`)  |

@@ -152,14 +152,15 @@ local VfxConfig = {
 	STATUS_FLOAT_POISON_COLOR = Color3.fromRGB(200, 110, 255),
 	STATUS_FLOAT_STUN_COLOR = Color3.fromRGB(255, 225, 70),
 
-	-- Pharaoh steal: sand tornado at the boss + grit sucked from each plant.
+	-- Pharaoh steal: sand funnel aimed from the boss toward the stolen plants
+	-- (not straight up). Sized for Pharaoh's 2-row body.
 	SAND_TORNADO_DURATION = 1.6,
-	SAND_TORNADO_HEIGHT = 18,
-	SAND_TORNADO_RADIUS = 6.5,
+	SAND_TORNADO_HEIGHT = 34,
+	SAND_TORNADO_RADIUS = 13,
 	SAND_TORNADO_SPIN = 7,
 	SAND_TORNADO_MESH_TRANSPARENCY = 0.35,
-	-- Local studs from the steal-hand part (along tornado axis).
-	SAND_TORNADO_HAND_OFFSET = 0.9,
+	-- Studs in front of the boss along the funnel. The funnel itself stays level.
+	SAND_TORNADO_HAND_OFFSET = 2.5,
 	SAND_COLOR_A = Color3.fromRGB(210, 170, 95),
 	SAND_COLOR_B = Color3.fromRGB(160, 120, 70),
 	SAND_COLOR_C = Color3.fromRGB(235, 200, 140),
@@ -282,9 +283,32 @@ local VfxConfig = {
 	JACKPOT_BURST_LIFETIME = 0.55,
 
 	-- Planted evolution aura: flame spikes only (no sparkles / speed lines).
-	-- Rate = how many flames; size/speed stay in BrainrotFeedback so the
-	-- column does not grow taller or thicker.
-	BRAINROT_AURA_SPIKES_RATE = 36,
+	-- High plays the core column plus an extra layer. Low keeps a thin core.
+	-- Off drops the flames on the client; the Highlight outline stays.
+	-- Size/speed stay in BrainrotFeedback so the column does not grow.
+	BRAINROT_AURA_SPIKES_RATE = 48,
+	BRAINROT_AURA_EXTRA_RATE = 40,
+	BRAINROT_AURA_SPIKES_RATE_LOW = 12,
+
+	-- Tralalero Abyssal Torrent. Aqua beam from the snout: dim core, darker
+	-- glow, rings, and spiral streaks. Sized under a full tile.
+	HYDRO_JET_CORE_THICKNESS = 0.7,
+	HYDRO_JET_CORE_WIDTH = 1.05,
+	HYDRO_JET_WATER_WIDTH = TILE * 0.1,
+	HYDRO_JET_DEEP_WIDTH = TILE * 0.17,
+	HYDRO_JET_RING_RADIUS = TILE * 0.14,
+	HYDRO_JET_RING_GROW = TILE * 0.06,
+	HYDRO_JET_HELIX_RADIUS = TILE * 0.05,
+	HYDRO_JET_CORE_COLOR = Color3.fromRGB(150, 230, 220),
+	HYDRO_JET_WATER_COLOR = Color3.fromRGB(16, 130, 145),
+	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(4, 36, 62),
+	HYDRO_JET_RING_COUNT = 6,
+	HYDRO_JET_RING_SEGMENTS = 12,
+	HYDRO_JET_MOUTH_RINGS = 3,
+	HYDRO_JET_STREAKS = 6,
+	HYDRO_JET_HELIX_POINTS = 22,
+	HYDRO_JET_HELIX_TURNS = 7,
+	HYDRO_JET_SPIN = 4,
 
 	-- Magnet pull: translucent purple rings that spawn at the outer
 	-- pull range and collapse inward toward the player.

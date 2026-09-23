@@ -18,63 +18,63 @@ export type StatRow = { label: string, value: string }
 local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	SpiderJump = {
 		label = "Leap",
-		description = "Vaults over the first Brainrot in its lane, then chews the rest.",
+		description = "Jumps over the first Brainrot, then eats the rest.",
 	},
 	GoblinEliteClubOneShot = {
 		label = "Crushing Club",
-		description = "One-shots Brainrots across all three lanes it occupies.",
+		description = "Knocks out Brainrots in all three of its rows.",
 	},
 	QueenSpiderStun = {
 		label = "Venom Stun",
-		description = "Stuns chewed Brainrots for 2 seconds.",
+		description = "Stuns Brainrots it bites for 2 seconds.",
 	},
 	QueenSpiderPoison = {
 		label = "Venom Poison",
-		description = "Poisons chewed Brainrots for a few seconds (DoT).",
+		description = "Poisons bitten Brainrots for 3% health each second, for 4 seconds.",
 	},
 	DukeVampireFreeze = {
 		label = "Last Stand",
-		description = "Once at low HP: falls, turns invulnerable, and heals back up.",
+		description = "At 20% health, falls and can't be hurt, then gets back up at 25% health.",
 	},
 	DukeVampireTerrify = {
 		label = "Terrify",
-		description = "Weakens and freezes Brainrots in its lane and the lanes beside it.",
+		description = "Weakens and freezes Brainrots in its row and the rows beside it.",
 	},
 	SkeletonArrow = {
 		label = "Bone Arrow",
-		description = "Stops 3 tiles east of a Brainrot and shoots arrows. Does not chew.",
+		description = "Stops 3 tiles away and shoots. Doesn't bite.",
 	},
 	WerewolfLifesteal = {
 		label = "Lifesteal",
-		description = "Heals 5% of its max HP every time it chews a Brainrot.",
+		description = "Heals 5% of its max HP every time it bites a Brainrot.",
 	},
 	NecromancerSummon = {
 		label = "Raise Dead",
-		description = "Summons lesser undead onto the lawn.",
+		description = "Summons smaller undead onto the lawn.",
 	},
 	NecromancerLaneChange = {
 		label = "Lane Shift",
-		description = "Can change lanes while marching.",
+		description = "Can switch rows while walking.",
 	},
 	GoblinKingRegen = {
 		label = "Royal Regen",
-		description = "Steadily regenerates health while alive.",
+		description = "Heals 90 HP every 8 seconds.",
 	},
 	GoblinKingSpeedBuff = {
 		label = "War Cry",
-		description = "Speeds up nearby monsters (stub).",
+		description = "Speeds up nearby monsters by 18%.",
 	},
 	PharaohSummon = {
 		label = "Raise the Guard",
-		description = "Summons a Small Mummy in every lane (20s cooldown).",
+		description = "Summons a Small Mummy in every row. 20s cooldown.",
 	},
 	PharaohSteal = {
 		label = "Royal Tribute",
-		description = "Steals one Brainrot from each of 3 random lanes (15s cooldown).",
+		description = "Steals one Brainrot from 3 random rows. 15s cooldown.",
 	},
 	ScorpionBurrow = {
 		label = "Burrow",
-		description = "Digs under the lawn on entry and rises in front of the first Brainrot. Does not burrow in empty lanes.",
+		description = "Digs under the lawn and pops up in front of the first Brainrot. Skips empty rows.",
 	},
 }
 
@@ -104,7 +104,7 @@ end
 function MonsterInfo.abilitySummary(definition: Types.MonsterDefinition): string
 	local ids = abilityIds(definition)
 	if #ids == 0 then
-		return "No special ability — chews Brainrots in its lane."
+		return "No special ability. It just bites Brainrots in its row."
 	end
 	local parts: { string } = {}
 	for _, id in ids do

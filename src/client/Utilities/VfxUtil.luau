@@ -1039,29 +1039,9 @@ local function cframeFromUp(position: Vector3, up: Vector3, spin: number): CFram
 	return CFrame.fromMatrix(position, right, axis) * CFrame.Angles(0, spin, 0)
 end
 
-local function stealTornadoAxis(hand: BasePart, origins: { Vector3 }?): Vector3
-	-- Funnel local +Y is out of the palm; flip so the cone opens toward the plants
-	-- instead of back into the arm.
-	if origins and #origins > 0 then
-		local sum = Vector3.zero
-		for _, origin in origins do
-			sum += origin
-		end
-		local toward = (sum / #origins) - hand.Position
-		if toward.Magnitude > 1.25 then
-			return toward.Unit
-		end
-	end
-	local look = -hand.CFrame.LookVector
-	if look.Magnitude > 0.2 then
-		return look.Unit
-	end
-	return Vector3.yAxis
-end
-
 --[[
-	Pharaoh steal: a big spinning sand funnel, rooted on `attachTo` (steal
-	hand) when provided, plus grit pulled from each plant origin.
+	Pharaoh steal: a sand funnel pointing from the boss toward the stolen
+	plants, plus grit pulled in from each plant.
 ]]
 function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, attachTo: BasePart?)
 	local duration = VfxConfig.SAND_TORNADO_DURATION
@@ -1069,13 +1049,33 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 	local radius = VfxConfig.SAND_TORNADO_RADIUS
 	local folder = effectsFolder()
 	local sandColor = VfxConfig.SAND_COLOR_A
-	local handOffset = VfxConfig.SAND_TORNADO_HAND_OFFSET
 
-	local startAxis = Vector3.yAxis
-	local startPos = destination + Vector3.new(0, height * 0.08, 0)
-	if attachTo then
-		startAxis = stealTornadoAxis(attachTo, origins)
-		startPos = attachTo.Position + startAxis * handOffset
+	local function bodyPosition(): Vector3
+		if attachTo and attachTo.Parent then
+			return attachTo.Position
+		end
+		return destination
+	end
+
+	local function aimAxis(fromPos: Vector3): Vector3
+		-- Monsters face the house (−X). Fall back to that if nothing was stolen.
+		local horizontal = Vector3.new(-1, 0, 0)
+		if origins and #origins > 0 then
+			local sum = Vector3.zero
+			for _, origin in origins do
+				sum += origin
+			end
+			local toward = (sum / #origins) - fromPos
+			local flat = Vector3.new(toward.X, 0, toward.Z)
+			if flat.Magnitude > 1 then
+				horizontal = flat.Unit
+			end
+		end
+		return horizontal
+	end
+
+	local function mouthPosition(fromPos: Vector3, axis: Vector3): Vector3
+		return fromPos + Vector3.new(0, radius * 0.45, 0) + axis * VfxConfig.SAND_TORNADO_HAND_OFFSET
 	end
 
 	local root = Instance.new("Model")
@@ -1090,15 +1090,16 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 	column.CanTouch = false
 	column.Transparency = 1
 	column.Size = Vector3.new(1, 1, 1)
-	column.CFrame = cframeFromUp(startPos, startAxis, 0)
+	column.CFrame = cframeFromUp(mouthPosition(bodyPosition(), aimAxis(bodyPosition())), aimAxis(bodyPosition()), 0)
 	column.Parent = root
 	root.PrimaryPart = column
 
-	-- Visible funnel: wide at the base, tapering up.
+	-- Visible funnel: wide at the mouth, narrow at the base. Anchored so the
+	-- rings stay on the boss (a weld to a CFrame-driven hub does not follow).
+	local bands: { BasePart } = {}
 	for i = 1, 7 do
 		local t = (i - 1) / 6
-		-- Narrow at the hand, wide toward the steal targets.
-		local ringRadius = radius * (0.22 + t * 0.8)
+		local ringRadius = radius * (0.35 + t * 0.85)
 		local band = Instance.new("Part")
 		band.Name = "Funnel" .. i
 		band.Shape = Enum.PartType.Cylinder
@@ -1106,35 +1107,40 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 		band.CanCollide = false
 		band.CanQuery = false
 		band.CanTouch = false
+		band.CastShadow = false
 		band.Material = Enum.Material.Sand
 		band.Color = if i % 2 == 0 then VfxConfig.SAND_COLOR_B else sandColor
 		band.Transparency = VfxConfig.SAND_TORNADO_MESH_TRANSPARENCY
-		-- Cylinder default is X-axis; rotate so it stands on Y.
-		band.Size = Vector3.new(height / 7 + 0.4, ringRadius * 2, ringRadius * 2)
-		band.CFrame = column.CFrame
-			* CFrame.new(0, t * height + height / 14, 0)
-			* CFrame.Angles(0, 0, math.rad(90))
+		band.Size = Vector3.new(height / 7 + 0.6, ringRadius * 2, ringRadius * 2)
 		band.Parent = root
-
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = column
-		weld.Part1 = band
-		weld.Parent = band
-		band.Anchored = false
-		band.Massless = true
+		table.insert(bands, band)
 	end
 
-	sandEmitter(column, 3.2, 0.8, 55)
+	local function pose(pos: Vector3, axis: Vector3, spinAngle: number)
+		local hub = cframeFromUp(pos, axis, spinAngle)
+		column.CFrame = hub
+		for index, band in bands do
+			local t = (index - 1) / math.max(#bands - 1, 1)
+			band.CFrame = hub * CFrame.new(0, t * height + height / 14, 0) * CFrame.Angles(0, 0, math.rad(90))
+		end
+	end
+
+	local columnEmitter = sandEmitter(column, 8, 2.2, 90)
+	columnEmitter:Emit(48)
 	for i = 1, 4 do
 		local attachment = Instance.new("Attachment")
 		local angle = (i / 4) * math.pi * 2
-		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.4, height * 0.2, math.sin(angle) * radius * 0.4)
+		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.45, height * 0.35, math.sin(angle) * radius * 0.45)
 		attachment.Parent = column
-		local swirl = sandEmitter(attachment, 2.2, 0.45, 28)
+		local swirl = sandEmitter(attachment, 4.2, 1.1, 40)
 		swirl.LockedToPart = true
 		swirl.SpreadAngle = Vector2.new(80, 80)
 		swirl.Speed = NumberRange.new(8, 18)
+		swirl:Emit(16)
 	end
+
+	local startBody = bodyPosition()
+	pose(mouthPosition(startBody, aimAxis(startBody)), aimAxis(startBody), 0)
 
 	if origins then
 		for _, origin in origins do
@@ -1192,13 +1198,9 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 		end
 		elapsed += dt
 		spinAngle += spin * dt
-		local pos = destination + Vector3.new(0, height * 0.08, 0)
-		local axis = Vector3.yAxis
-		if attachTo and attachTo.Parent then
-			axis = stealTornadoAxis(attachTo, origins)
-			pos = attachTo.Position + axis * handOffset
-		end
-		column.CFrame = cframeFromUp(pos, axis, spinAngle)
+		local body = bodyPosition()
+		local axis = aimAxis(body)
+		pose(mouthPosition(body, axis), axis, spinAngle)
 		if elapsed >= duration then
 			for _, descendant in root:GetDescendants() do
 				if descendant:IsA("ParticleEmitter") then

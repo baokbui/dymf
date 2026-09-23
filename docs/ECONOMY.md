@@ -71,8 +71,9 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
   coins** (one per active player per interval, **only while the level is
   `Active`**), each worth `PASSIVE_DROP_AMOUNT`. Passive coins **rain slowly
   from the sky** onto a **random grid tile**. Uncollected coins despawn after
-  `GROUND_COIN_LIFETIME`. Coins are not collectible until they finish landing
-  (`Landed` attribute).
+  `GROUND_COIN_LIFETIME`. Walking collects a coin only after it finishes landing
+  (`Landed` attribute). The magnet also grabs coins that are still in the air
+  (sky rain or a Ballerina spit) when they are inside its range.
 - Validates `CollectCoin` intents — ownership, existence, and distance (against
   the authoritative `HumanoidRootPart` position, within `COIN_COLLECT_RADIUS`) —
   before crediting. Magnet pulls (`MagnetService`) skip the walk radius after a
@@ -95,7 +96,7 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 | `trySpend(player, amount) -> bool`| charge costs; false if unaffordable (M4) ✅  |
 | `dropCoinForOwner(userId, plotModel, gridPosition, amount)` | spawn a coin on a specific grid tile ✅ |
 | `dropRandomCoinForOwner(userId, amount, spitFrom?)` | Rain (no origin) or spit-from-origin onto a random tile ✅ |
-| `pullCoinsInRange(player, originWorld, rangeTiles)` | Magnet: tween + collect landed coins within world Chebyshev `rangeTiles` of the player ✅ |
+| `pullCoinsInRange(player, originWorld, rangeTiles)` | Magnet: tween + collect coins in range, including ones still falling or mid-spit ✅ |
 
 Spending is now live: `BrainrotService` (M4) pre-checks `getBalance` and charges
 with `trySpend` when reserving a tile. **Digging up a Brainrot is not refunded**

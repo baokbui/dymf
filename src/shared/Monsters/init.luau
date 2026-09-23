@@ -270,8 +270,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		},
 		color = Color3.fromRGB(220, 170, 70),
 		modelId = "PharaohMummy",
-		-- Two lawn rows (anchor + 1). Size comes from laneSpan, not an extra modelScale.
+		-- Two lawn rows (anchor + 1). Width comes from laneSpan; height is pulled
+		-- down so the wide scale does not leave him towering.
 		laneSpan = 2,
+		modelHeightScale = 0.82,
 		walkAnimationId = "rbxassetid://72737313323934",
 		attackAnimationId = "rbxassetid://133284998118919",
 		abilityAnimationIds = {

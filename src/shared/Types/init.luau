@@ -93,6 +93,8 @@ export type MonsterDefinition = {
 	modelOrientationDegrees: Vector3?, -- local Euler after facing house (−X)
 	-- Multiplier on BODY_HEIGHT / footprint when cloning Assets templates (default 1).
 	modelScale: number?,
+	-- Extra multiplier on height only (default 1). Width / lane footprint stay put.
+	modelHeightScale: number?,
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
 	-- One-shot clips keyed by ability handler id (e.g. PharaohSummon).

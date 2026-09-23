@@ -6,10 +6,12 @@
 	Quality is a client Settings choice — never auto-throttled by how many
 	effects are alive. Damage is never throttled.
 
-	High (Full): full combat effects, moving shine, 3D portraits.
-	Low (Reduced): fewer client bursts, shine stays still, 3D portraits stay.
-	Off (Minimal): no heavy particles/trails. Shop, inventory, and index
-	portraits become color swatches. Inspect portraits stay 3D.
+	High (Full): full combat effects, dense Brainrot aura, moving shine, 3D portraits.
+	Low (Reduced): fewer client bursts, thin Brainrot aura, shine stays still,
+	3D portraits stay.
+	Off (Minimal): no heavy particles/trails and no Brainrot aura flames (the
+	rarity outline stays). Shop, inventory, and index portraits become color
+	swatches. Inspect portraits stay 3D.
 
 	Server always authors Full visuals so every plot sees the same geometry.
 	Off clients strip particles/trails locally.

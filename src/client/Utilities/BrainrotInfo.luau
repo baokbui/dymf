@@ -20,31 +20,31 @@ export type StatRow = { label: string, value: string }
 local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	GenerateCoins = {
 		label = "Coin Generator",
-		description = "Spits coins onto a random lawn tile every cycle.",
+		description = "Spits coins onto a random tile.",
 	},
 	MeleeBat = {
 		label = "Melee Bat",
-		description = "Bats monsters on its own tile or the tile ahead.",
+		description = "Bats monsters on its tile or the one ahead.",
 	},
 	RangedRampage = {
 		label = "Ranged Rampage",
-		description = "Throws a spinning bat down the row. Lawn hits knock back a quarter tile.",
+		description = "Throws a spinning bat down the row. Hits knock monsters back a quarter tile.",
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",
-		description = "Giant bat slams the whole row to the plot edge for 1000%, plus 500% on adjacent rows. Needs 3+ enemies or a boss.",
+		description = "A giant bat slams the whole row for 1000% damage, and the rows beside it for 500%. Needs 3 or more monsters, or a boss.",
 	},
 	BubbleTrap = {
 		label = "Bubble Trap",
-		description = "Launches a bubble that traps the closest monster in the row.",
+		description = "Shoots a bubble that traps the closest monster in the row.",
 	},
 	LineBomb = {
 		label = "Line Bomb",
-		description = "Explodes across the entire row once, on placement.",
+		description = "Blows up the whole row once, right when you plant it.",
 	},
 	FreezeTime = {
 		label = "Freeze",
-		description = "Freezes 2 tiles in front and 2 behind (7s) on plant, then disappears. Can't be eaten.",
+		description = "Freezes 2 tiles in front and 2 behind for 7 seconds, then vanishes. Monsters can't eat it.",
 	},
 	ThrowKnife = {
 		label = "Throw Shuriken",
@@ -52,39 +52,43 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	Wall = {
 		label = "Sturdy Wall",
-		description = "No attack — just soaks up hits to block the lane.",
+		description = "Doesn't attack. Blocks the row and soaks up hits.",
 	},
 	Stoneheart = {
 		label = "Stoneheart",
-		description = "Once per plant: below 10% HP, turn to stone and become invulnerable for 10s. Can't act while stone.",
+		description = "Once, below 10% health, turns to stone for 10 seconds and can't be hurt. It can't attack while stone.",
 	},
 	TenfoldGuard = {
 		label = "Tenfold Guard",
-		description = "Every 10 attacks: shield 30% max HP for 5s. Stun-immune while shielded.",
+		description = "Every 10 attacks, gains a shield for 30% of its max HP for 5 seconds and can't be stunned.",
 	},
 	ClearFogRow = {
 		label = "Clear Fog",
-		description = "One-shot. Plays a gust, blows Night Fog off the whole plot for 7s, then disappears.",
+		description = "Blows the night fog off the lawn for 7 seconds, then vanishes.",
 	},
 	BustGrave = {
 		label = "Grave Smash",
-		description = "Plant on a grave. Immune — monsters walk through. Two smashes per swing (1s apart); 6 collapse the stone, then he disappears.",
+		description = "Plant him on a grave. Monsters walk past him. 2 smashes per swing, 1 second apart. 6 smashes break the grave, then he vanishes.",
 	},
 	PierceBrew = {
 		label = "Piercing Brew",
-		description = "For 6s, knives pierce the first monster and the one behind. Flies through graves. 10s cooldown.",
+		description = "For 6 seconds, shurikens hit the first monster and the one behind it, even through graves. 10s cooldown.",
 	},
 	Jackpot = {
 		label = "Jackpot",
-		description = "For 10s, produce coins 3× faster; each coin has a 33% chance to drop an extra. Independent of Encore. 30s cooldown.",
+		description = "For 10 seconds, coins come out 200% faster, and each coin has a 33% chance to drop an extra. 30s cooldown.",
 	},
 	PrimalRetaliation = {
 		label = "Primal Retaliation",
-		description = "For 15s, reflect 25% of chew damage to that monster. 30s cooldown.",
+		description = "For 15 seconds, sends 25% of bite damage back at that monster. 30s cooldown.",
 	},
 	ShadowRequiem = {
 		label = "Shadow Requiem",
-		description = "A sword wave flies down the row, growing as it goes. 2000% plus 100% per tile, then a last-tile pillar for +1000%. Needs 3+ enemies or a boss. 45s cooldown.",
+		description = "Sends a growing sword wave down the row for 2000% damage, plus 100% per tile, then a 1000% blast on the last tile. Needs 3 or more monsters, or a boss. 45s cooldown.",
+	},
+	AbyssalTorrent = {
+		label = "Abyssal Torrent",
+		description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster in the way. Each second in the jet deals 55 damage and pushes them back 0.25 tiles. Needs 3 or more monsters, or a boss. The closest one fires first. 45s cooldown.",
 	},
 }
 
@@ -98,7 +102,7 @@ end
 
 function BrainrotInfo.abilityDescription(abilityId: string?): string
 	if not abilityId then
-		return "This unit has no active ability."
+		return "No special ability."
 	end
 	local info = ABILITY_INFO[abilityId]
 	return if info then info.description else "—"
@@ -154,7 +158,7 @@ function BrainrotInfo.statRows(definition: Types.BrainrotDefinition): { StatRow 
 	if definition.coinGeneration and definition.coinGeneration > 0 then
 		table.insert(rows, {
 			label = "Coins",
-			value = string.format("%d / cycle", definition.coinGeneration),
+			value = string.format("%d each time", definition.coinGeneration),
 		})
 	end
 

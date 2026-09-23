@@ -345,7 +345,7 @@ local function buildShop(): Shop.Shop
 	return Shop.new(frame, {
 		onCardClicked = function(id: string)
 			if PlacementController.isOnCooldown(id) then
-				UIEvents.firePlantFailed("Unable to plant — still recharging")
+				UIEvents.firePlantFailed("Still recharging.")
 				AudioController.play("UiClick")
 				return
 			end

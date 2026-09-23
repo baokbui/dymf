@@ -18,8 +18,8 @@ local INFO: { [string]: MechanicIntroCopy } = {
 	Grave = {
 		banner = "GRAVES APPEAR!",
 		title = "Graves",
-		summary = "Fog tiles can hide graves. Monsters crawl out, and most Brainrot shots stop at the stone.",
-		body = "Destroy a grave by planting Brr Brr Patapim (Grave Buster) on it.\n\nCappuccino Assassino's Piercing Brew (Legendary evolution) flies through and hits the monster behind it. That shot does not damage the grave.",
+		summary = "Fog can hide graves. Monsters crawl out, and most shots stop at the stone.",
+		body = "Plant Brr Brr Patapim on a grave to break it.\n\nCappuccino's Piercing Brew flies through graves and hits the monster behind them. It doesn't hurt the grave.",
 	},
 }
 

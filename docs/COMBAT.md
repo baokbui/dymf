@@ -23,7 +23,8 @@ registry id on the plot owner's lawn. Broadcasts `DamageMeterUpdated` (coalesced
 Resets when the day goes **Active**. Every Brainrot hit that goes through
 `CombatService.damageMonster` with a `sourceBrainrotId` ranks: knives (incl.
 Piercing Brew / fifth strike / execute leftover HP), Shadow Requiem waves and
-last-tile pillar, melee bat, Ranged Rampage bats, Tralalero bubbles / barrage,
+last-tile pillar, melee bat, Ranged Rampage bats, Tralalero bubbles / barrage /
+Abyssal Torrent,
 Bombardino column bombs.
 Status DoT without a source species is not ranked. Client HUD is display-only.
 
@@ -115,10 +116,11 @@ Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 `travelPercent`, `finisherPercent`).
 
 **Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** choice (**VFX: High / Low /
-Off**), not an automatic cap. **High** = **Full** (full combat effects, moving
-evolution shine, 3D portraits). **Low** = **Reduced** (fewer client bursts;
-shine stays still; portraits stay 3D). **Off** = **Minimal** (geometry + light;
-no flame particles / corkscrew trails locally). Off also turns shop, inventory,
+Off**), not an automatic cap. **High** = **Full** (full combat effects, dense
+Brainrot aura, moving evolution shine, 3D portraits). **Low** = **Reduced**
+(fewer client bursts; thin Brainrot aura; shine stays still; portraits stay 3D).
+**Off** = **Minimal** (geometry + light; no flame particles / corkscrew trails
+locally, and no Brainrot aura flames — the rarity outline stays). Off also turns shop, inventory,
 and index portraits into color swatches. **Inspect portraits stay 3D** on every
 setting. Server still
 authors Full sword-wave / pillar models so combat looks the same for every
@@ -172,12 +174,13 @@ occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
-**GOD ultimates** ✅ (except Tralalero) — extras path or params overlay:
+**GOD ultimates** ✅ — extras path or params overlay:
 - **Sahur's Wrath** — `SahurWrath` extra; **3+** enemies or a boss; **1000%** on the slam row and **500%** on adjacent rows; easternmost ready Tung.
 - **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
 - **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Needs **3+** enemies in the row **or a boss**; easternmost ready Cappuccino fires first. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. Launch SFX (`SwordWave`) starts **1s** before the crescent (`CombatConfig.SWORD_WAVE_SOUND_LEAD`) and cuts if the pillar starts first; pillar SFX is `SwordWavePillar`. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
+- **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this) and knocks them **0.25** tiles east (`CombatConfig.TORRENT_KNOCKBACK_TILES`). **15s** in the jet is **15** hits (**825**) and **3.75** tiles of knockback. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim abyssal-aqua beam: pale aqua core, teal body, dark outer glow, rings rushing down the row, and spiral streaks. Off VFX keeps the neon core and drops the beams.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
@@ -248,7 +251,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Primal Retaliation | Server `BrainrotFeedback.setRetaliation` — small `Assets.Projectiles.Mirror` orbits Chimpanzini for the 15s window (Banana Bastion bubble stays) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, a gold spark cloud around the star, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |
-| Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — vortex at the boss + grit from stolen plants |
+| Pharaoh steal sand tornado | `CombatVisual` kind `SandTornado` — level funnel from the boss toward the stolen plants (sized for his 2-row body) + grit from those plants |
 
 Tuning lives in `Shared.Config.VfxConfig` (particles, colors, durations). Gameplay
 values remain in `CombatConfig`.

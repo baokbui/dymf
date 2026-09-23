@@ -198,13 +198,13 @@ function Settings.new(parent: Frame): SettingsPanel
 	qualityButton.TextSize = 13
 	local qualityHint = Instance.new("TextLabel")
 	qualityHint.BackgroundTransparency = 1
-	qualityHint.Size = UDim2.new(1, 0, 0, 72)
+	qualityHint.Size = UDim2.new(1, 0, 0, 56)
 	qualityHint.LayoutOrder = 2
 	qualityHint.TextSize = 13
 	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
 	qualityHint.TextYAlignment = Enum.TextYAlignment.Top
 	qualityHint.TextWrapped = true
-	qualityHint.Text = "High is full effects and a moving shine. Low simplifies combat effects and stops the shine. Off also turns shop, inventory, and index portraits into color swatches. Inspect portraits stay."
+	qualityHint.Text = "High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots."
 	qualityHint.Parent = graphicsSection
 	UITheme.applyOutlinedTitle(qualityHint, UITheme.TITLE)
 	qualityHint.TextSize = 13
@@ -242,7 +242,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	dangerHint.TextXAlignment = Enum.TextXAlignment.Left
 	dangerHint.TextYAlignment = Enum.TextYAlignment.Top
 	dangerHint.TextWrapped = true
-	dangerHint.Text = "Resets you to Day 1, clears your lawn, and restores 125 coins. Requires two confirmations."
+	dangerHint.Text = "Back to Day 1, with an empty lawn and 125 coins. You'll be asked twice."
 	dangerHint.LayoutOrder = 1
 	dangerHint.Parent = dangerSection
 	UITheme.applyOutlinedTitle(dangerHint, UITheme.TITLE)
@@ -265,8 +265,8 @@ function Settings.new(parent: Frame): SettingsPanel
 
 	local RESET_LABELS = {
 		[0] = "Reset Progress",
-		[1] = "Are you sure? Click to confirm",
-		[2] = "Final confirm — wipe all progress",
+		[1] = "Are you sure?",
+		[2] = "Tap again to erase everything",
 	}
 
 	resetButton.Activated:Connect(function()

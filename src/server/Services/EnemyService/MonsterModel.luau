@@ -48,6 +48,10 @@ local function bodyHeightFor(definition: Types.MonsterDefinition): number
 	elseif definition.isBoss then
 		height *= 1.25
 	end
+	local heightScale = definition.modelHeightScale
+	if type(heightScale) == "number" and heightScale > 0 then
+		height *= heightScale
+	end
 	return height * modelScaleFor(definition)
 end
 
@@ -148,6 +152,7 @@ function MonsterModel.create(
 		orientationDegrees = definition.modelOrientationDegrees,
 		preserveAnimationRig = true,
 		skipBodyAlias = true,
+		heightScale = definition.modelHeightScale,
 	}
 	-- Multi-lane bosses size by footprint so they actually span the lawn rows;
 	-- a tight height cap would shrink them back to a single-tile silhouette.

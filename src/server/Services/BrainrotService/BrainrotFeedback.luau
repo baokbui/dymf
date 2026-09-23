@@ -746,8 +746,10 @@ local function discEmitter(parent: BasePart, name: string): ParticleEmitter
 end
 
 -- Super Saiyan column: stretched flame spikes + thin rarity silhouette.
--- Flames only — no sparkles or speed lines. Rate controls density; size and
--- speed stay fixed so the column does not grow taller or thicker.
+-- Flames only — no sparkles or speed lines. The server authors the dense
+-- column (core + extra layer). Clients thin or clear the flames by VFX
+-- setting; the Highlight outline always stays. Size and speed stay fixed
+-- so the column does not grow taller or thicker.
 function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?, rainbow: boolean?)
 	BrainrotFeedback.clearAura(model)
 	if not auraColor then
@@ -791,29 +793,36 @@ function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale:
 			ColorSequenceKeypoint.new(1, auraColor:Lerp(Color3.fromRGB(20, 10, 5), 0.28)),
 		})
 
-	local spikes = discEmitter(disc, "AuraSpikes")
-	spikes.Color = spikeColor
-	spikes.Texture = "rbxasset://textures/particles/fire_main.dds"
-	spikes.LightEmission = 1
-	spikes.Brightness = 6.5
-	spikes.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.95 * scale),
-		NumberSequenceKeypoint.new(0.45, 1.55 * scale),
-		NumberSequenceKeypoint.new(1, 0.4 * scale),
-	})
-	spikes.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.02),
-		NumberSequenceKeypoint.new(0.55, 0.22),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	spikes.Lifetime = NumberRange.new(0.35, 0.7)
-	spikes.Speed = NumberRange.new(7 * scale, 13 * scale)
-	spikes.SpreadAngle = Vector2.new(40, 52)
-	spikes.Rate = VfxConfig.BRAINROT_AURA_SPIKES_RATE
-	spikes.Acceleration = Vector3.new(0, 26 * scale, 0)
-	spikes.Drag = 0.5
-	spikes.Squash = NumberSequence.new(-1.35)
-	spikes.ZOffset = 2
+	local function styleFlames(emitter: ParticleEmitter, layer: string, rate: number)
+		emitter.Color = spikeColor
+		emitter.Texture = "rbxasset://textures/particles/fire_main.dds"
+		emitter.LightEmission = 1
+		emitter.Brightness = 6.5
+		emitter.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.95 * scale),
+			NumberSequenceKeypoint.new(0.45, 1.55 * scale),
+			NumberSequenceKeypoint.new(1, 0.4 * scale),
+		})
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.02),
+			NumberSequenceKeypoint.new(0.55, 0.22),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		emitter.Lifetime = NumberRange.new(0.35, 0.7)
+		emitter.Speed = NumberRange.new(7 * scale, 13 * scale)
+		emitter.SpreadAngle = Vector2.new(40, 52)
+		emitter.Rate = rate
+		emitter.Acceleration = Vector3.new(0, 26 * scale, 0)
+		emitter.Drag = 0.5
+		emitter.Squash = NumberSequence.new(-1.35)
+		emitter.ZOffset = 2
+		emitter:SetAttribute("AuraLayer", layer)
+		emitter:SetAttribute("AuraFullRate", rate)
+	end
+
+	-- Core stays on Low (thinned by the client). Extra is High only.
+	styleFlames(discEmitter(disc, "AuraSpikes"), "Core", VfxConfig.BRAINROT_AURA_SPIKES_RATE)
+	styleFlames(discEmitter(disc, "AuraFlames"), "High", VfxConfig.BRAINROT_AURA_EXTRA_RATE)
 
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "AuraHighlight"

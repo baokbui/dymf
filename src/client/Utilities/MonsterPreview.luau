@@ -167,6 +167,7 @@ local function makeViewport(definition: Types.MonsterDefinition, silhouette: boo
 		orientationDegrees = definition.modelOrientationDegrees,
 		preserveAnimationRig = true,
 		skipBodyAlias = true,
+		heightScale = definition.modelHeightScale,
 	})
 	model.Name = "PreviewModel"
 	centerAtOrigin(model)

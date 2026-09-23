@@ -430,6 +430,51 @@ local function faceDirectionUpright(model: Model, face: Vector3)
 	model:PivotTo(CFrame.fromMatrix(pos, right, Vector3.yAxis))
 end
 
+local function scaleCFrameY(cf: CFrame, heightScale: number): CFrame
+	local pos = cf.Position
+	return CFrame.new(pos.X, pos.Y * heightScale, pos.Z) * cf.Rotation
+end
+
+-- Uniform ScaleTo grows width and height together. This shortens an upright
+-- rig (and a single mesh) without pulling the footprint back in.
+local function applyHeightScale(model: Model, heightScale: number?)
+	if type(heightScale) ~= "number" or heightScale <= 0 or math.abs(heightScale - 1) < 1e-3 then
+		return
+	end
+
+	local pivotPos = model:GetPivot().Position
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("JointInstance") then
+			descendant.C0 = scaleCFrameY(descendant.C0, heightScale)
+			descendant.C1 = scaleCFrameY(descendant.C1, heightScale)
+		elseif descendant:IsA("Bone") or descendant:IsA("Attachment") then
+			descendant.CFrame = scaleCFrameY(descendant.CFrame, heightScale)
+		elseif descendant:IsA("BasePart") then
+			local cf = descendant.CFrame
+			local size = descendant.Size
+			local axis = "Y"
+			local best = math.abs(cf.UpVector.Y)
+			if math.abs(cf.LookVector.Y) > best then
+				best = math.abs(cf.LookVector.Y)
+				axis = "Z"
+			end
+			if math.abs(cf.RightVector.Y) > best then
+				axis = "X"
+			end
+			if axis == "X" then
+				descendant.Size = Vector3.new(size.X * heightScale, size.Y, size.Z)
+			elseif axis == "Z" then
+				descendant.Size = Vector3.new(size.X, size.Y, size.Z * heightScale)
+			else
+				descendant.Size = Vector3.new(size.X, size.Y * heightScale, size.Z)
+			end
+			local offset = cf.Position - pivotPos
+			local newPos = pivotPos + Vector3.new(offset.X, offset.Y * heightScale, offset.Z)
+			descendant.CFrame = CFrame.new(newPos) * cf.Rotation
+		end
+	end
+end
+
 local function resolveFace(faceDirection: Vector3?): Vector3
 	if faceDirection and faceDirection.Magnitude > 1e-4 then
 		return faceDirection
@@ -457,6 +502,8 @@ export type PrepareOptions = {
 	preserveAnimationRig: boolean?,
 	-- Anchor every BasePart (Toolbox humanoids that fall through the lawn).
 	anchorAllParts: boolean?,
+	-- After the uniform fit, squash height only (1 = unchanged). Width stays.
+	heightScale: number?,
 }
 
 --[[
@@ -616,6 +663,8 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 	if options.anchorAllParts == true then
 		hardenParts(model, options.keepCollision, false)
 	end
+
+	applyHeightScale(model, options.heightScale)
 
 	if options.ghost then
 		local transparency = options.ghostTransparency or 0.45

@@ -95,6 +95,7 @@ local handlers: { [string]: AbilityHandler } = {
 	Jackpot = require(script.Jackpot),
 	PrimalRetaliation = require(script.PrimalRetaliation),
 	ShadowRequiem = require(script.ShadowRequiem),
+	AbyssalTorrent = require(script.AbyssalTorrent),
 }
 
 function Abilities.defaultBuffs(): EvolutionBuffs

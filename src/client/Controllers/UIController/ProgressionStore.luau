@@ -42,8 +42,8 @@ local FAIL_FADE = 1.0
 local FAIL_REPLACE_FADE = 0.28
 local FAIL_STACK_RISE = -62
 local BANNER_RISE = -48
-local SUCCESS_COPY = "Purchased Successfully!"
-local FAIL_COPY = "Purchase Unsuccessful. You do not have enough brains!"
+local SUCCESS_COPY = "Bought!"
+local FAIL_COPY = "Not enough Brains."
 
 export type ProgressionStoreHud = typeof(setmetatable(
 	{} :: {

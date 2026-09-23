@@ -10,7 +10,7 @@ later unlocks add their aura and bonus on top of earlier ones. The base unit
 This is **not** campaign day 10 / 20 / … (`LevelService` / `highestUnlocked`).
 Sheet labels “Level 10” mean **Brainrot level 10**.
 
-Status: 🔜 Milestone 19 (ladder + most GOD ultimates live; Tralalero GOD remaining)
+Status: ✅ Milestone 19 (ladder + GOD ultimates live)
 
 Authoring source: design sheet (Epic → God). Numbers below are targets,
 not live code. “Gold” on the sheet is **coins**.
@@ -30,8 +30,7 @@ not live code. “Gold” on the sheet is **coins**.
   passives compose the same way (params merge or extra ability ids). GOD
   ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
   Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
-  (on plant); Cappuccino **Shadow Requiem** ✅. Tralalero **Tidal Cataclysm**
-  🔜.
+  (on plant); Cappuccino **Shadow Requiem** ✅; Tralalero **Abyssal Torrent** ✅.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -160,7 +159,7 @@ on the sheet (TBD).
 | Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
-| GOD | Tidal Cataclysm | Lane tsunami: knockback + stun, then slow **30%** for **3s**. |
+| GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Each second in the jet deals catalog base damage (**55**) and knocks back **0.25** tiles. Needs **3+** enemies **or a boss**. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
 
 Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is weaker on bigger monsters: **25%** less at **2** rows, **50%** at **3**, **75%** at **4**, and **immune** at **5**. Damage is not reduced (`CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW`).
 
@@ -215,7 +214,7 @@ mutations stay in M19 or slip to a later pass.
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
   Frostbound Neighbor). **GOD** ultimates use the
   same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation`,
-  `ShadowRequiem` ✅; Lirili `freezeEntireLawn` params overlay ✅). Tralalero GOD 🔜.
+  (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili `freezeEntireLawn` params overlay ✅).
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
   `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
@@ -231,12 +230,14 @@ mutations stay in M19 or slip to a later pass.
   and a shiny rarity title, with a lock until brains claim and a confirm
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
-  (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem` ✅; Lirili Glacial Dominion
-  on plant ✅). Tralalero GOD 🔜.
+  (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili Glacial Dominion
+  on plant ✅).
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
-  Flame spike rate lives in `VfxConfig.BRAINROT_AURA_SPIKES_RATE`; size/speed
-  stay fixed so the column does not grow. Combat and
+  The server authors a dense flame column (core + extra layer). **High** shows both,
+  **Low** keeps a thin core (`BRAINROT_AURA_SPIKES_RATE_LOW`), and **Off** clears the
+  flames on that client. The rarity **Highlight outline** stays on every setting.
+  Size/speed stay fixed so the column does not grow. Combat and
   unlocks server-authoritative.
 
 See `ROADMAP.md` Milestone 19 for ship criteria.
