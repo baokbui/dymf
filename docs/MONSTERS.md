@@ -54,6 +54,7 @@ From `Shared.Types.MonsterDefinition`:
 | `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
 | `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`               |
+| `spawnVfx`                | string?                 | Entrance visual. `Sandstorm` (Pharaoh) is the steal sand tornado stood upright and sized over his whole body. High hides him inside it, Low leaves him partly visible, Off spawns none. Fades on his first step |
 
 
 Movement is **grid-based**: monsters spawn deep in the east dark forest
@@ -174,7 +175,7 @@ M16 **Complete When** ✅ — campaign monsters in authored levels use real mode
 | Duke Vampire  | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 | Small Mummy   | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
 | Scorpion      | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅                       |
-| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | **laneSpan 2**; rise from ground; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
+| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | **laneSpan 2**; rises inside the steal sand tornado, which clears on his first step; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -366,6 +367,15 @@ species’ intro (`ProgressConfig.monsterIntroDay`; Zombie = Day 1) to
 **non-bosses only**. Damage, speed, and attack interval stay authored. Bosses
 keep authored stats when they recur. Day 40 Zombies are 2.2× HP. Graves and
 summoned minions use the same plot day.
+
+**Monster level:** every spawn’s level is the current campaign day
+(`Monsters.levelForDay`, attribute `MonsterLevel`). A species’ starting level
+is its intro day, because that is the first day it appears: Zombie **Lv. 1**,
+Goblin Elite **Lv. 10**, Queen Spider **Lv. 30**. On Day 11 a Zombie is
+**Lv. 11** (and already has the +30% HP step above, since 11 inclusive days is
+one step). Level is shown on the overhead nameplate (VFX High only; Low and
+Off hide that line) and the field inspect card. Bosses show their level and
+still keep authored HP.
 
 - Levels 1–4: same `Zombie` profile, with rising counts/pacing (Day 1 empty board).
   Authored HP stays the Day 1 base until Day 10 (+30% campaign aging).

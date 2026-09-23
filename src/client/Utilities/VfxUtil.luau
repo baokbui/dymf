@@ -1039,16 +1039,92 @@ local function cframeFromUp(position: Vector3, up: Vector3, spin: number): CFram
 	return CFrame.fromMatrix(position, right, axis) * CFrame.Angles(0, spin, 0)
 end
 
+type SandFunnel = {
+	root: Model,
+	pose: (Vector3, Vector3, number) -> (),
+}
+
+-- Same sand funnel Pharaoh's steal uses: narrow at the hub, wide at the far
+-- end, with the grit emitters. `pose` aims it along `axis`.
+local function createSandFunnel(): SandFunnel
+	local height = VfxConfig.SAND_TORNADO_HEIGHT
+	local radius = VfxConfig.SAND_TORNADO_RADIUS
+	local sandColor = VfxConfig.SAND_COLOR_A
+
+	local root = Instance.new("Model")
+	root.Name = "SandTornado"
+	root.Parent = effectsFolder()
+
+	local column = Instance.new("Part")
+	column.Name = "Hub"
+	column.Anchored = true
+	column.CanCollide = false
+	column.CanQuery = false
+	column.CanTouch = false
+	column.Transparency = 1
+	column.Size = Vector3.new(1, 1, 1)
+	column.Parent = root
+	root.PrimaryPart = column
+
+	local bands: { BasePart } = {}
+	for i = 1, 7 do
+		local t = (i - 1) / 6
+		local ringRadius = radius * (0.35 + t * 0.85)
+		local band = Instance.new("Part")
+		band.Name = "Funnel" .. i
+		band.Shape = Enum.PartType.Cylinder
+		band.Anchored = true
+		band.CanCollide = false
+		band.CanQuery = false
+		band.CanTouch = false
+		band.CastShadow = false
+		band.Material = Enum.Material.Sand
+		band.Color = if i % 2 == 0 then VfxConfig.SAND_COLOR_B else sandColor
+		band.Transparency = VfxConfig.SAND_TORNADO_MESH_TRANSPARENCY
+		band.Size = Vector3.new(height / 7 + 0.6, ringRadius * 2, ringRadius * 2)
+		band.Parent = root
+		table.insert(bands, band)
+	end
+
+	local function pose(pos: Vector3, axis: Vector3, spinAngle: number)
+		local hub = cframeFromUp(pos, axis, spinAngle)
+		column.CFrame = hub
+		for index, band in bands do
+			local along = (index - 1) / math.max(#bands - 1, 1)
+			band.CFrame = hub * CFrame.new(0, along * height + height / 14, 0) * CFrame.Angles(0, 0, math.rad(90))
+		end
+	end
+
+	local columnEmitter = sandEmitter(column, 8, 2.2, 90)
+	columnEmitter:Emit(48)
+	for i = 1, 4 do
+		local attachment = Instance.new("Attachment")
+		local angle = (i / 4) * math.pi * 2
+		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.45, height * 0.35, math.sin(angle) * radius * 0.45)
+		attachment.Parent = column
+		local swirl = sandEmitter(attachment, 4.2, 1.1, 40)
+		swirl.LockedToPart = true
+		swirl.SpreadAngle = Vector2.new(80, 80)
+		swirl.Speed = NumberRange.new(8, 18)
+		swirl:Emit(16)
+	end
+
+	return {
+		root = root,
+		pose = pose,
+	}
+end
+
 --[[
 	Pharaoh steal: a sand funnel pointing from the boss toward the stolen
 	plants, plus grit pulled in from each plant.
 ]]
 function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, attachTo: BasePart?)
 	local duration = VfxConfig.SAND_TORNADO_DURATION
-	local height = VfxConfig.SAND_TORNADO_HEIGHT
 	local radius = VfxConfig.SAND_TORNADO_RADIUS
 	local folder = effectsFolder()
-	local sandColor = VfxConfig.SAND_COLOR_A
+	local funnel = createSandFunnel()
+	local root = funnel.root
 
 	local function bodyPosition(): Vector3
 		if attachTo and attachTo.Parent then
@@ -1078,69 +1154,8 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 		return fromPos + Vector3.new(0, radius * 0.45, 0) + axis * VfxConfig.SAND_TORNADO_HAND_OFFSET
 	end
 
-	local root = Instance.new("Model")
-	root.Name = "SandTornado"
-	root.Parent = folder
-
-	local column = Instance.new("Part")
-	column.Name = "Hub"
-	column.Anchored = true
-	column.CanCollide = false
-	column.CanQuery = false
-	column.CanTouch = false
-	column.Transparency = 1
-	column.Size = Vector3.new(1, 1, 1)
-	column.CFrame = cframeFromUp(mouthPosition(bodyPosition(), aimAxis(bodyPosition())), aimAxis(bodyPosition()), 0)
-	column.Parent = root
-	root.PrimaryPart = column
-
-	-- Visible funnel: wide at the mouth, narrow at the base. Anchored so the
-	-- rings stay on the boss (a weld to a CFrame-driven hub does not follow).
-	local bands: { BasePart } = {}
-	for i = 1, 7 do
-		local t = (i - 1) / 6
-		local ringRadius = radius * (0.35 + t * 0.85)
-		local band = Instance.new("Part")
-		band.Name = "Funnel" .. i
-		band.Shape = Enum.PartType.Cylinder
-		band.Anchored = true
-		band.CanCollide = false
-		band.CanQuery = false
-		band.CanTouch = false
-		band.CastShadow = false
-		band.Material = Enum.Material.Sand
-		band.Color = if i % 2 == 0 then VfxConfig.SAND_COLOR_B else sandColor
-		band.Transparency = VfxConfig.SAND_TORNADO_MESH_TRANSPARENCY
-		band.Size = Vector3.new(height / 7 + 0.6, ringRadius * 2, ringRadius * 2)
-		band.Parent = root
-		table.insert(bands, band)
-	end
-
-	local function pose(pos: Vector3, axis: Vector3, spinAngle: number)
-		local hub = cframeFromUp(pos, axis, spinAngle)
-		column.CFrame = hub
-		for index, band in bands do
-			local t = (index - 1) / math.max(#bands - 1, 1)
-			band.CFrame = hub * CFrame.new(0, t * height + height / 14, 0) * CFrame.Angles(0, 0, math.rad(90))
-		end
-	end
-
-	local columnEmitter = sandEmitter(column, 8, 2.2, 90)
-	columnEmitter:Emit(48)
-	for i = 1, 4 do
-		local attachment = Instance.new("Attachment")
-		local angle = (i / 4) * math.pi * 2
-		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.45, height * 0.35, math.sin(angle) * radius * 0.45)
-		attachment.Parent = column
-		local swirl = sandEmitter(attachment, 4.2, 1.1, 40)
-		swirl.LockedToPart = true
-		swirl.SpreadAngle = Vector2.new(80, 80)
-		swirl.Speed = NumberRange.new(8, 18)
-		swirl:Emit(16)
-	end
-
 	local startBody = bodyPosition()
-	pose(mouthPosition(startBody, aimAxis(startBody)), aimAxis(startBody), 0)
+	funnel.pose(mouthPosition(startBody, aimAxis(startBody)), aimAxis(startBody), 0)
 
 	if origins then
 		for _, origin in origins do
@@ -1192,7 +1207,7 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 	local spin = VfxConfig.SAND_TORNADO_SPIN
 	local conn: RBXScriptConnection
 	conn = RunService.Heartbeat:Connect(function(dt)
-		if not column.Parent then
+		if not root.Parent then
 			conn:Disconnect()
 			return
 		end
@@ -1200,7 +1215,7 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 		spinAngle += spin * dt
 		local body = bodyPosition()
 		local axis = aimAxis(body)
-		pose(mouthPosition(body, axis), axis, spinAngle)
+		funnel.pose(mouthPosition(body, axis), axis, spinAngle)
 		if elapsed >= duration then
 			for _, descendant in root:GetDescendants() do
 				if descendant:IsA("ParticleEmitter") then
@@ -1219,6 +1234,178 @@ function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, at
 		end
 		root:Destroy()
 	end)
+end
+
+local function spawnFunnelTransparency(): number
+	if VfxLoad.quality() == "Full" then
+		return VfxConfig.SPAWN_SANDSTORM_HIGH_TRANSPARENCY
+	end
+	return VfxConfig.SPAWN_SANDSTORM_LOW_TRANSPARENCY
+end
+
+-- High fills the tornado solid. Low thins the shell and hides the opaque core
+-- so the boss is only partly visible. Off never builds one.
+function VfxUtil.refreshSpawnSandstorm(root: Instance)
+	if root:GetAttribute("SandstormFading") == true then
+		return
+	end
+	local dense = VfxLoad.quality() == "Full"
+	local shell = spawnFunnelTransparency()
+	for _, descendant in root:GetDescendants() do
+		if descendant:IsA("BasePart") and string.sub(descendant.Name, 1, 6) == "Funnel" then
+			descendant.Transparency = shell
+		elseif descendant:IsA("BasePart") and descendant:GetAttribute("VfxLayer") == "High" then
+			descendant.LocalTransparencyModifier = if dense then 0 else 1
+		elseif descendant:IsA("ParticleEmitter") then
+			local fullRate = descendant:GetAttribute("SandRate")
+			if type(fullRate) ~= "number" then
+				fullRate = descendant.Rate
+			end
+			descendant.Enabled = true
+			descendant.Rate = if dense then fullRate else math.max(8, math.floor(fullRate * 0.3))
+		end
+	end
+end
+
+--[[
+	Pharaoh entrance: the steal sand tornado, stood straight up and large
+	enough to cover his whole body. `coverWidth` / `coverHeight` are his
+	visual size. Caller stops it when he takes his first step.
+]]
+function VfxUtil.playSpawnSandstorm(ground: Vector3, coverWidth: number, coverHeight: number): () -> ()
+	local fadeTime = VfxConfig.SPAWN_SANDSTORM_FADE
+	local width = math.max(coverWidth * VfxConfig.SPAWN_SANDSTORM_WIDTH_PAD, VfxConfig.SPAWN_SANDSTORM_MIN_WIDTH)
+	local height = math.max(coverHeight * VfxConfig.SPAWN_SANDSTORM_HEIGHT_PAD, VfxConfig.SPAWN_SANDSTORM_MIN_HEIGHT)
+	local radius = width * 0.5
+	local sandColor = VfxConfig.SAND_COLOR_A
+
+	local root = Instance.new("Model")
+	root.Name = "SpawnSandstorm"
+	root.Parent = effectsFolder()
+
+	local column = Instance.new("Part")
+	column.Name = "Hub"
+	column.Anchored = true
+	column.CanCollide = false
+	column.CanQuery = false
+	column.CanTouch = false
+	column.Transparency = 1
+	column.Size = Vector3.new(1, 1, 1)
+	column.Parent = root
+	root.PrimaryPart = column
+
+	local bands: { BasePart } = {}
+	local bandCount = 9
+	for i = 1, bandCount do
+		local t = (i - 1) / (bandCount - 1)
+		-- Wide the whole way, a little wider at the top, so his body stays inside.
+		local ringRadius = radius * (1 + t * 0.4)
+		local band = Instance.new("Part")
+		band.Name = "Funnel" .. i
+		band.Shape = Enum.PartType.Cylinder
+		band.Anchored = true
+		band.CanCollide = false
+		band.CanQuery = false
+		band.CanTouch = false
+		band.CastShadow = false
+		band.Material = Enum.Material.Sand
+		band.Color = if i % 2 == 0 then VfxConfig.SAND_COLOR_B else sandColor
+		band.Transparency = spawnFunnelTransparency()
+		band.Size = Vector3.new(height / bandCount * 1.45, ringRadius * 2, ringRadius * 2)
+		band.Parent = root
+		table.insert(bands, band)
+	end
+
+	-- Solid core so High hides him completely. Low turns this layer off.
+	local core = Instance.new("Part")
+	core.Name = "Core"
+	core.Shape = Enum.PartType.Cylinder
+	core.Anchored = true
+	core.CanCollide = false
+	core.CanQuery = false
+	core.CanTouch = false
+	core.CastShadow = false
+	core.Material = Enum.Material.Sand
+	core.Color = VfxConfig.SAND_COLOR_B
+	core.Transparency = 0
+	core.Size = Vector3.new(height, radius * 1.35, radius * 1.35)
+	core:SetAttribute("VfxLayer", "High")
+	core.Parent = root
+
+	local function pose(spinAngle: number)
+		local hub = cframeFromUp(ground, Vector3.yAxis, spinAngle)
+		column.CFrame = hub
+		local upright = CFrame.Angles(0, 0, math.rad(90))
+		for index, band in bands do
+			local along = (index - 1) / math.max(#bands - 1, 1)
+			band.CFrame = hub * CFrame.new(0, along * height + height / (bandCount * 2), 0) * upright
+		end
+		core.CFrame = hub * CFrame.new(0, height * 0.5, 0) * upright
+	end
+
+	local columnEmitter = sandEmitter(column, radius * 0.55, radius * 0.16, 120)
+	columnEmitter:SetAttribute("SandRate", 120)
+	columnEmitter:Emit(64)
+	for i = 1, 6 do
+		local attachment = Instance.new("Attachment")
+		local angle = (i / 6) * math.pi * 2
+		attachment.Position = Vector3.new(math.cos(angle) * radius * 0.45, height * 0.45, math.sin(angle) * radius * 0.45)
+		attachment.Parent = column
+		local swirl = sandEmitter(attachment, radius * 0.28, radius * 0.08, 48)
+		swirl:SetAttribute("SandRate", 48)
+		swirl.SpreadAngle = Vector2.new(80, 80)
+		swirl.Speed = NumberRange.new(10, 24)
+		swirl:Emit(20)
+	end
+
+	VfxUtil.refreshSpawnSandstorm(root)
+	pose(0)
+
+	local spinAngle = 0
+	local spin = VfxConfig.SAND_TORNADO_SPIN
+	local spinning = true
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not spinning or not root.Parent then
+			conn:Disconnect()
+			return
+		end
+		spinAngle += spin * dt
+		pose(spinAngle)
+	end)
+
+	local stopped = false
+	return function()
+		if stopped then
+			return
+		end
+		stopped = true
+		spinning = false
+		root:SetAttribute("SandstormFading", true)
+		if conn.Connected then
+			conn:Disconnect()
+		end
+		local started = os.clock()
+		local fadeConn: RBXScriptConnection
+		fadeConn = RunService.Heartbeat:Connect(function(dt)
+			local alpha = (os.clock() - started) / math.max(fadeTime, 0.05)
+			if alpha >= 1 or not root.Parent then
+				fadeConn:Disconnect()
+				if root.Parent then
+					root:Destroy()
+				end
+				return
+			end
+			for _, descendant in root:GetDescendants() do
+				if descendant:IsA("ParticleEmitter") then
+					descendant.Enabled = false
+					descendant.Rate = 0
+				elseif descendant:IsA("BasePart") and descendant.Transparency < 1 and descendant.Name ~= "Hub" then
+					descendant.Transparency = math.min(1, descendant.Transparency + dt * (1 / math.max(fadeTime, 0.05)))
+				end
+			end
+		end)
+	end
 end
 
 function VfxUtil.playWindGust(plotModel: Model)
@@ -1478,7 +1665,12 @@ local function clearQualityGuard(inst: Instance)
 end
 
 function VfxUtil.applyHeavyQuality(root: Instance, highQuality: boolean)
+	local showHighLayer = VfxLoad.quality() == "Full"
 	for _, descendant in root:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant:GetAttribute("VfxLayer") == "High" then
+			descendant.LocalTransparencyModifier = if showHighLayer then 0 else 1
+			continue
+		end
 		if not (descendant:IsA("ParticleEmitter") or descendant:IsA("Trail") or descendant:IsA("Beam")) then
 			continue
 		end

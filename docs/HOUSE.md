@@ -64,7 +64,7 @@ Design target (not implemented yet):
    house to see their trophies.
 3. **Income** — displayed bosses generate **brains** on a slow server tick
    (rate from config per `monsterId`). Brains remain the progression currency
-   already used for the Brainrots Store (M18) and evolutions/mutations (M19).
+   already used for the Brainrots Store (M18) and evolutions (M19).
 4. **Spend** — no new currency: brains buy unlocks / evolves as those
    milestones define. House income is an additional brains source.
 

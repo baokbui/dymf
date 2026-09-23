@@ -108,6 +108,9 @@ export type MonsterDefinition = {
 	-- tween up (mummies). Duration: spawnRiseDuration or MonsterConfig.SPAWN_RISE_DURATION.
 	spawnStyle: string?,
 	spawnRiseDuration: number?,
+	-- Client entrance VFX while rising. "Sandstorm" = a column at the spawn
+	-- point from a short lead-in until the first step (Pharaoh Mummy).
+	spawnVfx: string?,
 	-- How many grid rows this unit occupies for targeting (1 = normal; 3 = hit from ±1 row).
 	laneSpan: number?,
 	-- When set, stop this many tiles east of a Brainrot and shoot instead of chewing.

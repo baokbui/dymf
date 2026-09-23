@@ -344,7 +344,7 @@ Full details in `MONSTERS.md`. Summary:
 - **`Shared.Monsters`** — eleven data-driven entries (replaces BasicMonster).
   Movement uses `secondsPerGrid`; attacks use `attackInterval`.
 - **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, campaign HP aging, dev test spawns.
-- **`EnemyService`** — `spawn` (non-boss HP scaled for the plot’s current day), `MonsterBehavior` grid movement, attack-on-tile,
+- **`EnemyService`** — `spawn` (level = current day; non-boss HP scaled for that day), `MonsterBehavior` grid movement, attack-on-tile,
   `Abilities/` handlers (Goblin Elite one-shot, Spider jump, Necromancer summon, …).
 - **`MonsterModel`** / **`MonsterFeedback`** — models clone from
   `Assets.Monsters` via `ModelUtil` (M16; Part fallback); pulse / hit flash /

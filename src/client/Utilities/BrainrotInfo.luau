@@ -88,7 +88,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	AbyssalTorrent = {
 		label = "Abyssal Torrent",
-		description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster in the way. Each second in the jet deals 55 damage and pushes them back 0.25 tiles. Needs 3 or more monsters, or a boss. The closest one fires first. 45s cooldown.",
+		description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster in the way. Each second in the jet deals 55 damage, plus 20% more for every tile closer to him, and pushes them back 0.25 tiles. Needs 3 or more monsters, or a boss. The closest one fires first. 45s cooldown.",
 	},
 }
 

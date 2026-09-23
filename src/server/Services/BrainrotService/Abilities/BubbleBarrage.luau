@@ -63,9 +63,13 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
 		task.delay(hitDelay, function()
-			if model.Parent then
-				fire()
+			if not model.Parent then
+				return
 			end
+			if ctx.buffs.coreLockUntil - os.clock() > 0.5 then
+				return
+			end
+			fire()
 		end)
 	else
 		fire()

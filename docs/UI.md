@@ -203,12 +203,15 @@ hardcode a second palette in new UI.
   (`orbitShield`) orbits a small `Assets.Projectiles.Shield` instead. No Equip button on the field card. No close X — dismiss by clicking
   empty lawn, shovel, a shop seed, or closing Inventory. **Clicking a monster
   on your plot** opens a matching right-side card (`MonsterInspect`): portrait,
-  live HP, stats, ability blurb — no evolutions, XP, or Equip. Opening one
+  live HP, level, stats, ability blurb — no evolutions, XP, or Equip. Opening one
   lawn card hides the other. Server validates
   equip changes via `SetEquipped`. Loadout **cannot** change while the day is
   **Active** (server reject + inventory packets / Equip button locked).
   Every planted Brainrot shows a world nameplate (full name, claimed
   rarity with shine on Epic+, `Lv. N`) via `BrainrotController/Nameplate`.
+  Every monster shows a world nameplate (species name, `Lv. N` = current day)
+  via `CombatController/MonsterNameplate`. The level line shows on **VFX High**
+  only; **Low** and **Off** keep the name and hide the level.
 - **UnlockPopup** ✅ — decently-sized center-screen celebration the first time
   a Brainrot is introduced (portrait, name, stat summary, ability blurb,
   dismiss). Starter trio (Ballerina / Tung Tung / Chimpanzini) has **no**

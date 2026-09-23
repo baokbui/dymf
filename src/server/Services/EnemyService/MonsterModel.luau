@@ -75,7 +75,8 @@ local function applyIdentity(
 	instanceId: string,
 	definition: Types.MonsterDefinition,
 	plotModel: Model,
-	row: number
+	row: number,
+	level: number
 )
 	model:SetAttribute("InstanceId", instanceId)
 	model:SetAttribute("MonsterId", definition.id)
@@ -85,6 +86,7 @@ local function applyIdentity(
 	model:SetAttribute("Health", definition.health)
 	model:SetAttribute("MaxHealth", definition.health)
 	model:SetAttribute("IsBoss", definition.isBoss == true)
+	model:SetAttribute("MonsterLevel", level)
 	CollectionService:AddTag(model, Constants.TAGS.Monster)
 end
 
@@ -94,7 +96,8 @@ local function createPlaceholder(
 	plotModel: Model,
 	row: number,
 	worldPosition: Vector3,
-	parent: Instance
+	parent: Instance,
+	level: number
 ): Model
 	local footprint = footprintFor(definition)
 	local bodyHeight = bodyHeightFor(definition)
@@ -118,7 +121,7 @@ local function createPlaceholder(
 	-- Face the house (−X) like authored templates.
 	body.CFrame = CFrame.lookAt(body.Position, body.Position + MonsterConfig.MODEL_FACE_DIRECTION)
 
-	applyIdentity(model, instanceId, definition, plotModel, row)
+	applyIdentity(model, instanceId, definition, plotModel, row, level)
 	CollisionUtil.applyMonster(model)
 	model.Parent = parent
 	return model
@@ -130,7 +133,8 @@ function MonsterModel.create(
 	plotModel: Model,
 	row: number,
 	worldPosition: Vector3,
-	parent: Instance
+	parent: Instance,
+	level: number
 ): Model
 	local modelId = definition.modelId or definition.id
 	local template = ModelUtil.findMonsterTemplate(modelId)
@@ -142,7 +146,7 @@ function MonsterModel.create(
 				modelId
 			))
 		end
-		return createPlaceholder(instanceId, definition, plotModel, row, worldPosition, parent)
+		return createPlaceholder(instanceId, definition, plotModel, row, worldPosition, parent, level)
 	end
 
 	local span = laneSpanFor(definition)
@@ -168,7 +172,7 @@ function MonsterModel.create(
 		definition.modelOrientationDegrees,
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
-	applyIdentity(model, instanceId, definition, plotModel, row)
+	applyIdentity(model, instanceId, definition, plotModel, row, level)
 	-- Never block players or other monsters. Only unanchor Motor6D/Bone limbs;
 	-- unrigged models keep every part anchored so they do not fall underground.
 	local root = model.PrimaryPart

@@ -96,6 +96,9 @@ local MonsterConfig = {
 	-- RiseFromGround spawn (mummies). Buried by ~visual height, then tween up.
 	SPAWN_RISE_DURATION = 1.15,
 	SPAWN_RISE_BURY_RATIO = 1.05,
+	-- Pharaoh sandstorm lead: the column is already spinning before the rise
+	-- tween starts. It clears when he takes his first step.
+	SPAWN_SANDSTORM_LEAD = 0.55,
 
 	-- Studio dev spawns until LevelService drives waves (Milestone 8).
 	-- Each tick spawns one monster on a random grid row.

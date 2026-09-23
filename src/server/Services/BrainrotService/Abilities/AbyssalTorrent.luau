@@ -3,8 +3,9 @@
 	AbyssalTorrent (Tralalero GOD)
 	A water jet from the mouth to the east end of the row. It pierces every
 	monster in that stretch. Each full second a monster spends in the jet
-	deals Tralalero's base damage (catalog damage, not the evolved stat)
-	and knocks them east by a fraction of a tile.
+	deals Tralalero's base damage (catalog damage, not the evolved stat),
+	plus 20% of that base for every tile the monster is closer to his plant
+	than the east edge of the row, and knocks them east by a fraction of a tile.
 	Needs 3+ enemies in the row, or a boss. If several GOD Tralaleros in the
 	same row are ready, the easternmost (closest to incoming monsters) fires
 	first. One whose torrent is still cooling down is skipped.
@@ -18,6 +19,7 @@ local Brainrots = require(ReplicatedStorage.Shared.Brainrots)
 local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
+local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
 local GridService = require(script.Parent.Parent.Parent.GridService)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
@@ -63,6 +65,16 @@ local function rowQualifies(plotModel: Model, row: number, minEnemies: number): 
 		return true
 	end
 	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+end
+
+local function hitDamage(base: number, plantColumn: number, monsterColumn: number, closePercent: number): number
+	local plantTile = GridUtil.tileAtColumn(plantColumn)
+	local monsterTile = GridUtil.tileAtColumn(monsterColumn)
+	local away = math.max(0, monsterTile - plantTile)
+	local span = math.max(0, GridConfig.COLUMNS - plantTile)
+	local closer = math.max(0, span - away)
+	local percent = closer * closePercent
+	return math.max(1, math.floor(base * (100 + percent) / 100))
 end
 
 local function baseDamage(brainrotId: string): number
@@ -255,13 +267,21 @@ end
 type Ring = {
 	attachments: { Attachment },
 	radius: number,
-	locked: boolean,
 }
 
 type Helix = {
 	attachments: { Attachment },
 	phase: number,
 	color: Color3,
+}
+
+type OrbitBubble = {
+	part: BasePart,
+	core: BasePart,
+	along: number,
+	angle: number,
+	radius: number,
+	drift: number,
 }
 
 -- Bright core, soft glow, rings rushing down the beam, and two spiral streaks.
@@ -345,7 +365,7 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 		linkBeam(a0, a1, VfxConfig.HYDRO_JET_CORE_COLOR, 0.35, 0.25)
 	end
 
-	local function makeRing(color: Color3, radius: number, locked: boolean): Ring
+	local function makeRing(color: Color3, radius: number): Ring
 		local attachments: { Attachment } = {}
 		local anchor = ghostPart(model, "Ring")
 		for _ = 1, VfxConfig.HYDRO_JET_RING_SEGMENTS do
@@ -361,18 +381,13 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 				beam.TextureSpeed = 0
 			end
 		end
-		return { attachments = attachments, radius = radius, locked = locked }
+		return { attachments = attachments, radius = radius }
 	end
 
 	local rings: { Ring } = {}
-	local mouthRadius = VfxConfig.HYDRO_JET_RING_RADIUS
-	for index = 1, VfxConfig.HYDRO_JET_MOUTH_RINGS do
-		local color = if index % 2 == 0 then VfxConfig.HYDRO_JET_WATER_COLOR else VfxConfig.HYDRO_JET_CORE_COLOR
-		table.insert(rings, makeRing(color, mouthRadius * (0.55 + index * 0.35), true))
-	end
 	for index = 1, VfxConfig.HYDRO_JET_RING_COUNT do
 		local color = if index % 2 == 0 then VfxConfig.HYDRO_JET_WATER_COLOR else VfxConfig.HYDRO_JET_CORE_COLOR
-		table.insert(rings, makeRing(color, VfxConfig.HYDRO_JET_RING_RADIUS, false))
+		table.insert(rings, makeRing(color, VfxConfig.HYDRO_JET_RING_RADIUS))
 	end
 
 	local helices: { Helix } = {
@@ -391,6 +406,49 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 		end
 	end
 
+	local bubbles: { OrbitBubble } = {}
+	for index = 1, VfxConfig.HYDRO_JET_BUBBLE_COUNT do
+		local scale = 0.75 + (index % 5) * 0.1
+		local size = VfxConfig.HYDRO_JET_BUBBLE_SIZE * scale
+		local bubble = Instance.new("Part")
+		bubble.Name = "TorrentBubble"
+		bubble.Shape = Enum.PartType.Ball
+		bubble.Anchored = true
+		bubble.CanCollide = false
+		bubble.CanQuery = false
+		bubble.CanTouch = false
+		bubble.CastShadow = false
+		bubble.Material = Enum.Material.Glass
+		bubble.Reflectance = 0.45
+		bubble.Color = VfxConfig.HYDRO_JET_BUBBLE_COLOR
+		bubble.Transparency = VfxConfig.HYDRO_JET_BUBBLE_TRANSPARENCY
+		bubble.Size = Vector3.new(size, size, size)
+		bubble:SetAttribute("VfxLayer", "High")
+		bubble.Parent = model
+		local coreBubble = Instance.new("Part")
+		coreBubble.Name = "TorrentBubbleCore"
+		coreBubble.Shape = Enum.PartType.Ball
+		coreBubble.Anchored = true
+		coreBubble.CanCollide = false
+		coreBubble.CanQuery = false
+		coreBubble.CanTouch = false
+		coreBubble.CastShadow = false
+		coreBubble.Material = Enum.Material.Neon
+		coreBubble.Color = Color3.fromRGB(255, 255, 255)
+		coreBubble.Transparency = 0.35
+		coreBubble.Size = Vector3.new(size, size, size) * 0.45
+		coreBubble:SetAttribute("VfxLayer", "High")
+		coreBubble.Parent = model
+		table.insert(bubbles, {
+			part = bubble,
+			core = coreBubble,
+			along = (index - 1) / VfxConfig.HYDRO_JET_BUBBLE_COUNT,
+			angle = (index - 1) / VfxConfig.HYDRO_JET_BUBBLE_COUNT * math.pi * 2,
+			radius = VfxConfig.HYDRO_JET_BUBBLE_RADIUS * (0.9 + (index % 3) * 0.2),
+			drift = 0.18 + (index % 4) * 0.05,
+		})
+	end
+
 	local function pointOnBeam(along: number, angle: number, radius: number): Vector3
 		return startPos
 			+ direction * along
@@ -400,25 +458,13 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 
 	local function pose(elapsed: number)
 		local spin = elapsed * VfxConfig.HYDRO_JET_SPIN
-		local traveling = 0
-		for _, ring in rings do
-			if not ring.locked then
-				traveling += 1
-			end
-		end
+		local traveling = #rings
 		local travelIndex = 0
 		for _, ring in rings do
-			local along: number
-			local radius: number
-			if ring.locked then
-				along = 0.4
-				radius = ring.radius * (1 + math.sin(elapsed * 6) * 0.07)
-			else
-				travelIndex += 1
-				local travel = (elapsed * 0.45 + (travelIndex - 1) / math.max(traveling, 1)) % 1
-				along = travel * length
-				radius = ring.radius + (1 - travel) * VfxConfig.HYDRO_JET_RING_GROW
-			end
+			travelIndex += 1
+			local travel = (elapsed * 0.45 + (travelIndex - 1) / math.max(traveling, 1)) % 1
+			local along = travel * length
+			local radius = ring.radius + (1 - travel) * VfxConfig.HYDRO_JET_RING_GROW
 			local count = #ring.attachments
 			for segment, attachment in ring.attachments do
 				local angle = (segment - 1) / count * math.pi * 2
@@ -435,6 +481,13 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 				local radius = helixRadius * (0.75 + math.sin(t * math.pi) * 0.35)
 				attachment.WorldPosition = pointOnBeam(t * length, angle, radius)
 			end
+		end
+		for _, bubble in bubbles do
+			local along = (bubble.along + elapsed * bubble.drift) % 1
+			local angle = bubble.angle + elapsed * 0.8
+			local cf = CFrame.new(pointOnBeam(along * length, angle, bubble.radius))
+			bubble.part.CFrame = cf
+			bubble.core.CFrame = cf
 		end
 	end
 
@@ -463,12 +516,16 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 	local duration = if params and type(params.duration) == "number" then params.duration else 15
 	local minEnemies = CombatConfig.TORRENT_MIN_ENEMIES
 	local knockback = CombatConfig.TORRENT_KNOCKBACK_TILES
+	local closePercent = CombatConfig.TORRENT_CLOSE_PERCENT
 	if type(params) == "table" then
 		if type(params.minEnemies) == "number" then
 			minEnemies = params.minEnemies
 		end
 		if type(params.knockbackTiles) == "number" then
 			knockback = params.knockbackTiles
+		end
+		if type(params.closePercent) == "number" then
+			closePercent = params.closePercent
 		end
 	end
 
@@ -496,9 +553,10 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 		return false
 	end
 
-	callbacks.pulseAttack()
 	callbacks.lockExclusive(duration)
 	callbacks.lockCore(duration)
+	local BrainrotAnimation = require(script.Parent.Parent.BrainrotAnimation)
+	BrainrotAnimation.stopAttack(ctx.model)
 	setRowBusy(ctx.plotModel, ctx.position.row, true)
 
 	local jet = sprayJet(mouth, finish, projectilesFolder(ctx.plotModel))
@@ -526,7 +584,12 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 					local held = (exposure[monsterId] or 0) + 1
 					if held >= stepsPerHit then
 						held -= stepsPerHit
-						CombatService.damageMonster(monsterId, damage, brainrotId)
+						local column = CombatService.getMonsterColumn(monsterId)
+						local hit = damage
+						if type(column) == "number" then
+							hit = hitDamage(damage, fromColumn, column, closePercent)
+						end
+						CombatService.damageMonster(monsterId, hit, brainrotId)
 						CombatService.applyStatusToMonster(monsterId, "Knockback", 0, knockback)
 					end
 					exposure[monsterId] = held

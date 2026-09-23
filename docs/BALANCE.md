@@ -25,7 +25,9 @@ Difficulty ramps through **spawn counts**, **pacing** (`startDelay` /
 `spawnInterval`), **monster species**, and **campaign aging**: each species
 keeps its authored base HP, then HP grows **+30% per 10 days** since its intro
 day (`MonsterConfig.STAT_SCALE_*`, applied at spawn via `Monsters.scaledForDay`).
-**Bosses (`isBoss`) do not scale.** Damage, speed, and attack interval stay at
+A monster’s **level** is that same campaign day (`Monsters.levelForDay`): Zombie
+starts at Lv. 1, Goblin Elite at Lv. 10, Queen Spider at Lv. 30. Day 11 Zombies
+are Lv. 11. **Bosses (`isBoss`) do not scale.** Damage, speed, and attack interval stay at
 the intro values. Day 40 Zombies (debut Day 1) are **+120% HP** (2.2×). Goblins
 (debut Day 5) are one step behind at Day 40 (+90% HP). Intro popups still show
 base stats.

@@ -216,6 +216,9 @@ Introduction cadence:
   Returning **non-boss** species also **age**: HP +30% per 10 days since that
   unit’s intro (`Monsters.scaledForDay`). Day 40 Zombies are 2.2× their Day 1
   HP; damage and speed are unchanged. **Bosses do not scale.**
+  Every monster’s **level** is the current campaign day (intro day is the
+  starting level: Zombie Lv. 1, Goblin Elite Lv. 10, Queen Spider Lv. 30).
+  A Day 11 Zombie is Lv. 11 with the aging HP above.
 - Once a boss has been introduced, it can also **recur as a mixed-in miniboss**
   in later levels — placed in the **beginning or middle** of the day, not as
   the big-wave closer. Only decade boss days (10 / 20 / 30 / 40 / …) keep the boss

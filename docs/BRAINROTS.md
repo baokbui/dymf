@@ -338,4 +338,5 @@ passives tick in combat from evolution ability ids / `abilityParams`. GOD
 ultimates: Tung Tung **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini
 **Primal Retaliation**, Lirili **Glacial Dominion**, Cappuccino **Shadow
 Requiem** ✅; Tralalero **Abyssal Torrent** ✅.
-A separate mutation layer (replace core ability) is optional and not on the sheet.
+A separate mutation layer (replace or add an unrelated ability) is post-launch
+(Milestone 25), not part of this ladder.

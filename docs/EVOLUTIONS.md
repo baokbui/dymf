@@ -159,7 +159,7 @@ on the sheet (TBD).
 | Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
-| GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Each second in the jet deals catalog base damage (**55**) and knocks back **0.25** tiles. Needs **3+** enemies **or a boss**. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
+| GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Each second in the jet deals catalog base damage (**55**), plus **20%** more for every tile closer to his plant than the east edge of the row, and knocks back **0.25** tiles. Needs **3+** enemies **or a boss**. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
 
 Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is weaker on bigger monsters: **25%** less at **2** rows, **50%** at **3**, **75%** at **4**, and **immune** at **5**. Damage is not reduced (`CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW`).
 
@@ -185,12 +185,11 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 
 ---
 
-## Mutations (not on this sheet)
+## Mutations (Milestone 25)
 
 A separate **mutation** layer (replace or add an unrelated ability, independent
-of this ladder) is still named on Milestone 19 but **not authored here**. The
-ladder already adds actives / passives / ultimates. Decide at impl whether
-mutations stay in M19 or slip to a later pass.
+of this ladder) is **post-launch** (`ROADMAP.md` Milestone 25). It is not
+authored on this sheet. The ladder already adds actives, passives, and ultimates.
 
 ---
 

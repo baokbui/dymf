@@ -38,9 +38,15 @@ function BubbleTrap.tryAct(ctx, callbacks)
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
 		task.delay(hitDelay, function()
-			if model.Parent then
-				launch()
+			if not model.Parent then
+				return
 			end
+			-- A channel such as Abyssal Torrent locks the core attack for seconds.
+			-- A short swing lock (the shot's own windup) is already over by now.
+			if ctx.buffs.coreLockUntil - os.clock() > 0.5 then
+				return
+			end
+			launch()
 		end)
 	else
 		launch()

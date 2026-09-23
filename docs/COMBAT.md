@@ -14,7 +14,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 | ------ | ---- |
 | `CombatService` | Damage, healing, death routing, target acquisition, projectiles, status effects |
 | `DamageMeterService` | Per-day HP ranks (Brainrot vs Monster tabs); reset on Start Day |
-| `EnemyService` | Monster runtime state, movement, status fields, death cleanup. Spawn copies HP from `Monsters.scaledForDay` (non-boss campaign aging). |
+| `EnemyService` | Monster runtime state, movement, status fields, death cleanup. Spawn copies HP from `Monsters.scaledForDay` (non-boss campaign aging) and sets `MonsterLevel` to the current day. |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
 | `CombatController` (client) | Hit/death/explosion VFX, projectile trails (`CombatVisual` + plot watcher) |
 
@@ -180,7 +180,7 @@ Uses the default tip-over death like other monsters.
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
 - **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Needs **3+** enemies in the row **or a boss**; easternmost ready Cappuccino fires first. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. Launch SFX (`SwordWave`) starts **1s** before the crescent (`CombatConfig.SWORD_WAVE_SOUND_LEAD`) and cuts if the pillar starts first; pillar SFX is `SwordWavePillar`. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
-- **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this) and knocks them **0.25** tiles east (`CombatConfig.TORRENT_KNOCKBACK_TILES`). **15s** in the jet is **15** hits (**825**) and **3.75** tiles of knockback. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim abyssal-aqua beam: pale aqua core, teal body, dark outer glow, rings rushing down the row, and spiral streaks. Off VFX keeps the neon core and drops the beams.
+- **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this), plus **20%** of that base for every tile the monster is closer to his plant than the easternmost lawn tile (`TORRENT_CLOSE_PERCENT`). A monster on that far tile takes 55. One tile toward him takes 66. On his own tile the bonus is 20% × (9 − his column). Knockback is **0.25** tiles east per second (`CombatConfig.TORRENT_KNOCKBACK_TILES`), which moves them toward the lower bonus. **15s** on the far tile is **825**. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim purple beam: pale violet core, vivid purple body, dark outer glow, rings rushing down the row, and spiral streaks. Small soap bubbles orbit the beam on **High** VFX only (`VfxLayer = "High"`); **Low** and **Off** hide them. Off VFX keeps the neon core and drops the beams.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
@@ -325,6 +325,12 @@ MonsterBehavior.attackBrainrot
 (15s) via `BrainrotService.stealPlacement` (tile freed, model yanked toward the
 boss) with a client sand-tornado suck (`CombatVisual` `SandTornado`). Plants with `definition.immovable` (Chimpanzini **Goliath**) are skipped, and `stealPlacement` refuses them if called later. Steal is not Combat damage. Pharaoh occupies **2 rows** (`laneSpan`). Pharaoh and Small Mummy both use
 `spawnStyle = "RiseFromGround"` (buried, then tween up; invulnerable while rising).
+Pharaoh's entrance adds `spawnVfx = "Sandstorm"`: the steal sand tornado stood
+upright, sized to cover his whole body, for `SPAWN_SANDSTORM_LEAD` (0.55s)
+before the rise. He climbs out inside it, and it fades on the tick he takes
+his first step. **High** is dense enough that he cannot be seen inside.
+**Low** thins the shell so he is only partly visible. **Off** spawns no tornado.
+Small Mummy and Scorpion still rise with no sandstorm.
 Pharaoh walk / chew / summon / steal clips live on the definition
 (`abilityAnimationIds` for summon + steal; chew uses the Small Mummy attack id).
 Summon/steal wait `summonHitDelay` / `stealHitDelay` after the clip starts.

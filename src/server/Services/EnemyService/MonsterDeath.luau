@@ -281,7 +281,7 @@ end
 	the current (standing) pivot. Caller must pause locomotion / grid snap
 	for `duration` so the tween is not overwritten.
 ]]
-function MonsterDeath.playRiseFromGround(model: Model, duration: number, onRisen: (() -> ())?)
+function MonsterDeath.playRiseFromGround(model: Model, duration: number, onRisen: (() -> ())?, lead: number?)
 	if not model.Parent then
 		return
 	end
@@ -289,7 +289,23 @@ function MonsterDeath.playRiseFromGround(model: Model, duration: number, onRisen
 	local bury = math.max(visualHeight(model) * MonsterConfig.SPAWN_RISE_BURY_RATIO, 2)
 	local buried = stand - Vector3.new(0, bury, 0)
 	model:PivotTo(buried)
-	tweenPivot(model, buried, stand, duration, onRisen)
+
+	local function beginRise()
+		if not model.Parent then
+			if onRisen then
+				onRisen()
+			end
+			return
+		end
+		tweenPivot(model, buried, stand, duration, onRisen)
+	end
+
+	local waitFor = if type(lead) == "number" then math.max(0, lead) else 0
+	if waitFor > 0 then
+		task.delay(waitFor, beginRise)
+	else
+		beginRise()
+	end
 end
 
 return MonsterDeath

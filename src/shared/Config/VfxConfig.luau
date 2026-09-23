@@ -165,6 +165,17 @@ local VfxConfig = {
 	SAND_COLOR_B = Color3.fromRGB(160, 120, 70),
 	SAND_COLOR_C = Color3.fromRGB(235, 200, 140),
 
+	-- Pharaoh entrance tornado. Same funnel shape as the steal, stood upright,
+	-- but sized to cover his whole body (the steal funnel is too small).
+	-- High is nearly solid. Low is thin enough to see him. Off spawns nothing.
+	SPAWN_SANDSTORM_MIN_WIDTH = TILE * 2.4,
+	SPAWN_SANDSTORM_MIN_HEIGHT = TILE * 3.2,
+	SPAWN_SANDSTORM_WIDTH_PAD = 1.35,
+	SPAWN_SANDSTORM_HEIGHT_PAD = 1.35,
+	SPAWN_SANDSTORM_HIGH_TRANSPARENCY = 0.04,
+	SPAWN_SANDSTORM_LOW_TRANSPARENCY = 0.62,
+	SPAWN_SANDSTORM_FADE = 0.16,
+
 	-- Giraffa plot-wide gust that blows Night Fog off the lawn.
 	WIND_GUST_DURATION = 1.5,
 	WIND_GUST_RATE = 28,
@@ -290,7 +301,7 @@ local VfxConfig = {
 	BRAINROT_AURA_EXTRA_RATE = 40,
 	BRAINROT_AURA_SPIKES_RATE_LOW = 12,
 
-	-- Tralalero Abyssal Torrent. Aqua beam from the snout: dim core, darker
+	-- Tralalero Abyssal Torrent. Purple beam from the snout: dim core, darker
 	-- glow, rings, and spiral streaks. Sized under a full tile.
 	HYDRO_JET_CORE_THICKNESS = 0.7,
 	HYDRO_JET_CORE_WIDTH = 1.05,
@@ -299,16 +310,21 @@ local VfxConfig = {
 	HYDRO_JET_RING_RADIUS = TILE * 0.14,
 	HYDRO_JET_RING_GROW = TILE * 0.06,
 	HYDRO_JET_HELIX_RADIUS = TILE * 0.05,
-	HYDRO_JET_CORE_COLOR = Color3.fromRGB(150, 230, 220),
-	HYDRO_JET_WATER_COLOR = Color3.fromRGB(16, 130, 145),
-	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(4, 36, 62),
+	HYDRO_JET_CORE_COLOR = Color3.fromRGB(220, 180, 255),
+	HYDRO_JET_WATER_COLOR = Color3.fromRGB(140, 50, 230),
+	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(48, 8, 90),
 	HYDRO_JET_RING_COUNT = 6,
 	HYDRO_JET_RING_SEGMENTS = 12,
-	HYDRO_JET_MOUTH_RINGS = 3,
 	HYDRO_JET_STREAKS = 6,
 	HYDRO_JET_HELIX_POINTS = 22,
 	HYDRO_JET_HELIX_TURNS = 7,
 	HYDRO_JET_SPIN = 4,
+	-- Soap bubbles around the beam. High only; Low and Off hide them on the client.
+	HYDRO_JET_BUBBLE_COUNT = 18,
+	HYDRO_JET_BUBBLE_SIZE = 2.2,
+	HYDRO_JET_BUBBLE_RADIUS = TILE * 0.24,
+	HYDRO_JET_BUBBLE_COLOR = Color3.fromRGB(245, 236, 255),
+	HYDRO_JET_BUBBLE_TRANSPARENCY = 0.18,
 
 	-- Magnet pull: translucent purple rings that spawn at the outer
 	-- pull range and collapse inward toward the player.

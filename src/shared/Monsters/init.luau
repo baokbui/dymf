@@ -281,6 +281,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			PharaohSteal = "rbxassetid://93082363577263",
 		},
 		spawnStyle = "RiseFromGround",
+		spawnVfx = "Sandstorm",
 		auraColor = Color3.fromRGB(230, 190, 80),
 		auraScale = 1.5,
 	},
@@ -333,6 +334,16 @@ function Monsters.scaledForDay(id: string, currentDay: number): Types.MonsterDef
 	local scaled = table.clone(definition)
 	scaled.health = MonsterConfig.scaleStat(definition.health, multiplier)
 	return scaled
+end
+
+-- The campaign day is the monster's level. A species first appears on its
+-- intro day, so that day is its starting level (Zombie 1, Goblin Elite 10,
+-- Queen Spider 30). Later days use the player's current day.
+function Monsters.levelForDay(currentDay: number): number
+	if type(currentDay) ~= "number" then
+		return 1
+	end
+	return math.max(1, math.floor(currentDay))
 end
 
 function Monsters.exists(id: string): boolean

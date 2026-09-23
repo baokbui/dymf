@@ -2,7 +2,7 @@
 --[[
 	MonsterInspect
 	Field stats card for clicking a monster on the local plot. Same dock as
-	BrainrotInspect (right side): portrait, live HP, stats, ability blurb.
+	BrainrotInspect (right side): portrait, level, live HP, stats, ability blurb.
 	No evolutions, XP, or Equip — monsters are not player-owned units.
 	Display only.
 ]]
@@ -20,7 +20,7 @@ local MonsterInspect = {}
 MonsterInspect.__index = MonsterInspect
 
 MonsterInspect.CARD_WIDTH = 380
-MonsterInspect.CARD_HEIGHT = 360
+MonsterInspect.CARD_HEIGHT = 378
 
 local PORTRAIT = 100
 local PORTRAIT_INSET = 8
@@ -232,8 +232,16 @@ local function mountHeader(
 	metaLayout.Parent = meta
 
 	addLabel(meta, 1, definition.name, 16, nil, false)
+	local level = 1
+	if healthModel then
+		local live = healthModel:GetAttribute("MonsterLevel")
+		if type(live) == "number" then
+			level = math.max(1, math.floor(live))
+		end
+	end
+	addLabel(meta, 2, string.format("Lv. %d", level), 13, nil, false)
 
-	local hpTrack, hpFill, hpLabel = makeBar(meta, 2)
+	local hpTrack, hpFill, hpLabel = makeBar(meta, 3)
 	hpTrack.Name = "HpBar"
 	self.hpFill = hpFill
 	self.hpBarLabel = hpLabel

@@ -403,10 +403,27 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 		if type(duration) ~= "number" or duration <= 0 then
 			duration = MonsterConfig.SPAWN_RISE_DURATION
 		end
-		runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
-		runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+		local lead = 0
+		if runtime.definition.spawnVfx == "Sandstorm" then
+			lead = MonsterConfig.SPAWN_SANDSTORM_LEAD
+		end
+		local now = os.clock()
+		-- Hold locomotion until the rise callback. The extra second is only a
+		-- cap if the tween never finishes.
+		runtime.downedUntil = math.max(runtime.downedUntil, now + lead + duration + 1)
+		runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, now + lead + duration)
 		MonsterAnimation.setLocomotionPaused(runtime.model, true)
-		MonsterDeath.playRiseFromGround(runtime.model, duration)
+		if lead > 0 then
+			local pivot = runtime.model:GetPivot().Position
+			local groundY = pivot.Y - runtime.footSnapOffset
+			runtime.model:SetAttribute("SandstormX", pivot.X)
+			runtime.model:SetAttribute("SandstormY", groundY)
+			runtime.model:SetAttribute("SandstormZ", pivot.Z)
+			runtime.model:SetAttribute("SpawnSandstorm", true)
+		end
+		MonsterDeath.playRiseFromGround(runtime.model, duration, function()
+			runtime.downedUntil = os.clock()
+		end, lead)
 	end
 end
 
@@ -498,6 +515,9 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				end
 			end
 			MonsterAnimation.setLocomotionPaused(runtime.model, false)
+			if runtime.model:GetAttribute("SpawnSandstorm") == true then
+				runtime.model:SetAttribute("SpawnSandstorm", false)
+			end
 		end
 
 		if now < runtime.channelingUntil then

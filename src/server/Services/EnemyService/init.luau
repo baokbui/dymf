@@ -242,7 +242,8 @@ local function currentDayForPlot(plotModel: Model): number
 end
 
 local function spawnInternal(plotModel: Model, monsterId: string, gridRow: number, spawnColumn: number?): MonsterRuntime?
-	local definition = Monsters.scaledForDay(monsterId, currentDayForPlot(plotModel))
+	local day = currentDayForPlot(plotModel)
+	local definition = Monsters.scaledForDay(monsterId, day)
 	if not definition then
 		return nil
 	end
@@ -271,7 +272,8 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		plotModel,
 		gridRow,
 		worldPos,
-		monstersFolder(plotModel)
+		monstersFolder(plotModel),
+		Monsters.levelForDay(day)
 	)
 	MonsterFeedback.applyAura(model, definition.auraColor, definition.auraScale)
 

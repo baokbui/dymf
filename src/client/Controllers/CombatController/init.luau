@@ -24,6 +24,8 @@ local VfxLoad = require(Shared.Utilities.VfxLoad)
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
 local AudioController = require(script.Parent.AudioController)
+local MonsterNameplate = require(script.MonsterNameplate)
+local SpawnSandstorm = require(script.SpawnSandstorm)
 
 local CombatController = {}
 CombatController.Name = "CombatController"
@@ -404,6 +406,8 @@ function CombatController.init()
 end
 
 function CombatController.start()
+	MonsterNameplate.start()
+	SpawnSandstorm.start()
 	Remotes.getEvent("CombatVisual").OnClientEvent:Connect(onCombatVisual)
 	VfxLoad.onHighQualityChanged(function()
 		refreshHeavyProjectiles()

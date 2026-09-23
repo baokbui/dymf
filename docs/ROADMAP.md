@@ -604,9 +604,9 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 
 
 
-# Milestone 19 — Brainrot Evolution & Mutations
+# Milestone 19 — Brainrot Evolution
 
-**Status: 🔜 Planned**
+**Status: ✅ Complete**
 
 ## Goal
 
@@ -626,11 +626,6 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
   ultimate)
 - **Authored rows** for Ballerina, Chimpanzini, Tung Tung, Tralalero,
   Cappuccino, Lirili (Girafa / Patapim / Bombardino TBD)
-
-A separate **mutation** layer (replace the core ability, independent of this
-ladder) is still named on this milestone but is **not** on the sheet. The
-ladder already adds actives / passives / ultimates. Decide at impl whether
-mutations ship in M19 or slip later.
 
 ## Tasks
 
@@ -753,7 +748,7 @@ UI only displays and sends intents.
 
 Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
 it for display; displayed bosses generate **brains** used for the store (M18)
-and evolutions/mutations (M19).
+and evolutions (M19).
 
 ## Prerequisites
 
@@ -869,7 +864,9 @@ and evolutions/mutations (M19).
 
 - **New Brainrots** — expand the roster beyond the launch seven (registry +
   ability handlers; additional model work as needed)
-- Brainrot evolution & mutations → **Milestone 19**
+- **Brainrot mutations** — a layer separate from the Epic→God ladder: replace
+  or add an unrelated ability, independent of Brainrot level. Evolutions
+  shipped in **Milestone 19**; mutations are post-launch.
 - Retention (7-day rewards, spinner, daily quests) → **Milestone 20**
 - Boss collection house (display defeated bosses → brains income) → **Milestone 21**
 - New Monsters
