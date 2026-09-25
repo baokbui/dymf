@@ -31,6 +31,14 @@ local CombatConfig = {
 	SHURIKEN_SPIN_RADIANS_PER_SECOND = math.pi * 14, -- 7 turns/sec vertical cartwheel
 	SHURIKEN_PROJECTILE_HEIGHT_OFFSET = 3.2,
 
+	-- Orangutini pineapple. Prefer Assets.Projectiles[PINEAPPLE_MODEL_ID].
+	PINEAPPLE_MODEL_ID = "Pineapple",
+	PINEAPPLE_TARGET_EXTENT = 3.4,
+	PINEAPPLE_ARC_HEIGHT = 7,
+	PINEAPPLE_SPIN_RADIANS_PER_SECOND = math.pi * 2,
+	PINEAPPLE_COLOR = Color3.fromRGB(214, 168, 42),
+	PINEAPPLE_LEAF_COLOR = Color3.fromRGB(70, 140, 55),
+
 	-- Tralalero bubble projectile (cyan soap bubble; no trail streaks).
 	BUBBLE_PROJECTILE_SIZE = Vector3.new(2.6, 2.6, 2.6),
 	BUBBLE_PROJECTILE_SEED_SIZE = Vector3.new(3.5, 3.5, 3.5),

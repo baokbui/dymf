@@ -58,6 +58,9 @@ local ProgressConfig = {
 	-- Giraffa can be bought early; reach Day 25 still grants her for free.
 	STORE_CATALOG = {
 		{ brainrotId = "GiraffaCeleste", brainsCost = 50 },
+		{ brainrotId = "OrangutiniAnanassini", brainsCost = 80 },
+		{ brainrotId = "LaVaccaSaturnoSaturnita", brainsCost = 60 },
+		{ brainrotId = "BlueberrinniOctopusini", brainsCost = 70 },
 	},
 
 	-- Buy with brains from the HUD Upgrades shop. Level is persisted

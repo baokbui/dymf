@@ -528,6 +528,10 @@ function BrainrotBehavior.tick(dt: number)
 			placement.cooldownRemaining = interval
 		end
 	end
+	local ink = Abilities.get("InkPuddle")
+	if ink and ink.tick then
+		ink.tick()
+	end
 end
 
 function BrainrotBehavior.start()

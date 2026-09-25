@@ -37,6 +37,7 @@ local AudioConfig = {
 	PRELOAD_SFX = {
 		"MeleeBat",
 		"ThrowKnifeHit",
+		"PineappleHit",
 		"Hit",
 		"Death",
 		"Death_Zombie",
@@ -73,6 +74,7 @@ local AudioConfig = {
 		"PlaceBrainrot_ChimpanziniBananini",
 		"PlaceBrainrot_BrrBrrPatapim",
 		"PlaceBrainrot_GiraffaCeleste",
+		"PlaceBrainrot_LaVaccaSaturnoSaturnita",
 		"WindGust",
 		"GraveShake",
 		"GraveCollapse",
@@ -182,6 +184,10 @@ local AudioConfig = {
 		},
 		PlaceBrainrot_BrrBrrPatapim = {
 			SoundId = "rbxassetid://138952404452431",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_LaVaccaSaturnoSaturnita = {
+			SoundId = "rbxassetid://125645036231236",
 			Volume = 0.85,
 		},
 		PlaceBrainrot_GiraffaCeleste = {
@@ -338,6 +344,10 @@ local AudioConfig = {
 		},
 		ThrowKnifeHit = {
 			SoundId = "rbxassetid://137287949709499",
+			Volume = 0.75,
+		},
+		PineappleHit = {
+			SoundId = "rbxassetid://130869638485735",
 			Volume = 0.75,
 		},
 		-- Cappuccino GOD Shadow Requiem: crescent whoosh (starts 1s before launch; cut when the pillar starts).

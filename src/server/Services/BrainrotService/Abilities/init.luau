@@ -67,6 +67,8 @@ export type AbilityHandler = {
 	onPlaced: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
 	onRemoved: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> ())?,
 	tryAct: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> boolean)?,
+	-- Continuous effects that are not tied to one placement's attack timer.
+	tick: (() -> ())?,
 	-- false = may run with other abilities (Ballerina coin boosts, silent passives).
 	exclusive: boolean?,
 }
@@ -79,6 +81,9 @@ local handlers: { [string]: AbilityHandler } = {
 	LineBomb = require(script.LineBomb),
 	FreezeTime = require(script.FreezeTime),
 	ThrowKnife = require(script.ThrowKnife),
+	LobPineapple = require(script.LobPineapple),
+	PullToLane = require(script.PullToLane),
+	InkPuddle = require(script.InkPuddle),
 	Wall = require(script.Wall),
 	ClearFogRow = require(script.ClearFogRow),
 	BustGrave = require(script.BustGrave),

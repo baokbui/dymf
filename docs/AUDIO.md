@@ -75,6 +75,8 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `GraveCollapse` | Grave destroyed by the last Patapim smash |
 | `Hit` | Generic `CombatVisual` Hit (when no `soundKey`) |
 | `ThrowKnifeHit` | Cappuccino knife impact (`CombatVisual.soundKey`) |
+| `PineappleHit` | Orangutini pineapple impact (`CombatVisual.soundKey`) |
+| `PlaceBrainrot_LaVaccaSaturnoSaturnita` | La Vacca plant / spawn |
 | `SwordWave` | Shadow Requiem crescent whoosh, **1s** before the wave launches (stops early if the last-tile pillar starts first) |
 | `SwordWavePillar` | Shadow Requiem last-tile light-pillar detonation |
 | `Death` | Generic monster death |

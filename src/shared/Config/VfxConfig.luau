@@ -176,6 +176,17 @@ local VfxConfig = {
 	SPAWN_SANDSTORM_LOW_TRANSPARENCY = 0.62,
 	SPAWN_SANDSTORM_FADE = 0.16,
 
+	-- La Vacca lane pull: shrinking rings on her, grit sucked from the monster.
+	GRAVITY_PULL_DURATION = 0.85,
+	GRAVITY_PULL_RADIUS = TILE * 0.85,
+	GRAVITY_PULL_COLOR = Color3.fromRGB(170, 140, 255),
+	GRAVITY_PULL_COLOR_DIM = Color3.fromRGB(90, 60, 160),
+
+	-- Blueberrinni ink lob. Off skips the droplet. Low keeps the drop and drops the tail.
+	INK_FLIGHT_SECONDS = 2.2,
+	INK_ARC_HEIGHT = 22,
+	INK_COLOR = Color3.fromRGB(12, 24, 92),
+
 	-- Giraffa plot-wide gust that blows Night Fog off the lawn.
 	WIND_GUST_DURATION = 1.5,
 	WIND_GUST_RATE = 28,

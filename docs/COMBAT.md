@@ -98,6 +98,7 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | Ability | `kind` | On impact |
 | ------- | ------ | --------- |
 | Cappuccino (`ThrowKnife`) | `Shuriken` — clones `Assets.Projectiles.Shuriken` when present (procedural star fallback). **Every** knife stands upright in the lane plane: **sharp rim** leads toward monsters, face looks across the row, cartwheel about **+Z**. | Damage + `ThrowKnifeHit`. **Piercing Brew** (**6s** window, **10s** CD): gold aura/trail/sparks, flies through graves (no grave HP), and hits the first monster and the one behind at the knife’s normal damage. Does not throw (or start its interval) while an exclusive extra such as **Shadow Requiem** is playing. |
+| Orangutini (`LobPineapple`) | `Pineapple` — clones `Assets.Projectiles.Pineapple` (procedural fruit fallback). Leaves the left hand at `attackHitDelay` (1.4s) and arcs over the lane. | Hits the monster **behind** the front one. Graves do not stop it. One monster in the row is the target. No evolutions yet. |
 | Cappuccino GOD (`ShadowRequiem`) | `SwordWave` — one **vertical** **backwards-C** (`")"`) crescent from the midpoint of Cappuccino’s swords (same Z span as the old dual slash). **White fill**, **black outline**, **black** flame/trail streaks. **Height** grows with travel. Stop on the **last lawn tile**, then explode into a **tall white light pillar**. Damage as the column passes each monster (`pierceAll`). Graves never block. Crescent **2000%** at **1 tile**, plus **100%** per extra tile, plus a flat **1000%** last-tile pillar. | `SwordWave` **1s** before the crescent launches (cut if the pillar starts first) + `SwordWavePillar` on detonation + `Hit` sparks per monster. Needs **3+** enemies in the row **or a boss**. Multiple ready Cappuccinos: easternmost fires first. **45s** CD. |
 | Tung Tung (`MeleeBat` during Ranged Rampage) | `Bat` — clones `Assets.Projectiles["Tung Bat"]` when present (procedural club fallback); spawns from the left hand / arm; tumbles end-over-end along +X | Full-lane damage + `MeleeBat` SFX + quarter-tile Knockback **on the lawn only** (off-plot: damage, no knockback) |
 | Tung Tung GOD (`SahurWrath`) | Same `Tung Bat` clone, not a flying projectile: grows **vertically above** the plant to the remaining lane length, then Tung’s **melee swing** arcs it down so it lies on the **row** from him to the east edge | `dealEntireRowDamage` at **1000%** of current bat damage (graves do not block) on that row, plus **500%** on the adjacent rows, if the row has **3+** enemies **or a boss**. Multiple ready Tungs: easternmost slams first. `SahurWrath` SFX as the bat stretches; `MeleeBat` SFX + `CombatVisual` kind `BatSlam` (yellow ring **at each monster on the slam row only**; adjacent rows take damage with no shockwave) on impact |
@@ -119,13 +120,17 @@ Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 Off**), not an automatic cap. **High** = **Full** (full combat effects, dense
 Brainrot aura, moving evolution shine, 3D portraits). **Low** = **Reduced**
 (fewer client bursts; thin Brainrot aura; shine stays still; portraits stay 3D).
-**Off** = **Minimal** (geometry + light; no flame particles / corkscrew trails
-locally, and no Brainrot aura flames — the rarity outline stays). Off also turns shop, inventory,
+**Off** = **Minimal** (no flame particles, corkscrew trails, hit/death/coin
+sparks, explosion rings, terrify waves, dizzy stars, steal tornado, wind gust,
+magnet rings, or ink droplet — the rarity outline stays). Off also turns shop, inventory,
 and index portraits into color swatches. **Inspect portraits stay 3D** on every
-setting. Server still
+setting. **Low** thins those same effects (fewer sparks, one explosion ring,
+half the terrify arcs and dizzy stars, a see-through steal funnel, gust on
+every other row, a slower magnet pulse, and the ink droplet without its tail).
+Server still
 authors Full sword-wave / pillar models so combat looks the same for every
-plot; Performance mode strips particles and trails on the local client. Magnet
-rings also skip when Off. Combat math is unchanged.
+plot; Performance mode strips particles and trails on the local client.
+Combat math is unchanged.
 
 Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles, thrown bats, and `SwordWave` skip extra

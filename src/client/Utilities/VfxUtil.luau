@@ -13,6 +13,18 @@ local VfxLoad = require(ReplicatedStorage.Shared.Utilities.VfxLoad)
 
 local VfxUtil = {}
 
+-- nil means Off: skip the burst. Low keeps a thinner spark count.
+local function scaledBurstCount(full: number): number?
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return nil
+	end
+	if quality == "Reduced" then
+		return math.max(1, math.ceil(full * 0.45))
+	end
+	return full
+end
+
 local function effectsFolder(): Folder
 	local folder = workspace:FindFirstChild("ClientVfx")
 	if not folder then
@@ -60,10 +72,14 @@ local function emitBurst(
 end
 
 function VfxUtil.playHitBurst(position: Vector3)
+	local count = scaledBurstCount(VfxConfig.HIT_BURST_COUNT)
+	if not count then
+		return
+	end
 	emitBurst(
 		position,
 		VfxConfig.HIT_COLOR,
-		VfxConfig.HIT_BURST_COUNT,
+		count,
 		VfxConfig.HIT_BURST_SPEED,
 		VfxConfig.HIT_BURST_SIZE,
 		VfxConfig.HIT_BURST_LIFETIME
@@ -71,11 +87,12 @@ function VfxUtil.playHitBurst(position: Vector3)
 end
 
 function VfxUtil.playJackpotBurst(position: Vector3, quality: string?)
+	if quality == "Minimal" then
+		return
+	end
 	local count = VfxConfig.JACKPOT_BURST_COUNT
 	if quality == "Reduced" then
 		count = math.max(6, math.ceil(count * 0.5))
-	elseif quality == "Minimal" then
-		count = 6
 	end
 	emitBurst(
 		position,
@@ -88,10 +105,14 @@ function VfxUtil.playJackpotBurst(position: Vector3, quality: string?)
 end
 
 function VfxUtil.playDeathBurst(position: Vector3)
+	local count = scaledBurstCount(VfxConfig.DEATH_BURST_COUNT)
+	if not count then
+		return
+	end
 	emitBurst(
 		position,
 		VfxConfig.DEATH_COLOR,
-		VfxConfig.DEATH_BURST_COUNT,
+		count,
 		VfxConfig.DEATH_BURST_SPEED,
 		VfxConfig.DEATH_BURST_SIZE,
 		VfxConfig.DEATH_BURST_LIFETIME
@@ -103,6 +124,10 @@ end
 	Uses world anchors so the cloud outlives the server destroying the model.
 ]]
 function VfxUtil.playDeathDisintegrate(model: Model)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
 	local emitDuration = VfxConfig.DISINTEGRATE_EMIT_DURATION
 	local particleLife = VfxConfig.DISINTEGRATE_PARTICLE_LIFETIME
 	local color = ColorSequence.new({
@@ -139,6 +164,13 @@ function VfxUtil.playDeathDisintegrate(model: Model)
 		return a.volume > b.volume
 	end)
 	local maxParts = VfxConfig.DISINTEGRATE_MAX_PARTS
+	local rate = VfxConfig.DISINTEGRATE_RATE
+	local burst = VfxConfig.DISINTEGRATE_BURST_PER_PART
+	if quality == "Reduced" then
+		maxParts = math.max(2, math.ceil(maxParts * 0.5))
+		rate = math.max(2, math.ceil(rate * 0.4))
+		burst = math.max(2, math.ceil(burst * 0.4))
+	end
 	local anchors: { BasePart } = {}
 	for index, candidate in candidates do
 		if index > maxParts then
@@ -173,10 +205,10 @@ function VfxUtil.playDeathDisintegrate(model: Model)
 		emitter.LightEmission = 0.15
 		emitter.LightInfluence = 0.35
 		emitter.EmissionDirection = Enum.NormalId.Top
-		emitter.Rate = VfxConfig.DISINTEGRATE_RATE
+		emitter.Rate = rate
 		emitter.Parent = anchor
 
-		emitter:Emit(VfxConfig.DISINTEGRATE_BURST_PER_PART)
+		emitter:Emit(burst)
 	end
 
 	if #anchors == 0 then
@@ -200,10 +232,14 @@ function VfxUtil.playDeathDisintegrate(model: Model)
 end
 
 function VfxUtil.playCoinPickup(position: Vector3)
+	local count = scaledBurstCount(VfxConfig.COIN_PICKUP_COUNT)
+	if not count then
+		return
+	end
 	emitBurst(
 		position,
 		VfxConfig.COIN_COLOR,
-		VfxConfig.COIN_PICKUP_COUNT,
+		count,
 		VfxConfig.COIN_PICKUP_SPEED,
 		VfxConfig.COIN_PICKUP_SIZE,
 		VfxConfig.COIN_PICKUP_LIFETIME
@@ -211,10 +247,14 @@ function VfxUtil.playCoinPickup(position: Vector3)
 end
 
 function VfxUtil.playExplosion(position: Vector3)
+	if VfxLoad.quality() == "Minimal" then
+		return
+	end
+	local count = scaledBurstCount(VfxConfig.EXPLOSION_BURST_COUNT) or VfxConfig.EXPLOSION_BURST_COUNT
 	emitBurst(
 		position,
 		VfxConfig.EXPLOSION_COLOR,
-		VfxConfig.EXPLOSION_BURST_COUNT,
+		count,
 		VfxConfig.EXPLOSION_BURST_SPEED,
 		VfxConfig.EXPLOSION_BURST_SIZE,
 		VfxConfig.EXPLOSION_BURST_LIFETIME
@@ -251,10 +291,15 @@ end
 -- a bright flash pop, a heavy expanding ring, a second slower shockwave
 -- ring, and a large spark burst.
 function VfxUtil.playTileExplosion(position: Vector3)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
+	local count = scaledBurstCount(VfxConfig.TILE_EXPLOSION_BURST_COUNT) or VfxConfig.TILE_EXPLOSION_BURST_COUNT
 	emitBurst(
 		position,
 		VfxConfig.EXPLOSION_COLOR,
-		VfxConfig.TILE_EXPLOSION_BURST_COUNT,
+		count,
 		VfxConfig.TILE_EXPLOSION_BURST_SPEED,
 		VfxConfig.TILE_EXPLOSION_BURST_SIZE,
 		VfxConfig.TILE_EXPLOSION_BURST_LIFETIME
@@ -310,8 +355,10 @@ function VfxUtil.playTileExplosion(position: Vector3)
 		ring:Destroy()
 	end)
 
-	-- Secondary shockwave ring: starts where the main ring started, expands
-	-- further and lingers a touch longer for a two-layer "boom" read.
+	-- Secondary shockwave is the High-only second layer. Low keeps the flash and one ring.
+	if quality ~= "Full" then
+		return
+	end
 	local shockwave = Instance.new("Part")
 	shockwave.Name = "TileExplosionShockwave"
 	shockwave.Anchored = true
@@ -477,11 +524,12 @@ end
 
 function VfxUtil.playBatSlam(position: Vector3, quality: string?)
 	local ground = position + Vector3.new(0, 0.2, 0)
+	if quality == "Minimal" then
+		return
+	end
 	local waves = VfxConfig.BAT_SLAM_WAVE_COUNT
 	if quality == "Reduced" then
 		waves = math.max(1, math.ceil(waves / 2))
-	elseif quality == "Minimal" then
-		waves = 1
 	end
 	for w = 1, waves do
 		local pulseSpread = 1 + (w - 1) * VfxConfig.BAT_SLAM_WIDEN_PER_WAVE
@@ -592,6 +640,10 @@ end
 	world −X / toward the house — matching the terrify forward AoE cone).
 ]]
 function VfxUtil.playTerrifySoundwave(origin: Vector3, direction: Vector3?)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
 	local flat = if direction then Vector3.new(direction.X, 0, direction.Z) else Vector3.new(-1, 0, 0)
 	local dir = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(1, 0, 0)
 	-- Perpendicular across the lawn rows (Z when traveling along ±X).
@@ -602,7 +654,11 @@ function VfxUtil.playTerrifySoundwave(origin: Vector3, direction: Vector3?)
 		right = right.Unit
 	end
 
-	for i = 0, VfxConfig.TERRIFY_WAVE_COUNT - 1 do
+	local waveCount = VfxConfig.TERRIFY_WAVE_COUNT
+	if quality == "Reduced" then
+		waveCount = math.max(1, math.ceil(waveCount * 0.5))
+	end
+	for i = 0, waveCount - 1 do
 		local distance = VfxConfig.TERRIFY_WAVE_START_DISTANCE + i * VfxConfig.TERRIFY_WAVE_SPACING
 		emitTerrifyArc(origin, dir, right, distance, i * VfxConfig.TERRIFY_WAVE_STAGGER)
 	end
@@ -613,6 +669,10 @@ end
 	Replaces any prior DizzyVfx on the same model so refreshes don't stack.
 ]]
 function VfxUtil.playDizzy(model: Model, duration: number)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
 	local anchor = model.PrimaryPart
 		or model:FindFirstChild("Body", true)
 		or model:FindFirstChild("HumanoidRootPart", true)
@@ -636,6 +696,9 @@ function VfxUtil.playDizzy(model: Model, duration: number)
 
 	local stars: { TextLabel } = {}
 	local starCount = VfxConfig.DIZZY_STAR_COUNT
+	if quality == "Reduced" then
+		starCount = math.max(2, math.ceil(starCount * 0.5))
+	end
 	for i = 1, starCount do
 		local star = Instance.new("TextLabel")
 		star.Name = "Star" .. i
@@ -835,6 +898,15 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	end
 	part:SetAttribute("VfxDecorated", true)
 
+	if VfxLoad.quality() == "Minimal" then
+		for _, descendant in part:GetDescendants() do
+			if descendant:IsA("Trail") or descendant:IsA("ParticleEmitter") then
+				descendant.Enabled = false
+			end
+		end
+		return
+	end
+
 	local kind = part:GetAttribute("ProjectileKind")
 	if kind == "SwordWave" then
 		return
@@ -867,6 +939,9 @@ function VfxUtil.decorateProjectile(part: BasePart)
 		elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH * 0.55
 		elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_WIDTH * 0.55
 		else VfxConfig.PROJECTILE_TRAIL_WIDTH * 0.55
+	if VfxLoad.quality() == "Reduced" then
+		halfWidth *= 0.6
+	end
 
 	local function paintGold(root: Instance)
 		for _, inst in root:GetDescendants() do
@@ -1120,11 +1195,23 @@ end
 	plants, plus grit pulled in from each plant.
 ]]
 function VfxUtil.playSandTornado(destination: Vector3, origins: { Vector3 }?, attachTo: BasePart?)
+	if VfxLoad.quality() == "Minimal" then
+		return
+	end
 	local duration = VfxConfig.SAND_TORNADO_DURATION
 	local radius = VfxConfig.SAND_TORNADO_RADIUS
 	local folder = effectsFolder()
 	local funnel = createSandFunnel()
 	local root = funnel.root
+	if VfxLoad.quality() == "Reduced" then
+		for _, descendant in root:GetDescendants() do
+			if descendant:IsA("ParticleEmitter") then
+				descendant.Rate *= 0.35
+			elseif descendant:IsA("BasePart") and descendant.Name ~= "Hub" and descendant.Transparency < 1 then
+				descendant.Transparency = math.max(descendant.Transparency, 0.55)
+			end
+		end
+	end
 
 	local function bodyPosition(): Vector3
 		if attachTo and attachTo.Parent then
@@ -1409,6 +1496,10 @@ function VfxUtil.playSpawnSandstorm(ground: Vector3, coverWidth: number, coverHe
 end
 
 function VfxUtil.playWindGust(plotModel: Model)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
 	local PlotUtil = require(script.Parent.PlotUtil)
 	local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 	local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
@@ -1433,6 +1524,9 @@ function VfxUtil.playWindGust(plotModel: Model)
 	root.Parent = effectsFolder()
 
 	for row = 1, GridConfig.ROWS do
+		if quality == "Reduced" and row % 2 == 0 then
+			continue
+		end
 		local west = PlotUtil.getTileTopCenter(plotModel, row, 1)
 		if west then
 			local origin = west + Vector3.new(0, 4, 0)
@@ -1462,7 +1556,9 @@ function VfxUtil.playWindGust(plotModel: Model)
 			})
 			emitter.Lifetime = VfxConfig.WIND_GUST_LIFETIME
 			emitter.Speed = NumberRange.new(VfxConfig.WIND_GUST_SPEED * 0.75, VfxConfig.WIND_GUST_SPEED)
-			emitter.Rate = VfxConfig.WIND_GUST_RATE
+			emitter.Rate = if quality == "Reduced"
+				then math.max(6, math.ceil(VfxConfig.WIND_GUST_RATE * 0.4))
+				else VfxConfig.WIND_GUST_RATE
 			emitter.SpreadAngle = Vector2.new(12, 28)
 			emitter.Acceleration = eastDir * VfxConfig.WIND_GUST_ACCEL_EAST + Vector3.new(0, 8, 0)
 			emitter.EmissionDirection = Enum.NormalId.Front
@@ -1470,7 +1566,9 @@ function VfxUtil.playWindGust(plotModel: Model)
 			emitter.LightEmission = 0.55
 			emitter.LockedToPart = false
 			emitter.Parent = anchor
-			emitter:Emit(VfxConfig.WIND_GUST_BURST)
+			emitter:Emit(if quality == "Reduced"
+				then math.max(4, math.ceil(VfxConfig.WIND_GUST_BURST * 0.4))
+				else VfxConfig.WIND_GUST_BURST)
 		end
 	end
 
@@ -1620,6 +1718,194 @@ end
 	pulse starts at the outer pull range and collapses inward. High
 	frequency. A new call cancels the previous loop.
 ]]
+--[[
+	La Vacca: rings collapse into her while grit is sucked from the monster.
+	Off skips the effect. Low uses fewer rings and less grit.
+]]
+-- Blueberrinni: dark blue droplet on an arc. Off skips it. Low keeps the drop and drops the tail.
+function VfxUtil.playInkDrop(from: Vector3, to: Vector3)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
+
+	local flight = VfxConfig.INK_FLIGHT_SECONDS
+	local arc = VfxConfig.INK_ARC_HEIGHT
+	local ink = VfxConfig.INK_COLOR
+
+	local drop = Instance.new("Part")
+	drop.Name = "InkDrop"
+	drop.Shape = Enum.PartType.Ball
+	drop.Anchored = true
+	drop.CanCollide = false
+	drop.CanQuery = false
+	drop.CanTouch = false
+	drop.CastShadow = false
+	drop.Material = Enum.Material.SmoothPlastic
+	drop.Color = ink
+	drop.Size = Vector3.new(1.35, 1.35, 1.35)
+	drop.CFrame = CFrame.new(from)
+	drop.Parent = effectsFolder()
+
+	if quality == "Full" then
+		local left = Instance.new("Attachment")
+		left.Name = "InkTailLeft"
+		left.Position = Vector3.new(-0.28, 0, 0.45)
+		left.Parent = drop
+		local right = Instance.new("Attachment")
+		right.Name = "InkTailRight"
+		right.Position = Vector3.new(0.28, 0, 0.45)
+		right.Parent = drop
+		local ribbon = Instance.new("Trail")
+		ribbon.Name = "InkTail"
+		ribbon.Attachment0 = left
+		ribbon.Attachment1 = right
+		ribbon.Color = ColorSequence.new(ink)
+		ribbon.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.05),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		ribbon.Lifetime = 0.95
+		ribbon.MinLength = 0.05
+		ribbon.FaceCamera = true
+		ribbon.LightEmission = 0.05
+		ribbon.WidthScale = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.2, 0.45),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		ribbon.Parent = drop
+	end
+
+	local function pointOnArc(alpha: number): Vector3
+		local flat = from:Lerp(to, alpha)
+		return flat + Vector3.new(0, math.sin(alpha * math.pi) * arc, 0)
+	end
+
+	local started = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function()
+		local alpha = math.clamp((os.clock() - started) / flight, 0, 1)
+		local pos = pointOnArc(alpha)
+		local ahead = pointOnArc(math.clamp(alpha + 0.04, 0, 1))
+		local dir = ahead - pos
+		if dir.Magnitude < 0.05 then
+			dir = to - from
+		end
+		if dir.Magnitude < 0.05 then
+			dir = Vector3.new(1, 0, 0)
+		end
+		drop.CFrame = CFrame.lookAt(pos, pos + dir.Unit)
+		if alpha >= 1 then
+			conn:Disconnect()
+			drop:Destroy()
+		end
+	end)
+end
+
+function VfxUtil.playGravityPull(center: Vector3, origins: { Vector3 }?)
+	if VfxLoad.quality() == "Minimal" then
+		return
+	end
+	local dense = VfxLoad.quality() == "Full"
+	local duration = VfxConfig.GRAVITY_PULL_DURATION
+	local radius = VfxConfig.GRAVITY_PULL_RADIUS
+	local folder = effectsFolder()
+
+	local root = Instance.new("Part")
+	root.Name = "GravityPull"
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanQuery = false
+	root.CanTouch = false
+	root.Transparency = 1
+	root.Size = Vector3.new(1, 1, 1)
+	root.CFrame = CFrame.new(center)
+	root.Parent = folder
+
+	local ringCount = if dense then 3 else 2
+	local rings: { BasePart } = {}
+	for i = 1, ringCount do
+		local ring = Instance.new("Part")
+		ring.Name = "Ring"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanQuery = false
+		ring.CanTouch = false
+		ring.CastShadow = false
+		ring.Material = Enum.Material.Neon
+		ring.Color = if i % 2 == 0 then VfxConfig.GRAVITY_PULL_COLOR_DIM else VfxConfig.GRAVITY_PULL_COLOR
+		ring.Transparency = 0.35
+		ring.Parent = folder
+		table.insert(rings, ring)
+	end
+
+	for _, origin in origins or {} do
+		local suck = Instance.new("Part")
+		suck.Name = "GravitySuck"
+		suck.Anchored = true
+		suck.CanCollide = false
+		suck.CanQuery = false
+		suck.CanTouch = false
+		suck.Transparency = 1
+		suck.Size = Vector3.new(0.2, 0.2, 0.2)
+		suck.Position = origin + Vector3.new(0, 2, 0)
+		suck.Parent = folder
+		local toCenter = center - origin
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		emitter.Color = ColorSequence.new(VfxConfig.GRAVITY_PULL_COLOR, VfxConfig.GRAVITY_PULL_COLOR_DIM)
+		emitter.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, if dense then 1.8 else 1.1),
+			NumberSequenceKeypoint.new(1, 0.2),
+		})
+		emitter.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.15),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		emitter.Lifetime = NumberRange.new(0.35, 0.7)
+		emitter.Speed = NumberRange.new(6, 14)
+		emitter.SpreadAngle = Vector2.new(18, 18)
+		emitter.Rate = if dense then 70 else 28
+		emitter.LightEmission = 0.4
+		emitter.Acceleration = Vector3.new(toCenter.X, toCenter.Y + 4, toCenter.Z) * 3
+		emitter.Drag = 0.4
+		emitter.Parent = suck
+		emitter:Emit(if dense then 24 else 10)
+		task.delay(duration + 0.4, function()
+			suck:Destroy()
+		end)
+	end
+
+	local started = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function()
+		local alpha = (os.clock() - started) / duration
+		if alpha >= 1 or not root.Parent then
+			conn:Disconnect()
+			for _, ring in rings do
+				if ring.Parent then
+					ring:Destroy()
+				end
+			end
+			if root.Parent then
+				root:Destroy()
+			end
+			return
+		end
+		local spin = os.clock() * 2.5
+		for index, ring in rings do
+			local band = (index - 1) / math.max(ringCount - 1, 1)
+			local size = radius * (1 - alpha) * (0.45 + band * 0.7)
+			ring.Size = Vector3.new(0.18, math.max(size * 2, 0.2), math.max(size * 2, 0.2))
+			ring.Transparency = 0.25 + alpha * 0.7
+			ring.CFrame = CFrame.new(center + Vector3.new(0, 1.2 + band * 0.4, 0))
+				* CFrame.Angles(0, spin + band, math.rad(90))
+		end
+	end)
+end
+
 function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius: number?)
 	if VfxLoad.quality() == "Minimal" then
 		return
@@ -1633,6 +1919,9 @@ function VfxUtil.playMagnetWaves(character: Model, duration: number, startRadius
 
 	local radius = startRadius or VfxConfig.MAGNET_WAVE_START_RADIUS
 	local interval = VfxConfig.MAGNET_WAVE_INTERVAL
+	if VfxLoad.quality() == "Reduced" then
+		interval *= 2
+	end
 	local remaining = math.max(0.1, duration)
 	local pulses = math.max(1, math.ceil(remaining / interval))
 

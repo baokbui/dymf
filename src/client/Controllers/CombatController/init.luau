@@ -384,6 +384,26 @@ local function onCombatVisual(payload: unknown)
 		playTerrifyPulse(data.instanceId)
 	elseif kind == "SandTornado" then
 		playSandTornado(data)
+	elseif kind == "InkDrop" then
+		local from = asVector3(data.originX, data.originY, data.originZ)
+		local to = asVector3(data.destX, data.destY, data.destZ)
+		if from and to then
+			VfxUtil.playInkDrop(from, to)
+		end
+	elseif kind == "GravityPull" then
+		local center = asVector3(data.destX, data.destY, data.destZ)
+		if center then
+			local origins: { Vector3 } = {}
+			local first = asVector3(data.originX, data.originY, data.originZ)
+			local second = asVector3(data.origin2X, data.origin2Y, data.origin2Z)
+			if first then
+				table.insert(origins, first)
+			end
+			if second then
+				table.insert(origins, second)
+			end
+			VfxUtil.playGravityPull(center, origins)
+		end
 	elseif kind == "Dizzy" then
 		playDizzy(data.instanceId, data.duration)
 	elseif kind == "Poison" then

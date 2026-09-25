@@ -9,6 +9,7 @@
 ]]
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
@@ -225,6 +226,37 @@ function CombatService.notifySandTornado(
 	})
 end
 
+-- La Vacca: gravity well on her, grit sucked from the pulled monster.
+function CombatService.notifyGravityPull(ownerUserId: number, center: Vector3, origins: { Vector3 }?)
+	local payload: { [string]: any } = {
+		kind = "GravityPull",
+		destX = center.X,
+		destY = center.Y,
+		destZ = center.Z,
+	}
+	if origins then
+		for index, origin in origins do
+			local prefix = if index == 1 then "origin" else "origin" .. tostring(index)
+			payload[prefix .. "X"] = origin.X
+			payload[prefix .. "Y"] = origin.Y
+			payload[prefix .. "Z"] = origin.Z
+		end
+	end
+	fireCombatVisual(ownerUserId, payload)
+end
+
+function CombatService.notifyInkDrop(ownerUserId: number, from: Vector3, to: Vector3)
+	fireCombatVisual(ownerUserId, {
+		kind = "InkDrop",
+		originX = from.X,
+		originY = from.Y,
+		originZ = from.Z,
+		destX = to.X,
+		destY = to.Y,
+		destZ = to.Z,
+	})
+end
+
 function CombatService.notifyDizzy(ownerUserId: number, brainrotInstanceId: string, duration: number)
 	fireCombatVisual(ownerUserId, {
 		kind = "Dizzy",
@@ -375,6 +407,8 @@ export type ProjectileLaunchOptions = {
 	sourceMonsterId: string?,
 	-- Extra monsters east of the first hit.
 	pierceCount: number?,
+	-- Lob at this monster instead of the closest one in the row.
+	targetInstanceId: string?,
 	-- Fly through graves; the stone takes no HP. Implied when pierceCount > 0.
 	pierceGraves: boolean?,
 	-- Keep flying through every remaining monster, then to the last lawn tile.
@@ -403,7 +437,10 @@ function CombatService.launchProjectile(
 		return false
 	end
 
-	local targetId = CombatService.getFirstMonsterInRow(plotModel, position.row, position.column, rangeTiles)
+	local preferred = if options then options.targetInstanceId else nil
+	local targetId = if type(preferred) == "string" and preferred ~= ""
+		then preferred
+		else CombatService.getFirstMonsterInRow(plotModel, position.row, position.column, rangeTiles)
 	if not targetId then
 		return false
 	end
@@ -497,6 +534,7 @@ function CombatService.launchProjectile(
 			kind = if options then options.kind else nil,
 			impact = impact,
 			targetKind = targetKind,
+			arcHeight = if options and options.kind == "Pineapple" then CombatConfig.PINEAPPLE_ARC_HEIGHT else nil,
 			originWorld = originWorld,
 			worldZ = worldZ,
 			zLerpColumns = zLerpColumns,
@@ -1536,6 +1574,33 @@ function CombatService.init()
 end
 
 function CombatService.start()
+	local function projectileColumn(instanceId: string, targetKind: string?): number?
+		if not monsterHandlers then
+			return nil
+		end
+		if targetKind == "Brainrot" then
+			local BrainrotService = require(script.Parent.BrainrotService)
+			local placement = BrainrotService.getPlacement(instanceId)
+			return if placement then placement.position.column else nil
+		end
+		return monsterHandlers.getMonsterColumn(instanceId)
+	end
+
+	-- Frame step so knives, shurikens, pineapples, and the rest glide
+	-- instead of jumping on the 0.1s combat tick. Hits stay server-side.
+	RunService.Heartbeat:Connect(function(dt)
+		if not monsterHandlers then
+			return
+		end
+		Projectile.tick(
+			dt,
+			projectileColumn,
+			monsterHandlers.setProjectilePosition,
+			onProjectileImpact,
+			onWaveSweep
+		)
+	end)
+
 	task.spawn(function()
 		while true do
 			task.wait(CombatConfig.TICK)
@@ -1543,20 +1608,6 @@ function CombatService.start()
 				continue
 			end
 			monsterHandlers.tickStatuses(CombatConfig.TICK)
-			Projectile.tick(
-				CombatConfig.TICK,
-				function(instanceId: string, targetKind: string?): number?
-					if targetKind == "Brainrot" then
-						local BrainrotService = require(script.Parent.BrainrotService)
-						local placement = BrainrotService.getPlacement(instanceId)
-						return if placement then placement.position.column else nil
-					end
-					return monsterHandlers.getMonsterColumn(instanceId)
-				end,
-				monsterHandlers.setProjectilePosition,
-				onProjectileImpact,
-				onWaveSweep
-			)
 		end
 	end)
 

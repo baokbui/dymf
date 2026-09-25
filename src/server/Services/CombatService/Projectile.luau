@@ -26,6 +26,7 @@ local log = Logger.new("Projectile")
 local missingShurikenLogged = false
 local missingBatLogged = false
 local missingArrowLogged = false
+local missingPineappleLogged = false
 
 export type ImpactSpec = {
 	soundKey: string?,
@@ -67,7 +68,7 @@ export type LaunchSpec = {
 	targetColumn: number,
 	damage: number,
 	ownerUserId: number,
-	-- "Knife" (legacy bolt), "Shuriken", "Bat", "Bubble", "Arrow", or "SwordWave"
+	-- "Knife" (legacy bolt), "Shuriken", "Bat", "Bubble", "Arrow", "Pineapple", or "SwordWave"
 	kind: string?,
 	impact: ImpactSpec?,
 	-- Override CombatConfig.PROJECTILE_COLUMNS_PER_SECOND for this shot.
@@ -78,6 +79,8 @@ export type LaunchSpec = {
 	columnDirection: number?,
 	-- Keep this Z for the whole flight (bow / arm spawn). Nil = lane-center Z.
 	worldZ: number?,
+	-- Peak studs above the lane during flight (pineapple lob). Nil = flat.
+	arcHeight: number?,
 	-- Fan from mouth (originWorld.Z) into the target lane over zLerpColumns of travel.
 	originWorld: Vector3?,
 	zLerpColumns: number?,
@@ -1334,6 +1337,66 @@ local function applyHeldZ(part: BasePart, worldY: number, worldZ: number?): Vect
 	return Vector3.new(pos.X, worldY, worldZ)
 end
 
+local function createPineappleModel(): (Model, BasePart)
+	local template = ModelUtil.findProjectileTemplate(CombatConfig.PINEAPPLE_MODEL_ID)
+	if template then
+		local model = template:Clone()
+		stripScripts(model)
+		local primary = pickPrimary(model)
+		if primary then
+			model.PrimaryPart = primary
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("BasePart") then
+					if descendant == primary then
+						hardenRoot(descendant)
+					else
+						weldAccessory(primary, descendant)
+					end
+				end
+			end
+			local size = select(1, ModelUtil.getVisualSizeAndCenter(model))
+			local extent = math.max(size.X, size.Y, size.Z)
+			local target = CombatConfig.PINEAPPLE_TARGET_EXTENT
+			if extent > 0.01 and target > 0.01 then
+				model:ScaleTo(model:GetScale() * math.clamp(target / extent, 0.05, 20))
+			end
+			model.Name = "PineappleProjectile"
+			model:SetAttribute("ProjectileKind", "Pineapple")
+			primary:SetAttribute("ProjectileKind", "Pineapple")
+			return model, primary
+		end
+		model:Destroy()
+	elseif not missingPineappleLogged then
+		missingPineappleLogged = true
+		log:warn(string.format(
+			"missing Assets.Projectiles.%s — using procedural pineapple",
+			CombatConfig.PINEAPPLE_MODEL_ID
+		))
+	end
+
+	local model = Instance.new("Model")
+	model.Name = "PineappleProjectile"
+	local body = Instance.new("Part")
+	body.Name = "Body"
+	body.Shape = Enum.PartType.Ball
+	body.Size = Vector3.new(2.4, 3.2, 2.4)
+	body.Color = CombatConfig.PINEAPPLE_COLOR
+	body.Material = Enum.Material.SmoothPlastic
+	body.Parent = model
+	hardenRoot(body)
+	local leaf = Instance.new("Part")
+	leaf.Name = "Leaf"
+	leaf.Size = Vector3.new(0.4, 1.4, 1.2)
+	leaf.Color = CombatConfig.PINEAPPLE_LEAF_COLOR
+	leaf.Material = Enum.Material.Grass
+	leaf.CFrame = CFrame.new(0, 1.8, 0)
+	leaf.Parent = model
+	weldAccessory(body, leaf)
+	model.PrimaryPart = body
+	model:SetAttribute("ProjectileKind", "Pineapple")
+	return model, body
+end
+
 function Projectile.launch(
 	spec: LaunchSpec,
 	worldY: number,
@@ -1378,6 +1441,11 @@ function Projectile.launch(
 			applyBarrageStreak(bubbleModel, hub)
 		end
 		bubbleModel.Parent = folder
+	elseif kind == "Pineapple" then
+		local pineappleModel, hub = createPineappleModel()
+		model = pineappleModel
+		part = hub
+		pineappleModel.Parent = folder
 	elseif kind == "SwordWave" then
 		local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_SWORD_WAVE)
 		local waveModel, hub = createSwordWaveModel(quality)
@@ -1405,6 +1473,8 @@ function Projectile.launch(
 			part.CFrame = batFlightCFrame(if spec.originWorld then spec.originWorld else held, 0)
 		elseif kind == "SwordWave" then
 			part.CFrame = swordWaveCFrame(if spec.originWorld then spec.originWorld else held)
+		elseif kind == "Pineapple" then
+			part.CFrame = CFrame.new(if spec.originWorld then spec.originWorld else held)
 		else
 			part.CFrame = shurikenFlightCFrame(part, held, 0)
 		end
@@ -1470,12 +1540,19 @@ function Projectile.tick(
 				projectile.column = liveColumn
 			end
 		end
+		local flightY = projectile.worldY
+		local arc = projectile.spec.arcHeight
+		if type(arc) == "number" and arc > 0 then
+			local span = math.max(math.abs(liveColumn - projectile.spec.startColumn), 0.05)
+			local along = math.clamp(math.abs(projectile.column - projectile.spec.startColumn) / span, 0, 1)
+			flightY += math.sin(along * math.pi) * arc
+		end
 		setWorldPosition(
 			projectile.part,
 			projectile.spec.plotModel,
 			projectile.spec.row,
 			projectile.column,
-			projectile.worldY
+			flightY
 		)
 
 		local travelZ = projectile.worldZ
@@ -1488,7 +1565,7 @@ function Projectile.tick(
 			alpha = alpha * alpha * (3 - 2 * alpha)
 			travelZ = zStart + (zEnd - zStart) * alpha
 		end
-		local held = applyHeldZ(projectile.part, projectile.worldY, travelZ)
+		local held = applyHeldZ(projectile.part, flightY, travelZ)
 		local kind = projectile.spec.kind or "Knife"
 		if projectile.model then
 			if kind == "Arrow" then
@@ -1501,6 +1578,9 @@ function Projectile.tick(
 			elseif kind == "SwordWave" then
 				projectile.part.CFrame = swordWaveCFrame(held)
 				applySwordWaveLook(projectile, dt)
+			elseif kind == "Pineapple" then
+				projectile.spinRadians += CombatConfig.PINEAPPLE_SPIN_RADIANS_PER_SECOND * dt
+				projectile.part.CFrame = CFrame.new(held) * CFrame.Angles(projectile.spinRadians, 0, 0)
 			else
 				projectile.spinRadians += CombatConfig.SHURIKEN_SPIN_RADIANS_PER_SECOND * dt
 				projectile.part.CFrame = shurikenFlightCFrame(projectile.part, held, projectile.spinRadians)

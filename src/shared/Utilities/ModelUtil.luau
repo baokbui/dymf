@@ -14,10 +14,27 @@ local Types = require(script.Parent.Parent.Types)
 
 local ModelUtil = {}
 
--- True when the clone has Motor6D / Bone limbs that must stay unanchored.
+-- True when the clone has joints or a skinned mesh an Animator can drive.
 function ModelUtil.hasAnimationJoints(model: Model): boolean
 	return model:FindFirstChildWhichIsA("Motor6D", true) ~= nil
 		or model:FindFirstChildWhichIsA("Bone", true) ~= nil
+end
+
+-- Parts named by a Motor6D must stay unanchored so the joint can pose them.
+-- A Bone does not hold a mesh in the world; that MeshPart stays anchored.
+function ModelUtil.motorParts(model: Model): { [BasePart]: boolean }
+	local motored: { [BasePart]: boolean } = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("Motor6D") then
+			if descendant.Part0 then
+				motored[descendant.Part0] = true
+			end
+			if descendant.Part1 then
+				motored[descendant.Part1] = true
+			end
+		end
+	end
+	return motored
 end
 
 local SCRIPT_CLASSES: { [string]: boolean } = {
@@ -305,12 +322,14 @@ end
 
 local function hardenParts(model: Model, keepCollision: boolean?, animationRig: boolean?)
 	local root = model.PrimaryPart
+	local motored = if animationRig then ModelUtil.motorParts(model) else nil
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.Massless = true
-			if animationRig then
-				-- Root stays anchored for grid moves; Motor6D limbs must be free.
-				descendant.Anchored = descendant == root
+			if animationRig and motored then
+				-- Root stays anchored for grid moves. Only Motor6D limbs are free.
+				-- Skinned meshes (Bones) stay anchored or they fall through the lawn.
+				descendant.Anchored = descendant == root or motored[descendant] ~= true
 			else
 				descendant.Anchored = true
 			end

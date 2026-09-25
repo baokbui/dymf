@@ -12,6 +12,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
 local Monsters = require(ReplicatedStorage.Shared.Monsters)
@@ -473,6 +474,64 @@ function EnemyService.getMonstersInRow(
 		end
 	end
 	return result
+end
+
+local PULL_SLIDE_SECONDS = 0.85
+
+-- Slide a living monster onto the plant tile (`row`, `column`). The new lane
+-- and column are committed when he arrives so movement sync does not snap him.
+-- The span must stay on the lawn.
+function EnemyService.pullToRow(instanceId: string, row: number, column: number): boolean
+	local runtime = monsters[instanceId]
+	if not runtime or runtime.health <= 0 then
+		return false
+	end
+	local span = math.max(1, math.floor(runtime.definition.laneSpan or 1))
+	local anchor = math.floor(row)
+	local tile = math.clamp(math.floor(column + 0.5), 1, GridConfig.COLUMNS)
+	if anchor < 1 or anchor + span - 1 > GridConfig.ROWS then
+		return false
+	end
+	if runtime.row == anchor and math.floor(runtime.column + 0.5) == tile then
+		return false
+	end
+
+	local centerRow = GridUtil.laneCenterRow(anchor, span)
+	local worldPos = GridService.getWorldPositionAtColumn(runtime.plotModel, centerRow, tile)
+	if not worldPos then
+		return false
+	end
+
+	local model = runtime.model
+	local start = model:GetPivot()
+	ModelUtil.snapFeetToTileTop(model, worldPos, nil, runtime.footSnapOffset)
+	local goal = model:GetPivot()
+	model:PivotTo(start)
+
+	EnemyService.suspendLocomotion(instanceId, PULL_SLIDE_SECONDS + 0.15)
+	local started = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function()
+		if not model.Parent or runtime.health <= 0 then
+			conn:Disconnect()
+			return
+		end
+		local alpha = math.clamp((os.clock() - started) / PULL_SLIDE_SECONDS, 0, 1)
+		local lift = math.sin(alpha * math.pi) * 2.2
+		model:PivotTo(start:Lerp(goal, alpha) + Vector3.new(0, lift, 0))
+		if alpha >= 1 then
+			conn:Disconnect()
+			model:PivotTo(goal)
+			runtime.row = anchor
+			runtime.column = tile
+			model:SetAttribute("Row", anchor)
+			MonsterModel.setColumn(model, tile)
+			if os.clock() >= runtime.downedUntil - 0.05 then
+				EnemyService.resumeLocomotion(instanceId)
+			end
+		end
+	end)
+	return true
 end
 
 function EnemyService.getMonsterColumn(instanceId: string): number?

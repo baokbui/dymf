@@ -37,17 +37,20 @@ Tune `YARD_OFFSET_X` and `DOOR_RIGHT_Z` in `StoreConfig`.
 
 | Store | Where | Currency | Sells |
 | ----- | ----- | -------- | ----- |
-| Brainrot shop | Plot stall (`Tung Mascot`) | Brains | `STORE_CATALOG` (Girafa Celestre only for now) |
+| Brainrot shop | Plot stall (`Tung Mascot`) | Brains | `STORE_CATALOG` (Girafa Celestre, Orangutini Ananassini, La Vacca Saturno Saturnita) |
 | Upgrades | HUD **Upgrades** | Brains | Player upgrades (`ProgressConfig.UPGRADE_CATALOG`) |
 
 Starter-roster Brainrots (Day 1 + clear Days 3/5/7/9) and **Brr Brr Patapim**
-(reach Day 31) are **not** sold here. The shop currently sells **Girafa
-Celestre** only — buy her early with brains, or get her free on reach Day 25.
+(reach Day 31) are **not** sold here. The shop sells **Girafa Celestre**, **Orangutini Ananassini**, **La Vacca Saturno Saturnita**, and **Blueberrinni Octopusini**. Buy Girafa
+early with brains, or get her free on reach Day 25. Orangutini, La Vacca, and Blueberrinni are store-only.
 Already owned units gray out with a red **SOLD** stamp.
 
 | Brainrot | Brains | Notes |
 | -------- | ------ | ----- |
 | Girafa Celestre | 50 | Fog gust; still free on reach Day 25 |
+| Orangutini Ananassini | 80 | Lobs a pineapple over the front monster and graves |
+| La Vacca Saturno Saturnita | 60 | One-shot: pulls one monster from a neighboring row into hers |
+| Blueberrinni Octopusini | 70 | Ink puddle on the nearest empty tile ahead; slows while they stand in it |
 
 **Speed** (`WalkSpeed`): 20 levels, each `+walkSpeedBonusPerLevel` (1) on top of
 Roblox-default `PlayerConfig.WALK_SPEED` (16 → 36 at max). Costs rise each

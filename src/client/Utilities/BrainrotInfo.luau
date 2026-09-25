@@ -50,6 +50,18 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Throw Shuriken",
 		description = "Throws a spinning shuriken at the closest monster in the row.",
 	},
+	LobPineapple = {
+		label = "Lob Pineapple",
+		description = "Lobs a pineapple over the front monster and any grave, hitting the one behind. If only one monster is in the row, it hits that one.",
+	},
+	InkPuddle = {
+		label = "Ink Puddle",
+		description = "Lobs ink onto the nearest empty tile ahead. The puddle lasts 7 seconds and slows monsters while they walk through it. 10 second cooldown.",
+	},
+	PullToLane = {
+		label = "Pull To Lane",
+		description = "Floats above the tile, then pulls the closest monster from each neighboring row onto her tile. An edge row pulls one. A middle row pulls one from each side. Then she vanishes.",
+	},
 	Wall = {
 		label = "Sturdy Wall",
 		description = "Doesn't attack. Blocks the row and soaks up hits.",
