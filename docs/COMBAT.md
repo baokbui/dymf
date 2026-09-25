@@ -106,7 +106,7 @@ Skeleton arrows use `launchTowardBrainrot` (`columnDirection = −1`).
 | Chimpanzini GOD (`PrimalRetaliation`) | Extra ability; no projectile | **15s**: **25%** of incoming chew/arrow HP is dealt back to **that monster instance** through `CombatService.damageMonster`. A small `Assets.Projectiles.Mirror` orbits Chimpanzini. **30s** CD |
 | Lirili GOD (Glacial Dominion) | On plant (`freezeEntireLawn` params overlay; Lirili does not persist to tick extras) | Freeze **every lawn row** at the current freeze duration, then **25%** Slow (`slowFactor` 0.75) lasting freeze + **3s** so it is felt after thaw |
 | Skeleton (`SkeletonArrow`) | `Arrow` — clones `Assets.Projectiles.Arrow` (**Model or Part**); spawns from bow `Middle` attachment / `LArm`; flies **−X** toward the house | Brainrot hits (chew-equivalent) |
-| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when at least one monster is on the plot. | Damage + Freeze/`Bubble` shell + `BubbleTrap`. Crowd control (trap, knockback, slow, stun) shrinks with `laneSpan`: **2** rows **25%**, **3** **50%**, **4** **75%**, **5+** immune. Damage is unchanged. |
+| Tralalero (`BubbleTrap` / `BubbleBarrage`) | `Bubble` — soap sphere from the mouth. **BubbleTrap** is a cyan bubble with no trail. **Bubble Barrage** fires one gold seed that splits into 5 lane bubbles, each with a gold light-streak (`BubbleBarrage`). Only when a monster **in his row** has entered the lawn (forest marchers do not count). | Damage + Freeze/`Bubble` shell + `BubbleTrap`. Crowd control (trap, knockback, slow, stun) shrinks with `laneSpan`: **2** rows **25%**, **3** **50%**, **4** **75%**, **5+** immune. Damage is unchanged. |
 
 Tuning: `CombatConfig` (`SHURIKEN_MODEL_ID`, `SHURIKEN_TARGET_EXTENT`,
 `SHURIKEN_MODEL_ORIENTATION_DEGREES`, `BAT_MODEL_ID`, `BAT_TARGET_EXTENT`,
@@ -117,20 +117,14 @@ Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 `travelPercent`, `finisherPercent`).
 
 **Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** choice (**VFX: High / Low /
-Off**), not an automatic cap. **High** = **Full** (full combat effects, dense
-Brainrot aura, moving evolution shine, 3D portraits). **Low** = **Reduced**
-(fewer client bursts; thin Brainrot aura; shine stays still; portraits stay 3D).
-**Off** = **Minimal** (no flame particles, corkscrew trails, hit/death/coin
-sparks, explosion rings, terrify waves, dizzy stars, steal tornado, wind gust,
-magnet rings, or ink droplet — the rarity outline stays). Off also turns shop, inventory,
-and index portraits into color swatches. **Inspect portraits stay 3D** on every
-setting. **Low** thins those same effects (fewer sparks, one explosion ring,
-half the terrify arcs and dizzy stars, a see-through steal funnel, gust on
-every other row, a slower magnet pulse, and the ink droplet without its tail).
-Server still
-authors Full sword-wave / pillar models so combat looks the same for every
-plot; Performance mode strips particles and trails on the local client.
-Combat math is unchanged.
+Off**). **High** = **Full** (full combat effects, dense Brainrot aura, moving
+shine, 3D portraits). **Low** = **Reduced** (fewer bursts, thin aura, shine
+stays still, portraits stay 3D). **Off** = **Minimal** (no flame particles,
+hit/death/coin sparks, or heavy ult decoration — the rarity outline stays).
+Off also turns shop, inventory, and index portraits into color swatches.
+Inspect portraits stay 3D. The server always authors the full GOD ult. **Other
+plots** (default **On**) hides Brainrot auras and Brainrot projectiles on plots
+you do not own. Monster attacks stay. Combat math is unchanged.
 
 Client trail/glow branches on the `ProjectileKind`
 attribute (`VfxUtil`); normal bubbles, thrown bats, and `SwordWave` skip extra
@@ -184,7 +178,7 @@ Uses the default tip-over death like other monsters.
 - **Jackpot** — `Jackpot` extra; `jackpotUntil` / `jackpotFactor` / `jackpotExtraChance` (does not overwrite Golden Waltz; `effectiveDefinition` takes the higher coin haste).
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
-- **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Needs **3+** enemies in the row **or a boss**; easternmost ready Cappuccino fires first. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. Launch SFX (`SwordWave`) starts **1s** before the crescent (`CombatConfig.SWORD_WAVE_SOUND_LEAD`) and cuts if the pillar starts first; pillar SFX is `SwordWavePillar`. The pillar expands to **one tile wide**, then fades over **~3s**. Black flames **corkscrew** around it as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
+- **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Needs **3+** enemies in the row **or a boss**; easternmost ready Cappuccino fires first. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. Launch SFX (`SwordWave`) starts **1s** before the crescent (`CombatConfig.SWORD_WAVE_SOUND_LEAD`) and cuts if the pillar starts first; pillar SFX is `SwordWavePillar`. The pillar expands to a bit under **one tile wide**, then the whole pillar VFX is gone in **~1.5s**. A **black spiral** climbs around the pillar as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
 - **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this), plus **20%** of that base for every tile the monster is closer to his plant than the easternmost lawn tile (`TORRENT_CLOSE_PERCENT`). A monster on that far tile takes 55. One tile toward him takes 66. On his own tile the bonus is 20% × (9 − his column). Knockback is **0.25** tiles east per second (`CombatConfig.TORRENT_KNOCKBACK_TILES`), which moves them toward the lower bonus. **15s** on the far tile is **825**. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim purple beam: pale violet core, vivid purple body, dark outer glow, rings rushing down the row, and spiral streaks. Small soap bubbles orbit the beam on **High** VFX only (`VfxLayer = "High"`); **Low** and **Off** hide them. Off VFX keeps the neon core and drops the beams.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):

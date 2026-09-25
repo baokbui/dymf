@@ -2,8 +2,9 @@
 --[[
 	PullToLane (La Vacca Saturno Saturnita)
 	One-shot on place. Hovers and bobs above the tile, then pulls the closest
-	monster on each adjacent row onto her tile. An edge row pulls one. A
-	middle row pulls one from each side, two at most. Then she despawns.
+	1-tile monster on each adjacent row onto her tile. Units two or more
+	tiles wide are skipped. An edge row pulls one. A middle row pulls one
+	from each side, two at most. Then she despawns.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -35,6 +36,9 @@ local function closestOnRow(plotModel: Model, row: number): string?
 	local bestId: string? = nil
 	local bestColumn = math.huge
 	for _, instanceId in CombatService.getAllMonstersInRow(plotModel, row) do
+		if EnemyService.getMonsterLaneSpan(instanceId) > 1 then
+			continue
+		end
 		local column = CombatService.getMonsterColumn(instanceId)
 		if type(column) == "number" and column < bestColumn then
 			bestColumn = column

@@ -79,6 +79,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `PlaceBrainrot_LaVaccaSaturnoSaturnita` | La Vacca plant / spawn |
 | `SwordWave` | Shadow Requiem crescent whoosh, **1s** before the wave launches (stops early if the last-tile pillar starts first) |
 | `SwordWavePillar` | Shadow Requiem last-tile light-pillar detonation |
+| `InkLand` | Blueberrinni ink splat when the droplet reaches the tile |
 | `Death` | Generic monster death |
 | `Death_<MonsterId>` | Per-monster death (e.g. `Death_Zombie`, `Death_SmallMummy`, `Death_PharaohMummy`) |
 | `MonsterAttack` | Generic monster chew (`CombatVisual` kind `MonsterAttack`) |
@@ -122,6 +123,7 @@ ids stay silent.
 | Knife impact | `CombatVisual` Hit with `soundKey = "ThrowKnifeHit"` |
 | Shadow Requiem crescent | `ShadowRequiem` → `BrainrotAction` `SwordWave` **1s** before launch |
 | Shadow Requiem pillar | Watcher stops `SwordWave`, then `AudioController.play("SwordWavePillar")` |
+| Ink lands | `InkPuddle` → `CombatVisual` `InkDrop` → `InkLand` after `INK_FLIGHT_SECONDS` |
 | Bubble projectile impact | `CombatVisual` Hit with `soundKey = "BubbleTrap"` (after travel) |
 | Generic hit particles | `CombatVisual` Hit (`muteSound` skips SFX when bat already played) |
 | Monster death | `CombatVisual` Death with `monsterId` → `Death_<id>` or `Death` |

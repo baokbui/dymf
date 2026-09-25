@@ -94,7 +94,7 @@ local CombatConfig = {
 	-- the old dual slash. White fill, black outline + black streaks. Width
 	-- stays large; height grows with travel. Stop on the last lawn tile,
 	-- then explode into a white light pillar that expands to one tile and
-	-- fades over ~3s.
+	-- is gone ~1.5s after the explosion (expand, then fade).
 	-- Pierce every monster and grave for 2000%, plus 100% more of current
 	-- knife damage per tile past the first. Last-tile pillar finisher is a
 	-- flat extra 1000% (not ramped). Needs 3+ enemies or a boss; easternmost
@@ -104,8 +104,8 @@ local CombatConfig = {
 	SWORD_WAVE_FADE_COLUMNS = 0, -- 0 = stay solid until the last-tile pillar
 	SWORD_WAVE_EAST_EDGE = 0, -- 0 = last lawn tile center (COLUMNS + this)
 	SWORD_WAVE_PILLAR_HOLD = 0.08, -- seconds the waves sit on the last tile
-	SWORD_WAVE_PILLAR_EXPAND = 0.5, -- seconds to grow to one tile wide
-	SWORD_WAVE_PILLAR_FADE = 3, -- seconds the light pillar takes to fade after max size
+	SWORD_WAVE_PILLAR_EXPAND = 0.5, -- seconds to grow to full width
+	SWORD_WAVE_PILLAR_FADE = 1, -- fade after max size; expand + fade = 1.5s on screen
 	SWORD_WAVE_TRANSPARENCY = 0.12,
 	SWORD_WAVE_COLUMNS_PER_SECOND = 6.5,
 	SWORD_WAVE_PIERCE_COUNT = 64,

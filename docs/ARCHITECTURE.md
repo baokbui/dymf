@@ -418,9 +418,10 @@ Full details in `COMBAT.md`. Summary:
 
 - **`VfxConfig`** — client VFX tuning (burst counts, colors, trail lifetime) plus
   per-effect `HEAVY_VFX_*` ids for GOD ultimates.
-- **`VfxLoad`** — Settings **VFX** choice (High = Full, Low = Reduced, Off = Minimal).
+- **`VfxLoad`** — Settings **VFX** choice (High = Full, Low = Reduced, Off = Minimal)
+  and a local **Other plots** toggle. The server always authors the full ult.
   Off flattens shop / inventory / index portraits and freezes evolution shine.
-  Inspect portraits stay 3D. No automatic cap. Damage is never throttled.
+  Inspect portraits stay 3D. Damage is never throttled.
 - **`VfxUtil`** + **`PlotUtil`** (client utilities) — ephemeral particles and plot helpers.
 - **`CombatController`** — hit/death particles, line-bomb explosions (`Explosion`
   payload), Sahur’s Wrath landing (`BatSlam`), projectile trail/glow on `plot.Projectiles` parts.

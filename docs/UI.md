@@ -123,7 +123,7 @@ hardcode a second palette in new UI.
   counts down to 0, then hides when the day goes Active.
 - **Settings** ✅ M13 — bottom-left bare icon + name opens the
   modal. Mute,
-  music/SFX volume, Brainrot SFX toggle,   **VFX** (**High** / **Low** / **Off**). The hint reads: “High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots.”
+  music/SFX volume, Brainrot SFX toggle, **VFX** (**High** / **Low** / **Off**), and **Other plots** (**On** / **Off**). The VFX hint reads: “High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots. Weaker PCs should use Low or Off.” Other plots: “Off hides Brainrot effects on other players' plots. Your plot stays the same. Turn this off for better performance if you need it.”
   Behind that: High is full combat effects and a dense aura; Low thins the aura and freezes shine; Off clears aura flames (outline stays) and swaps shop, inventory, and index portraits to color swatches. Inspect portraits stay 3D. Statistics, **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`). Statistics come from

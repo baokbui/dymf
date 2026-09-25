@@ -196,8 +196,8 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		animated = true,
 		anchorAllParts = true,
 		attackAnimationId = "rbxassetid://87435457982706",
-		-- Head finishes dipping; ink leaves as the head rises.
-		attackHitDelay = 0.6,
+		-- Head has started rising; ink leaves with that motion.
+		attackHitDelay = 0.75,
 	},
 
 	LaVaccaSaturnoSaturnita = {

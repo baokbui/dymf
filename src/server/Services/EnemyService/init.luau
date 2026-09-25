@@ -793,11 +793,14 @@ function EnemyService.start()
 	-- kept but neutralized (Shirt/Pants + layered clothing need one to render).
 	ModelUtil.sanitizeAllMonsterAssets()
 
-	task.spawn(function()
-		while true do
-			task.wait(MonsterConfig.BEHAVIOR_TICK)
-			MonsterBehavior.tick(monsters, MonsterConfig.BEHAVIOR_TICK, behaviorCallbacks)
+	-- Frame step so the body glides with the walk cycle instead of snapping
+	-- on a 0.1s tick. Hits, cooldowns, and ability timers use the same dt.
+	RunService.Heartbeat:Connect(function(dt)
+		local step = math.min(dt, MonsterConfig.BEHAVIOR_TICK)
+		if step <= 0 then
+			return
 		end
+		MonsterBehavior.tick(monsters, step, behaviorCallbacks)
 	end)
 
 	if MonsterConfig.DEV_SPAWN.ENABLED then

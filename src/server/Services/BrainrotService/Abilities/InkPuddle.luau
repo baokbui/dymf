@@ -1,9 +1,10 @@
 --!strict
 --[[
 	InkPuddle (Blueberrinni Octopusini)
-	Every attackInterval, lobs ink from the head onto the nearest tile east
-	of her that has no Brainrot. The puddle lasts puddleDuration. Monsters
-	on that tile are Slow until they step off.
+	Every attackInterval, lobs ink from the head onto a random empty tile in
+	her own row. A nearer tile uses a lower arc; a farther tile arcs higher.
+	The puddle lasts puddleDuration. Monsters on that tile are Slow until they
+	step off.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,8 +13,8 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local GridUtil = require(ReplicatedStorage.Shared.Utilities.GridUtil)
+local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
-local BubbleShot = require(script.Parent.BubbleShot)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 local GridService = require(script.Parent.Parent.Parent.GridService)
 
@@ -33,19 +34,36 @@ type Puddle = {
 
 local puddles: { Puddle } = {}
 
+-- Head part pivots on these rigs sit in the chest. Leave from the crown of
+-- the visible mesh so the lob starts in the head.
+local function headOrigin(model: Model): Vector3
+	local size, center = ModelUtil.getVisualSizeAndCenter(model)
+	return Vector3.new(center.X, center.Y + size.Y * 0.5 - 0.35, center.Z)
+end
+
 local function hasBrainrot(plotModel: Model, row: number, column: number): boolean
 	local tile = GridService.getTile(plotModel, { row = row, column = column })
 	return tile ~= nil and type(tile.brainrotInstanceId) == "string"
 end
 
-local function nextOpenColumn(plotModel: Model, row: number, fromColumn: number): number?
-	local startTile = math.floor(fromColumn) + 1
-	for column = startTile, GridConfig.COLUMNS do
-		if column ~= math.floor(fromColumn) and not hasBrainrot(plotModel, row, column) then
-			return column
+local function openTiles(plotModel: Model, fromRow: number, fromColumn: number): { number }
+	local columns: { number } = {}
+	for column = 1, GridConfig.COLUMNS do
+		if column == fromColumn then
+			continue
+		end
+		if not hasBrainrot(plotModel, fromRow, column) then
+			table.insert(columns, column)
 		end
 	end
-	return nil
+	return columns
+end
+
+local function arcForDistance(fromColumn: number, column: number): number
+	local tilesAway = math.abs(column - fromColumn)
+	local farthest = math.max(GridConfig.COLUMNS - 1, 1)
+	local alpha = math.clamp(tilesAway / farthest, 0, 1)
+	return VfxConfig.INK_ARC_HEIGHT_MIN + (VfxConfig.INK_ARC_HEIGHT_MAX - VfxConfig.INK_ARC_HEIGHT_MIN) * alpha
 end
 
 local function spawnPuddle(plotModel: Model, row: number, column: number, duration: number, slowFactor: number)
@@ -78,10 +96,13 @@ local function spawnPuddle(plotModel: Model, row: number, column: number, durati
 end
 
 function InkPuddle.tryAct(ctx, callbacks): boolean
-	local column = nextOpenColumn(ctx.plotModel, ctx.position.row, ctx.position.column)
-	if not column then
+	local open = openTiles(ctx.plotModel, ctx.position.row, ctx.position.column)
+	if #open == 0 then
 		return false
 	end
+	local column = open[math.random(1, #open)]
+	local row = ctx.position.row
+	local arc = arcForDistance(ctx.position.column, column)
 	local params = ctx.definition.abilityParams
 	local duration = 7
 	local slowFactor = CombatConfig.SLOW_SPEED_FACTOR
@@ -97,7 +118,6 @@ function InkPuddle.tryAct(ctx, callbacks): boolean
 	callbacks.pulseAttack()
 	local hitDelay = if type(ctx.definition.attackHitDelay) == "number" then ctx.definition.attackHitDelay else 0
 	local plotModel = ctx.plotModel
-	local row = ctx.position.row
 	local model = ctx.model
 	local ownerUserId = ctx.ownerUserId
 
@@ -109,15 +129,9 @@ function InkPuddle.tryAct(ctx, callbacks): boolean
 		if not landing then
 			return
 		end
-		local head = BubbleShot.mouthWorld(model)
-		local headPart = model:FindFirstChild("Head", true)
-		if headPart and headPart:IsA("BasePart") then
-			head = headPart.Position
-		elseif headPart and (headPart:IsA("Bone") or headPart:IsA("Attachment")) then
-			head = headPart.WorldPosition
-		end
+		local head = headOrigin(model)
 		local goal = landing + Vector3.new(0, 0.2, 0)
-		CombatService.notifyInkDrop(ownerUserId, head, goal)
+		CombatService.notifyInkDrop(ownerUserId, head, goal, arc)
 		task.delay(VfxConfig.INK_FLIGHT_SECONDS, function()
 			if plotModel.Parent then
 				spawnPuddle(plotModel, row, column, duration, slowFactor)

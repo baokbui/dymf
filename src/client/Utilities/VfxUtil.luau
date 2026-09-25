@@ -964,25 +964,25 @@ function VfxUtil.decorateProjectile(part: BasePart)
 	end
 
 	if (not isBubble or barrage) and not isBat and part:FindFirstChildOfClass("Trail") == nil then
-		local attachment0 = Instance.new("Attachment")
-		attachment0.Name = "TrailStart"
+	local attachment0 = Instance.new("Attachment")
+	attachment0.Name = "TrailStart"
 		attachment0.Position = Vector3.new(0, halfWidth, 0)
-		attachment0.Parent = part
+	attachment0.Parent = part
 
-		local attachment1 = Instance.new("Attachment")
-		attachment1.Name = "TrailEnd"
+	local attachment1 = Instance.new("Attachment")
+	attachment1.Name = "TrailEnd"
 		attachment1.Position = Vector3.new(0, -halfWidth, 0)
-		attachment1.Parent = part
+	attachment1.Parent = part
 
-		local trail = Instance.new("Trail")
-		trail.Attachment0 = attachment0
-		trail.Attachment1 = attachment1
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = attachment0
+	trail.Attachment1 = attachment1
 		trail.Lifetime = if piercing
 			then VfxConfig.PIERCE_SHURIKEN_TRAIL_LIFETIME
 			elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_LIFETIME
 			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_TRAIL_LIFETIME
 			else VfxConfig.PROJECTILE_TRAIL_LIFETIME
-		trail.WidthScale = NumberSequence.new(
+	trail.WidthScale = NumberSequence.new(
 			if piercing
 				then VfxConfig.PIERCE_SHURIKEN_TRAIL_WIDTH
 				elseif barrage then VfxConfig.BUBBLE_BARRAGE_STREAK_WIDTH
@@ -1003,26 +1003,26 @@ function VfxUtil.decorateProjectile(part: BasePart)
 			else 1
 		trail.FaceCamera = true
 		trail.Transparency = NumberSequence.new(0, 1)
-		trail.Parent = part
+	trail.Parent = part
 	end
 
 	if not isBat then
-		local glow = Instance.new("PointLight")
+	local glow = Instance.new("PointLight")
 		glow.Brightness = if piercing
 			then VfxConfig.PIERCE_SHURIKEN_GLOW_BRIGHTNESS
 			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_BRIGHTNESS
 			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_BRIGHTNESS
-			else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
+		else VfxConfig.PROJECTILE_GLOW_BRIGHTNESS
 		glow.Range = if piercing
 			then VfxConfig.PIERCE_SHURIKEN_GLOW_RANGE
 			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_GLOW_RANGE
 			elseif isShuriken then VfxConfig.SHURIKEN_PROJECTILE_GLOW_RANGE
-			else VfxConfig.PROJECTILE_GLOW_RANGE
+		else VfxConfig.PROJECTILE_GLOW_RANGE
 		glow.Color = if barrage
 			then VfxConfig.BUBBLE_BARRAGE_COLOR
 			elseif isBubble then VfxConfig.BUBBLE_PROJECTILE_COLOR
 			else trailColor
-		glow.Parent = part
+	glow.Parent = part
 	end
 end
 
@@ -1723,14 +1723,14 @@ end
 	Off skips the effect. Low uses fewer rings and less grit.
 ]]
 -- Blueberrinni: dark blue droplet on an arc. Off skips it. Low keeps the drop and drops the tail.
-function VfxUtil.playInkDrop(from: Vector3, to: Vector3)
+function VfxUtil.playInkDrop(from: Vector3, to: Vector3, arcHeight: number?)
 	local quality = VfxLoad.quality()
 	if quality == "Minimal" then
 		return
 	end
 
 	local flight = VfxConfig.INK_FLIGHT_SECONDS
-	local arc = VfxConfig.INK_ARC_HEIGHT
+	local arc = if type(arcHeight) == "number" then arcHeight else VfxConfig.INK_ARC_HEIGHT_MAX
 	local ink = VfxConfig.INK_COLOR
 
 	local drop = Instance.new("Part")

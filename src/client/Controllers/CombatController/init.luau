@@ -26,6 +26,7 @@ local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
 local AudioController = require(script.Parent.AudioController)
 local MonsterNameplate = require(script.MonsterNameplate)
 local SpawnSandstorm = require(script.SpawnSandstorm)
+local OtherPlotVfx = require(script.OtherPlotVfx)
 
 local CombatController = {}
 CombatController.Name = "CombatController"
@@ -388,7 +389,11 @@ local function onCombatVisual(payload: unknown)
 		local from = asVector3(data.originX, data.originY, data.originZ)
 		local to = asVector3(data.destX, data.destY, data.destZ)
 		if from and to then
-			VfxUtil.playInkDrop(from, to)
+			local arcHeight = if type(data.arcHeight) == "number" then data.arcHeight else nil
+			VfxUtil.playInkDrop(from, to, arcHeight)
+			task.delay(VfxConfig.INK_FLIGHT_SECONDS, function()
+				AudioController.play("InkLand")
+			end)
 		end
 	elseif kind == "GravityPull" then
 		local center = asVector3(data.destX, data.destY, data.destZ)
@@ -428,6 +433,7 @@ end
 function CombatController.start()
 	MonsterNameplate.start()
 	SpawnSandstorm.start()
+	OtherPlotVfx.start()
 	Remotes.getEvent("CombatVisual").OnClientEvent:Connect(onCombatVisual)
 	VfxLoad.onHighQualityChanged(function()
 		refreshHeavyProjectiles()

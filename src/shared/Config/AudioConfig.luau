@@ -81,6 +81,7 @@ local AudioConfig = {
 		"SwordWave",
 		"SwordWavePillar",
 		"SahurWrath",
+		"InkLand",
 	},
 
 	MUSIC = {
@@ -360,6 +361,11 @@ local AudioConfig = {
 		SwordWavePillar = {
 			SoundId = "rbxassetid://119977062667102",
 			Volume = 0.9,
+		},
+		-- Blueberrinni ink splat when the droplet reaches the tile.
+		InkLand = {
+			SoundId = "rbxassetid://117260647120678",
+			Volume = 0.8,
 		},
 		-- Giraffa Celeste gust after the place animation.
 		WindGust = {

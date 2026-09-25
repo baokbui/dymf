@@ -294,6 +294,13 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	local model = Instance.new("Model")
 	model.Name = "AbyssalTorrent"
 
+	local ringCount = VfxConfig.HYDRO_JET_RING_COUNT
+	local ringSegments = VfxConfig.HYDRO_JET_RING_SEGMENTS
+	local streakCount = VfxConfig.HYDRO_JET_STREAKS
+	local helixPoints = VfxConfig.HYDRO_JET_HELIX_POINTS
+	local bubbleCount = VfxConfig.HYDRO_JET_BUBBLE_COUNT
+	local rushRate = 28
+
 	local hub = ghostPart(model, "Hub")
 	hub.CFrame = basis
 
@@ -325,7 +332,8 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	rush.Color = ColorSequence.new(VfxConfig.HYDRO_JET_CORE_COLOR, VfxConfig.HYDRO_JET_WATER_COLOR)
 	rush.LightEmission = 0.4
 	rush.LightInfluence = 0
-	rush.Rate = 28
+	rush.Rate = rushRate
+	rush.Enabled = rushRate > 0
 	rush.Lifetime = NumberRange.new(0.2, 0.4)
 	rush.Speed = NumberRange.new(22, 34)
 	rush.SpreadAngle = Vector2.new(6, 6)
@@ -353,8 +361,8 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	spanBeam(VfxConfig.HYDRO_JET_CORE_COLOR, VfxConfig.HYDRO_JET_CORE_WIDTH, 0.22)
 
 	local streakRadius = VfxConfig.HYDRO_JET_HELIX_RADIUS * 0.65
-	for index = 1, VfxConfig.HYDRO_JET_STREAKS do
-		local angle = (index - 1) / VfxConfig.HYDRO_JET_STREAKS * math.pi * 2
+	for index = 1, streakCount do
+		local angle = (index - 1) / streakCount * math.pi * 2
 		local offset = Vector3.new(0, math.sin(angle) * streakRadius, math.cos(angle) * streakRadius)
 		local a0 = Instance.new("Attachment")
 		a0.Position = Vector3.new(-length * 0.5, 0, 0) + offset
@@ -368,7 +376,7 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	local function makeRing(color: Color3, radius: number): Ring
 		local attachments: { Attachment } = {}
 		local anchor = ghostPart(model, "Ring")
-		for _ = 1, VfxConfig.HYDRO_JET_RING_SEGMENTS do
+		for _ = 1, ringSegments do
 			local attachment = Instance.new("Attachment")
 			attachment.Parent = anchor
 			table.insert(attachments, attachment)
@@ -385,7 +393,7 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	end
 
 	local rings: { Ring } = {}
-	for index = 1, VfxConfig.HYDRO_JET_RING_COUNT do
+	for index = 1, ringCount do
 		local color = if index % 2 == 0 then VfxConfig.HYDRO_JET_WATER_COLOR else VfxConfig.HYDRO_JET_CORE_COLOR
 		table.insert(rings, makeRing(color, VfxConfig.HYDRO_JET_RING_RADIUS))
 	end
@@ -396,7 +404,7 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	}
 	for _, helix in helices do
 		local anchor = ghostPart(model, "Helix")
-		for _ = 1, VfxConfig.HYDRO_JET_HELIX_POINTS do
+		for _ = 1, helixPoints do
 			local attachment = Instance.new("Attachment")
 			attachment.Parent = anchor
 			table.insert(helix.attachments, attachment)
@@ -407,7 +415,7 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	end
 
 	local bubbles: { OrbitBubble } = {}
-	for index = 1, VfxConfig.HYDRO_JET_BUBBLE_COUNT do
+	for index = 1, bubbleCount do
 		local scale = 0.75 + (index % 5) * 0.1
 		local size = VfxConfig.HYDRO_JET_BUBBLE_SIZE * scale
 		local bubble = Instance.new("Part")
@@ -442,8 +450,8 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 		table.insert(bubbles, {
 			part = bubble,
 			core = coreBubble,
-			along = (index - 1) / VfxConfig.HYDRO_JET_BUBBLE_COUNT,
-			angle = (index - 1) / VfxConfig.HYDRO_JET_BUBBLE_COUNT * math.pi * 2,
+			along = (index - 1) / math.max(bubbleCount, 1),
+			angle = (index - 1) / math.max(bubbleCount, 1) * math.pi * 2,
 			radius = VfxConfig.HYDRO_JET_BUBBLE_RADIUS * (0.9 + (index % 3) * 0.2),
 			drift = 0.18 + (index % 4) * 0.05,
 		})

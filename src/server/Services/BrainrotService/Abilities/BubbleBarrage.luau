@@ -22,8 +22,15 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 		extraChance = ctx.definition.abilityParams.extraBubbleChance or 0
 	end
 
-	-- Don't spend the volley (or the 15s CD) when the lawn is empty.
-	if not CombatService.hasMonsterOnPlot(ctx.plotModel) then
+	-- Don't spend the volley until a monster in this row has entered the lawn.
+	-- Forest marchers east of the last tile do not count.
+	local targetId = CombatService.getFirstMonsterInRow(
+		ctx.plotModel,
+		ctx.position.row,
+		ctx.position.column,
+		ctx.definition.rangeTiles
+	)
+	if not targetId then
 		return false
 	end
 
@@ -46,6 +53,15 @@ function BubbleBarrage.tryAct(ctx, callbacks)
 
 	local function fire()
 		if not ctx.model.Parent then
+			return
+		end
+		local stillThere = CombatService.getFirstMonsterInRow(
+			ctx.plotModel,
+			ctx.position.row,
+			ctx.position.column,
+			ctx.definition.rangeTiles
+		)
+		if not stillThere then
 			return
 		end
 		CombatService.launchBarrageSeed(

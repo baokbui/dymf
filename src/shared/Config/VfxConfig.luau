@@ -59,11 +59,11 @@ local VfxConfig = {
 	TILE_EXPLOSION_FLASH_DURATION = 0.15,
 	ROW_EXPLOSION_STAGGER = 0.035,
 
-	-- Sahur's Wrath bat landing: yellow energy burst (crown + ground ring).
-	-- Sized to lawn tiles so the slam reads across ~2 tiles, not a small spark.
+	-- Sahur's Wrath bat landing: one yellow energy burst (crown + ground ring).
+	-- Wider than a tile so a single pulse covers the slam.
 	BAT_SLAM_WAVE_COLOR = Color3.fromRGB(255, 196, 32),
 	BAT_SLAM_WAVE_COLOR_HOT = Color3.fromRGB(255, 236, 110),
-	BAT_SLAM_WAVE_COUNT = 4,
+	BAT_SLAM_WAVE_COUNT = 1,
 	BAT_SLAM_WAVE_STAGGER = 0.2,
 	BAT_SLAM_WIDEN_PER_WAVE = 0.28,
 	BAT_SLAM_WAVE_DURATION = 0.5,
@@ -73,15 +73,15 @@ local VfxConfig = {
 	BAT_SLAM_RING_COUNT = 20,
 	BAT_SLAM_SPIKE_THICKNESS = TILE * 0.055,
 	BAT_SLAM_CROWN_INNER_START_RADIUS = TILE * 0.13,
-	BAT_SLAM_CROWN_INNER_END_RADIUS = TILE * 0.48,
+	BAT_SLAM_CROWN_INNER_END_RADIUS = TILE * 0.9,
 	BAT_SLAM_CROWN_INNER_START_LENGTH = TILE * 0.48,
 	BAT_SLAM_CROWN_INNER_WIDTH = TILE * 0.15,
 	BAT_SLAM_CROWN_START_RADIUS = TILE * 0.2,
-	BAT_SLAM_CROWN_END_RADIUS = TILE * 0.8,
+	BAT_SLAM_CROWN_END_RADIUS = TILE * 1.5,
 	BAT_SLAM_CROWN_START_LENGTH = TILE * 0.56,
 	BAT_SLAM_CROWN_WIDTH = TILE * 0.17,
 	BAT_SLAM_RING_START_RADIUS = TILE * 0.36,
-	BAT_SLAM_RING_END_RADIUS = TILE * 1.95,
+	BAT_SLAM_RING_END_RADIUS = TILE * 3.4,
 	BAT_SLAM_RING_START_LENGTH = TILE * 0.4,
 	BAT_SLAM_RING_WIDTH = TILE * 0.2,
 
@@ -184,7 +184,8 @@ local VfxConfig = {
 
 	-- Blueberrinni ink lob. Off skips the droplet. Low keeps the drop and drops the tail.
 	INK_FLIGHT_SECONDS = 2.2,
-	INK_ARC_HEIGHT = 22,
+	INK_ARC_HEIGHT_MIN = 6, -- nearest empty tile
+	INK_ARC_HEIGHT_MAX = 22, -- farthest empty tile
 	INK_COLOR = Color3.fromRGB(12, 24, 92),
 
 	-- Giraffa plot-wide gust that blows Night Fog off the lawn.
@@ -247,14 +248,14 @@ local VfxConfig = {
 
 	-- Shadow Requiem: vertical backwards-C ")" (bulge leads +X). White fill,
 	-- black outline + black flame/trail streaks. Y height grows with travel.
-	-- Last-tile finale is a tall white neon pillar; black flames corkscrew
-	-- around it and keep revolving as the column rises and expands.
+	-- Last-tile finale is a tall white neon pillar with one black ribbon
+	-- that climbs around it as the column rises.
 	SWORD_WAVE_COLOR = Color3.fromRGB(8, 8, 10), -- outline + streaks
 	SWORD_WAVE_COLOR_INNER = Color3.fromRGB(255, 255, 255), -- crescent fill
 	SWORD_WAVE_COLOR_EDGE = Color3.fromRGB(8, 8, 10),
 	SWORD_WAVE_WIDTH = TILE * 0.2, -- Z thickness (one wave, same span as the old pair)
-	SWORD_WAVE_STROKE = 1.35, -- XY ribbon thickness (volume on the leading edge)
-	SWORD_WAVE_WAKE_STROKE = 2.1, -- black outline thickness around the white fill
+	SWORD_WAVE_STROKE = 1.05, -- XY ribbon thickness (volume on the leading edge)
+	SWORD_WAVE_WAKE_STROKE = 1.65, -- black outline thickness around the white fill
 	SWORD_WAVE_START_HEIGHT = TILE * 0.32, -- Y span at spawn
 	SWORD_WAVE_END_HEIGHT = TILE * 1.85, -- Y span at full travel
 	SWORD_WAVE_BOW = TILE * 0.48, -- how far the tips sit west of the bulge
@@ -269,27 +270,23 @@ local VfxConfig = {
 	SWORD_WAVE_FLAME_LIFETIME = NumberRange.new(0.28, 0.52),
 	SWORD_WAVE_FLAME_SPREAD = Vector2.new(24, 42),
 	SWORD_WAVE_TRAIL_LIFETIME = 0.48,
-	SWORD_WAVE_TRAIL_WIDTH = 1.25,
-	SWORD_WAVE_PILLAR_HEIGHT = TILE * 3.8,
-	SWORD_WAVE_PILLAR_START_RADIUS = TILE * 0.1, -- spawn thin, then expand
-	SWORD_WAVE_PILLAR_END_RADIUS = TILE * 0.5, -- diameter = one lawn tile
+	SWORD_WAVE_TRAIL_WIDTH = 1,
+	SWORD_WAVE_PILLAR_HEIGHT = TILE * 3.1,
+	SWORD_WAVE_PILLAR_START_RADIUS = TILE * 0.08, -- spawn thin, then expand
+	SWORD_WAVE_PILLAR_END_RADIUS = TILE * 0.4, -- diameter a bit under one lawn tile
 	SWORD_WAVE_PILLAR_CORE_RATIO = 0.78, -- core diameter vs halo
 	SWORD_WAVE_PILLAR_TRANSPARENCY = 0.08,
 	SWORD_WAVE_PILLAR_GLOW_BRIGHTNESS = 9,
-	SWORD_WAVE_PILLAR_GLOW_RANGE = 22, -- at spawn; scales up with expand
-	SWORD_WAVE_PILLAR_GLOW_RANGE_MAX = 42,
-	SWORD_WAVE_PILLAR_FLAME_STRANDS = 5,
-	SWORD_WAVE_PILLAR_FLAME_INNER_STRANDS = 4,
-	SWORD_WAVE_PILLAR_FLAME_OUTER_STRANDS = 4,
-	SWORD_WAVE_PILLAR_FLAME_POINTS = 12, -- emitters along each helical arm
-	SWORD_WAVE_PILLAR_FLAME_TURNS = 2.5, -- corkscrew revolutions over the height
-	SWORD_WAVE_PILLAR_FLAME_SPIN = 2.6, -- rad/s the spiral revolves
-	SWORD_WAVE_PILLAR_FLAME_RATE = 34,
-	SWORD_WAVE_PILLAR_FLAME_BURST = 10, -- extra particles per emitter on explode
+	SWORD_WAVE_PILLAR_GLOW_RANGE = 10, -- at spawn; scales up with expand
+	SWORD_WAVE_PILLAR_GLOW_RANGE_MAX = 18,
+	SWORD_WAVE_PILLAR_SPIRAL_SEGMENTS = 28,
+	SWORD_WAVE_PILLAR_SPIRAL_TURNS = 2.5, -- revolutions over the pillar height
+	SWORD_WAVE_PILLAR_SPIRAL_THICKNESS = 0.55,
+	SWORD_WAVE_PILLAR_SPIRAL_RADIUS = 1.18, -- multiple of the pillar radius
+	SWORD_WAVE_PILLAR_SPIRAL_CLIMB = 0.75, -- helix wraps per second (ascends)
 
-	-- Heavy GOD-ult VFX. Quality is a Settings toggle (VfxLoad), not an
-	-- automatic budget. Costs are still passed into acquire() for the API.
-	-- Combat math is unchanged.
+	-- Heavy GOD-ult VFX. Client Settings pick High / Low / Off. The server
+	-- always authors the full effect. Damage is unchanged.
 	HEAVY_VFX_SWORD_WAVE = 2,
 	HEAVY_VFX_PILLAR = 5,
 	HEAVY_VFX_BAT_SLAM = 2,
@@ -324,14 +321,14 @@ local VfxConfig = {
 	HYDRO_JET_CORE_COLOR = Color3.fromRGB(220, 180, 255),
 	HYDRO_JET_WATER_COLOR = Color3.fromRGB(140, 50, 230),
 	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(48, 8, 90),
-	HYDRO_JET_RING_COUNT = 6,
-	HYDRO_JET_RING_SEGMENTS = 12,
+	HYDRO_JET_RING_COUNT = 4,
+	HYDRO_JET_RING_SEGMENTS = 8,
 	HYDRO_JET_STREAKS = 6,
 	HYDRO_JET_HELIX_POINTS = 22,
 	HYDRO_JET_HELIX_TURNS = 7,
 	HYDRO_JET_SPIN = 4,
 	-- Soap bubbles around the beam. High only; Low and Off hide them on the client.
-	HYDRO_JET_BUBBLE_COUNT = 18,
+	HYDRO_JET_BUBBLE_COUNT = 12,
 	HYDRO_JET_BUBBLE_SIZE = 2.2,
 	HYDRO_JET_BUBBLE_RADIUS = TILE * 0.24,
 	HYDRO_JET_BUBBLE_COLOR = Color3.fromRGB(245, 236, 255),

@@ -45,7 +45,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.Visible = false
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
-	parent.Size = UDim2.fromOffset(440, 480)
+	parent.Size = UDim2.fromOffset(440, 540)
 	parent.ZIndex = 25
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_SETTINGS)
 
@@ -198,24 +198,47 @@ function Settings.new(parent: Frame): SettingsPanel
 	qualityButton.TextSize = 13
 	local qualityHint = Instance.new("TextLabel")
 	qualityHint.BackgroundTransparency = 1
-	qualityHint.Size = UDim2.new(1, 0, 0, 56)
+	qualityHint.Size = UDim2.new(1, 0, 0, 72)
 	qualityHint.LayoutOrder = 2
 	qualityHint.TextSize = 13
 	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
 	qualityHint.TextYAlignment = Enum.TextYAlignment.Top
 	qualityHint.TextWrapped = true
-	qualityHint.Text = "High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots."
+	qualityHint.Text = "High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots. Weaker PCs should use Low or Off."
 	qualityHint.Parent = graphicsSection
 	UITheme.applyOutlinedTitle(qualityHint, UITheme.TITLE)
 	qualityHint.TextSize = 13
 
+	local otherPlotsButton = makeButton(graphicsSection, "Other plots: On", UITheme.BUTTON_BG)
+	otherPlotsButton.LayoutOrder = 3
+	otherPlotsButton.TextSize = 13
+	local otherPlotsHint = Instance.new("TextLabel")
+	otherPlotsHint.BackgroundTransparency = 1
+	otherPlotsHint.Size = UDim2.new(1, 0, 0, 56)
+	otherPlotsHint.LayoutOrder = 4
+	otherPlotsHint.TextSize = 13
+	otherPlotsHint.TextXAlignment = Enum.TextXAlignment.Left
+	otherPlotsHint.TextYAlignment = Enum.TextYAlignment.Top
+	otherPlotsHint.TextWrapped = true
+	otherPlotsHint.Text = "Off hides Brainrot effects on other players' plots. Your plot stays the same. Turn this off for better performance if you need it."
+	otherPlotsHint.Parent = graphicsSection
+	UITheme.applyOutlinedTitle(otherPlotsHint, UITheme.TITLE)
+	otherPlotsHint.TextSize = 13
+
 	local function applyGraphics()
 		qualityButton.Text = "VFX: " .. VfxLoad.label()
 		qualityButton.TextSize = 13
+		otherPlotsButton.Text = if VfxLoad.showsOtherPlots() then "Other plots: On" else "Other plots: Off"
+		otherPlotsButton.TextSize = 13
 	end
 	qualityButton.Activated:Connect(function()
 		AudioController.play("UiClick")
 		VfxLoad.cycle()
+		applyGraphics()
+	end)
+	otherPlotsButton.Activated:Connect(function()
+		AudioController.play("UiClick")
+		VfxLoad.setShowOtherPlots(not VfxLoad.showsOtherPlots())
 		applyGraphics()
 	end)
 	applyGraphics()

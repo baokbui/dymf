@@ -56,11 +56,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	InkPuddle = {
 		label = "Ink Puddle",
-		description = "Lobs ink onto the nearest empty tile ahead. The puddle lasts 7 seconds and slows monsters while they walk through it. 10 second cooldown.",
+		description = "Lobs ink onto a random empty tile in her row. Closer tiles arc lower, farther tiles arc higher. The puddle lasts 7 seconds and slows monsters while they walk through it. 10 second cooldown.",
 	},
 	PullToLane = {
 		label = "Pull To Lane",
-		description = "Floats above the tile, then pulls the closest monster from each neighboring row onto her tile. An edge row pulls one. A middle row pulls one from each side. Then she vanishes.",
+		description = "Floats above the tile, then pulls the closest 1-tile monster from each neighboring row onto her tile. Monsters two or more tiles wide are left alone. An edge row pulls one. A middle row pulls one from each side. Then she vanishes.",
 	},
 	Wall = {
 		label = "Sturdy Wall",

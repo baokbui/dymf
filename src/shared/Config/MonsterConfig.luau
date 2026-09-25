@@ -5,7 +5,8 @@
 ]]
 
 local MonsterConfig = {
-	-- Server movement/AI tick (seconds).
+	-- Cap on one movement/AI step (seconds). The march itself runs every
+	-- Heartbeat with real dt, clamped to this, so a hitch cannot skip ahead.
 	BEHAVIOR_TICK = 0.1,
 
 	-- Columns east of the lawn where monsters spawn (fractional grid coords).

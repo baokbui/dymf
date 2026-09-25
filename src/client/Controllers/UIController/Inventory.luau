@@ -33,7 +33,10 @@ local PREVIEW_SIZE = 78
 local PLATE_HEIGHT = 30
 local RIBBON_HEIGHT = 18
 
-local INV_WIDTH = 524
+local GRID_WIDTH = PACKET_WIDTH * 3 + PACKET_PADDING * 2
+local SCROLLBAR = 6
+local SCROLL_GAP = 14
+local INV_WIDTH = 12 + 6 + GRID_WIDTH + SCROLL_GAP + SCROLLBAR + 12
 local INV_HEIGHT = 472
 local STATS_WIDTH = BrainrotInspect.CARD_WIDTH
 local STATS_GAP = 14
@@ -183,13 +186,14 @@ function Inventory.new(parent: Frame): InventoryPanel
 	list.Position = UDim2.fromOffset(12, 74)
 	list.Size = UDim2.new(1, -24, 1, -86)
 	list.CanvasSize = UDim2.new(0, 0, 0, 0)
-	list.ScrollBarThickness = 6
+	list.ScrollBarThickness = SCROLLBAR
+	list.ScrollingDirection = Enum.ScrollingDirection.Y
 	list.Parent = parent
 
 	local listPad = Instance.new("UIPadding")
 	listPad.PaddingTop = UDim.new(0, 6)
 	listPad.PaddingLeft = UDim.new(0, 6)
-	listPad.PaddingRight = UDim.new(0, 6)
+	listPad.PaddingRight = UDim.new(0, SCROLL_GAP + SCROLLBAR)
 	listPad.PaddingBottom = UDim.new(0, 6)
 	listPad.Parent = list
 

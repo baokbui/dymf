@@ -968,66 +968,57 @@ local function makePillarCylinder(name: string, height: number, diameter: number
 	return part
 end
 
-local function addPillarFlame(parent: BasePart, offset: Vector3): Attachment
-	local att = Instance.new("Attachment")
-	att.Name = "PillarFlameAtt"
-	att.CFrame = CFrame.new(offset)
-	att.Parent = parent
-
-	local fire = Instance.new("ParticleEmitter")
-	fire.Name = "SwordWaveFlame"
-	fire.Texture = "rbxasset://textures/particles/fire_main.dds"
-	fire.Color = blackSequence()
-	fire.LightEmission = 0
-	fire.Brightness = 0.85
-	fire.Orientation = Enum.ParticleOrientation.VelocityParallel
-	fire.Squash = NumberSequence.new(-1.7)
-	fire.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1.15),
-		NumberSequenceKeypoint.new(0.32, 1.6),
-		NumberSequenceKeypoint.new(1, 0.14),
-	})
-	fire.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.04),
-		NumberSequenceKeypoint.new(0.4, 0.22),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	fire.Lifetime = VfxConfig.SWORD_WAVE_FLAME_LIFETIME
-	fire.Speed = VfxConfig.SWORD_WAVE_FLAME_SPEED
-	fire.SpreadAngle = Vector2.new(10, 16)
-	fire.Rate = VfxConfig.SWORD_WAVE_PILLAR_FLAME_RATE
-	fire.Acceleration = Vector3.new(0, 22, 0)
-	fire.Drag = 1.2
-	fire.EmissionDirection = Enum.NormalId.Front
-	fire.LockedToPart = false
-	fire.ZOffset = 1.2
-	fire.Parent = att
-	return att
-end
-
-type PillarFlameSlot = {
-	att: Attachment,
+type PillarSpiralSeg = {
+	part: BasePart,
 	t: number,
-	angleOffset: number,
-	radiusScale: number,
 }
 
-local function posePillarFlames(slots: { PillarFlameSlot }, diameter: number, spin: number, rise: number, fullHeight: number)
-	local radius = diameter * 0.5
+local function addPillarSpiralSeg(parent: Instance): BasePart
+	local part = Instance.new("Part")
+	part.Name = "PillarSpiral"
+	part.Size = Vector3.new(VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_THICKNESS, VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_THICKNESS, 0.2)
+	part.Material = Enum.Material.SmoothPlastic
+	part.Color = VfxConfig.SWORD_WAVE_COLOR
+	part.Transparency = 0
+	hardenRoot(part)
+	part.Parent = parent
+	return part
+end
+
+local function posePillarSpiral(
+	segs: { PillarSpiralSeg },
+	origin: Vector3,
+	diameter: number,
+	rise: number,
+	fullHeight: number,
+	climb: number,
+	transparency: number
+)
+	local radius = diameter * 0.5 * VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_RADIUS
 	local visibleHeight = fullHeight * math.clamp(rise, 0.08, 1)
-	local turns = VfxConfig.SWORD_WAVE_PILLAR_FLAME_TURNS
-	local twist = turns * math.pi * 2
-	local dAngle = twist / math.max(visibleHeight, 0.01)
-	for _, slot in slots do
-		local y = slot.t * visibleHeight
-		local angle = slot.angleOffset + slot.t * twist + spin
-		local r = radius * slot.radiusScale
-		local pos = Vector3.new(math.cos(angle) * r, y, math.sin(angle) * r)
-		local tangent = Vector3.new(-math.sin(angle) * r * dAngle, 1, math.cos(angle) * r * dAngle)
-		if tangent.Magnitude < 0.05 then
-			tangent = Vector3.yAxis
+	local twist = VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_TURNS * math.pi * 2
+	local thickness = VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_THICKNESS
+	local count = math.max(#segs, 1)
+	local step = 1 / count
+	local base = CFrame.new(origin)
+
+	local function point(u: number): Vector3
+		local wrapped = u % 1
+		local angle = wrapped * twist
+		return Vector3.new(math.cos(angle) * radius, wrapped * visibleHeight, math.sin(angle) * radius)
+	end
+
+	for _, seg in segs do
+		local a = point(seg.t + climb)
+		local b = point(seg.t + climb + step)
+		local len = (b - a).Magnitude
+		if len > visibleHeight * 0.45 or len < 0.02 then
+			seg.part.Transparency = 1
+		else
+			seg.part.Transparency = transparency
+			seg.part.Size = Vector3.new(thickness, thickness, len)
+			seg.part.CFrame = base * CFrame.lookAt((a + b) * 0.5, b)
 		end
-		slot.att.CFrame = CFrame.lookAt(pos, pos + tangent)
 	end
 end
 
@@ -1061,61 +1052,27 @@ function Projectile.playSwordWaveFinale(plotModel: Model, worldPos: Vector3)
 	glow.Color = VfxConfig.SWORD_WAVE_COLOR_INNER
 	glow.Parent = core
 
-	local flameAnchor = Instance.new("Part")
-	flameAnchor.Name = "PillarFlameAnchor"
-	flameAnchor.Size = Vector3.new(0.2, 0.2, 0.2)
-	flameAnchor.Transparency = 1
-	flameAnchor.CFrame = CFrame.new(worldPos)
-	hardenRoot(flameAnchor)
-	flameAnchor.Parent = model
-
-	local slots: { PillarFlameSlot } = {}
-	local spawnFlames = quality ~= "Minimal"
-	local points = math.max(2, VfxConfig.SWORD_WAVE_PILLAR_FLAME_POINTS)
-	local innerStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_INNER_STRANDS
-	local midStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_STRANDS
-	local outerStrands = VfxConfig.SWORD_WAVE_PILLAR_FLAME_OUTER_STRANDS
-	if quality == "Reduced" then
-		points = math.max(2, math.ceil(points * 0.5))
-		innerStrands = math.max(1, math.ceil(innerStrands * 0.5))
-		midStrands = math.max(1, math.ceil(midStrands * 0.5))
-		outerStrands = math.max(1, math.ceil(outerStrands * 0.5))
-	end
-
-	local function addHelix(strandCount: number, radiusScale: number, phase: number)
-		local strands = math.max(1, strandCount)
-		for s = 1, strands do
-			local strandPhase = phase + (s / strands) * math.pi * 2
-			for p = 0, points - 1 do
-				local att = addPillarFlame(flameAnchor, Vector3.zero)
-				table.insert(slots, {
-					att = att,
-					t = p / (points - 1),
-					angleOffset = strandPhase,
-					radiusScale = radiusScale,
-				})
-			end
-		end
-	end
-
-	if spawnFlames then
-		addHelix(innerStrands, 0.82, 0)
-		addHelix(midStrands, 1.06, 0.35)
-		addHelix(outerStrands, 1.32, 0.7)
+	local segs: { PillarSpiralSeg } = {}
+	local showSpiral = quality ~= "Minimal"
+	if showSpiral then
+		local count = math.max(8, VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_SEGMENTS)
 		if quality == "Reduced" then
-			for _, descendant in model:GetDescendants() do
-				if descendant:IsA("ParticleEmitter") then
-					descendant.Rate = descendant.Rate * 0.5
-				end
-			end
+			count = math.max(8, math.ceil(count * 0.5))
+		end
+		for i = 0, count - 1 do
+			table.insert(segs, {
+				part = addPillarSpiralSeg(model),
+				t = i / count,
+			})
 		end
 	end
 
 	local currentDiam = startDiam
 	local rise = 0.12
+	local spiralTransparency = 0
 	local spawnedAt = os.clock()
-	if spawnFlames then
-		posePillarFlames(slots, currentDiam, 0, rise, height)
+	if showSpiral then
+		posePillarSpiral(segs, worldPos, currentDiam, rise, height, 0, spiralTransparency)
 	end
 
 	model.Parent = folder
@@ -1123,19 +1080,13 @@ function Projectile.playSwordWaveFinale(plotModel: Model, worldPos: Vector3)
 		release()
 	end)
 
-	if spawnFlames then
-		for _, descendant in model:GetDescendants() do
-			if descendant:IsA("ParticleEmitter") then
-				descendant:Emit(VfxConfig.SWORD_WAVE_PILLAR_FLAME_BURST)
-			end
-		end
-
+	if showSpiral then
 		local spinConn = RunService.Heartbeat:Connect(function()
 			if not model.Parent then
 				return
 			end
-			local spin = (os.clock() - spawnedAt) * VfxConfig.SWORD_WAVE_PILLAR_FLAME_SPIN
-			posePillarFlames(slots, currentDiam, spin, rise, height)
+			local climb = (os.clock() - spawnedAt) * VfxConfig.SWORD_WAVE_PILLAR_SPIRAL_CLIMB
+			posePillarSpiral(segs, worldPos, currentDiam, rise, height, climb, spiralTransparency)
 		end)
 		model.Destroying:Connect(function()
 			spinConn:Disconnect()
@@ -1167,16 +1118,14 @@ function Projectile.playSwordWaveFinale(plotModel: Model, worldPos: Vector3)
 		TweenService:Create(halo, fadeInfo, { Transparency = 1 }):Play()
 		TweenService:Create(core, fadeInfo, { Transparency = 1 }):Play()
 		TweenService:Create(glow, fadeInfo, { Brightness = 0 }):Play()
-		task.delay(fadeTime * 0.7, function()
-			if not model.Parent then
-				return
-			end
-			for _, descendant in model:GetDescendants() do
-				if descendant:IsA("ParticleEmitter") then
-					descendant.Enabled = false
-				end
-			end
+		local fadeValue = Instance.new("NumberValue")
+		fadeValue.Name = "SpiralFade"
+		fadeValue.Value = 0
+		fadeValue.Parent = model
+		fadeValue.Changed:Connect(function(alpha)
+			spiralTransparency = alpha
 		end)
+		TweenService:Create(fadeValue, fadeInfo, { Value = 1 }):Play()
 		task.delay(fadeTime + 0.25, function()
 			if model.Parent then
 				model:Destroy()

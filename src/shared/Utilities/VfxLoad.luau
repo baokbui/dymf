@@ -3,8 +3,10 @@
 	VfxLoad
 	Heavy combat VFX quality for GOD ultimates (sword waves, pillars, slams,
 	jackpot) and the matching UI cost (3D portraits, moving evolution shine).
-	Quality is a client Settings choice — never auto-throttled by how many
-	effects are alive. Damage is never throttled.
+	Quality is a client Settings choice. Damage is never throttled. The server
+	always authors the full ult. Low and Off only change what that client draws.
+	`showsOtherPlots` (default on) hides Brainrot auras and Brainrot projectiles
+	on plots the local player does not own. Monster attacks stay visible.
 
 	High (Full): full combat effects, dense Brainrot aura, moving shine, 3D portraits.
 	Low (Reduced): fewer client bursts, thin Brainrot aura, shine stays still,
@@ -12,9 +14,6 @@
 	Off (Minimal): no heavy particles/trails and no Brainrot aura flames (the
 	rarity outline stays). Shop, inventory, and index portraits become color
 	swatches. Inspect portraits stay 3D.
-
-	Server always authors Full visuals so every plot sees the same geometry.
-	Off clients strip particles/trails locally.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -26,7 +25,9 @@ export type Quality = "Full" | "Reduced" | "Minimal"
 local ORDER: { Quality } = { "Full", "Reduced", "Minimal" }
 
 local quality: Quality = "Full"
+local showOtherPlots = true
 local listeners: { (Quality) -> () } = {}
+local otherPlotListeners: { (boolean) -> () } = {}
 
 function VfxLoad.quality(): Quality
 	if not RunService:IsClient() then
@@ -96,6 +97,27 @@ function VfxLoad.onHighQualityChanged(listener: (boolean) -> ())
 	VfxLoad.onChanged(function(level)
 		listener(level == "Full")
 	end)
+end
+
+function VfxLoad.showsOtherPlots(): boolean
+	return showOtherPlots
+end
+
+function VfxLoad.setShowOtherPlots(enabled: boolean)
+	if not RunService:IsClient() then
+		return
+	end
+	if showOtherPlots == enabled then
+		return
+	end
+	showOtherPlots = enabled
+	for _, listener in otherPlotListeners do
+		listener(showOtherPlots)
+	end
+end
+
+function VfxLoad.onOtherPlotsChanged(listener: (boolean) -> ())
+	table.insert(otherPlotListeners, listener)
 end
 
 function VfxLoad.acquire(_cost: number): (Quality, () -> ())

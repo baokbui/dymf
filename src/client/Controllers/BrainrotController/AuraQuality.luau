@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage.Shared
 local Constants = require(Shared.Constants)
 local VfxConfig = require(Shared.Config.VfxConfig)
 local VfxLoad = require(Shared.Utilities.VfxLoad)
+local PlotUtil = require(script.Parent.Parent.Parent.Utilities.PlotUtil)
 
 local AuraQuality = {}
 
@@ -63,6 +64,13 @@ end
 
 local function tune(emitter: ParticleEmitter)
 	if not emitter.Parent then
+		return
+	end
+	if not VfxLoad.showsOtherPlots() and not PlotUtil.isOnLocalPlot(emitter) then
+		if emitter.Rate ~= 0 then
+			emitter.Rate = 0
+		end
+		emitter:Clear()
 		return
 	end
 	local quality = VfxLoad.quality()
@@ -129,6 +137,11 @@ function AuraQuality.start()
 	end
 	CollectionService:GetInstanceAddedSignal(tag):Connect(watchModel)
 	VfxLoad.onChanged(function()
+		for _, instance in CollectionService:GetTagged(tag) do
+			scan(instance)
+		end
+	end)
+	VfxLoad.onOtherPlotsChanged(function()
 		for _, instance in CollectionService:GetTagged(tag) do
 			scan(instance)
 		end

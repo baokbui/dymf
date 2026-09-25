@@ -358,10 +358,10 @@ Avoid unnecessary Instance creation.
 Reuse objects when practical.
 
 Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
-Jackpot burst) go through `Shared.Utilities.VfxLoad`. Quality is a client
-Settings toggle (High = Full, Low = Reduced, Off = Minimal). High shows the
-full effect. Low keeps a thinner version. Off skips the decorative effect.
-Damage, targeting, status, and animations are never throttled.
+Jackpot burst, Abyssal Torrent) go through `Shared.Utilities.VfxLoad`. Quality
+is a client Settings toggle (High = Full, Low = Reduced, Off = Minimal). The
+server always authors the full effect. Settings can hide Brainrot VFX on other
+players' plots. Damage, targeting, status, and animations are never throttled.
 
 ---
 

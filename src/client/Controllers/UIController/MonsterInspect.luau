@@ -19,7 +19,7 @@ local MonsterInfo = require(script.Parent.Parent.Parent.Utilities.MonsterInfo)
 local MonsterInspect = {}
 MonsterInspect.__index = MonsterInspect
 
-MonsterInspect.CARD_WIDTH = 380
+MonsterInspect.CARD_WIDTH = 390
 MonsterInspect.CARD_HEIGHT = 378
 
 local PORTRAIT = 100
@@ -283,7 +283,7 @@ function MonsterInspect.new(parent: Instance): InspectCard
 	pad.PaddingTop = UDim.new(0, STROKE_GUTTER)
 	pad.PaddingBottom = UDim.new(0, 12)
 	pad.PaddingLeft = UDim.new(0, STROKE_GUTTER)
-	pad.PaddingRight = UDim.new(0, STROKE_GUTTER)
+	pad.PaddingRight = UDim.new(0, 14)
 	pad.Parent = body
 
 	return setmetatable({

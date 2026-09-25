@@ -1,8 +1,9 @@
 --!strict
 --[[
 	MonsterBehavior
-	Grid-based movement and attack tick for all monsters. Ability hooks are
-	resolved from definition data — never branches on monster names.
+	Grid-based movement and attack for all monsters. Driven every Heartbeat
+	so column changes glide instead of stepping. Ability hooks are resolved
+	from definition data — never branches on monster names.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

@@ -245,7 +245,7 @@ function CombatService.notifyGravityPull(ownerUserId: number, center: Vector3, o
 	fireCombatVisual(ownerUserId, payload)
 end
 
-function CombatService.notifyInkDrop(ownerUserId: number, from: Vector3, to: Vector3)
+function CombatService.notifyInkDrop(ownerUserId: number, from: Vector3, to: Vector3, arcHeight: number?)
 	fireCombatVisual(ownerUserId, {
 		kind = "InkDrop",
 		originX = from.X,
@@ -254,6 +254,7 @@ function CombatService.notifyInkDrop(ownerUserId: number, from: Vector3, to: Vec
 		destX = to.X,
 		destY = to.Y,
 		destZ = to.Z,
+		arcHeight = arcHeight,
 	})
 end
 

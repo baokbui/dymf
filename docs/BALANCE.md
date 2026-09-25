@@ -189,7 +189,7 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 | Golden Discount | `EvolutionConfig.PLANT_DISCOUNT_COOLDOWN` + `abilityParams.plantDiscountCooldown` (plot-wide, all Ballerinas) |
 | Tralalero CC vs size | `CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW` (25% per extra row; 5 rows immune) |
 | Sword-wave / pillar look | `VfxConfig.SWORD_WAVE_*`; timing in `CombatConfig.SWORD_WAVE_*` |
-| Heavy ult VFX | Settings **VFX** High / Low / Off; `VfxConfig.HEAVY_VFX_*` costs for `VfxLoad.acquire` |
+| Heavy ult VFX | Settings **VFX** High / Low / Off, **Other plots** On / Off. Server always authors the full ult |
 | Damage meter ranks | `CombatConfig.DAMAGE_METER_TOP` / `DAMAGE_METER_VISIBLE_ROWS` / `DAMAGE_METER_BROADCAST_INTERVAL` |
 | Monster campaign HP scale | `MonsterConfig.STAT_SCALE_*` (non-boss HP only; intro day from `MONSTER_INTRO_SCHEDULE`) |
 | Player walk speed / Speed shop | `PlayerConfig.WALK_SPEED`, `ProgressConfig.UPGRADE_CATALOG` |

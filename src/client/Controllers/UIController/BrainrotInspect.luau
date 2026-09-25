@@ -27,7 +27,7 @@ local AudioController = require(script.Parent.Parent.AudioController)
 local BrainrotInspect = {}
 BrainrotInspect.__index = BrainrotInspect
 
-BrainrotInspect.CARD_WIDTH = 380
+BrainrotInspect.CARD_WIDTH = 390
 BrainrotInspect.CARD_HEIGHT = 472
 
 local PORTRAIT = 100
@@ -387,7 +387,7 @@ function BrainrotInspect.new(parent: Instance): InspectCard
 	pad.PaddingTop = UDim.new(0, STROKE_GUTTER)
 	pad.PaddingBottom = UDim.new(0, 12)
 	pad.PaddingLeft = UDim.new(0, STROKE_GUTTER)
-	pad.PaddingRight = UDim.new(0, STROKE_GUTTER)
+	pad.PaddingRight = UDim.new(0, 14)
 	pad.Parent = body
 
 	local equipButton = Instance.new("TextButton")
