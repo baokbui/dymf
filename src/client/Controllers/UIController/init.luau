@@ -616,7 +616,13 @@ local function applyLevelState(state: { [string]: any }?)
 
 	if type(state.reward) == "table" and rewardPopup then
 		local reward = state.reward :: { [string]: any }
-		if type(reward.clearedLevel) == "number" and type(reward.brains) == "number" then
+		if reward.hiddenDay == true and type(reward.brains) == "number" then
+			rewardPopup:showHidden(
+				reward.brains,
+				if type(reward.leftoverBrains) == "number" then reward.leftoverBrains else 0
+			)
+			introHoldForReward = true
+		elseif type(reward.clearedLevel) == "number" and type(reward.brains) == "number" then
 			rewardPopup:show(
 				reward.clearedLevel,
 				reward.brains,

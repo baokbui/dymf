@@ -72,6 +72,8 @@ local AudioConfig = {
 		"PlaceBrainrot_LiriliLarila",
 		"PlaceBrainrot_CappuccinoAssassino",
 		"PlaceBrainrot_ChimpanziniBananini",
+		"PlaceBrainrot_OrangutiniAnanassini",
+		"PlaceBrainrot_BlueberrinniOctopusini",
 		"PlaceBrainrot_BrrBrrPatapim",
 		"PlaceBrainrot_GiraffaCeleste",
 		"PlaceBrainrot_LaVaccaSaturnoSaturnita",
@@ -183,12 +185,20 @@ local AudioConfig = {
 			SoundId = "rbxassetid://112519317017452",
 			Volume = 0.85,
 		},
+		PlaceBrainrot_OrangutiniAnanassini = {
+			SoundId = "rbxassetid://92163425392945",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_BlueberrinniOctopusini = {
+			SoundId = "rbxassetid://91691159755945",
+			Volume = 0.85,
+		},
 		PlaceBrainrot_BrrBrrPatapim = {
 			SoundId = "rbxassetid://138952404452431",
 			Volume = 0.85,
 		},
 		PlaceBrainrot_LaVaccaSaturnoSaturnita = {
-			SoundId = "rbxassetid://125645036231236",
+			SoundId = "rbxassetid://90484863638361",
 			Volume = 0.85,
 		},
 		PlaceBrainrot_GiraffaCeleste = {

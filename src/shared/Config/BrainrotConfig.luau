@@ -43,6 +43,9 @@ local BrainrotConfig = {
 	-- Slight purple wash while Poison is active (server-replicated part Color).
 	POISON_TINT_COLOR = Color3.fromRGB(175, 70, 255),
 	POISON_TINT_BLEND = 0.65, -- 0 = original, 1 = full purple
+	-- Green wash while Venom is active (Scorpion). Stacks with the poison wash.
+	VENOM_TINT_COLOR = Color3.fromRGB(70, 190, 60),
+	VENOM_TINT_BLEND = 0.65,
 
 	-- Stoneheart: cool granite, not warm beige. Highlight fill always
 	-- washes lighter than the authored RGB, so start dark.

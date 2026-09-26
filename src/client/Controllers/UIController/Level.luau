@@ -161,7 +161,9 @@ end
 
 function Level.applyState(self: LevelPanel, state: { [string]: any })
 	local levelNumber = state.levelNumber
-	if type(levelNumber) == "number" then
+	if state.hiddenDay == true then
+		self.levelLabel.Text = "Hidden Day"
+	elseif type(levelNumber) == "number" then
 		self.levelLabel.Text = string.format("Day %d", levelNumber)
 	end
 
@@ -176,7 +178,9 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 	local countingDown = phase == PHASE.Countdown and countdown ~= nil
 	self.startCountdownLabel.Visible = countingDown
 	if countingDown and countdown then
-		self.startCountdownLabel.Text = string.format("Day starting in %d", startCountdownShown(countdown))
+		self.startCountdownLabel.Text = if state.hiddenDay == true
+			then string.format("Hidden Day starting in %d", startCountdownShown(countdown))
+			else string.format("Day starting in %d", startCountdownShown(countdown))
 	end
 
 	if phase == PHASE.Victory then

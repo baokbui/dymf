@@ -141,6 +141,12 @@ local VfxConfig = {
 	DIZZY_ORBIT_FLATTEN = 0.45, -- vertical squash for an elliptical "halo" orbit
 	DIZZY_SPIN_SECONDS = 1.2,
 
+	-- Green "+" marks that rise and fade around a unit that just healed.
+	HEAL_PLUS_COUNT = 7,
+	HEAL_PLUS_COLOR = Color3.fromRGB(90, 230, 110),
+	HEAL_PLUS_RISE = 2.4,
+	HEAL_PLUS_LIFETIME = 0.85,
+
 	-- Floating status words ("Poisoned" / "Stunned") that rise and fade.
 	-- When several hit the same Brainrot at once they queue: the lead word
 	-- uses the faster duration, then the next plays after it finishes.
@@ -150,6 +156,7 @@ local VfxConfig = {
 	STATUS_FLOAT_DURATION = 1.15, -- solo / last-in-queue
 	STATUS_FLOAT_DURATION_LEAD = 0.65, -- faster when another word is waiting
 	STATUS_FLOAT_POISON_COLOR = Color3.fromRGB(200, 110, 255),
+	STATUS_FLOAT_VENOM_COLOR = Color3.fromRGB(120, 220, 80),
 	STATUS_FLOAT_STUN_COLOR = Color3.fromRGB(255, 225, 70),
 
 	-- Pharaoh steal: sand funnel aimed from the boss toward the stolen plants

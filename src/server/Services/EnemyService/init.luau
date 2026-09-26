@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local GridConfig = require(ReplicatedStorage.Shared.Config.GridConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 local Monsters = require(ReplicatedStorage.Shared.Monsters)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Logger = require(ReplicatedStorage.Shared.Utilities.Logger)
@@ -77,6 +78,7 @@ local function plotHasLivingMonsterId(plotModel: Model, monsterId: string): bool
 end
 
 local houseBreachHandler: ((plotModel: Model, row: number) -> ())?
+local killHandler: ((ownerUserId: number, monsterId: string) -> ())?
 
 local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 	if not silent then
@@ -91,6 +93,9 @@ local function destroyMonster(runtime: MonsterRuntime, silent: boolean?)
 				runtime.lastHitBrainrotId,
 				runtime.definition.isBoss == true
 			)
+			if killHandler then
+				killHandler(ownerUserId, runtime.monsterId)
+			end
 		end
 	end
 	monsters[runtime.instanceId] = nil
@@ -121,7 +126,8 @@ local function computeBrainrotHits(runtime: MonsterRuntime, brainrotInstanceId: 
 
 	local def = placement.definition
 	local damagePerHit = def.maxHealth / def.health
-	local defaultHits = math.max(1, math.ceil(runtime.definition.damage / damagePerHit))
+	local damage = runtime.definition.damage * runtime.attackDamageMultiplier
+	local defaultHits = math.max(1, math.ceil(damage / damagePerHit))
 
 	local hits = defaultHits
 	local ctx = {
@@ -233,6 +239,40 @@ local function onHouseBreach(runtime: MonsterRuntime)
 	destroyMonster(runtime, true)
 end
 
+-- Hidden Day: Goblin and Goblin Elite only. Clone so the registry stays put.
+-- +bonus max HP; attack interval and seconds-per-tile shrink so both speeds rise.
+local function applyHiddenDayBoost(definition: Types.MonsterDefinition): Types.MonsterDefinition
+	local bonus = ProgressConfig.HIDDEN_DAY_GOBLIN_STAT_BONUS
+	if bonus <= 0 then
+		return definition
+	end
+	local scale = 1 + bonus
+	local boosted = table.clone(definition)
+	boosted.health = math.max(1, math.floor(definition.health * scale + 0.5))
+	boosted.attackInterval = definition.attackInterval / scale
+	boosted.secondsPerGrid = definition.secondsPerGrid / scale
+	return boosted
+end
+
+-- Goblin King's War Cry percent while he is still alive on this plot. 0 if he is not.
+local function livingKingAttackBonus(plotModel: Model): number
+	local best = 0
+	for _, runtime in monsters do
+		if runtime.plotModel ~= plotModel or runtime.health <= 0 or runtime.monsterId ~= "GoblinKing" then
+			continue
+		end
+		local params = runtime.definition.abilityParams
+		local percent = 10
+		if params and type(params.attackBuffPercent) == "number" then
+			percent = params.attackBuffPercent
+		end
+		if percent > best then
+			best = percent
+		end
+	end
+	return best
+end
+
 local function currentDayForPlot(plotModel: Model): number
 	local ownerUserId = plotModel:GetAttribute("OwnerUserId")
 	if type(ownerUserId) ~= "number" then
@@ -242,16 +282,31 @@ local function currentDayForPlot(plotModel: Model): number
 	return LevelService.getCurrentDayForUser(ownerUserId)
 end
 
-local function spawnInternal(plotModel: Model, monsterId: string, gridRow: number, spawnColumn: number?): MonsterRuntime?
+local function spawnInternal(
+	plotModel: Model,
+	monsterId: string,
+	gridRow: number,
+	spawnColumn: number?,
+	allowDuplicateBoss: boolean?
+): MonsterRuntime?
 	local day = currentDayForPlot(plotModel)
 	local definition = Monsters.scaledForDay(monsterId, day)
 	if not definition then
 		return nil
 	end
+	if ProgressConfig.HIDDEN_DAY_BOOSTED_MONSTERS[monsterId] then
+		local ownerUserId = plotModel:GetAttribute("OwnerUserId")
+		if type(ownerUserId) == "number" then
+			local LevelService = require(script.Parent.LevelService)
+			if LevelService.isHiddenDayActiveForUser(ownerUserId) then
+				definition = applyHiddenDayBoost(definition)
+			end
+		end
+	end
 	if not GridUtil.isInBounds({ row = gridRow, column = 1 }) then
 		return nil
 	end
-	if definition.isBoss and plotHasLivingMonsterId(plotModel, monsterId) then
+	if definition.isBoss and allowDuplicateBoss ~= true and plotHasLivingMonsterId(plotModel, monsterId) then
 		return nil
 	end
 
@@ -288,6 +343,7 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 		model = model,
 		health = definition.health,
 		maxHealth = definition.health,
+		attackDamageMultiplier = 1,
 		attackCooldown = definition.attackInterval,
 		isAttacking = false,
 		abilityState = {},
@@ -316,6 +372,16 @@ local function spawnInternal(plotModel: Model, monsterId: string, gridRow: numbe
 
 	monsters[instanceId] = runtime
 	MonsterBehavior.onSpawn(runtime)
+	-- Goblins that arrive while the king is still up share his War Cry.
+	if runtime.monsterId == "Goblin" then
+		local bonus = livingKingAttackBonus(plotModel)
+		if bonus > 0 then
+			local multiplier = 1 + bonus / 100
+			if multiplier > runtime.attackDamageMultiplier then
+				runtime.attackDamageMultiplier = multiplier
+			end
+		end
+	end
 	log:info(string.format("spawned %s on %s row %d", monsterId, plotModel.Name, gridRow))
 	return runtime
 end
@@ -331,14 +397,39 @@ local behaviorCallbacks: MonsterBehavior.BehaviorCallbacks = {
 
 -- ===== Public API =====
 
-function EnemyService.spawn(plotModel: Model, monsterId: string, gridRow: number): string?
-	local runtime = spawnInternal(plotModel, monsterId, gridRow)
+function EnemyService.spawn(
+	plotModel: Model,
+	monsterId: string,
+	gridRow: number,
+	allowDuplicateBoss: boolean?
+): string?
+	local runtime = spawnInternal(plotModel, monsterId, gridRow, nil, allowDuplicateBoss)
 	return if runtime then runtime.instanceId else nil
 end
 
 function EnemyService.spawnAt(plotModel: Model, monsterId: string, gridRow: number, column: number): string?
 	local runtime = spawnInternal(plotModel, monsterId, gridRow, column)
 	return if runtime then runtime.instanceId else nil
+end
+
+-- One-shot spawn buff. Raises chew damage for living copies of the listed
+-- species on this plot. A later call only replaces a smaller multiplier.
+function EnemyService.grantAttackBoost(plotModel: Model, monsterIds: { string }, bonus: number)
+	if bonus <= 0 then
+		return
+	end
+	local multiplier = 1 + bonus
+	local wanted: { [string]: boolean } = {}
+	for _, monsterId in monsterIds do
+		wanted[monsterId] = true
+	end
+	for _, runtime in monsters do
+		if runtime.plotModel == plotModel and runtime.health > 0 and wanted[runtime.monsterId] then
+			if multiplier > runtime.attackDamageMultiplier then
+				runtime.attackDamageMultiplier = multiplier
+			end
+		end
+	end
 end
 
 function EnemyService.getModel(instanceId: string): Model?
@@ -377,6 +468,10 @@ end
 
 function EnemyService.setHouseBreachHandler(handler: (plotModel: Model, row: number) -> ())
 	houseBreachHandler = handler
+end
+
+function EnemyService.setKillHandler(handler: (ownerUserId: number, monsterId: string) -> ())
+	killHandler = handler
 end
 
 local function isCombatTarget(runtime: MonsterRuntime): boolean

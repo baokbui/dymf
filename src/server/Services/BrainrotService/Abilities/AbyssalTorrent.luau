@@ -5,7 +5,7 @@
 	monster in that stretch. Each full second a monster spends in the jet
 	deals Tralalero's base damage (catalog damage, not the evolved stat),
 	plus 20% of that base for every tile the monster is closer to his plant
-	than the east edge of the row, and knocks them east by a fraction of a tile.
+	than the east edge of the row.
 	Needs 3+ enemies in the row, or a boss. If several GOD Tralaleros in the
 	same row are ready, the easternmost (closest to incoming monsters) fires
 	first. One whose torrent is still cooling down is skipped.
@@ -523,14 +523,10 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 	local params = ctx.extraParams
 	local duration = if params and type(params.duration) == "number" then params.duration else 15
 	local minEnemies = CombatConfig.TORRENT_MIN_ENEMIES
-	local knockback = CombatConfig.TORRENT_KNOCKBACK_TILES
 	local closePercent = CombatConfig.TORRENT_CLOSE_PERCENT
 	if type(params) == "table" then
 		if type(params.minEnemies) == "number" then
 			minEnemies = params.minEnemies
-		end
-		if type(params.knockbackTiles) == "number" then
-			knockback = params.knockbackTiles
 		end
 		if type(params.closePercent) == "number" then
 			closePercent = params.closePercent
@@ -598,7 +594,6 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 							hit = hitDamage(damage, fromColumn, column, closePercent)
 						end
 						CombatService.damageMonster(monsterId, hit, brainrotId)
-						CombatService.applyStatusToMonster(monsterId, "Knockback", 0, knockback)
 					end
 					exposure[monsterId] = held
 				end

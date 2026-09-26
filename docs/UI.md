@@ -224,6 +224,8 @@ hardcode a second palette in new UI.
   they skip ahead). `ProgressConfig.MONSTER_INTRO_SCHEDULE`: Goblin 5, Goblin
   Elite 10, Vampire 15, Duke Vampire 20, Spider 25, Queen Spider 30,
   Skeleton 31, Werewolf 35, Small Mummy 41, Scorpion 45, Pharaoh Mummy 50.
+  **Goblin King** is introduced when the Hidden Day starts (after Day 40 is
+  cleared), not from this reach schedule.
   Driven by `introducedMonsterIds` on `LevelStateChanged`; portrait via
   `MonsterPreview`, stats/abilities via `MonsterInfo`. Persisted in
   `SaveData.introducedMonsters` so it only fires once.
@@ -240,7 +242,9 @@ hardcode a second palette in new UI.
   with `REWIND_COINS` 200).
   with the victory-checkpoint lawn already restored).
 - **RewardPopup** ✅ M13 — victory overlay: day-clear brains, leftover-gold
-  brains (smaller), and a large **Total Brains Earned**. After the title, those
+  brains (smaller), and a large **Total Brains Earned**. The Hidden Day uses
+  the same overlay titled **Hidden Day**, with **Brains earned** for kills
+  (win or loss). After the title, those
   lines and **Continue** scale-pop in one at a time (no fade). Stays until
   **Continue** (`ContinueVictory`); then unlock intros may play.
 
@@ -252,7 +256,8 @@ hardcode a second palette in new UI.
   silhouette** with **?** / `???`. Encountered Brainrots = unlocked or
   intro-shown (`unlocks` / `introducedBrainrots`). Encountered Monsters =
   intro-shown (`introducedMonsters`) plus Day 1 species (Zombie has no intro).
-  Necromancer / GoblinKing stay silhouettes until they appear. Display-only.
+  Necromancer stays a silhouette until he appears. Goblin King is encountered on
+  the Hidden Day after Day 40. Display-only.
 
 ### Milestone 18 — Progression Store ✅
 

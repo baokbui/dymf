@@ -69,7 +69,7 @@ shake. **Bombardino** `dealColumnDamage` / entire-row bombs still hit monsters
 on and behind the grave tile. Monsters on the grave tile or west of it remain
 valid targets for lane shots. Graves do not block westbound Skeleton arrows.
 
-Monsters with `laneSpan` > 1 (e.g. Pharaoh Mummy = 2, Goblin Elite and Queen Spider = 3) occupy rows
+Monsters with `laneSpan` > 1 (e.g. Goblin King / Pharaoh Mummy = 2, Goblin Elite and Queen Spider = 3) occupy rows
 `[row, row + laneSpan − 1]` — `row` is the unit's lowest/anchor row, not a
 center — and are valid targets from **any** row in that range
 (`GridUtil.occupiesLaneRow`). Uniform scale also makes them ~`laneSpan` tiles
@@ -161,15 +161,15 @@ Applied only through `CombatService.applyStatusToMonster` or
 | ------ | -------- | --------- |
 | Freeze / Stun | Pauses movement (`frozenUntil`) **and** chew / shoot / ability `onTick` for **every** monster, including bosses (Lirili Ice freeze cannot be cast through). Visual style via optional `visual`: `"Ice"` (Lirili — Ice material + color, textures/SurfaceAppearance disabled, ice Highlight + flakes) or `"Bubble"` (Tralalero — float in shell, pop on release). Duke last-stand stays on its downed timers if Freeze is still ticking. | Pauses attacks (`frozenUntil`); client **dizzy ★ stars** + yellow rising **"Stunned"** floater (`CombatVisual` `Dizzy`). Multiple floaters on one Brainrot **queue** (lead word faster, then the next) so they never cover each other. **Tenfold Guard** skips Stun while `shieldStunImmune` and shield HP remain. **Stoneheart** ignores Stun / Freeze while stone. |
 | Slow | Reduces movement speed. Bubble freeze ending can apply Slow via Immortal `bubbleExitSlowPercent` (`CombatService.applyBubbleExitSlow`). That bubble slow (duration and slow amount) uses the same `laneSpan` resist as the trap. Lirili GOD Glacial Dominion applies Slow **25%** (`magnitude` 0.75) on every lawn row for freeze duration + **3s**. | — |
-| Poison / Burn | DoT via `MonsterStatus` tick | DoT via `BrainrotBehavior` tick; **Poison** tints the Brainrot slightly purple (`BrainrotFeedback.setPoisoned`) for the duration and pops a rising **"Poisoned"** floater. Floaters share the same per-Brainrot queue as Stun. |
+| Poison / Burn / Venom | DoT via `MonsterStatus` tick (Poison / Burn). **Venom** is Brainrot-only. | DoT via `BrainrotBehavior` tick. **Poison** tints the Brainrot purple (`BrainrotFeedback.setPoisoned`) and pops **"Poisoned"**. **Venom** tints green (`setVenomed`) and pops **"Venomed"**. The two washes stack. Floaters share the Stun queue. |
 | Knockback | Pushes column east (+X) **only while the monster is on the lawn** (`GridUtil.isOnPlotColumn`). Magnitude is tiles (`CombatConfig.KNOCKBACK_TILES` default; Ranged Rampage uses `BAT_KNOCKBACK_TILES` = 0.25). Instant; graves block it like other statuses. Off-plot / forest: skipped. | — |
 | Weaken | — | Scales the Brainrot's own outgoing `damage` down by `magnitude`% for `duration` (non-mutating `__index` override on the ability context's `definition` — see `BrainrotBehavior.effectiveDefinition`); every existing ability respects it automatically |
 
 **Queen Spider** ✅ — **laneSpan 3** (random valid placement among anchors that
 fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
-`"Stun"` for `stunDuration` (2s) and `"Poison"` for `poisonDuration` (4s) at
-`poisonPercent` (3% of the Brainrot's max HP per 1s tick). Cleaves all three
-occupied lanes. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
+`"Stun"` for `stunDuration` (2s). Every **2nd** chew (`poisonEvery`) applies
+`"Poison"` for `poisonDuration` (4s) at `poisonPercent` (3% of the Brainrot's
+max HP per 1s tick). A cleave across her lanes counts as one chew. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
 slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
@@ -179,7 +179,7 @@ Uses the default tip-over death like other monsters.
 - **Primal Retaliation** — `PrimalRetaliation` extra; chew/arrow `damageBrainrot` passes the monster **instance** id; `applyBrainrotDamage` reflects chew HP to that instance (`CombatService.damageMonster`) and ranks the meter by registry id. A small `Assets.Projectiles.Mirror` orbits Chimpanzini for the window.
 - **Glacial Dominion** — Lirili `freezeEntireLawn` + `lawnSlowPercent` / `lawnSlowDuration` on plant (she despawns; no extra tick).
 - **Shadow Requiem** — `ShadowRequiem` extra. Exclusive with Piercing Brew and Cappuccino’s knife throw (core attack pauses for the clip). Needs **3+** enemies in the row **or a boss**; easternmost ready Cappuccino fires first. Plays `abilityAnimationIds.ShadowRequiem`, then at clip end launches one `SwordWave` projectile from the midpoint of Cappuccino’s swords (**white fill**, **black outline** and streaks). The wave grows, stops on the last lawn tile, and explodes into a **white light pillar**. Launch SFX (`SwordWave`) starts **1s** before the crescent (`CombatConfig.SWORD_WAVE_SOUND_LEAD`) and cuts if the pillar starts first; pillar SFX is `SwordWavePillar`. The pillar expands to a bit under **one tile wide**, then the whole pillar VFX is gone in **~1.5s**. A **black spiral** climbs around the pillar as it rises. Pierce every on-plot monster in the row and every grave. Crescent damage is **2000%** at 1 tile, plus **100%** per extra tile of travel (from column 1 the last tile is 8 away → **2700%**). Last-tile pillar bonus is a flat extra **1000%** (not ramped). **45s** CD.
-- **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this), plus **20%** of that base for every tile the monster is closer to his plant than the easternmost lawn tile (`TORRENT_CLOSE_PERCENT`). A monster on that far tile takes 55. One tile toward him takes 66. On his own tile the bonus is 20% × (9 − his column). Knockback is **0.25** tiles east per second (`CombatConfig.TORRENT_KNOCKBACK_TILES`), which moves them toward the lower bonus. **15s** on the far tile is **825**. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim purple beam: pale violet core, vivid purple body, dark outer glow, rings rushing down the row, and spiral streaks. Small soap bubbles orbit the beam on **High** VFX only (`VfxLayer = "High"`); **Low** and **Off** hide them. Off VFX keeps the neon core and drops the beams.
+- **Abyssal Torrent** — `AbyssalTorrent` extra. A water stream from Tralalero’s snout to the east edge of his row (same height and lane offset as the mouth, straight along +X). Pierces every monster in that stretch (graves do not stop it). Each full second a monster spends in the jet deals his **catalog base damage** (55; Epic’s damage buff does not raise this), plus **20%** of that base for every tile the monster is closer to his plant than the easternmost lawn tile (`TORRENT_CLOSE_PERCENT`). A monster on that far tile takes 55. One tile toward him takes 66. On his own tile the bonus is 20% × (9 − his column). **15s** on the far tile is **825**. Needs **3+** enemies in the row **or a boss**; easternmost ready Tralalero fires first (one still on cooldown is skipped). Bubbles pause while the jet is out. **45s** CD. The stream is a dim purple beam: pale violet core, vivid purple body, dark outer glow, rings rushing down the row, and spiral streaks. Small soap bubbles orbit the beam on **High** VFX only (`VfxLayer = "High"`); **Low** and **Off** hide them. Off VFX keeps the neon core and drops the beams.
 
 **Immortal passives** ✅ — data-driven (`abilityParams` / extra ability ids, never unit names):
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
@@ -191,7 +191,10 @@ Uses the default tip-over death like other monsters.
 **Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
 entrance). `ScorpionBurrow` only on first **plot** column: sinks, travels
 underground (invulnerable / untargetable), and rises just east of the first
-Brainrot in its lane, then chews. Empty lanes do not burrow. Walk uses the same `proceduralWalk` crawl as Spider (no uploaded clips). Tunables:
+Brainrot in its lane, then chews. Empty lanes do not burrow. Every **3rd**
+chew (`venomEvery`) applies `"Venom"` for `venomDuration` (4s) at
+`venomPercent` (3% of max HP per 1s tick): green wash + **"Venomed"** floater.
+Walk uses the same `proceduralWalk` crawl as Spider (no uploaded clips). Tunables:
 `burrowDuration` / `burrowDepth` / `emergeOffset` (`MonsterConfig.BURROW_*`).
 
 **Spider** ✅ — `SpiderJump` vaults the **first** Brainrot in its lane with a
@@ -203,7 +206,9 @@ normally. Tunables: `jumpDuration` / `jumpPeakHeight` / `jumpLandOffset` /
 **Werewolf** ✅ — `WerewolfLifesteal`: each chew against a Brainrot
 (`onBrainrotAttacked`) queues a heal of `lifestealPercent` (default **5**) of
 its max HP via `abilityState.pendingHeal` (applied next `MonsterBehavior`
-tick, capped at max HP). Fast march (`secondsPerGrid` 2.0).
+tick, capped at max HP). A heal that actually raises HP plays green "+"
+marks around the monster (same for Goblin King regen and Duke Vampire's
+last-stand heal). Fast march (`secondsPerGrid` 2.0).
 
 **Lirili / Bombardino** — Lirili freeze (`applyStatusAroundColumn`, 2 tiles
 ahead and behind) and Bombardino entire-row damage only target monsters **on
@@ -247,6 +252,7 @@ King's speed-buff stub still awaits a follow-up milestone.
 | Line-bomb explosion | `CombatVisual` kind `Explosion` — Bombardino drops a bomb on each tile (staggered); on land the bomb despawns and a per-tile blast plays |
 | Bat slam impact | `CombatVisual` kind `BatSlam` — Sahur’s Wrath landing: yellow ring **at each monster on the slam row** (`VfxUtil.playBatSlam`). Adjacent-row splash has no shockwave. |
 | Jackpot burst | `CombatVisual` kind `Jackpot` — gold particle burst at Ballerina (`VfxUtil.playJackpotBurst`) |
+| Heal pluses | `CombatVisual` kind `Heal` — green "+" marks rise and fade around any monster or Brainrot that just gained HP (`VfxUtil.playHealPlus`). Off graphics skips them. |
 | Primal Retaliation | Server `BrainrotFeedback.setRetaliation` — small `Assets.Projectiles.Mirror` orbits Chimpanzini for the 15s window (Banana Bastion bubble stays) |
 | Projectile trail/glow | Watches `plot.Projectiles` (non-blocking; never delays hit/death SFX). Piercing Brew shurikens use a gold trail/glow; server adds gold outline, a gold spark cloud around the star, and a `PierceTrail` ribbon (attachments perpendicular to +X so the trail has area). Tralalero **BubbleTrap** skips trails; **Bubble Barrage** uses a gold light-streak (`BarrageStreak`). Thrown **Bat** projectiles skip trails and glow (the spinning mesh is the read). |
 | Terrify scream | `CombatVisual` kind `Terrify` → `VfxUtil.playTerrifySoundwave` |

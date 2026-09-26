@@ -132,7 +132,8 @@ local ProgressConfig = {
 	-- (Preparation / Day Select / rejoin), LevelService shows a MonsterIntro
 	-- popup. Catch-up grants every schedule entry with `day` <= current that
 	-- is not yet in `introducedMonsters` (Day Select / Studio FORCE_DAY).
-	-- Campaign units only — Necromancer / GoblinKing are not in Days 1–50.
+	-- Campaign units only — Necromancer is not in Days 1–50.
+	-- Goblin King is not on a numbered day; the Hidden Day after Day 40 introduces him.
 	-- Zombie is the Day 1 grunt; no intro popup (the player already sees them).
 	MONSTER_INTRO_SCHEDULE = {
 		{ day = 5, monsterId = "Goblin" },
@@ -157,6 +158,23 @@ local ProgressConfig = {
 	STAT_MONSTERS_DEFEATED = "monstersDefeated",
 	STAT_TIME_PLAYED = "timePlayedSeconds",
 	STAT_BRAINS_EARNED = "brainsEarned",
+
+	-- Hidden Day (after clearing Day 40). Paid once when that day ends.
+	-- 35×1 + 4×10 + 25 = 100 if every goblin, elite, and the king die.
+	HIDDEN_DAY_KILL_BRAINS = {
+		Goblin = 1,
+		GoblinElite = 10,
+		GoblinKing = 25,
+	} :: { [string]: number },
+
+	-- Hidden Day only. Goblin and Goblin Elite gain this fraction of max HP,
+	-- attack speed, and movement speed. Goblin King is not in this set.
+	-- Attack interval and seconds-per-tile are divided by (1 + bonus).
+	HIDDEN_DAY_GOBLIN_STAT_BONUS = 0.2,
+	HIDDEN_DAY_BOOSTED_MONSTERS = {
+		Goblin = true,
+		GoblinElite = true,
+	} :: { [string]: boolean },
 }
 
 -- First campaign day this species appears. Zombie (and any unit not on the

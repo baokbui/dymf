@@ -148,6 +148,16 @@ local function playPoison(instanceId: string?, duration: unknown)
 	end
 end
 
+local function playVenom(instanceId: string?, duration: unknown)
+	if not instanceId or type(duration) ~= "number" then
+		return
+	end
+	local model = findModelByInstanceId(instanceId)
+	if model then
+		VfxUtil.playStatusFloater(model, "Venomed", VfxConfig.STATUS_FLOAT_VENOM_COLOR)
+	end
+end
+
 local function playExplosion(row: number?, column: number?, entireRow: boolean?, staggerOverride: number?)
 	if type(row) ~= "number" then
 		return
@@ -380,6 +390,13 @@ local function onCombatVisual(payload: unknown)
 			VfxUtil.playJackpotBurst(origin, quality)
 			task.delay(VfxConfig.HEAVY_VFX_JACKPOT_RELEASE, release)
 		end
+	elseif kind == "Heal" then
+		if type(data.instanceId) == "string" then
+			local healed = findModelByInstanceId(data.instanceId)
+			if healed then
+				VfxUtil.playHealPlus(healed)
+			end
+		end
 	elseif kind == "Terrify" then
 		AudioController.play("Terrify")
 		playTerrifyPulse(data.instanceId)
@@ -413,6 +430,8 @@ local function onCombatVisual(payload: unknown)
 		playDizzy(data.instanceId, data.duration)
 	elseif kind == "Poison" then
 		playPoison(data.instanceId, data.duration)
+	elseif kind == "Venom" then
+		playVenom(data.instanceId, data.duration)
 	elseif kind == "WindGust" then
 		local WeatherController = require(script.Parent.WeatherController)
 		WeatherController.hidePlotFogVisual()

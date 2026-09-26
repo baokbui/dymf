@@ -863,6 +863,50 @@ local function drainStatusFloaterQueue(model: Model)
 	end)
 end
 
+function VfxUtil.playHealPlus(model: Model)
+	local count = scaledBurstCount(VfxConfig.HEAL_PLUS_COUNT)
+	if not count then
+		return
+	end
+	local anchor = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	if not (anchor and anchor:IsA("BasePart")) then
+		return
+	end
+
+	for _ = 1, count do
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "HealPlus"
+		gui.Adornee = anchor
+		gui.Size = UDim2.fromOffset(36, 36)
+		gui.AlwaysOnTop = false
+		gui.LightInfluence = 0
+		local angle = math.random() * math.pi * 2
+		local radius = 0.8 + math.random() * 1.5
+		local start = Vector3.new(math.cos(angle) * radius, 0.4 + math.random() * 1.4, math.sin(angle) * radius)
+		gui.StudsOffset = start
+		gui.Parent = anchor
+
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 1)
+		label.Font = Enum.Font.FredokaOne
+		label.Text = "+"
+		label.TextScaled = true
+		label.TextColor3 = VfxConfig.HEAL_PLUS_COLOR
+		label.TextStrokeColor3 = Color3.fromRGB(10, 60, 20)
+		label.TextStrokeTransparency = 0.15
+		label.Parent = gui
+
+		local rise = start + Vector3.new((math.random() - 0.5) * 0.6, VfxConfig.HEAL_PLUS_RISE, (math.random() - 0.5) * 0.6)
+		local info = TweenInfo.new(VfxConfig.HEAL_PLUS_LIFETIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		TweenService:Create(gui, info, { StudsOffset = rise }):Play()
+		TweenService:Create(label, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		task.delay(VfxConfig.HEAL_PLUS_LIFETIME, function()
+			gui:Destroy()
+		end)
+	end
+end
+
 function VfxUtil.playStatusFloater(model: Model, text: string, color: Color3)
 	local state = statusFloaterQueues[model]
 	if not state then

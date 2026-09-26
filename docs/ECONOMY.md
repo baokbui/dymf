@@ -22,6 +22,8 @@ From `GAME_DESIGN.md`:
   purse applies. Defeat uses the same conversion + day-purse rules for the
   failed day. **Rewind** then sets the retry purse to `REWIND_COINS` (200).
   Victory keeps plants; coin purse does not carry between days.
+  The **Hidden Day** after Day 40 pays kill brains (Goblin 1, Goblin Elite 10,
+  Goblin King 25) on that same reward screen, then Day 41's purse applies.
 - Future achievements / events
 
 ---

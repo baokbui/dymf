@@ -60,9 +60,15 @@ type PlayerState = {
 	pendingMonsterIntroIds: { string }?,
 	pendingBrainrotIntroIds: { string }?,
 	pendingMechanicIntroIds: { string }?,
+	-- "pending" after Day 40 is cleared, "active" while the Hidden Day runs.
+	hiddenDay: string?,
+	hiddenBrains: number,
 }
 
 local states: { [number]: PlayerState } = {}
+
+local finishHidden: (player: Player, state: PlayerState, cleared: boolean) -> ()
+local beginHiddenDay: (player: Player, state: PlayerState) -> ()
 
 local function getDefinition(levelNumber: number)
 	return Levels.getByNumber(levelNumber)
@@ -74,7 +80,8 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		return {}
 	end
 
-	local definition = getDefinition(state.currentLevel)
+	local hiddenShown = state.hiddenDay == "pending" or state.hiddenDay == "active"
+	local definition = if hiddenShown then Levels.getHidden() else getDefinition(state.currentLevel)
 	local levelName = if definition then definition.name else "Unknown"
 	local payload: { [string]: any } = {
 		phase = state.phase,
@@ -87,6 +94,7 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		canStart = state.phase == PHASE.Preparation,
 		progress = 0,
 		weather = if definition then definition.weather else nil,
+		hiddenDay = hiddenShown,
 	}
 
 	if state.phase == PHASE.Countdown then
@@ -199,6 +207,68 @@ local function grantLeftoverCoinBrains(player: Player): number
 	return brains
 end
 
+finishHidden = function(player: Player, state: PlayerState, cleared: boolean)
+	if state.hiddenDay ~= "active" then
+		return
+	end
+	local earned = state.hiddenBrains
+	state.hiddenDay = nil
+	state.hiddenBrains = 0
+
+	local SaveService = require(script.Parent.SaveService)
+	if cleared then
+		clearTransientCombat(player)
+		ProgressService.commitBrainrotXp(player)
+		SaveService.commitLawn(player)
+	else
+		ProgressService.restoreBrainrotXpCheckpoint(player)
+		state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
+		clearLawn(player)
+		SaveService.restoreCommittedLawn(player)
+	end
+
+	local leftoverBrains = grantLeftoverCoinBrains(player)
+	if earned > 0 then
+		ProgressService.addBrains(player, earned)
+	end
+	CoinService.applyDayPurse(player, state.currentLevel)
+
+	state.activeRun = nil
+	state.phase = PHASE.Victory
+	state.bigWaveWarning = false
+	local MagnetService = require(script.Parent.MagnetService)
+	MagnetService.pauseCooldown(player)
+	local nextDef = getDefinition(state.currentLevel)
+	Remotes.getEvent("LevelStateChanged"):FireClient(player, {
+		phase = PHASE.Victory,
+		levelNumber = state.currentLevel,
+		levelName = "Hidden Day",
+		highestUnlockedLevel = state.highestUnlockedLevel,
+		playerHealth = state.playerHealth,
+		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
+		canStart = false,
+		progress = 0,
+		bigWaveWarning = false,
+		weather = if nextDef then nextDef.weather else nil,
+		hiddenDay = true,
+		reward = {
+			hiddenDay = true,
+			brains = earned,
+			leftoverBrains = leftoverBrains,
+		},
+	})
+	log:info(
+		string.format(
+			"%s finished hidden day (%s, +%d brains, +%d from leftover coins)",
+			player.Name,
+			if cleared then "cleared" else "defeated",
+			earned,
+			leftoverBrains
+		)
+	)
+	SaveService.saveNow(player, "hidden_day")
+end
+
 local function onVictory(player: Player, state: PlayerState)
 	local definition = getDefinition(state.currentLevel)
 	if not definition then
@@ -231,13 +301,17 @@ local function onVictory(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.phase = PHASE.Victory
 	state.bigWaveWarning = false
+	if clearedNumber == 40 then
+		state.hiddenDay = "pending"
+	end
 	local MagnetService = require(script.Parent.MagnetService)
 	MagnetService.pauseCooldown(player)
-	local nextDef = getDefinition(state.currentLevel)
+	local enteringHidden = state.hiddenDay == "pending"
+	local nextDef = if enteringHidden then Levels.getHidden() else getDefinition(state.currentLevel)
 	Remotes.getEvent("LevelStateChanged"):FireClient(player, {
 		phase = PHASE.Victory,
 		levelNumber = state.currentLevel,
-		levelName = if nextDef then nextDef.name else "Unknown",
+		levelName = if enteringHidden then "Hidden Day" elseif nextDef then nextDef.name else "Unknown",
 		highestUnlockedLevel = state.highestUnlockedLevel,
 		playerHealth = state.playerHealth,
 		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
@@ -245,6 +319,7 @@ local function onVictory(player: Player, state: PlayerState)
 		progress = 0,
 		bigWaveWarning = false,
 		weather = if nextDef then nextDef.weather else nil,
+		hiddenDay = enteringHidden,
 		reward = {
 			clearedLevel = clearedNumber,
 			brains = brainsEarned,
@@ -345,21 +420,26 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	end
 
 	if step.spawn then
-		local group = run:getCurrentGroup()
+		local group = step.spawnGroup or run:getCurrentGroup()
 		if group then
 			local monsterDef = Monsters.get(group.monsterId)
 			local span = if monsterDef and monsterDef.laneSpan then monsterDef.laneSpan else 1
 			local row = if type(group.row) == "number"
 				then math.clamp(math.floor(group.row), 1, GridConfig.ROWS - span + 1)
 				else LevelRun.randomRowForSpan(span)
-			EnemyService.spawn(plotModel, group.monsterId, row)
+			local allowDuplicate = state.hiddenDay == "active" and group.monsterId == "GoblinElite"
+			EnemyService.spawn(plotModel, group.monsterId, row, allowDuplicate)
 		end
 	end
 
 	if run:isDoneSpawning() then
 		GraveService.notifyWavesComplete(plotModel)
 		if EnemyService.countOnPlot(plotModel) == 0 and not GraveService.hasPending(plotModel) then
-			onVictory(player, state)
+			if state.hiddenDay == "active" then
+				finishHidden(player, state, true)
+			else
+				onVictory(player, state)
+			end
 			return
 		end
 	end
@@ -400,6 +480,27 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	end
 end
 
+beginHiddenDay = function(player: Player, state: PlayerState)
+	state.hiddenDay = "active"
+	state.hiddenBrains = 0
+	ProgressService.checkpointBrainrotXp(player)
+	if ProgressService.introduceMonster(player, "GoblinKing") then
+		state.pendingMonsterIntroIds = { "GoblinKing" }
+		local SaveService = require(script.Parent.SaveService)
+		SaveService.saveNow(player, "unit_intro")
+	end
+	local plotModel = PlotService.getPlotModel(player)
+	if plotModel then
+		GraveService.clearPlot(plotModel)
+	end
+	local definition = Levels.getHidden()
+	if LevelConfig.COUNTDOWN_TIME > 0 then
+		beginCountdown(player, state)
+	else
+		beginActiveRun(player, state, definition)
+	end
+end
+
 local function tickCountdown(player: Player, state: PlayerState)
 	if state.phase ~= PHASE.Countdown then
 		return
@@ -409,7 +510,7 @@ local function tickCountdown(player: Player, state: PlayerState)
 		return
 	end
 
-	local definition = getDefinition(state.currentLevel)
+	local definition = if state.hiddenDay == "active" then Levels.getHidden() else getDefinition(state.currentLevel)
 	if not definition then
 		beginPreparation(player, state)
 		return
@@ -434,6 +535,10 @@ local function onStartLevel(player: Player)
 	end
 
 	-- Brief 3…0 overlay, then Active so players plant while monsters march in.
+	if state.hiddenDay == "pending" then
+		beginHiddenDay(player, state)
+		return
+	end
 	ProgressService.checkpointBrainrotXp(player)
 	if LevelConfig.COUNTDOWN_TIME > 0 then
 		beginCountdown(player, state)
@@ -455,6 +560,10 @@ local function onHouseBreach(plotModel: Model, _row: number)
 	end
 
 	state.playerHealth = math.max(0, state.playerHealth - 1)
+	if state.playerHealth <= 0 and state.hiddenDay == "active" then
+		finishHidden(player, state, false)
+		return
+	end
 	broadcast(player)
 	if state.playerHealth <= 0 then
 		onDefeat(player, state)
@@ -483,6 +592,8 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 	end
 
 	state.currentLevel = levelNumber
+	state.hiddenDay = nil
+	state.hiddenBrains = 0
 	-- Keep progressive hearts when switching days (refill only on defeat / reset).
 	-- Day Select starts a fresh lawn — carry-over only applies when advancing via victory.
 	state.activeRun = nil
@@ -511,6 +622,8 @@ local function initPlayer(player: Player)
 		pendingMonsterIntroIds = nil,
 		pendingBrainrotIntroIds = nil,
 		pendingMechanicIntroIds = nil,
+		hiddenDay = nil,
+		hiddenBrains = 0,
 	}
 	task.defer(function()
 		broadcast(player)
@@ -535,7 +648,8 @@ function LevelService.getWeather(player: Player): string?
 	if not state then
 		return nil
 	end
-	local definition = getDefinition(state.currentLevel)
+	local hiddenShown = state.hiddenDay == "pending" or state.hiddenDay == "active"
+	local definition = if hiddenShown then Levels.getHidden() else getDefinition(state.currentLevel)
 	return if definition then definition.weather else nil
 end
 
@@ -555,6 +669,11 @@ function LevelService.getCurrentDayForUser(userId: number): number
 	return state.currentLevel
 end
 
+function LevelService.isHiddenDayActiveForUser(userId: number): boolean
+	local state = states[userId]
+	return state ~= nil and state.hiddenDay == "active"
+end
+
 function LevelService.getSaveProgress(player: Player): (number, number, number)
 	local state = states[player.UserId]
 	if not state then
@@ -563,7 +682,18 @@ function LevelService.getSaveProgress(player: Player): (number, number, number)
 	return state.currentLevel, state.highestUnlockedLevel, state.playerHealth
 end
 
-function LevelService.applySaveProgress(player: Player, currentLevel: number, highestUnlockedLevel: number, playerHealth: number)
+function LevelService.isHiddenDayPending(player: Player): boolean
+	local state = states[player.UserId]
+	return state ~= nil and state.hiddenDay ~= nil
+end
+
+function LevelService.applySaveProgress(
+	player: Player,
+	currentLevel: number,
+	highestUnlockedLevel: number,
+	playerHealth: number,
+	hiddenDayPending: boolean?
+)
 	local state = states[player.UserId]
 	if not state then
 		return
@@ -576,6 +706,8 @@ function LevelService.applySaveProgress(player: Player, currentLevel: number, hi
 	state.currentLevel = sanitizedCurrent
 	state.highestUnlockedLevel = sanitizedHighest
 	state.playerHealth = math.clamp(math.floor(playerHealth), 1, ProgressConfig.MAX_PLAYER_HEALTH)
+	state.hiddenDay = if hiddenDayPending == true then "pending" else nil
+	state.hiddenBrains = 0
 	state.activeRun = nil
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
@@ -613,6 +745,8 @@ function LevelService.applyDevDay(player: Player): number?
 	state.countdownEnd = 0
 	state.bigWaveWarning = false
 	state.phase = PHASE.Preparation
+	state.hiddenDay = nil
+	state.hiddenBrains = 0
 
 	broadcast(player)
 
@@ -642,6 +776,18 @@ function LevelService.init()
 	(LevelService :: any)._remotesConnected = true
 
 	EnemyService.setHouseBreachHandler(onHouseBreach)
+	EnemyService.setKillHandler(function(ownerUserId: number, monsterId: string)
+		local player = Players:GetPlayerByUserId(ownerUserId)
+		local state = states[ownerUserId]
+		if not player or not state or state.hiddenDay ~= "active" or state.phase ~= PHASE.Active then
+			return
+		end
+		local amount = ProgressConfig.HIDDEN_DAY_KILL_BRAINS[monsterId]
+		if type(amount) ~= "number" or amount <= 0 then
+			return
+		end
+		state.hiddenBrains += amount
+	end)
 
 	Remotes.getEvent("StartLevel").OnServerEvent:Connect(function(player: Player)
 		onStartLevel(player)

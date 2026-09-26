@@ -39,6 +39,24 @@ local function modelScaleFor(definition: Types.MonsterDefinition): number
 	return scale
 end
 
+local function hasAuthoredClip(definition: Types.MonsterDefinition): boolean
+	if type(definition.walkAnimationId) == "string" and definition.walkAnimationId ~= "" then
+		return true
+	end
+	if type(definition.attackAnimationId) == "string" and definition.attackAnimationId ~= "" then
+		return true
+	end
+	local abilityIds = definition.abilityAnimationIds
+	if abilityIds then
+		for _, animationId in abilityIds do
+			if animationId ~= "" then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local function bodyHeightFor(definition: Types.MonsterDefinition): number
 	local height = MonsterConfig.BODY_HEIGHT
 	local span = laneSpanFor(definition)
@@ -173,16 +191,41 @@ function MonsterModel.create(
 		MonsterConfig.MODEL_FACE_DIRECTION
 	)
 	applyIdentity(model, instanceId, definition, plotModel, row, level)
-	-- Never block players or other monsters. Only Motor6D limbs stay free;
-	-- a Bone does not hold the mesh, so skinned parts stay anchored.
+	-- Root stays anchored so grid movement can pivot the model. Authored clips
+	-- free every other part for the whole life of the unit, including welds,
+	-- so nothing sits still while walk / attack / ability tracks play.
+	-- Without an authored clip, only Motor6D limbs stay free. Bones do not
+	-- hold a mesh, so those skinned parts stay anchored.
 	local root = model.PrimaryPart
 	local motored = ModelUtil.motorParts(model)
+	local authoredClip = hasAuthoredClip(definition)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.Massless = true
-			descendant.Anchored = descendant == root or motored[descendant] ~= true
+			if authoredClip then
+				descendant.Anchored = descendant == root
+			else
+				descendant.Anchored = descendant == root or motored[descendant] ~= true
+			end
+		end
+	end
+	if authoredClip or definition.keepWeldConstraints == true then
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("WeldConstraint") or descendant:IsA("Weld") then
+				descendant.Enabled = true
+				if not authoredClip then
+					local part0 = descendant.Part0
+					local part1 = descendant.Part1
+					if part0 and part0 ~= root then
+						part0.Anchored = false
+					end
+					if part1 and part1 ~= root then
+						part1.Anchored = false
+					end
+				end
+			end
 		end
 	end
 	CollisionUtil.applyMonster(model)

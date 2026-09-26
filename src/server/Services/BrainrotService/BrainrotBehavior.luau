@@ -45,6 +45,10 @@ export type RuntimePlacement = {
 	burnUntil: number,
 	burnHitsPerTick: number,
 	burnNextTick: number,
+	venomUntil: number,
+	venomHitsPerTick: number,
+	venomNextTick: number,
+	venomTintActive: boolean,
 	weakenUntil: number,
 	weakenFactor: number,
 	extraCooldowns: { [string]: number },
@@ -228,6 +232,10 @@ function BrainrotBehavior.register(placement: RuntimePlacement)
 	placement.burnUntil = 0
 	placement.burnHitsPerTick = 0
 	placement.burnNextTick = 0
+	placement.venomUntil = 0
+	placement.venomHitsPerTick = 0
+	placement.venomNextTick = 0
+	placement.venomTintActive = false
 	placement.weakenUntil = 0
 	placement.weakenFactor = 0
 	placement.extraCooldowns = {}
@@ -406,6 +414,9 @@ local function expireTimedBuffs(placement: RuntimePlacement, now: number)
 		if placement.poisonTintActive and placement.poisonUntil > now then
 			BrainrotFeedback.setPoisoned(placement.model, true)
 		end
+		if placement.venomTintActive and placement.venomUntil > now then
+			BrainrotFeedback.setVenomed(placement.model, true)
+		end
 	end
 	if placement.buffs.tenfoldShield and placement.buffs.shieldUntil > 0 and now >= placement.buffs.shieldUntil then
 		placement.buffs.tenfoldShield = false
@@ -463,6 +474,10 @@ function BrainrotBehavior.tick(dt: number)
 			CombatService.damageBrainrot(placement.instanceId, placement.poisonHitsPerTick)
 			placement.poisonNextTick = now + combatConfig.POISON_TICK_INTERVAL
 		end
+		if not nowStone and placement.venomUntil > now and now >= placement.venomNextTick then
+			CombatService.damageBrainrot(placement.instanceId, placement.venomHitsPerTick)
+			placement.venomNextTick = now + combatConfig.VENOM_TICK_INTERVAL
+		end
 		if not nowStone and placement.burnUntil > now and now >= placement.burnNextTick then
 			CombatService.damageBrainrot(placement.instanceId, placement.burnHitsPerTick)
 			placement.burnNextTick = now + combatConfig.BURN_TICK_INTERVAL
@@ -472,6 +487,10 @@ function BrainrotBehavior.tick(dt: number)
 		if placement.poisonTintActive and placement.poisonUntil <= now then
 			placement.poisonTintActive = false
 			BrainrotFeedback.setPoisoned(placement.model, false)
+		end
+		if placement.venomTintActive and placement.venomUntil <= now then
+			placement.venomTintActive = false
+			BrainrotFeedback.setVenomed(placement.model, false)
 		end
 
 		if not isBehaviorAlive(placement) then

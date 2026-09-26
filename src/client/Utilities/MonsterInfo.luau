@@ -25,12 +25,12 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		description = "Knocks out Brainrots in all three of its rows.",
 	},
 	QueenSpiderStun = {
-		label = "Venom Stun",
+		label = "Stun",
 		description = "Stuns Brainrots it bites for 2 seconds.",
 	},
 	QueenSpiderPoison = {
-		label = "Venom Poison",
-		description = "Poisons bitten Brainrots for 3% health each second, for 4 seconds.",
+		label = "Poison Bite",
+		description = "Every second bite poisons for 3% health each second, for 4 seconds.",
 	},
 	DukeVampireFreeze = {
 		label = "Last Stand",
@@ -58,11 +58,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	GoblinKingRegen = {
 		label = "Royal Regen",
-		description = "Heals 90 HP every 8 seconds.",
+		description = "Heals 5% of its max HP every 10 seconds.",
 	},
-	GoblinKingSpeedBuff = {
+	GoblinKingAttackBuff = {
 		label = "War Cry",
-		description = "Speeds up nearby monsters by 18%.",
+		description = "While he is alive, he and every Goblin gain 10% attack damage.",
 	},
 	PharaohSummon = {
 		label = "Raise the Guard",
@@ -75,6 +75,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	ScorpionBurrow = {
 		label = "Burrow",
 		description = "Digs under the lawn and pops up in front of the first Brainrot. Skips empty rows.",
+	},
+	ScorpionVenom = {
+		label = "Venom",
+		description = "Every third bite applies Venom: 3% health each second, for 4 seconds.",
 	},
 }
 

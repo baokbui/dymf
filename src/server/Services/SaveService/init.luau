@@ -236,6 +236,8 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		end
 	end
 
+	save.hiddenDayPending = payload.hiddenDayPending == true
+
 	local brainrots = payload.brainrots
 	if type(brainrots) == "table" then
 		save.brainrots = {}
@@ -316,6 +318,7 @@ local function collectSnapshot(player: Player): Types.SaveData
 			elseif fallback and fallback.introducedMechanics
 			then deepCopyStringList(fallback.introducedMechanics)
 			else {},
+		hiddenDayPending = LevelService.isHiddenDayPending(player),
 	}
 end
 
@@ -411,7 +414,13 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		introducedBrainrots = saveData.introducedBrainrots,
 		introducedMechanics = saveData.introducedMechanics,
 	})
-	LevelService.applySaveProgress(player, saveData.currentLevel, saveData.highestLevel, saveData.playerHealth)
+	LevelService.applySaveProgress(
+		player,
+		saveData.currentLevel,
+		saveData.highestLevel,
+		saveData.playerHealth,
+		saveData.hiddenDayPending == true
+	)
 	local forcedDay = LevelService.applyDevDay(player)
 	LevelService.queueJoinIntros(player)
 	CoinService.applyDayPurse(player, forcedDay or saveData.currentLevel)

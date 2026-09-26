@@ -759,6 +759,19 @@ function ProgressService.consumeMonsterIntrosForDay(player: Player, dayNumber: n
 	return granted
 end
 
+-- One-off intro (Hidden Day Goblin King). Returns true the first time.
+function ProgressService.introduceMonster(player: Player, monsterId: string): boolean
+	local profile = ensureProfile(player)
+	if not profile.hydrated or not Monsters.exists(monsterId) then
+		return false
+	end
+	if listContains(profile.introducedMonsters, monsterId) then
+		return false
+	end
+	markIntroduced(profile.introducedMonsters, monsterId)
+	return true
+end
+
 -- Mechanic / hazard intros (graves). Catch-up: every MECHANIC_INTRO_SCHEDULE
 -- entry with day <= dayNumber not yet in SaveData.introducedMechanics.
 function ProgressService.consumeMechanicIntrosForDay(player: Player, dayNumber: number): { string }

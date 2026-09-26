@@ -45,12 +45,13 @@ From `Shared.Types.MonsterDefinition`:
 | `color`                   | Color3?                 | Placeholder / fallback tint                                            |
 | `modelId`                 | string?                 | Child name under `Assets.Monsters` (defaults to `id`)                  |
 | `modelOrientationDegrees` | Vector3?                | Local Euler after facing house (−X)                                    |
-| `modelHeightScale`        | number?                 | Height-only multiplier after the footprint fit (default 1). Pharaoh Mummy uses `0.82` so the 2-row width does not leave him as tall. |
+| `modelHeightScale`        | number?                 | Height-only multiplier after the footprint fit (default 1). Pharaoh Mummy uses `0.82` so the 2-row width does not leave him as tall. Goblin King uses `0.9`. |
+| `keepWeldConstraints`     | boolean?                | Leave `Weld` / `WeldConstraint` enabled. Goblin King sets this; any monster with an authored walk, attack, or ability clip also leaves every part except the root unanchored so those clips can move the whole mesh. |
 | `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                     |
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                        |
 | `abilityAnimationIds`     | `{ [string]: string }?` | One-shot clips keyed by ability id (`PharaohSummon` / `PharaohSteal`)  |
 | `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick) |
-| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Pharaoh Mummy = 2, Goblin Elite / Queen Spider = 3) |
+| `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin King / Pharaoh Mummy = 2, Goblin Elite / Queen Spider = 3) |
 | `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
 | `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`               |
@@ -99,6 +100,9 @@ lands on the impact frame of the swing.
 **Goblin** / **Goblin Elite** share the authored club swing (`attackAnimationId`)
 with `attackHitDelay` 0.7; each has its own `walkAnimationId`.
 
+**Goblin King** uses his own walk (`134618618846294`) and attack
+(`92113851689341`) clips, also with `attackHitDelay` 0.7.
+
 **Spider** / **Scorpion** Toolbox packs often ship a Script named `Animation`
 with a child `Animation` (`rbxassetid`). Those IDs are usually **permission-locked**
 for other experiences — do not play them. With `proceduralWalk = true`,
@@ -131,6 +135,7 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 | `DukeVampire`  | `DukeVampire`                                                           |
 | `Spider`       | `Spider`                                                                |
 | `QueenSpider`  | `QueenSpider`                                                           |
+| `GoblinKing`   | `GoblinKing`                                                            |
 | `Werewolf`     | `Werewolf` (currently under `Assets.Brainrots`; `ModelUtil` falls back) |
 | `Skeleton`     | `Skeleton`                                                              |
 | `SmallMummy`   | `SmallMummy`                                                            |
@@ -162,19 +167,19 @@ M16 **Complete When** ✅ — campaign monsters in authored levels use real mode
 
 | Name          | Health | Sec/grid | Damage | Atk interval | Boss | Ability                                                                                                                                 |
 | ------------- | ------ | -------- | ------ | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Zombie        | 250    | 3.5      | 100    | 1.5s         |      | —                                                                                                                                       |
+| Zombie        | 250    | 3.5      | 80     | 1.5s         |      | —                                                                                                                                       |
 | Vampire       | 900    | 2.5      | 70     | 1.1s         |      | —                                                                                                                                       |
 | Werewolf      | 1400   | 2.0      | 60     | 1.5s         |      | Lifesteal 5% max HP per chew hit (`WerewolfLifesteal`) ✅                                                                                |
-| Skeleton      | 200    | 4.0      | 100    | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅                                              |
-| Goblin        | 350    | 2.7      | 110    | 1.0s         |      | —                                                                                                                                       |
+| Skeleton      | 200    | 4.0      | 90     | 1.5s         |      | Bone Arrow — stop 3 tiles east, shoot westbound arrows (`SkeletonArrow` / `rangedTiles`) ✅                                              |
+| Goblin        | 350    | 2.7      | 100    | 1.0s         |      | —                                                                                                                                       |
 | Goblin Elite  | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves all occupied lanes; **laneSpan 3**                                                                              |
 | Spider        | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
 | Necromancer   | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
-| Goblin King   | 13000  | 6.0      | 140    | 1.5s         | Y    | +90 HP / 8s; speed buff (stub)                                                                                                          |
-| Queen Spider  | 13000  | 6.3      | 140    | 1.5s         | Y    | **laneSpan 3** (random valid 3-lane placement); stun 2s + poison DoT on chew; no jump ✅                                                 |
+| Goblin King   | 13000  | 4.0      | 130    | 1.5s         | Y    | **laneSpan 2**; +5% max HP / 10s; while he is alive, he and Goblins gain +10% chew damage; chew hits both lanes |
+| Queen Spider  | 13000  | 6.3      | 120    | 1.5s         | Y    | **laneSpan 3**; stun every bite; poison DoT every 2nd bite; no jump ✅                                                                   |
 | Duke Vampire  | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
-| Small Mummy   | 1000   | 2.0      | 150    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
-| Scorpion      | 500    | 1.8      | 200    | 1.2s         |      | RiseFromGround spawn; authored chew attack; burrows on plot entry if the lane has a Brainrot (`ScorpionBurrow`) ✅                       |
+| Small Mummy   | 1000   | 2.0      | 100    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
+| Scorpion      | 500    | 1.8      | 100    | 1.2s         |      | RiseFromGround; burrow (`ScorpionBurrow`); Venom DoT every 3rd bite ✅                                                                   |
 | Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | **laneSpan 2**; rises inside the steal sand tornado, which clears on his first step; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
 
 
@@ -277,9 +282,13 @@ monsters phase through and never deal chew damage.
   meshes stay glued; no arm-teleport), then plays `deathStyle` (default tip
   forward / side / back), then lingers and fades.
 
-Boss skill stubs (Goblin King speed buff) are registered and will be completed
-in a later milestone. **Werewolf** `WerewolfLifesteal` heals
-`lifestealPercent` (5) of max HP on every chew via `pendingHeal`. Duke Vampire's
+**Goblin King** `GoblinKingAttackBuff`: while he is alive, he and every **Goblin**
+on the plot gain +10% chew damage (`attackBuffPercent`), including Goblins that
+spawn after he does. Goblin Elite is not included.
+**Werewolf** `WerewolfLifesteal` heals
+`lifestealPercent` (5) of max HP on every chew via `pendingHeal`. Any heal
+that raises HP (bite, Goblin King regen, Duke last stand) shows green "+"
+marks on the plot owner's client. Duke Vampire's
 two skills are fully implemented:
 
 - `DukeVampireFreeze` (last stand) — a small `onTick` state machine that
@@ -404,8 +413,8 @@ gentle intro counts as NightFog begins.
 early/mid pressure spikes (not the big-wave closer — only decade boss days
 end on the boss).
 - **Level 30:** next boss — `QueenSpider` / Queen Spider (**laneSpan 3**,
-random valid 3-lane spawn via `randomRowForSpan`; stun 2s + poison DoT on
-chew; does **not** jump) as the NightFog decade finale.
+random valid 3-lane spawn via `randomRowForSpan`; stun every bite, poison
+DoT every 2nd bite; does **not** jump) as the NightFog decade finale.
 - **Levels 31–34:** still NightFog (3 blocked columns); **Skeleton** intro on
 31 (`rangedTiles` 3, westbound arrows) plus **graves** on random fog tiles
 (`GraveService`); Queen / Duke recur mid-day; counts inch up toward the
@@ -415,8 +424,13 @@ walk/attack clips; **lifesteal** 5% max HP per chew; template under
 `Assets.Brainrots` until moved). Weather switches to `NightFogReceded`
 (2 blocked columns).
 - **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
-- **Level 40:** decade closer — `QueenSpider` + `DukeVampire` dual big-wave
-finale under receded fog (Queen flags the wave; Duke spawns immediately after).
+- **Level 40:** decade closer under receded fog. `QueenSpider` flags the big
+  wave and `DukeVampire` spawns with her.
+- **Hidden Day:** after Day 40 is cleared. Night, no fog, no graves. 35 Goblins,
+  4 Goblin Elites, then **Goblin King** (`laneSpan` 2) as the finale. Goblins and
+  Goblin Elites gain +20% max HP, attack speed, and movement speed on this day
+  only. Kill brains pay out on the reward screen (1 / 10 / 25). Win or lose,
+  Continue enters Day 41 with the Day 40 lawn on a loss (the live lawn on a clear).
 - **Levels 41–44:** `Desert`; **SmallMummy** only (counts ramp).
 - **Levels 45–49:** `Scorpion` intro on 45 (burrow under the lawn, emerge in
 front of the first Brainrot); mixed with Small Mummy.

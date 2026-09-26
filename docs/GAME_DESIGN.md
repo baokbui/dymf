@@ -272,6 +272,7 @@ Supported effects:
 - Slow
 - Freeze
 - Poison
+- Venom
 - Burn
 - Knockback
 

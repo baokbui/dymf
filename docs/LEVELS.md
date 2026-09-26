@@ -162,7 +162,7 @@ counts and pacing are higher than a wipe-each-day campaign:
 | 37    | Silk and Fang     | NightFogReceded · Queen mid · **10** |
 | 38    | Blood Pack        | NightFogReceded · Duke mid · **10** |
 | 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **9** |
-| 40    | Throne of Silk    | NightFogReceded · **QueenSpider + DukeVampire** dual finale · **8** |
+| 40    | Throne of Silk    | NightFogReceded · Queen + Duke big wave · **8** |
 | 41    | First Wrappings   | Desert · **SmallMummy** only · **16** |
 | 42    | Linen March       | Desert · mummy packs · **17** |
 | 43    | Silk and Sand     | Desert · mummy packs · **19** |
@@ -184,6 +184,22 @@ Days **41–50** use `weather = "Desert"` (sand lawn, no fog, pyramids instead o
 the dark forest; full lawn plantable).
 Fog days keep moderate totals and alternate easier/harder pacing.
 
+**Hidden Day** (after clearing Day 40, before Day 41 preparation): not a numbered
+level (`Levels.getHidden()`, `exactSpawns`). Clearing Day 40 switches the lawn
+to this day's night (`weather = "Night"`, no fog, no graves) instead of Day 41's
+desert. Continue returns to preparation. The player presses Start Day to run it.
+Leaving and rejoining while it is still pending (`hiddenDayPending`) stays in
+that preparation. Spawns: **35** Goblin, **4**
+Goblin Elite (spaced through the day; more than one elite can be alive), then
+**Goblin King** as the big-wave finale. Goblins and Goblin Elites spawn with
+**+20%** max HP, attack speed, and movement speed (`HIDDEN_DAY_GOBLIN_STAT_BONUS`);
+Goblin King does not. Kill brains (`ProgressConfig.HIDDEN_DAY_KILL_BRAINS`):
+Goblin 1, Goblin Elite 10, Goblin King 25 — **100** if every one dies. Brains are
+granted once when the day ends, on the same reward screen for a clear or a loss.
+A loss refills hearts and restores the Day 40 victory lawn. A clear keeps the
+lawn as it stands. Either way Continue goes to Day 41 preparation. Goblin King's
+intro plays when this day starts, not when the player reaches Day 40.
+
 Milestone 10 adds roster variety through **one new monster at a time**, not a
 bundle of types in a single level.
 
@@ -201,8 +217,9 @@ Introduction cadence:
   **Scorpion** from 45, **PharaohMummy** on 50. **No graves** on desert days.
 - **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
-  dual-boss closer: `QueenSpider` + `DukeVampire` on the same big wave;
-  Level 50 = `PharaohMummy`).
+  dual-boss wave `QueenSpider` + `DukeVampire`; Level 50 = `PharaohMummy`).
+  **Goblin King** is not on Day 40. He is the finale of the **Hidden Day**
+  that starts after Day 40 is cleared (see above).
 - The first time a player **reaches** an intro day (or skips ahead via Day
   Select), `LevelService` queues **MonsterIntroPopup**s for every
   `MONSTER_INTRO_SCHEDULE` entry with `day` ≤ current that has not been

@@ -24,7 +24,9 @@ local pulseTokens: { [Model]: number } = {}
 
 local activeHitFlashTweens: { [Model]: { Tween } } = {}
 local hitFlashBaseColors: { [Model]: { [BasePart]: Color3 } } = {}
-local poisonLooks: { [Model]: { [BasePart]: Color3 } } = {}
+local washOriginals: { [Model]: { [BasePart]: Color3 } } = {}
+local washPoison: { [Model]: boolean } = {}
+local washVenom: { [Model]: boolean } = {}
 type StoneLook = {
 	colors: { [BasePart]: Color3 },
 	materials: { [BasePart]: Enum.Material },
@@ -158,52 +160,79 @@ function BrainrotFeedback.flashHit(model: Model, isFatal: boolean?)
 	activeHitFlashTweens[model] = tweens
 end
 
--- Soft purple wash for the Poison status. Stores original colors on first
--- apply and restores them when cleared. Hit-flash bases follow the tint so
--- damage flashes return to purple while poisoned, not the pre-poison look.
-function BrainrotFeedback.setPoisoned(model: Model, poisoned: boolean)
-	local parts = visibleParts(model)
-	if #parts == 0 then
+-- Poison (purple) and Venom (green) share one stored base color so they can
+-- stack. Hit-flash bases follow the wash so damage flashes return to it.
+local function captureWashOriginals(model: Model)
+	if washOriginals[model] then
+		return
+	end
+	local colors: { [BasePart]: Color3 } = {}
+	local flashBases = hitFlashBaseColors[model]
+	for _, part in visibleParts(model) do
+		colors[part] = (flashBases and flashBases[part]) or part.Color
+	end
+	washOriginals[model] = colors
+end
+
+local function paintStatusWash(model: Model)
+	local originals = washOriginals[model]
+	if not originals then
+		return
+	end
+	local poisoned = washPoison[model] == true
+	local venomed = washVenom[model] == true
+	if not poisoned and not venomed then
+		for part, color in originals do
+			if part.Parent then
+				part.Color = color
+			end
+		end
+		hitFlashBaseColors[model] = originals
+		washOriginals[model] = nil
+		model:SetAttribute("Poisoned", false)
+		model:SetAttribute("Venomed", false)
 		return
 	end
 
+	local tinted: { [BasePart]: Color3 } = {}
+	for part, base in originals do
+		if part.Parent then
+			local color = base
+			if poisoned then
+				color = color:Lerp(BrainrotConfig.POISON_TINT_COLOR, BrainrotConfig.POISON_TINT_BLEND)
+			end
+			if venomed then
+				color = color:Lerp(BrainrotConfig.VENOM_TINT_COLOR, BrainrotConfig.VENOM_TINT_BLEND)
+			end
+			part.Color = color
+			tinted[part] = color
+		end
+	end
+	hitFlashBaseColors[model] = tinted
+	model:SetAttribute("Poisoned", poisoned)
+	model:SetAttribute("Venomed", venomed)
+end
+
+function BrainrotFeedback.setPoisoned(model: Model, poisoned: boolean)
 	if poisoned then
 		cancelHitFlash(model)
-			if not poisonLooks[model] then
-			local colors: { [BasePart]: Color3 } = {}
-			local flashBases = hitFlashBaseColors[model]
-			for _, part in parts do
-				-- Prefer the pre-flash natural color if we have it.
-				colors[part] = (flashBases and flashBases[part]) or part.Color
-			end
-			poisonLooks[model] = colors
-		end
-
-		local originals = poisonLooks[model]
-		local tint = BrainrotConfig.POISON_TINT_COLOR
-		local blend = BrainrotConfig.POISON_TINT_BLEND
-		local tinted: { [BasePart]: Color3 } = {}
-		for _, part in parts do
-			local base = originals[part] or part.Color
-			local washed = base:Lerp(tint, blend)
-			part.Color = washed
-			tinted[part] = washed
-		end
-		hitFlashBaseColors[model] = tinted
-		model:SetAttribute("Poisoned", true)
+		captureWashOriginals(model)
+		washPoison[model] = true
 	else
-		local originals = poisonLooks[model]
-		if originals then
-			for part, color in originals do
-				if part.Parent then
-					part.Color = color
-				end
-			end
-			hitFlashBaseColors[model] = originals
-			poisonLooks[model] = nil
-		end
-		model:SetAttribute("Poisoned", false)
+		washPoison[model] = nil
 	end
+	paintStatusWash(model)
+end
+
+function BrainrotFeedback.setVenomed(model: Model, venomed: boolean)
+	if venomed then
+		cancelHitFlash(model)
+		captureWashOriginals(model)
+		washVenom[model] = true
+	else
+		washVenom[model] = nil
+	end
+	paintStatusWash(model)
 end
 
 local STONE_HIGHLIGHT_NAME = "StoneHighlight"
@@ -848,14 +877,18 @@ end
 
 function BrainrotFeedback.cleanup(model: Model)
 	cancelHitFlash(model)
-	if poisonLooks[model] then
+	washPoison[model] = nil
+	washVenom[model] = nil
+	if washOriginals[model] then
 		BrainrotFeedback.setPoisoned(model, false)
 	end
 	if stoneLooks[model] then
 		BrainrotFeedback.setStoned(model, false)
 	end
 	hitFlashBaseColors[model] = nil
-	poisonLooks[model] = nil
+	washOriginals[model] = nil
+	washPoison[model] = nil
+	washVenom[model] = nil
 	stoneLooks[model] = nil
 	BrainrotFeedback.clearAura(model)
 	BrainrotFeedback.clearShield(model)

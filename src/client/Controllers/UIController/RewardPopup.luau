@@ -162,14 +162,7 @@ local function popIn(gui: GuiObject, scale: UIScale)
 	TweenService:Create(scale, POP_INFO, { Scale = 1 }):Play()
 end
 
-function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains: number, leftoverBrains: number?)
-	local leftover = leftoverBrains or 0
-	local total = dayBrains + leftover
-	self.title.Text = string.format("Day %d Cleared!", clearedLevel)
-	self.dayLine.Text = string.format("Day reward: %d Brains", dayBrains)
-	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)
-	self.totalLine.Text = string.format("Total: %d Brains", total)
-
+local function present(self: RewardPopupHud)
 	self.popToken += 1
 	local token = self.popToken
 	for _, gui in self.popOrder do
@@ -191,6 +184,26 @@ function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains:
 			popIn(gui, self.popScales[gui])
 		end)
 	end
+end
+
+function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains: number, leftoverBrains: number?)
+	local leftover = leftoverBrains or 0
+	local total = dayBrains + leftover
+	self.title.Text = string.format("Day %d Cleared!", clearedLevel)
+	self.dayLine.Text = string.format("Day reward: %d Brains", dayBrains)
+	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)
+	self.totalLine.Text = string.format("Total: %d Brains", total)
+	present(self)
+end
+
+function RewardPopup.showHidden(self: RewardPopupHud, dayBrains: number, leftoverBrains: number?)
+	local leftover = leftoverBrains or 0
+	local total = dayBrains + leftover
+	self.title.Text = "Hidden Day"
+	self.dayLine.Text = string.format("Brains earned: %d Brains", dayBrains)
+	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)
+	self.totalLine.Text = string.format("Total: %d Brains", total)
+	present(self)
 end
 
 function RewardPopup.hide(self: RewardPopupHud)

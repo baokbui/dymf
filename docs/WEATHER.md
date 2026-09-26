@@ -92,8 +92,8 @@ through the player margin + full enemy-column forest (aligned with
 - `WeatherController` applies night Lighting for `Night`, `NightFog`, and
   `NightFogReceded`; **three** particle fog banks for both fog weathers (one
   lawn volume + near/deep forest; lawn width follows that weather's column
-  count). Lighting Fog + Atmosphere do most of the look so particle rates stay
-  low.
+  count). Lighting Fog + Atmosphere do most of the look (closer fog end, denser
+  haze). Particle rates stay low; the same mist is just more opaque.
 - `AudioController` crossfades BGM from weather (`Default` / `Night` / `Desert`;
   see `AUDIO.md`).
 - Desert: desert Lighting + `DesertVisuals` (hide forest, spawn pyramids).

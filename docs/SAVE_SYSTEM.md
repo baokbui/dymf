@@ -58,6 +58,7 @@ Not saved (transient / runtime):
 | `introducedMonsters` | `{ string }` (monster intro popups already shown) |
 | `introducedBrainrots` | `{ string }` (Brainrot intro popups already shown) |
 | `introducedMechanics` | `{ string }` (mechanic intro popups already shown, e.g. Grave) |
+| `hiddenDayPending` | boolean? (true after Day 40 is cleared until the Hidden Day ends) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
@@ -70,6 +71,7 @@ Relevant constants (`Shared.Constants`):
   **v4 → v5:** add `brainrotXp` (empty map if missing).
   **v5 → v6:** add `evolutions` (empty map if missing).
   **v6 → v7:** add `introducedMechanics` (empty list if missing).
+  `hiddenDayPending` is optional on v7; missing means false.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).

@@ -80,8 +80,18 @@ function LevelRun.isDoneSpawning(self: LevelRun): boolean
 	return self.phase == "done_spawning"
 end
 
-function LevelRun.advance(self: LevelRun, now: number): { spawn: boolean, bigWaveWarning: boolean, bigWaveWarningEnd: boolean }
-	local result = { spawn = false, bigWaveWarning = false, bigWaveWarningEnd = false }
+function LevelRun.advance(self: LevelRun, now: number): {
+	spawn: boolean,
+	spawnGroup: Types.SpawnGroup?,
+	bigWaveWarning: boolean,
+	bigWaveWarningEnd: boolean,
+}
+	local result = {
+		spawn = false,
+		spawnGroup = nil :: Types.SpawnGroup?,
+		bigWaveWarning = false,
+		bigWaveWarningEnd = false,
+	}
 
 	if self.phase == "done_spawning" then
 		return result
@@ -130,6 +140,12 @@ function LevelRun.advance(self: LevelRun, now: number): { spawn: boolean, bigWav
 		if self.spawnedInGroup < group.count then
 			self.nextActionTime = now + self:spawnInterval()
 		else
+			-- Numbered days keep the existing handoff: the last unit of a group
+			-- is created as the next group's monster. exactSpawns (Hidden Day)
+			-- records this group so that unit stays the one that was authored.
+			if self.definition.exactSpawns then
+				result.spawnGroup = group
+			end
 			self:_finishGroup(now)
 		end
 		return result

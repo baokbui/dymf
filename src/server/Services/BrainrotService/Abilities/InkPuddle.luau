@@ -2,7 +2,8 @@
 --[[
 	InkPuddle (Blueberrinni Octopusini)
 	Every attackInterval, lobs ink from the head onto a random empty tile in
-	her own row. A nearer tile uses a lower arc; a farther tile arcs higher.
+	her own row. Graves and her own tile are skipped. A nearer tile uses a
+	lower arc; a farther tile arcs higher.
 	The puddle lasts puddleDuration. Monsters on that tile are Slow until they
 	step off.
 ]]
@@ -52,9 +53,13 @@ local function openTiles(plotModel: Model, fromRow: number, fromColumn: number):
 		if column == fromColumn then
 			continue
 		end
-		if not hasBrainrot(plotModel, fromRow, column) then
-			table.insert(columns, column)
+		if hasBrainrot(plotModel, fromRow, column) then
+			continue
 		end
+		if GridService.isGraveTile(plotModel, { row = fromRow, column = column }) then
+			continue
+		end
+		table.insert(columns, column)
 	end
 	return columns
 end

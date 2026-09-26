@@ -50,7 +50,7 @@ Already owned units gray out with a red **SOLD** stamp.
 | Girafa Celestre | 50 | Fog gust; still free on reach Day 25 |
 | Orangutini Ananassini | 80 | Lobs a pineapple over the front monster and graves |
 | La Vacca Saturno Saturnita | 60 | One-shot: pulls the closest 1-tile monster from a neighboring row into hers (2+ tiles wide are skipped) |
-| Blueberrinni Octopusini | 70 | Ink puddle on a random empty tile in her row; lower arc when close, higher when far; slows while they stand in it |
+| Blueberrinni Octopusini | 70 | Ink puddle on a random empty tile in her row, skipping graves; lower arc when close, higher when far; slows while they stand in it |
 
 **Speed** (`WalkSpeed`): 20 levels, each `+walkSpeedBonusPerLevel` (1) on top of
 Roblox-default `PlayerConfig.WALK_SPEED` (16 → 36 at max). Costs rise each

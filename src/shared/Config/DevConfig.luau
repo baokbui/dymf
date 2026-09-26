@@ -20,7 +20,7 @@ local DevConfig = {
 	FORCE_DAY = 40,
 	-- Floor every playable Brainrot to this level and claim Epic→that tier
 	-- (40 = Immortal). 0 = skip. XP already above the floor is kept.
-	FORCE_BRAINROT_LEVEL = 50,
+	FORCE_BRAINROT_LEVEL = 20,
 }
 
 function DevConfig.isActive(): boolean

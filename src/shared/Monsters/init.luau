@@ -22,7 +22,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Zombie",
 		health = 250,
 		secondsPerGrid = 3.5,
-		damage = 100,
+		damage = 80,
 		attackInterval = 1.5,
 		isBoss = false,
 		color = Color3.fromRGB(90, 140, 90),
@@ -70,7 +70,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Skeleton",
 		health = 200,
 		secondsPerGrid = 4.0,
-		damage = 100,
+		damage = 90,
 		attackInterval = 1.5,
 		isBoss = false,
 		abilities = { "SkeletonArrow" },
@@ -88,7 +88,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Goblin",
 		health = 350,
 		secondsPerGrid = 2.7,
-		damage = 110,
+		damage = 100,
 		attackInterval = 1.0,
 		isBoss = false,
 		color = Color3.fromRGB(70, 130, 60),
@@ -157,13 +157,24 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		id = "GoblinKing",
 		name = "Goblin King",
 		health = 13000,
-		secondsPerGrid = 6.0,
-		damage = 140,
+		secondsPerGrid = 4.0,
+		damage = 130,
 		attackInterval = 1.5,
 		isBoss = true,
-		abilities = { "GoblinKingRegen", "GoblinKingSpeedBuff" },
-		abilityParams = { regenAmount = 90, regenInterval = 8, speedBuffPercent = 18 },
+		abilities = { "GoblinKingRegen", "GoblinKingAttackBuff" },
+		abilityParams = { regenPercent = 5, regenInterval = 10, attackBuffPercent = 10 },
+		-- Two lawn rows (anchor + 1). Width and chew both follow laneSpan.
+		-- Height-only trim so the 2-lane scale does not leave him as tall.
+		laneSpan = 2,
+		modelHeightScale = 0.9,
+		-- Accessories are WeldConstraints on the rig. Anchoring those parts
+		-- would freeze the welds.
+		keepWeldConstraints = true,
 		color = Color3.fromRGB(50, 120, 40),
+		walkAnimationId = "rbxassetid://134618618846294",
+		attackAnimationId = "rbxassetid://92113851689341",
+		-- Club impact, same beat as Goblin / Goblin Elite.
+		attackHitDelay = 0.7,
 	},
 
 	QueenSpider = {
@@ -171,13 +182,13 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Queen Spider",
 		health = 13000,
 		secondsPerGrid = 6.3,
-		damage = 140,
+		damage = 120,
 		attackInterval = 1.5,
 		isBoss = true,
 		-- Occupies three lawn rows (anchor + 2). On a 5-row lawn that means
 		-- valid anchors 1–3 (covers 1–3, 2–4, or 3–5) — LevelService uses
 		-- `randomRowForSpan`, never edge-only single-lane placement. Does NOT
-		-- jump — she chews and applies stun + poison on every bite.
+		-- jump — stun on every bite, poison on every other bite.
 		laneSpan = 3,
 		abilities = { "QueenSpiderStun", "QueenSpiderPoison" },
 		abilityParams = {
@@ -185,6 +196,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			-- % of Brainrot maxHealth per poison tick (1s interval).
 			poisonPercent = 3,
 			poisonDuration = 4,
+			poisonEvery = 2,
 		},
 		color = Color3.fromRGB(30, 30, 30),
 		-- Duplicated Spider Toolbox model — same procedural crawl gait.
@@ -241,7 +253,7 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Small Mummy",
 		health = 1000,
 		secondsPerGrid = 2.0,
-		damage = 150,
+		damage = 100,
 		attackInterval = 1.5,
 		isBoss = false,
 		color = Color3.fromRGB(210, 190, 140),
@@ -291,14 +303,18 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		name = "Scorpion",
 		health = 500,
 		secondsPerGrid = 1.8,
-		damage = 200,
+		damage = 100,
 		attackInterval = 1.2,
 		isBoss = false,
-		abilities = { "ScorpionBurrow" },
+		abilities = { "ScorpionBurrow", "ScorpionVenom" },
 		abilityParams = {
 			burrowDuration = 1.55,
 			burrowDepth = 5.5,
 			emergeOffset = 0.45,
+			-- % of Brainrot maxHealth per venom tick (1s interval).
+			venomPercent = 3,
+			venomDuration = 4,
+			venomEvery = 3,
 		},
 		color = Color3.fromRGB(196, 92, 36),
 		modelId = "Scorpion",

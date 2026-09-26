@@ -375,8 +375,11 @@ Full details in `LEVELS.md`. Summary:
   forest, then enter the plot); spawn groups via `LevelRun` scheduler;
   victory keeps planted Brainrots and resets coins via day purse; defeat
   restores the victory checkpoint on the same day (Game Over → Rewind); day
-  select wipes the lawn + checkpoint; `LevelStateChanged` remote.
-- **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
+  select wipes the lawn + checkpoint; `LevelStateChanged` remote. After Day 40
+  is cleared, the lawn switches to the Hidden Day night. Continue returns to
+  preparation; the player presses Start Day to run it. Win or lose shows the
+  reward popup, then Day 41.
+- **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows. Numbered days keep the existing group handoff. The Hidden Day sets `exactSpawns` so each group spawns as authored.
 - **`UIController/Level.luau`** — bottom-right day title, Start Day button, progress bar, big-wave banner.
 - **`UIController/GameOverPopup.luau`** — defeat overlay + Rewind Day N.
 - **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
@@ -450,7 +453,7 @@ Full details in `UI.md`. Summary:
   on your lawn opens the same card with live HP. Clicking a monster on your
   plot opens `MonsterInspect` (portrait, live HP, stats, ability — no
   evolutions).
-- **Reward popup** — victory shows brains earned (store purchases → M18).
+- **Reward popup** — victory shows brains earned (store purchases → M18). The Hidden Day after Day 40 uses the same popup for a clear or a loss.
 - Save schema **v5** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists, and `brainrotXp`.
 
 ### Milestone 18 — Progression Store ✅
@@ -497,7 +500,7 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   Epic, gold at Legendary, red-orange at Mythic, dark red at Immortal, rainbow
   at GOD. **GOD ultimates:** Tung Tung `SahurWrath`, Ballerina `Jackpot`,
   Chimpanzini `PrimalRetaliation` ✅; Lirili Glacial Dominion (on plant) ✅;
-  Cappuccino `ShadowRequiem` ✅ (ramped crescent + last-tile pillar); Tralalero `AbyssalTorrent` ✅ (mouth jet, base damage and 0.25-tile knockback per second, 3+ or a boss, easternmost ready first).
+  Cappuccino `ShadowRequiem` ✅ (ramped crescent + last-tile pillar); Tralalero `AbyssalTorrent` ✅ (mouth jet, base damage per second, 3+ or a boss, easternmost ready first).
 
 ### Milestone 12 — Audio ✅
 

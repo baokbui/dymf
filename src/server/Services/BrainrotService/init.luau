@@ -297,6 +297,10 @@ local function createPlacement(
 		burnUntil = 0,
 		burnHitsPerTick = 0,
 		burnNextTick = 0,
+		venomUntil = 0,
+		venomHitsPerTick = 0,
+		venomNextTick = 0,
+		venomTintActive = false,
 		weakenUntil = 0,
 		weakenFactor = 0,
 		extraCooldowns = {},
@@ -421,8 +425,12 @@ local function applyBrainrotHeal(instanceId: string, hits: number)
 	if maxHits <= 0 then
 		return
 	end
+	local before = placement.health
 	placement.health = math.min(maxHits, placement.health + hits)
 	syncHealthDisplay(placement)
+	if placement.health > before then
+		CombatService.notifyHeal(placement.ownerUserId, instanceId)
+	end
 end
 
 -- ===== Remote handlers (untrusted input) =====
@@ -959,6 +967,25 @@ local function applyBrainrotStatus(
 			placement.burnUntil = math.max(placement.burnUntil, now + duration)
 			placement.burnHitsPerTick = hitsPerTick
 			placement.burnNextTick = now + CombatConfig.BURN_TICK_INTERVAL
+		end
+		return
+	end
+
+	if kind == "Venom" then
+		local percent = magnitude or 3
+		local tickDamage = math.max(1, math.ceil(placement.definition.maxHealth * percent / 100))
+		local hitsPerTick = math.max(
+			1,
+			math.ceil(tickDamage / (placement.definition.maxHealth / placement.definition.health))
+		)
+		placement.venomUntil = math.max(placement.venomUntil, now + duration)
+		placement.venomHitsPerTick = hitsPerTick
+		placement.venomNextTick = now + CombatConfig.VENOM_TICK_INTERVAL
+		placement.venomTintActive = true
+		BrainrotFeedback.setVenomed(placement.model, true)
+		local remain = placement.venomUntil - now
+		if remain > 0 then
+			CombatService.notifyVenom(placement.ownerUserId, instanceId, remain)
 		end
 	end
 end

@@ -300,12 +300,12 @@ local function createProceduralShuriken(): (Model, BasePart)
 		local blade = Instance.new("WedgePart")
 		blade.Name = string.format("Blade%d", i + 1)
 		blade.Size = Vector3.new(bladeThickness, bladeWidth, bladeSpan * 0.5)
-		blade.Material = Enum.Material.Metal
+	blade.Material = Enum.Material.Metal
 		blade.Color = CombatConfig.SHURIKEN_BLADE_COLOR
 		blade.CFrame = CFrame.new(hub.Position)
 			* CFrame.Angles(math.rad(90), angle, 0)
 			* CFrame.new(0, 0, -bladeSpan * 0.25)
-		blade.Parent = model
+	blade.Parent = model
 		weldAccessory(hub, blade)
 	end
 

@@ -195,6 +195,14 @@ function CombatService.applyStatusToBrainrot(
 	end
 end
 
+-- Green "+" marks around a unit that just healed (lifesteal, regen, last stand).
+function CombatService.notifyHeal(ownerUserId: number, instanceId: string)
+	fireCombatVisual(ownerUserId, {
+		kind = "Heal",
+		instanceId = instanceId,
+	})
+end
+
 -- Duke Vampire's Terrify: a visible "scream" pulse centered on him, plus a
 -- dizzy icon over each Brainrot it afflicts. No damage — purely feedback for
 -- the Weaken + Stun already applied via applyStatusToBrainrot.
@@ -270,6 +278,14 @@ end
 function CombatService.notifyPoison(ownerUserId: number, brainrotInstanceId: string, duration: number)
 	fireCombatVisual(ownerUserId, {
 		kind = "Poison",
+		instanceId = brainrotInstanceId,
+		duration = duration,
+	})
+end
+
+function CombatService.notifyVenom(ownerUserId: number, brainrotInstanceId: string, duration: number)
+	fireCombatVisual(ownerUserId, {
+		kind = "Venom",
 		instanceId = brainrotInstanceId,
 		duration = duration,
 	})

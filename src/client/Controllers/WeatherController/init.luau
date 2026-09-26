@@ -142,9 +142,10 @@ local function addLightMist(part: BasePart, rate: number, densityScale: number)
 		NumberSequenceKeypoint.new(0.5, particleSize),
 		NumberSequenceKeypoint.new(1, particleSize * 1.35),
 	})
-	-- Higher densityScale → denser (less transparent) mist.
-	local startT = math.clamp(0.42 - 0.22 * densityScale, 0.08, 0.55)
-	local midT = math.clamp(0.58 - 0.2 * densityScale, 0.2, 0.75)
+	-- Higher densityScale → denser (less transparent) mist. Opacity only;
+	-- particle rate stays in WeatherConfig so this does not spawn more mist.
+	local startT = math.clamp(0.3 - 0.22 * densityScale, 0.05, 0.55)
+	local midT = math.clamp(0.44 - 0.2 * densityScale, 0.14, 0.75)
 	emitter.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, startT),
 		NumberSequenceKeypoint.new(0.5, midT),

@@ -16,7 +16,7 @@ export type GridPosition = {
 -- Status effects applied through CombatService. "Weaken" is Brainrot-only:
 -- reduces the Brainrot's own outgoing damage by `magnitude` percent for
 -- `duration` (see BrainrotBehavior effective-definition damage override).
-export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Knockback" | "Stun" | "Weaken"
+export type StatusEffectKind = "Slow" | "Freeze" | "Poison" | "Burn" | "Venom" | "Knockback" | "Stun" | "Weaken"
 
 export type StatusEffect = {
 	kind: StatusEffectKind,
@@ -95,6 +95,9 @@ export type MonsterDefinition = {
 	modelScale: number?,
 	-- Extra multiplier on height only (default 1). Width / lane footprint stay put.
 	modelHeightScale: number?,
+	-- When true, Weld / WeldConstraint parts stay unanchored (except the root)
+	-- so authored welds keep holding accessories to the animated rig.
+	keepWeldConstraints: boolean?,
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
 	-- One-shot clips keyed by ability handler id (e.g. PharaohSummon).
@@ -149,6 +152,9 @@ export type LevelDefinition = {
 	weather: string?,
 	-- Fog-tile graves for this day (NightFog / NightFogReceded). Nil = none.
 	graves: boolean?,
+	-- When set, each spawn uses the group that produced it. Numbered days leave
+	-- this unset so the existing group handoff stays as authored.
+	exactSpawns: boolean?,
 }
 
 -- Runtime tile state tracked by the grid (server-authoritative).
@@ -197,6 +203,8 @@ export type SaveData = {
 	introducedBrainrots: { string }?,
 	-- Mechanic / hazard intros already shown (MECHANIC_INTRO_SCHEDULE, e.g. Grave).
 	introducedMechanics: { string }?,
+	-- Set after clearing Day 40 until the Hidden Day is finished (win or lose).
+	hiddenDayPending: boolean?,
 	-- 🔜 Milestone 21 — collected boss trophies displayed in the house
 	collectedBosses: { CollectedBoss }?,
 }

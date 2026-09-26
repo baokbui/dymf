@@ -44,7 +44,7 @@ Remotes module. That is the only required step.
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
 | `FogRowsChanged`   | server → client | ✅ | Lawn rows whose Night Fog plant-block is lifted (Giraffa plot gust); `{ rows }` **plot owner only** |
-| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / BatSlam / Jackpot / Terrify / SandTornado / GravityPull / InkDrop / WindGust / Dizzy / Poison / MonsterAttack VFX + SFX (**plot owner only**) |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / BatSlam / Jackpot / Terrify / SandTornado / GravityPull / InkDrop / WindGust / Dizzy / Poison / Venom / MonsterAttack VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |

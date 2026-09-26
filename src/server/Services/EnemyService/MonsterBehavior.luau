@@ -40,6 +40,8 @@ export type MonsterRuntime = {
 	model: Model,
 	health: number,
 	maxHealth: number,
+	-- Multiplier on chew damage. 1 unless a spawn buff raised it (Goblin King).
+	attackDamageMultiplier: number,
 	attackCooldown: number,
 	isAttacking: boolean,
 	abilityState: Abilities.AbilityState,
@@ -381,9 +383,19 @@ local function applyPendingHeal(runtime: MonsterRuntime)
 	if not pending or pending <= 0 then
 		return
 	end
+	local before = runtime.health
 	runtime.health = math.min(runtime.maxHealth, runtime.health + pending)
 	runtime.abilityState.pendingHeal = 0
 	MonsterModel.setHealth(runtime.model, runtime.health, runtime.maxHealth)
+	if runtime.health <= before then
+		return
+	end
+	local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+	if type(ownerUserId) ~= "number" then
+		return
+	end
+	local CombatService = require(script.Parent.Parent.CombatService)
+	CombatService.notifyHeal(ownerUserId, runtime.instanceId)
 end
 
 function MonsterBehavior.onSpawn(runtime: MonsterRuntime)

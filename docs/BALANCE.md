@@ -109,18 +109,23 @@ were raised so early boards need real DPS:
 
 | Id | Role | HP | Sec/tile | Chew |
 | -- | ---- | -- | -------- | ---- |
-| `Zombie` | Grunt (L1+) | 250 | 3.5 | 100 / 1.5s |
-| `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 110 / 1.0s |
+| `Zombie` | Grunt (L1+) | 250 | 3.5 | 80 / 1.5s |
+| `Goblin` | Fast grunt (L5+) | 350 | 2.7 | 100 / 1.0s |
 | `GoblinElite` | Boss (L10, recurs L13/14/17-19) | 6000 | 6.2 | 8000 + one-shot; **laneSpan 3** |
 | `Vampire` | Fast grunt (L15+) | 900 | 2.5 | 70 / 1.1s |
-| `DukeVampire` | Boss (L20; recurs L24/28/38; dual finale L40) | 8000 | 4.8 | 100 / 1.1s; last stand + Terrify |
+| `DukeVampire` | Boss (L20; recurs L24/28/38; Day 40 wave with Queen) | 8000 | 4.8 | 100 / 1.1s; last stand + Terrify |
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
-| `QueenSpider` | Boss (L30; recurs L32/37; dual finale L40) | 13000 | 6.3 | 140 / 1.5s; laneSpan 3; stun 2s + poison 3%/4s; no jump |
+| `QueenSpider` | Boss (L30; recurs L32/37; Day 40 wave with Duke) | 13000 | 6.3 | 120 / 1.5s; laneSpan 3; stun every bite; poison 3%/4s every 2nd bite; no jump |
 | `Werewolf` | Fast heavy grunt (L35+) | 1400 | 2.0 | 60 / 1.5s; lifesteal 5% max HP / chew; authored walk/attack clips |
-| `Skeleton` | Ranged grunt (L31+) | 200 | 4.0 | 100 / 1.5s; stops 3 tiles east and shoots arrows; does not chew |
-| `SmallMummy` | Fast grunt (L41+) | 1000 | 2.0 | 150 / 1.5s |
-| `Scorpion` | Burrow grunt (L45+) | 500 | 1.8 | 200 / 1.2s; digs on plot entry only if the lane has a Brainrot |
+| `GoblinKing` | Boss (Hidden Day finale, after Day 40) | 13000 | 4.0 | 130 / 1.5s; laneSpan 2; +5% max HP / 10s; while alive, +10% attack for himself and Goblins; authored walk/attack clips |
+| `Skeleton` | Ranged grunt (L31+) | 200 | 4.0 | 90 / 1.5s; stops 3 tiles east and shoots arrows; does not chew |
+| `SmallMummy` | Fast grunt (L41+) | 1000 | 2.0 | 100 / 1.5s |
+| `Scorpion` | Burrow grunt (L45+) | 500 | 1.8 | 100 / 1.2s; Venom DoT every 3rd bite (3%/4s); digs on plot entry only if the lane has a Brainrot |
 | `PharaohMummy` | Boss (L50) | 15000 | 5.0 | 200 / 1.0s; summon SmallMummy ×5 lanes / 20s; steal 1 plant from 3 random lanes / 15s |
+
+Hidden Day Goblins and Goblin Elites (not Goblin King) spawn at **+20%** max HP,
+attack speed, and movement speed on top of the figures above. Goblin HP still
+ages with the campaign day first; the elite is a boss, so only the +20% applies.
 
 Forest march setup ≈ `SPAWN_COLUMN_OFFSET` × `secondsPerGrid` (~21s Zombie,
 ~16s Goblin, ~15s Vampire, ~12s Werewolf, ~24s Skeleton).

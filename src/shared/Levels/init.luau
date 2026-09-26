@@ -542,7 +542,7 @@ local definitions: { [string]: Types.LevelDefinition } = {
 			{ monsterId = "Werewolf", count = 2, startDelay = 1.5, spawnInterval = 2.4 },
 			{ monsterId = "Vampire", count = 2, startDelay = 11, spawnInterval = 2.2 },
 			{ monsterId = "Spider", count = 2, startDelay = 12, spawnInterval = 2.2 },
-			-- Dual-boss finale: Queen flags the big wave; Duke follows immediately
+			-- Dual-boss wave: Queen flags the big wave; Duke follows immediately
 			-- (startDelay 0) so both are on the lawn together without a second warning.
 			{ monsterId = "QueenSpider", count = 1, startDelay = 18, spawnInterval = 2, isBigWave = true },
 			{ monsterId = "DukeVampire", count = 1, startDelay = 0, spawnInterval = 2 },
@@ -684,6 +684,27 @@ local definitions: { [string]: Types.LevelDefinition } = {
 	},
 }
 
+-- Not a numbered day. Runs once after Day 40 is cleared, then the player
+-- continues into Day 41. exactSpawns so the counts below are what actually appear.
+local hiddenDay: Types.LevelDefinition = {
+	id = "HiddenDay",
+	number = 0,
+	name = "Hidden Day",
+	weather = "Night",
+	exactSpawns = true,
+	groups = {
+		{ monsterId = "Goblin", count = 8, startDelay = 2, spawnInterval = 1.4 },
+		{ monsterId = "GoblinElite", count = 1, startDelay = 8, spawnInterval = 2 },
+		{ monsterId = "Goblin", count = 9, startDelay = 6, spawnInterval = 1.2 },
+		{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
+		{ monsterId = "Goblin", count = 9, startDelay = 6, spawnInterval = 1.2 },
+		{ monsterId = "GoblinElite", count = 1, startDelay = 10, spawnInterval = 2 },
+		{ monsterId = "Goblin", count = 9, startDelay = 6, spawnInterval = 1 },
+		{ monsterId = "GoblinElite", count = 1, startDelay = 12, spawnInterval = 2 },
+		{ monsterId = "GoblinKing", count = 1, startDelay = 16, spawnInterval = 2, isBigWave = true },
+	},
+}
+
 local ordered: { Types.LevelDefinition } = {}
 for _, definition in definitions do
 	table.insert(ordered, definition)
@@ -718,7 +739,7 @@ function Levels.getByNumber(number: number): Types.LevelDefinition?
 end
 
 -- First campaign day this species is authored to spawn. Nil if it never appears
--- in Days 1–50 (Necromancer / GoblinKing).
+-- in Days 1–50 (Necromancer).
 function Levels.firstDayForMonster(monsterId: string): number?
 	local earliest: number? = nil
 	for _, definition in ordered do
@@ -735,6 +756,10 @@ end
 
 function Levels.count(): number
 	return #ordered
+end
+
+function Levels.getHidden(): Types.LevelDefinition
+	return hiddenDay
 end
 
 return Levels
