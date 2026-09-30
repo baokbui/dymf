@@ -53,6 +53,8 @@ export type RuntimePlacement = {
 	weakenFactor: number,
 	extraCooldowns: { [string]: number },
 	buffs: Abilities.EvolutionBuffs,
+	-- Remaining uses when `definition.charges` is set (saved with the lawn).
+	charges: number?,
 }
 
 local BrainrotBehavior = {}
@@ -106,6 +108,7 @@ local function buildContext(placement: RuntimePlacement)
 		column = placement.position.column,
 		buffs = placement.buffs,
 		health = placement.health,
+		charges = placement.charges,
 	}
 end
 
@@ -159,6 +162,16 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			if destroyHandler then
 				destroyHandler(placement)
 			end
+		end,
+		useCharge = function(): number?
+			local charges = placement.charges
+			if type(charges) ~= "number" then
+				return nil
+			end
+			local remaining = math.max(0, charges - 1)
+			placement.charges = remaining
+			placement.model:SetAttribute("Charges", remaining)
+			return remaining
 		end,
 		detachSelf = function()
 			if detachHandler then

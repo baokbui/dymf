@@ -61,6 +61,7 @@ local ProgressConfig = {
 		{ brainrotId = "OrangutiniAnanassini", brainsCost = 80 },
 		{ brainrotId = "LaVaccaSaturnoSaturnita", brainsCost = 60 },
 		{ brainrotId = "BlueberrinniOctopusini", brainsCost = 70 },
+		{ brainrotId = "BonecaAmbalabu", brainsCost = 65 },
 	},
 
 	-- Buy with brains from the HUD Upgrades shop. Level is persisted

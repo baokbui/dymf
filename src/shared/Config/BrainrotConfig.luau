@@ -66,7 +66,6 @@ local BrainrotConfig = {
 	LINE_BOMB_DROP_STAGGER = 0.12, -- seconds between tiles (also drives fly speed)
 	-- Nose toward −Y so the bomb points down while falling.
 	LINE_BOMB_DROP_ORIENTATION_DEGREES = Vector3.new(0, 0, -90),
-
 	-- Multiplier on PlotConfig.BRAINROT_FOOTPRINT_RATIO when a definition sets
 	-- modelScale (Tralalero / Bombardino omit it and stay at full size).
 	COMPACT_MODEL_SCALE = 0.7,

@@ -168,4 +168,16 @@ function InkPuddle.tick()
 	end
 end
 
+function InkPuddle.clearPlot(plotModel: Model)
+	for index = #puddles, 1, -1 do
+		local puddle = puddles[index]
+		if puddle.plotModel == plotModel then
+			if puddle.part.Parent then
+				puddle.part:Destroy()
+			end
+			table.remove(puddles, index)
+		end
+	end
+end
+
 return InkPuddle

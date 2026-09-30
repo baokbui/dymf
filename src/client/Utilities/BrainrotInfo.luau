@@ -54,6 +54,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Lob Pineapple",
 		description = "Lobs a pineapple over the front monster and any grave, hitting the one behind. If only one monster is in the row, it hits that one.",
 	},
+	TileTrap = {
+		label = "Headbutt",
+		description = "Monsters walk onto her tile. She headbutts each one in front of her, hitting it and stunning it for 1 second. After her last headbutt she poofs away.",
+	},
 	InkPuddle = {
 		label = "Ink Puddle",
 		description = "Lobs ink onto a random empty tile in her row, never onto a grave. Closer tiles arc lower, farther tiles arc higher. The puddle lasts 7 seconds and slows monsters while they walk through it. 10 second cooldown.",
@@ -172,6 +176,10 @@ function BrainrotInfo.statRows(definition: Types.BrainrotDefinition): { StatRow 
 			label = "Coins",
 			value = string.format("%d each time", definition.coinGeneration),
 		})
+	end
+
+	if definition.charges and definition.charges > 0 then
+		table.insert(rows, { label = "Uses", value = tostring(definition.charges) })
 	end
 
 	local params = definition.abilityParams

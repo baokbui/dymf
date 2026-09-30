@@ -51,6 +51,8 @@ export type BrainrotDefinition = {
 	plantCooldown: number?, -- seconds before re-plant; nil = BrainrotConfig.plantCooldownFor(cost)
 	-- Cap of living plants of this id on one plot. Nil = unlimited.
 	maxOnPlot: number?,
+	-- Uses before the plant despawns (Boneca headbutts). Saved with the lawn.
+	charges: number?,
 	-- Claimed evolution: cannot be stolen or moved off its tile.
 	immovable: boolean?,
 	color: Color3?, -- shop preview fallback swatch + placeholder/ghost tint
@@ -170,6 +172,8 @@ export type PlantedBrainrot = {
 	brainrotId: string,
 	position: GridPosition,
 	health: number,
+	-- Remaining uses for definitions with `charges`; nil for everything else.
+	charges: number?,
 }
 
 -- Future (Milestone 21): bosses displayed in the plot house that generate brains.

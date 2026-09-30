@@ -241,7 +241,8 @@ local function createPlacement(
 	plotModel: Model,
 	position: Types.GridPosition,
 	health: number,
-	randomizeCooldown: boolean?
+	randomizeCooldown: boolean?,
+	savedCharges: number?
 ): Placement?
 	local topCenter = GridService.getWorldPosition(plotModel, position)
 	if not topCenter then
@@ -262,6 +263,14 @@ local function createPlacement(
 		topCenter,
 		brainrotsFolder(plotModel)
 	)
+
+	local charges: number? = nil
+	if type(definition.charges) == "number" and definition.charges > 0 then
+		charges = if type(savedCharges) == "number"
+			then math.clamp(math.floor(savedCharges), 1, definition.charges)
+			else definition.charges
+		model:SetAttribute("Charges", charges)
+	end
 
 	model:SetAttribute("HitsRemaining", clampedHealth)
 	local displayHealth = 0
@@ -305,6 +314,7 @@ local function createPlacement(
 		weakenFactor = 0,
 		extraCooldowns = {},
 		buffs = Abilities.defaultBuffs(),
+		charges = charges,
 	}
 
 	placements[instanceId] = placement
@@ -746,6 +756,7 @@ function BrainrotService.getSavePlacements(plotModel: Model): { Types.PlantedBra
 					column = placement.position.column,
 				},
 				health = placement.health,
+				charges = placement.charges,
 			})
 		end
 	end
@@ -778,7 +789,13 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 			then saved.instanceId
 			else string.format("Brainrot_%d", nextInstanceId + 1)
 		local health = if type(saved.health) == "number" then saved.health else definition.health
-		if health <= 0 then
+		local savedCharges = if type(saved.charges) == "number" then saved.charges else nil
+		if type(definition.charges) == "number" and definition.charges > 0 then
+			-- Immune charge plants (Boneca) save 0 HP; their uses decide if they return.
+			if savedCharges ~= nil and savedCharges <= 0 then
+				continue
+			end
+		elseif health <= 0 then
 			continue
 		end
 
@@ -793,7 +810,7 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 			continue
 		end
 
-		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health, true) then
+		if not createPlacement(instanceId, definition, player.UserId, plot.model, position, health, true, savedCharges) then
 			GridService.release(plot.model, position)
 		end
 	end
@@ -809,6 +826,12 @@ function BrainrotService.applyEvolutionStats(player: Player, brainrotId: string)
 	for _, placement in placements do
 		if placement.ownerUserId ~= player.UserId or placement.brainrotId ~= brainrotId then
 			continue
+		end
+		-- A newly claimed tier that raises the use cap tops up plants already out.
+		local chargeGain = (composed.charges or 0) - (placement.definition.charges or 0)
+		if chargeGain > 0 and type(placement.charges) == "number" and placement.charges > 0 then
+			placement.charges += chargeGain
+			placement.model:SetAttribute("Charges", placement.charges)
 		end
 		placement.definition = composed
 		if composed.attackInterval > 0 then
@@ -870,10 +893,7 @@ function BrainrotService.clearPlot(plotModel: Model)
 	end
 	FogRows.clearPlot(plotModel)
 
-	local lineBomb = Abilities.get("LineBomb")
-	if lineBomb and (lineBomb :: any).clearPlot then
-		(lineBomb :: any).clearPlot(plotModel)
-	end
+	Abilities.clearPlot(plotModel)
 	plotModel:SetAttribute(PlantCost.DISCOUNT_ATTRIBUTE, nil)
 	plantDiscountReadyAt[plotModel] = nil
 end

@@ -194,6 +194,59 @@ local function playExplosion(row: number?, column: number?, entireRow: boolean?,
 	end
 end
 
+local function modelMiddle(model: Model): Vector3
+	local boxCFrame = model:GetBoundingBox()
+	return boxCFrame.Position
+end
+
+local function playLightningStrike(instanceId: unknown, chainedIds: unknown)
+	if type(instanceId) ~= "string" then
+		return
+	end
+	local model = findModelByInstanceId(instanceId)
+	if not model then
+		return
+	end
+	local boxCFrame, size = model:GetBoundingBox()
+	VfxUtil.playLightningStrike(boxCFrame.Position - Vector3.new(0, size.Y * 0.5, 0))
+	if type(chainedIds) ~= "table" then
+		return
+	end
+	local fallbackFrom = boxCFrame.Position
+	-- Currents leave once the bolt has landed; read positions then (monsters move).
+	task.delay(VfxConfig.LIGHTNING_DESCEND_SECONDS, function()
+		local from = if model.Parent then modelMiddle(model) else fallbackFrom
+		for _, chainedId in chainedIds :: { any } do
+			local other = if type(chainedId) == "string" then findModelByInstanceId(chainedId) else nil
+			if other then
+				VfxUtil.playElectricCurrent(from, modelMiddle(other))
+			end
+		end
+	end)
+end
+
+local function playMushroomExplosion(row: unknown, fromColumn: unknown, toColumn: unknown)
+	if type(row) ~= "number" or type(fromColumn) ~= "number" or type(toColumn) ~= "number" then
+		return
+	end
+	local plotModel = PlotUtil.getLocalPlotModel()
+	if not plotModel then
+		return
+	end
+	local first = PlotUtil.getTileTopCenter(plotModel, row, fromColumn)
+	local last = PlotUtil.getTileTopCenter(plotModel, row, toColumn)
+	local neighbor = PlotUtil.getTileTopCenter(plotModel, row, if fromColumn > 1 then fromColumn - 1 else fromColumn + 1)
+	if not first or not last or not neighbor then
+		return
+	end
+	local tileWidth = (neighbor - first).Magnitude
+	local span = (last - first).Magnitude + tileWidth
+	local radius = span * 0.5 * VfxConfig.MUSHROOM_RADIUS_SCALE
+	local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_MUSHROOM)
+	VfxUtil.playMushroomExplosion((first + last) * 0.5, radius, quality)
+	task.delay(VfxConfig.HEAVY_VFX_MUSHROOM_RELEASE, release)
+end
+
 local function playBatSlam(data: { [string]: any }, quality: VfxLoad.Quality)
 	local raw = data.hits
 	if type(raw) ~= "table" then
@@ -378,6 +431,14 @@ local function onCombatVisual(payload: unknown)
 			AudioController.play("Explosion")
 		end
 		playExplosion(data.row, data.column, data.entireRow == true, data.stagger)
+	elseif kind == "LightningStrike" then
+		AudioController.play("LightningStrike")
+		playLightningStrike(data.instanceId, data.chainedIds)
+	elseif kind == "MushroomExplosion" then
+		if data.muteSound ~= true then
+			AudioController.play("LastLaughExplosion")
+		end
+		playMushroomExplosion(data.row, data.fromColumn, data.toColumn)
 	elseif kind == "BatSlam" then
 		AudioController.play("Explosion")
 		local quality, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_BAT_SLAM)
@@ -402,6 +463,11 @@ local function onCombatVisual(payload: unknown)
 		playTerrifyPulse(data.instanceId)
 	elseif kind == "SandTornado" then
 		playSandTornado(data)
+	elseif kind == "Poof" then
+		local origin = asVector3(data.x, data.y, data.z)
+		if origin then
+			VfxUtil.playPoof(origin)
+		end
 	elseif kind == "InkDrop" then
 		local from = asVector3(data.originX, data.originY, data.originZ)
 		local to = asVector3(data.destX, data.destY, data.destZ)

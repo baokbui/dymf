@@ -9,6 +9,8 @@ local Abilities = {}
 export type AbilityCallbacks = {
 	dropCoinsOnGrid: (amount: number) -> (),
 	destroySelf: () -> (),
+	-- Spend one `definition.charges` use; returns uses left (nil if the plant has none).
+	useCharge: () -> number?,
 	-- Unregisters + frees the tile but keeps the model (LineBomb fly-over).
 	detachSelf: () -> Model?,
 	freezeSelf: (duration: number) -> (),
@@ -61,6 +63,7 @@ export type AbilityContext = {
 	buffs: EvolutionBuffs,
 	extraParams: { [string]: number }?,
 	health: number,
+	charges: number?,
 }
 
 export type AbilityHandler = {
@@ -69,6 +72,8 @@ export type AbilityHandler = {
 	tryAct: ((ctx: AbilityContext, callbacks: AbilityCallbacks) -> boolean)?,
 	-- Continuous effects that are not tied to one placement's attack timer.
 	tick: (() -> ())?,
+	-- Cleans up detached models / world effects a plant left on the plot.
+	clearPlot: ((plotModel: Model) -> ())?,
 	-- false = may run with other abilities (Ballerina coin boosts, silent passives).
 	exclusive: boolean?,
 }
@@ -84,6 +89,7 @@ local handlers: { [string]: AbilityHandler } = {
 	LobPineapple = require(script.LobPineapple),
 	PullToLane = require(script.PullToLane),
 	InkPuddle = require(script.InkPuddle),
+	TileTrap = require(script.TileTrap),
 	Wall = require(script.Wall),
 	ClearFogRow = require(script.ClearFogRow),
 	BustGrave = require(script.BustGrave),
@@ -135,6 +141,14 @@ function Abilities.get(abilityId: string?): AbilityHandler?
 		return nil
 	end
 	return handlers[abilityId]
+end
+
+function Abilities.clearPlot(plotModel: Model)
+	for _, handler in handlers do
+		if handler.clearPlot then
+			handler.clearPlot(plotModel)
+		end
+	end
 end
 
 return Abilities

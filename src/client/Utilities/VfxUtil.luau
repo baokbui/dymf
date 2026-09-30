@@ -386,6 +386,151 @@ function VfxUtil.playTileExplosion(position: Vector3)
 	end)
 end
 
+local function tweenOut(part: BasePart, duration: number, goal: { [string]: any })
+	TweenService:Create(part, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal):Play()
+	task.delay(duration + 0.1, function()
+		part:Destroy()
+	end)
+end
+
+local function domePart(name: string, color: Color3, transparency: number, center: Vector3): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Shape = Enum.PartType.Ball
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Color = color
+	part.Transparency = transparency
+	part.Size = Vector3.one * 0.5
+	part.CFrame = CFrame.new(center)
+	part.Parent = effectsFolder()
+	return part
+end
+
+local function effectPart(name: string, color: Color3, transparency: number): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Color = color
+	part.Transparency = transparency
+	return part
+end
+
+-- Upright cylinder whose base sits on `ground`.
+local function stemCFrame(ground: Vector3, height: number): CFrame
+	return CFrame.new(ground + Vector3.new(0, height * 0.5, 0)) * CFrame.Angles(0, 0, math.rad(90))
+end
+
+-- Mushroom cloud over `radius` studs around `ground` (tile tops): a fiery stem
+-- shoots up, a squashed cap billows at the top, then both smoke out.
+-- Full: flash + stem + cap + hot cap core + base ring + sparks.
+-- Reduced: stem + cap + thinner sparks. Minimal: nothing.
+function VfxUtil.playMushroomExplosion(ground: Vector3, radius: number, quality: string?)
+	if quality == "Minimal" then
+		return
+	end
+	local full = quality ~= "Reduced"
+	local rise = VfxConfig.MUSHROOM_RISE_SECONDS
+	local billow = VfxConfig.MUSHROOM_BILLOW_SECONDS
+	local height = radius * VfxConfig.MUSHROOM_HEIGHT_SCALE
+	local stemWidth = radius * VfxConfig.MUSHROOM_STEM_WIDTH_SCALE
+	local capWidth = radius * VfxConfig.MUSHROOM_CAP_WIDTH_SCALE
+	local capHeight = radius * VfxConfig.MUSHROOM_CAP_HEIGHT_SCALE
+	local riseInfo = TweenInfo.new(rise, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local billowInfo = TweenInfo.new(billow, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
+	local fadeGoal = { Transparency = 1, Color = VfxConfig.MUSHROOM_SMOKE_COLOR }
+
+	local stem = effectPart("MushroomStem", VfxConfig.MUSHROOM_STEM_COLOR, 0.1)
+	stem.Shape = Enum.PartType.Cylinder
+	stem.Size = Vector3.new(0.5, stemWidth * 1.4, stemWidth * 1.4)
+	stem.CFrame = stemCFrame(ground, 0.5)
+	stem.Parent = effectsFolder()
+	TweenService:Create(stem, riseInfo, {
+		Size = Vector3.new(height, stemWidth, stemWidth),
+		CFrame = stemCFrame(ground, height),
+	}):Play()
+
+	local cap = effectPart("MushroomCap", VfxConfig.MUSHROOM_CAP_COLOR, 0.05)
+	local capMesh = Instance.new("SpecialMesh")
+	capMesh.MeshType = Enum.MeshType.Sphere
+	capMesh.Parent = cap
+	cap.Size = Vector3.new(stemWidth, stemWidth, stemWidth)
+	cap.CFrame = CFrame.new(ground)
+	cap.Parent = effectsFolder()
+	local capTop = CFrame.new(ground + Vector3.new(0, height, 0))
+	TweenService:Create(cap, riseInfo, {
+		Size = Vector3.new(capWidth * 0.7, capHeight * 0.7, capWidth * 0.7),
+		CFrame = capTop,
+	}):Play()
+
+	task.delay(rise, function()
+		TweenService:Create(cap, billowInfo, {
+			Size = Vector3.new(capWidth, capHeight, capWidth),
+			CFrame = capTop * CFrame.new(0, capHeight * 0.2, 0),
+			Transparency = 1,
+			Color = VfxConfig.MUSHROOM_SMOKE_COLOR,
+		}):Play()
+		TweenService:Create(stem, billowInfo, fadeGoal):Play()
+		task.delay(billow + 0.1, function()
+			cap:Destroy()
+			stem:Destroy()
+		end)
+	end)
+
+	local sparks = if full
+		then VfxConfig.MUSHROOM_BURST_COUNT
+		else math.max(1, math.ceil(VfxConfig.MUSHROOM_BURST_COUNT * 0.45))
+	emitBurst(
+		ground,
+		VfxConfig.EXPLOSION_COLOR,
+		sparks,
+		VfxConfig.TILE_EXPLOSION_BURST_SPEED,
+		VfxConfig.TILE_EXPLOSION_BURST_SIZE,
+		VfxConfig.TILE_EXPLOSION_BURST_LIFETIME
+	)
+	if not full then
+		return
+	end
+
+	local flash = domePart("MushroomFlash", VfxConfig.MUSHROOM_CORE_COLOR, 0.05, ground)
+	tweenOut(flash, VfxConfig.MUSHROOM_FLASH_SECONDS, { Size = Vector3.one * radius * 1.4, Transparency = 1 })
+
+	local core = effectPart("MushroomCapCore", VfxConfig.MUSHROOM_CORE_COLOR, 0.1)
+	local coreMesh = Instance.new("SpecialMesh")
+	coreMesh.MeshType = Enum.MeshType.Sphere
+	coreMesh.Parent = core
+	core.Size = Vector3.one * stemWidth * 0.6
+	core.CFrame = CFrame.new(ground)
+	core.Parent = effectsFolder()
+	TweenService:Create(core, riseInfo, {
+		Size = Vector3.new(capWidth * 0.45, capHeight * 0.45, capWidth * 0.45),
+		CFrame = capTop,
+	}):Play()
+	task.delay(rise, function()
+		tweenOut(core, billow * 0.6, { Transparency = 1 })
+	end)
+
+	local ring = effectPart("MushroomRing", VfxConfig.EXPLOSION_COLOR, 0.3)
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Size = Vector3.new(0.3, radius * 0.8, radius * 0.8)
+	ring.CFrame = CFrame.new(ground + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = effectsFolder()
+	local ringDiameter = radius * 2 * VfxConfig.MUSHROOM_RING_SCALE
+	tweenOut(ring, VfxConfig.MUSHROOM_RING_SECONDS, {
+		Size = Vector3.new(0.3, ringDiameter, ringDiameter),
+		Transparency = 1,
+	})
+end
+
 local function spikeLengthScale(index: number, count: number): number
 	local t = ((index * 7 + 3) % math.max(count, 1)) / math.max(count, 1)
 	return 0.62 + t * 0.7
@@ -1766,6 +1911,188 @@ end
 	La Vacca: rings collapse into her while grit is sucked from the monster.
 	Off skips the effect. Low uses fewer rings and less grit.
 ]]
+-- Cartoon smoke puff. Off skips it. Low emits fewer, smaller puffs.
+function VfxUtil.playPoof(position: Vector3)
+	local count = scaledBurstCount(VfxConfig.POOF_BURST)
+	if not count then
+		return
+	end
+	local low = VfxLoad.quality() == "Reduced"
+	local size = if low then VfxConfig.POOF_SIZE * 0.75 else VfxConfig.POOF_SIZE
+	local lifetime = VfxConfig.POOF_LIFETIME
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "Poof"
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = effectsFolder()
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	emitter.Color = ColorSequence.new(VfxConfig.POOF_COLOR)
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, size * 0.4),
+		NumberSequenceKeypoint.new(0.4, size),
+		NumberSequenceKeypoint.new(1, size * 1.2),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.6, 0.4),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Lifetime = NumberRange.new(lifetime * 0.6, lifetime)
+	emitter.Speed = NumberRange.new(VfxConfig.POOF_SPEED * 0.4, VfxConfig.POOF_SPEED)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Drag = 5
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-90, 90)
+	emitter.LightInfluence = 0.4
+	emitter.Rate = 0
+	emitter.Parent = anchor
+	emitter:Emit(count)
+
+	task.delay(lifetime + 0.2, function()
+		anchor:Destroy()
+	end)
+end
+
+-- Jagged joints from `top` to `bottom`; the ends stay put so the bolt lands on target.
+local function lightningPoints(
+	top: Vector3,
+	bottom: Vector3,
+	segments: number,
+	jitter: number,
+	jitterY: number?
+): { Vector3 }
+	local points = { top }
+	local yJitter = jitterY or 0
+	for index = 1, segments - 1 do
+		local alpha = index / segments
+		local offset = Vector3.new(
+			(math.random() * 2 - 1) * jitter,
+			(math.random() * 2 - 1) * yJitter,
+			(math.random() * 2 - 1) * jitter
+		)
+		table.insert(points, top:Lerp(bottom, alpha) + offset)
+	end
+	table.insert(points, bottom)
+	return points
+end
+
+-- Draws one bolt top-down over LIGHTNING_DESCEND_SECONDS. Each segment owns its
+-- fade (timed from the strike start), so late segments can never be left behind.
+local function drawBolt(points: { Vector3 }, thickness: number, glow: boolean)
+	local step = VfxConfig.LIGHTNING_DESCEND_SECONDS / math.max(#points - 1, 1)
+	local fadeAt = VfxConfig.LIGHTNING_DESCEND_SECONDS + VfxConfig.LIGHTNING_HOLD_SECONDS
+	for index = 1, #points - 1 do
+		local a, b = points[index], points[index + 1]
+		local placedAt = (index - 1) * step
+		local function place()
+			local segments = { createWaveSegment(a, b, VfxConfig.LIGHTNING_CORE_COLOR, thickness, 0) }
+			segments[1].Name = "LightningBolt"
+			if glow then
+				local halo = createWaveSegment(a, b, VfxConfig.LIGHTNING_COLOR, VfxConfig.LIGHTNING_GLOW_THICKNESS, 0.45)
+				halo.Name = "LightningGlow"
+				table.insert(segments, halo)
+			end
+			task.delay(math.max(0, fadeAt - placedAt), function()
+				for _, part in segments do
+					if part.Parent then
+						tweenOut(part, VfxConfig.LIGHTNING_FADE_SECONDS, { Transparency = 1 })
+					end
+				end
+			end)
+		end
+		if placedAt <= 0 then
+			place()
+		else
+			task.delay(placedAt, place)
+		end
+	end
+end
+
+-- Boneca God of Thunder: a blue bolt drops onto `ground` (the monster's feet).
+-- Full: glowing bolt + side forks + flash + light + sparks. Reduced: thin bolt,
+-- flash, fewer sparks. Minimal: nothing.
+function VfxUtil.playLightningStrike(ground: Vector3)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
+	local full = quality == "Full"
+	local top = ground + Vector3.new(0, VfxConfig.LIGHTNING_HEIGHT, 0)
+	local points = lightningPoints(top, ground, VfxConfig.LIGHTNING_SEGMENTS, VfxConfig.LIGHTNING_JITTER)
+	drawBolt(points, VfxConfig.LIGHTNING_THICKNESS, full)
+
+	if full then
+		for _ = 1, VfxConfig.LIGHTNING_BRANCHES do
+			local from = points[math.random(2, math.max(2, #points - 2))]
+			local reach = VfxConfig.LIGHTNING_HEIGHT * 0.2
+			local tip = from
+				+ Vector3.new((math.random() * 2 - 1) * reach, -reach * (0.5 + math.random() * 0.5), (math.random() * 2 - 1) * reach)
+			drawBolt(lightningPoints(from, tip, 3, VfxConfig.LIGHTNING_JITTER * 0.5), VfxConfig.LIGHTNING_THICKNESS * 0.6, false)
+		end
+	end
+
+	task.delay(VfxConfig.LIGHTNING_DESCEND_SECONDS, function()
+		local flash = domePart("LightningFlash", VfxConfig.LIGHTNING_CORE_COLOR, 0.1, ground)
+		if full then
+			local light = Instance.new("PointLight")
+			light.Color = VfxConfig.LIGHTNING_COLOR
+			light.Brightness = 6
+			light.Range = VfxConfig.LIGHTNING_FLASH_SIZE * 3
+			light.Parent = flash
+		end
+		tweenOut(flash, VfxConfig.LIGHTNING_FADE_SECONDS + 0.1, {
+			Size = Vector3.one * VfxConfig.LIGHTNING_FLASH_SIZE,
+			Transparency = 1,
+		})
+		local sparks = scaledBurstCount(VfxConfig.LIGHTNING_BURST_COUNT)
+		if sparks then
+			emitBurst(
+				ground + Vector3.new(0, 0.5, 0),
+				VfxConfig.LIGHTNING_COLOR,
+				sparks,
+				VfxConfig.TILE_EXPLOSION_BURST_SPEED,
+				VfxConfig.TILE_EXPLOSION_BURST_SIZE * 0.8,
+				VfxConfig.TILE_EXPLOSION_BURST_LIFETIME
+			)
+		end
+	end)
+end
+
+-- Boneca Rolling Thunder: a crackling current from one monster to another.
+-- Full: glowing arc + spark pop. Reduced: thin arc. Minimal: nothing.
+function VfxUtil.playElectricCurrent(from: Vector3, to: Vector3)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
+	local full = quality == "Full"
+	local distance = (to - from).Magnitude
+	local segments = math.max(3, math.floor(distance / VfxConfig.CURRENT_SEGMENT_LENGTH))
+	local jitter = VfxConfig.CURRENT_JITTER
+	drawBolt(lightningPoints(from, to, segments, jitter, jitter), VfxConfig.CURRENT_THICKNESS, full)
+	if not full then
+		return
+	end
+	task.delay(VfxConfig.LIGHTNING_DESCEND_SECONDS, function()
+		emitBurst(
+			to,
+			VfxConfig.LIGHTNING_COLOR,
+			VfxConfig.CURRENT_BURST_COUNT,
+			VfxConfig.TILE_EXPLOSION_BURST_SPEED * 0.5,
+			VfxConfig.TILE_EXPLOSION_BURST_SIZE * 0.5,
+			VfxConfig.TILE_EXPLOSION_BURST_LIFETIME * 0.6
+		)
+	end)
+end
+
 -- Blueberrinni: dark blue droplet on an arc. Off skips it. Low keeps the drop and drops the tail.
 function VfxUtil.playInkDrop(from: Vector3, to: Vector3, arcHeight: number?)
 	local quality = VfxLoad.quality()

@@ -15,7 +15,7 @@ Saved (player-owned progression):
 - Highest unlocked level
 - Brains
 - Player health (hearts — progressive across days)
-- **Planted Brainrots** (id, tile, remaining HP)
+- **Planted Brainrots** (id, tile, remaining HP, remaining uses for `charges` plants like Boneca)
 - Unlocks
 - Equipped loadout
 - Upgrades (`WalkSpeed` ranks, **Magnet** 1–5)
@@ -61,7 +61,10 @@ Not saved (transient / runtime):
 | `hiddenDayPending` | boolean? (true after Day 40 is cleared until the Hidden Day ends) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
-`PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health }`.
+`PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health, charges? }`.
+`charges` is only written for definitions with `charges` (Boneca headbutts left).
+Missing on older saves means full uses. A saved 0 is not restored. Immune charge
+plants save `health = 0`, so restore decides by `charges` instead of HP.
 `CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see
 `HOUSE.md`.
 

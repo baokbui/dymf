@@ -42,6 +42,7 @@ local EvolutionConfig = {
 	HIT_JOB = {
 		BubbleTrap = { xp = 8, hits = 2 },
 		MeleeBat = { xp = 8, hits = 3 },
+		TileTrap = { xp = 8, hits = 2 },
 	} :: { [string]: { xp: number, hits: number } },
 
 	-- These abilities deal damage but earn XP via HIT_JOB, not last-hit.
@@ -49,6 +50,7 @@ local EvolutionConfig = {
 		BubbleTrap = true,
 		BubbleBarrage = true,
 		MeleeBat = true,
+		TileTrap = true,
 	} :: { [string]: boolean },
 
 	-- Brains to *claim* a tier after the Brainrot level gate (not auto-unlock).

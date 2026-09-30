@@ -30,13 +30,14 @@ not live code. “Gold” on the sheet is **coins**.
   passives compose the same way (params merge or extra ability ids). GOD
   ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
   Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
-  (on plant); Cappuccino **Shadow Requiem** ✅; Tralalero **Abyssal Torrent** ✅.
+  (on plant); Cappuccino **Shadow Requiem** ✅; Tralalero **Abyssal Torrent** ✅;
+  Boneca **Last Laugh** ✅ (on her last headbutt).
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
     that XP. Poison / status ticks keep the previous last hit; silent deaths
-    (house breach, plot clear) grant nothing. `BubbleTrap` and `MeleeBat` do
-    **not** claim last-hit (they use landed-hit jobs instead).
+    (house breach, plot clear) grant nothing. `BubbleTrap`, `MeleeBat`, and
+    `TileTrap` do **not** claim last-hit (they use landed-hit jobs instead).
   - **Boss** — `BOSS_XP` is split **evenly across every living plant** on the
     lawn (integer remainder on the first plants). Four Tungs + one Ballerina
     → Tung pool gets four shares, Ballerina one. Empty lawn → no XP.
@@ -49,6 +50,8 @@ not live code. “Gold” on the sheet is **coins**.
       (**instead of** last-hit).
     - `MeleeBat` — `MELEE_XP` every `MELEE_XP_HITS` (3) connecting hits
       (**instead of** last-hit), including Ranged Rampage bats.
+    - `TileTrap` — `8` XP every **2** landed headbutts (**instead of** last-hit).
+      Lightning bolts, Rolling Thunder currents, and Last Laugh add no extra XP.
 - Campaign days stay the PvZ loop. A player can be on Day 3 with a level-20
   Tung Tung, or Day 40 with a level-8 Ballerina.
 - Inventory + field inspect show `EvolutionConfig.formatProgress` (level and
@@ -116,7 +119,8 @@ Abilities. Combat math stays in `CombatService`.
 Live base stats today (for Epic deltas): Ballerina interval **18s**; Chimpanzini
 **2000** HP; Tung Tung **1200** HP / **55** dmg; Tralalero interval **5s**;
 Cappuccino interval **2s**; Lirili plant cooldown **20s**, freeze **5s** / 2
-tiles. Mythic Permafrost overlays freeze duration to **7s**.
+tiles. Mythic Permafrost overlays freeze duration to **7s**. Boneca **7**
+headbutts (`charges`) / **150** dmg / **1s** stun.
 
 **Girafa Celestre**, **Brr Brr Patapim**, and **Bombardino Crocodilo** are not
 on the sheet (TBD).
@@ -183,6 +187,18 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 | Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row (more monsters; ties go **lower**). |
 | GOD | Glacial Dominion | Freeze the **whole lawn** (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
 
+### Boneca Ambalabu
+
+| Tier | Name | Effect |
+| ---- | ---- | ------ |
+| Epic | Thick Skull | **10** headbutts (from 7) and **200** damage (from 150). A Boneca already on the lawn gets **+3** headbutts when Epic is claimed. |
+| Legendary | God of Thunder | **Every headbutt** also calls down a blue lightning bolt on that monster: **+200** damage on top of the headbutt, and its stun becomes **1.5s**. No cooldown; params-only (`lightningDamage` / `lightningStunDuration`). VFX: High glowing bolt + forks + flash + sparks, Low thin bolt + flash, Off none. |
+| Mythic | Rattled | When a headbutt stun ends, that monster is slowed **30%** for **3s**. |
+| Immortal | Rolling Thunder | Each lightning strike sends electric currents from the struck monster into **3–4** other monsters within **2 tiles** (any row, closest first; fewer if fewer are nearby): **50** damage each, no stun. Params-only (`chainDamage` / `chainMinTargets` / `chainMaxTargets` / `chainRangeTiles`). VFX: jagged blue arcs from the struck monster to each one (High glowing + spark pop, Low thin, Off none). |
+| GOD | Last Laugh | Her last headbutt ends in a mushroom cloud blast: **450** damage on her tile and **one tile each side** in her row, then she's gone. |
+
+Her finale (`TileTrapFinale`): Last Laugh if claimed, otherwise a plain poof.
+
 ---
 
 ## Mutations (Milestone 25)
@@ -213,14 +229,17 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
   `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
-  Frostbound Neighbor). **GOD** ultimates use the
+  Frostbound Neighbor, Rattled, Rolling Thunder). **GOD** ultimates use the
   same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation`,
-  (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili `freezeEntireLawn` params overlay ✅).
+  `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili `freezeEntireLawn` and Boneca
+  `lastLaughDamage` params overlays ✅). Boneca **God of Thunder** is a
+  params-only Legendary overlay her headbutt reads.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
-  `BubbleTrap` and `MeleeBat` are excluded); boss XP split evenly across living
-  plants; support jobs on `GenerateCoins` / `Wall` / `FreezeTime` / landed-hit
-  jobs (`BubbleTrap` every 2, `MeleeBat` every 3). Never trust the client.
+  `BubbleTrap`, `MeleeBat`, and `TileTrap` are excluded); boss XP split evenly
+  across living plants; support jobs on `GenerateCoins` / `Wall` / `FreezeTime`
+  / landed-hit jobs (`BubbleTrap` every 2, `MeleeBat` every 3, `TileTrap`
+  every 2). Never trust the client.
 - Eligibility from that unit’s Brainrot level (+ optional spend); never trust
   the client, never gate on campaign day unless a later pass adds it.
 - Grants / composition on the server (`ProgressService` or a dedicated API).
@@ -232,7 +251,7 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
   (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili Glacial Dominion
-  on plant ✅).
+  on plant ✅; Boneca Last Laugh on her last headbutt ✅).
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   The server authors a dense flame column (core + extra layer). **High** shows both,

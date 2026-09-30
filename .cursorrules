@@ -298,7 +298,7 @@ Persist:
 - Current day / highest unlocked day
 - Brains
 - Player health (hearts)
-- Planted Brainrots (id, tile, HP) — **victory checkpoint only** (not mid-day)
+- Planted Brainrots (id, tile, HP, remaining `charges` uses) — **victory checkpoint only** (not mid-day)
 - Unlocks, equipped loadout, upgrades (`WalkSpeed`, **Magnet** 1–5), statistics
 - **Brainrot XP** (per registry id) — XP from a failed / unfinished day is
   **not** committed (Start Day snapshot; same idea as the lawn checkpoint)
@@ -358,7 +358,7 @@ Avoid unnecessary Instance creation.
 Reuse objects when practical.
 
 Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
-Jackpot burst, Abyssal Torrent) go through `Shared.Utilities.VfxLoad`. Quality
+Jackpot burst, Abyssal Torrent, Last Laugh mushroom cloud) go through `Shared.Utilities.VfxLoad`. Quality
 is a client Settings toggle (High = Full, Low = Reduced, Off = Minimal). The
 server always authors the full effect. Settings can hide Brainrot VFX on other
 players' plots. Damage, targeting, status, and animations are never throttled.

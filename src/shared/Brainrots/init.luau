@@ -221,6 +221,34 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
 	},
 
+	BonecaAmbalabu = {
+		id = "BonecaAmbalabu",
+		name = "Boneca Ambalabu",
+		cost = 125,
+		maxHealth = 0,
+		health = 0,
+		damage = 150,
+		-- Full headbutt clip (back to stance at 1s). While idle she re-checks every tick.
+		attackInterval = 1,
+		rangeTiles = 0,
+		ability = "TileTrap",
+		abilityParams = { stunDuration = 1 },
+		-- Headbutts before she poofs away.
+		charges = 7,
+		ignoreMonsterChew = true,
+		plantCooldown = 10,
+		color = Color3.fromRGB(120, 170, 90),
+		previewFocusOffset = Vector3.new(0, -0.6, 0),
+		modelId = "Boneca Ambalabu",
+		modelOrientationDegrees = Vector3.new(0, 0, 0),
+		modelYOffset = 0,
+		modelScale = BrainrotConfig.COMPACT_MODEL_SCALE,
+		animated = true,
+		attackAnimationId = "rbxassetid://77436512126859",
+		-- Head connects with the monster.
+		attackHitDelay = 0.8,
+	},
+
 	ChimpanziniBananini = {
 		id = "ChimpanziniBananini",
 		name = "Chimpanzini Bananini",

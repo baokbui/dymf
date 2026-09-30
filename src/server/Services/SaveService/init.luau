@@ -87,6 +87,7 @@ local function deepCopyPlanted(source: { Types.PlantedBrainrot }): { Types.Plant
 				column = entry.position.column,
 			},
 			health = entry.health,
+			charges = entry.charges,
 		})
 	end
 	return result
@@ -260,6 +261,7 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 					column = math.floor(column),
 				},
 				health = if type(health) == "number" then math.max(0, health) else 0,
+				charges = if type(entry.charges) == "number" then math.max(0, math.floor(entry.charges)) else nil,
 			})
 		end
 	end

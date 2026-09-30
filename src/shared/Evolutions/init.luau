@@ -5,7 +5,8 @@
 	level gate. Epic `stats` compose onto the shared registry definition. Legendary extras
 	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names). GOD ultimates: `Jackpot`,
-	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, `AbyssalTorrent`, plus Lirili `freezeEntireLawn` overlay.
+	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, `AbyssalTorrent`, plus Lirili `freezeEntireLawn`
+	and Boneca `lastLaughDamage` (Last Laugh) overlays.
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
@@ -18,6 +19,7 @@ export type StatOverrides = {
 	damage: number?,
 	plantCooldown: number?,
 	immovable: boolean?,
+	charges: number?,
 }
 
 export type EvolutionRow = {
@@ -249,6 +251,43 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			abilityParams = { freezeAdjacentLane = 1 },
 		},
 		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freezes the whole lawn, then slows everyone 25% for 3 seconds after they thaw.", abilityParams = { freezeEntireLawn = 1, lawnSlowPercent = 25, lawnSlowDuration = 3 } },
+	},
+	BonecaAmbalabu = {
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Thick Skull",
+			description = "10 headbutts before she poofs, and 33% more damage.",
+			stats = { charges = 10, damage = 200 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "God of Thunder",
+			description = "Every headbutt calls down lightning on that monster: 200 damage and a 1.5 second stun.",
+			abilityParams = { lightningDamage = 200, lightningStunDuration = 1.5 },
+		},
+		{
+			rarity = "Mythic",
+			level = 30,
+			name = "Rattled",
+			description = "Monsters she headbutts are slowed 30% for 3 seconds after the stun ends.",
+			abilityParams = { rattleSlowPercent = 30, rattleSlowDuration = 3 },
+		},
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Rolling Thunder",
+			description = "Each lightning strike sends electric currents into 3 to 4 nearby monsters for 50 damage each.",
+			abilityParams = { chainDamage = 50, chainMinTargets = 3, chainMaxTargets = 4, chainRangeTiles = 2 },
+		},
+		{
+			rarity = "God",
+			level = 50,
+			name = "Last Laugh",
+			description = "Her last headbutt ends in a mushroom cloud blast that deals 450 damage on her tile and one tile on each side.",
+			abilityParams = { lastLaughDamage = 450, lastLaughRadius = 1 },
+		},
 	},
 }
 

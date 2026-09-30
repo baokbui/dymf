@@ -37,12 +37,12 @@ Tune `YARD_OFFSET_X` and `DOOR_RIGHT_Z` in `StoreConfig`.
 
 | Store | Where | Currency | Sells |
 | ----- | ----- | -------- | ----- |
-| Brainrot shop | Plot stall (`Tung Mascot`) | Brains | `STORE_CATALOG` (Girafa Celestre, Orangutini Ananassini, La Vacca Saturno Saturnita) |
+| Brainrot shop | Plot stall (`Tung Mascot`) | Brains | `STORE_CATALOG` (Girafa Celestre, Orangutini Ananassini, La Vacca Saturno Saturnita, Blueberrinni Octopusini, Boneca Ambalabu) |
 | Upgrades | HUD **Upgrades** | Brains | Player upgrades (`ProgressConfig.UPGRADE_CATALOG`) |
 
 Starter-roster Brainrots (Day 1 + clear Days 3/5/7/9) and **Brr Brr Patapim**
-(reach Day 31) are **not** sold here. The shop sells **Girafa Celestre**, **Orangutini Ananassini**, **La Vacca Saturno Saturnita**, and **Blueberrinni Octopusini**. Buy Girafa
-early with brains, or get her free on reach Day 25. Orangutini, La Vacca, and Blueberrinni are store-only.
+(reach Day 31) are **not** sold here. The shop sells **Girafa Celestre**, **Orangutini Ananassini**, **La Vacca Saturno Saturnita**, **Blueberrinni Octopusini**, and **Boneca Ambalabu**. Buy Girafa
+early with brains, or get her free on reach Day 25. Orangutini, La Vacca, Blueberrinni, and Boneca are store-only.
 Already owned units gray out with a red **SOLD** stamp.
 
 | Brainrot | Brains | Notes |
@@ -51,6 +51,7 @@ Already owned units gray out with a red **SOLD** stamp.
 | Orangutini Ananassini | 80 | Lobs a pineapple over the front monster and graves |
 | La Vacca Saturno Saturnita | 60 | One-shot: pulls the closest 1-tile monster from a neighboring row into hers (2+ tiles wide are skipped) |
 | Blueberrinni Octopusini | 70 | Ink puddle on a random empty tile in her row, skipping graves; lower arc when close, higher when far; slows while they stand in it |
+| Boneca Ambalabu | 65 | Headbutts each monster on her tile in front of her (hit + 1 second stun); poofs away after 7 |
 
 **Speed** (`WalkSpeed`): 20 levels, each `+walkSpeedBonusPerLevel` (1) on top of
 Roblox-default `PlayerConfig.WALK_SPEED` (16 → 36 at max). Costs rise each

@@ -189,6 +189,13 @@ local VfxConfig = {
 	GRAVITY_PULL_COLOR = Color3.fromRGB(170, 140, 255),
 	GRAVITY_PULL_COLOR_DIM = Color3.fromRGB(90, 60, 160),
 
+	-- Boneca poof when she leaves after her last headbutt.
+	POOF_COLOR = Color3.fromRGB(235, 235, 235),
+	POOF_BURST = 26,
+	POOF_SIZE = 3.2,
+	POOF_SPEED = 9,
+	POOF_LIFETIME = 0.8,
+
 	-- Blueberrinni ink lob. Off skips the droplet. Low keeps the drop and drops the tail.
 	INK_FLIGHT_SECONDS = 2.2,
 	INK_ARC_HEIGHT_MIN = 6, -- nearest empty tile
@@ -300,6 +307,46 @@ local VfxConfig = {
 	HEAVY_VFX_JACKPOT = 1,
 	HEAVY_VFX_BAT_SLAM_RELEASE = 1.8,
 	HEAVY_VFX_JACKPOT_RELEASE = 0.7,
+	HEAVY_VFX_MUSHROOM = 2,
+	HEAVY_VFX_MUSHROOM_RELEASE = 1.2,
+
+	-- Boneca God of Thunder: a jagged bolt drops from the sky onto a monster.
+	LIGHTNING_COLOR = Color3.fromRGB(70, 150, 255),
+	LIGHTNING_CORE_COLOR = Color3.fromRGB(215, 235, 255),
+	LIGHTNING_HEIGHT = 45, -- studs above the monster's feet where the bolt starts
+	LIGHTNING_SEGMENTS = 9,
+	LIGHTNING_JITTER = 1.8, -- max sideways kink per joint (studs)
+	LIGHTNING_THICKNESS = 0.35,
+	LIGHTNING_GLOW_THICKNESS = 1.1,
+	LIGHTNING_DESCEND_SECONDS = 0.1, -- top-to-ground draw time
+	LIGHTNING_HOLD_SECONDS = 0.12,
+	LIGHTNING_FADE_SECONDS = 0.2,
+	LIGHTNING_BRANCHES = 2,
+	LIGHTNING_FLASH_SIZE = 6,
+	LIGHTNING_BURST_COUNT = 18,
+	-- Rolling Thunder currents (struck monster → nearby monsters).
+	CURRENT_SEGMENT_LENGTH = 2.5, -- studs per kink
+	CURRENT_JITTER = 0.9,
+	CURRENT_THICKNESS = 0.22,
+	CURRENT_BURST_COUNT = 8,
+
+	-- Mushroom cloud (Boneca GOD Last Laugh on her last headbutt). Sizes are multiples of `radius` (half the covered tiles' width
+	-- × MUSHROOM_RADIUS_SCALE).
+	MUSHROOM_RADIUS_SCALE = 1.1,
+	MUSHROOM_HEIGHT_SCALE = 1.6, -- stem height
+	MUSHROOM_STEM_WIDTH_SCALE = 0.35,
+	MUSHROOM_CAP_WIDTH_SCALE = 1.6,
+	MUSHROOM_CAP_HEIGHT_SCALE = 0.8,
+	MUSHROOM_RISE_SECONDS = 0.45, -- stem shoots up, cap rides the top
+	MUSHROOM_BILLOW_SECONDS = 0.6, -- cap swells while everything smokes out
+	MUSHROOM_FLASH_SECONDS = 0.25,
+	MUSHROOM_RING_SECONDS = 0.55,
+	MUSHROOM_RING_SCALE = 1.5, -- ground ring diameter vs covered width
+	MUSHROOM_BURST_COUNT = 40,
+	MUSHROOM_STEM_COLOR = Color3.fromRGB(255, 170, 70),
+	MUSHROOM_CAP_COLOR = Color3.fromRGB(255, 130, 40),
+	MUSHROOM_CORE_COLOR = Color3.fromRGB(255, 240, 190),
+	MUSHROOM_SMOKE_COLOR = Color3.fromRGB(90, 80, 75),
 
 	-- Jackpot (Ballerina GOD) gold burst at the plant.
 	JACKPOT_COLOR = Color3.fromRGB(255, 205, 40),

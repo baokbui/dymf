@@ -77,6 +77,7 @@ local AudioConfig = {
 		"PlaceBrainrot_BrrBrrPatapim",
 		"PlaceBrainrot_GiraffaCeleste",
 		"PlaceBrainrot_LaVaccaSaturnoSaturnita",
+		"PlaceBrainrot_BonecaAmbalabu",
 		"WindGust",
 		"GraveShake",
 		"GraveCollapse",
@@ -84,6 +85,9 @@ local AudioConfig = {
 		"SwordWavePillar",
 		"SahurWrath",
 		"InkLand",
+		"TileTrap",
+		"LightningStrike",
+		"LastLaughExplosion",
 	},
 
 	MUSIC = {
@@ -199,6 +203,10 @@ local AudioConfig = {
 		},
 		PlaceBrainrot_LaVaccaSaturnoSaturnita = {
 			SoundId = "rbxassetid://90484863638361",
+			Volume = 0.85,
+		},
+		PlaceBrainrot_BonecaAmbalabu = {
+			SoundId = "rbxassetid://82401058692450",
 			Volume = 0.85,
 		},
 		PlaceBrainrot_GiraffaCeleste = {
@@ -370,6 +378,21 @@ local AudioConfig = {
 		-- Last-tile light-pillar detonation.
 		SwordWavePillar = {
 			SoundId = "rbxassetid://119977062667102",
+			Volume = 0.9,
+		},
+		-- Boneca headbutt landing (every TileTrap hit, including kills).
+		TileTrap = {
+			SoundId = "rbxassetid://133256956059581",
+			Volume = 0.85,
+		},
+		-- Boneca God of Thunder bolt (CombatVisual kind "LightningStrike").
+		LightningStrike = {
+			SoundId = "rbxassetid://138687206526097",
+			Volume = 0.85,
+		},
+		-- Boneca GOD Last Laugh mushroom cloud (CombatVisual kind "MushroomExplosion").
+		LastLaughExplosion = {
+			SoundId = "rbxassetid://139210252225248",
 			Volume = 0.9,
 		},
 		-- Blueberrinni ink splat when the droplet reaches the tile.

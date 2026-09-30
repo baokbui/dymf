@@ -52,6 +52,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `ignoreMonsterChew`       | boolean?               | Monsters phase through; no chew damage (Lirili, Patapim)                                 |
 | `plantCooldown`           | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)`                   |
 | `maxOnPlot`               | number?                | Cap of living plants of this id on one plot (Ballerina = 10). Nil = unlimited            |
+| `charges`                 | number?                | Uses before the plant despawns (Boneca = 7 headbutts, 10 with Epic). Remaining uses save with the lawn |
 | `color`                   | Color3?                | Shop swatch + placeholder / ghost validity tint                                          |
 | `modelId`                 | string?                | Child name under `Assets.Brainrots` (defaults to `id`)                                   |
 | `modelOrientationDegrees` | Vector3?               | Local Euler after facing (+X)                                                            |
@@ -105,6 +106,7 @@ Rojo does not wipe Studio assets). Names may differ from registry ids — set
 | `OrangutiniAnanassini`    | `Orangutini Ananassini`      |
 | `LaVaccaSaturnoSaturnita` | `La Vacca Saturno Saturnita` |
 | `BlueberrinniOctopusini` | `Blueberrinni Octopusini` |
+| `BonecaAmbalabu` | `Boneca Ambalabu` |
 
 
 For each Model: set `PrimaryPart` (prefer `RootPart` / `HumanoidRootPart` —
@@ -194,27 +196,29 @@ Equip into an open loadout slot if
 one exists (`MAX_EQUIPPED` is still 7).
 
 **Store (Milestone 18):** Mini stores cloned beside each plot house
-(`docs/STORE.md`). The Brainrot shop currently sells **Girafa Celestre** only
-(50 brains in `ProgressConfig.STORE_CATALOG`; still granted free on reach Day 25). Starter-roster units and
+(`docs/STORE.md`). The Brainrot shop sells **Girafa Celestre** (50 brains; still
+granted free on reach Day 25), **La Vacca** (60), **Boneca** (65), **Blueberrinni** (70), and
+**Orangutini** (80) from `ProgressConfig.STORE_CATALOG`. Starter-roster units and
 **Brr Brr Patapim** stay campaign/reach unlocks — they are not sold.
 
 ## Roster ✅ (Milestone 5)
 
 
-| Name                       | Cost | Health (hits) | Damage | Interval | Range                | Ability                                                                                                                                                                                      | Coins    |
-| -------------------------- | ---- | ------------- | ------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Ballerina Cappucina        | 50   | 500 (5)       | 0      | 18s      | —                    | Spits coins onto random tiles (**max 10** on the plot)                                                                                                                                       | 25       |
-| Tung Tung Sahur            | 75   | 1200 (12)     | 55     | 1.5s     | 1 tile (own + ahead) | Melee bat                                                                                                                                                                                    | —        |
-| Tralalero Tralala          | 175  | 500 (5)       | 55     | 5.0s     | Full row             | Bubble projectile → trap (0.5s)                                                                                                                                                              | —        |
-| Bombardino Crocodilo       | 325  | — (1)         | 1000   | —        | Full row             | Line bomb on place                                                                                                                                                                           | 30s      |
-| Lirili Larila              | 75   | —             | 0      | —        | 2 ahead + 2 behind   | Freeze 5s on place; despawn after cast anim                                                                                                                                                  | 20s      |
-| Cappuccino Assassino       | 100  | 500 (5)       | 50     | 2.0s     | Full row             | Throw spinning shuriken                                                                                                                                                                      | —        |
-| Chimpanzini Bananini       | 50   | 2000 (20)     | 0      | —        | —                    | Wall                                                                                                                                                                                         | —        |
-| Girafa Celestre            | 50   | — (immune)    | 0      | —        | —                    | One-shot: gust anim, blow fog off the whole plot for 7s, despawn                                                                                                                             | ~7.5s CD |
-| Brr Brr Patapim            | 50   | — (immune)    | 0      | 2.6s     | —                    | Plant on a grave; 2 smashes per clip (1s apart); 6 collapse it, then despawns                                                                                                                | 12s CD   |
-| Orangutini Ananassini      | 100  | 700 (7)       | 40     | 2.0s     | Full row             | Lobs a pineapple over the front monster and graves, hitting the one behind. A lone monster is the target. No evolutions yet. Store: 80 brains                                                | —        |
-| La Vacca Saturno Saturnita | 75   | — (immune)    | 0      | —        | Adjacent rows        | Floats and bobs above the tile, pulls the closest **1-tile** monster on each neighboring row onto her tile (edge: 1, middle: 2). Monsters **2+ tiles wide** are not pulled. Gravity-well VFX: High is dense, Low is thinner, Off skips it. Then she vanishes. Store: 60 brains | —        |
-| Blueberrinni Octopusini    | 50   | 600 (6)       | 0      | 10s      | Own row              | Lobs ink onto a random empty tile in her row (never her own tile or a grave). A nearer tile arcs lower; a farther tile arcs higher. Puddle lasts 7 seconds and slows monsters only while they stand in it. High shows the droplet and tail, Low the droplet only, Off neither. No evolutions yet. Store: 70 brains | —        |
+| Name | Cost | Health (hits) | Damage | Interval | Range | Ability | Coins | Plant cooldown |
+| ---- | ---- | ------------- | ------ | -------- | ----- | ------- | ----- | -------------- |
+| Ballerina Cappucina | 50 | 500 (5) | 0 | 18s | — | Spits coins onto random tiles (**max 10** on the plot) | 25 | ~7.5s |
+| Tung Tung Sahur | 75 | 1200 (12) | 55 | 1.5s | 1 tile (own + ahead) | Melee bat | — | ~9.5s |
+| Tralalero Tralala | 175 | 500 (5) | 55 | 5.0s | Full row | Bubble projectile → trap (0.5s) | — | ~17.7s |
+| Bombardino Crocodilo | 325 | — (1) | 1000 | — | Full row | Line bomb on place | — | 30s |
+| Lirili Larila | 75 | — | 0 | — | 2 ahead + 2 behind | Freeze 5s on place; despawn after cast anim | — | 20s |
+| Cappuccino Assassino | 100 | 500 (5) | 50 | 2.0s | Full row | Throw spinning shuriken | — | ~11.6s |
+| Chimpanzini Bananini | 50 | 2000 (20) | 0 | — | — | Wall | — | ~7.5s |
+| Girafa Celestre | 50 | — (immune) | 0 | — | — | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | — | ~7.5s |
+| Brr Brr Patapim | 50 | — (immune) | 0 | 2.6s | — | Plant on a grave; 2 smashes per clip (1s apart); 6 collapse it, then despawns | — | 12s |
+| Orangutini Ananassini | 100 | 700 (7) | 40 | 2.0s | Full row | Lobs a pineapple over the front monster and graves, hitting the one behind. A lone monster is the target. No evolutions yet. Store: 80 brains | — | ~11.6s |
+| La Vacca Saturno Saturnita | 75 | — (immune) | 0 | — | Adjacent rows | Floats and bobs above the tile, pulls the closest **1-tile** monster on each neighboring row onto her tile (edge: 1, middle: 2). Monsters **2+ tiles wide** are not pulled. Gravity-well VFX: High is dense, Low is thinner, Off skips it. Then she vanishes. Store: 60 brains | — | 18s |
+| Blueberrinni Octopusini | 50 | 600 (6) | 0 | 10s | Own row | Lobs ink onto a random empty tile in her row (never her own tile or a grave). A nearer tile arcs lower; a farther tile arcs higher. Puddle lasts 7 seconds and slows monsters only while they stand in it. High shows the droplet and tail, Low the droplet only, Off neither. No evolutions yet. Store: 70 brains | — | ~7.5s |
+| Boneca Ambalabu | 125 | — (immune) | 150 | 1.0s | Own tile (in front of her) | `TileTrap`. Monsters walk onto her tile. She headbutts each one still in front of her (east of her tile center): the head lands at 0.8s for 150 damage and a 1 second stun, once per monster. After **7** headbutts (`charges`, saved with the lawn) she disappears in a poof (High full puff, Low thinner, Off none). Evolutions (`EVOLUTIONS.md`) add God of Thunder, Rattled, Rolling Thunder chain currents, and the GOD Last Laugh mushroom cloud. Store: 65 brains | — | 10s |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -293,10 +297,11 @@ planted again (PvZ seed packet). Duration scales with **cost** via
 | Cost | Example                 | Recharge                       |
 | ---- | ----------------------- | ------------------------------ |
 | 50   | Ballerina / Chimpanzini | ~7.5s                          |
-| 75   | Tung Tung               | ~10s                           |
+| 75   | Tung Tung               | ~9.5s                          |
 | 75   | Lirili                  | 20s (`plantCooldown` override) |
-| 100  | Cappuccino              | ~13s                           |
-| 175  | Tralalero               | ~21s                           |
+| 100  | Cappuccino              | ~11.6s                         |
+| 125  | Boneca                  | 10s (`plantCooldown` override) |
+| 175  | Tralalero               | ~17.7s                         |
 | 325  | Bombardino              | 30s                            |
 
 

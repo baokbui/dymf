@@ -253,6 +253,26 @@ function CombatService.notifyGravityPull(ownerUserId: number, center: Vector3, o
 	fireCombatVisual(ownerUserId, payload)
 end
 
+-- One-shot plant leaving the lawn (Boneca's last headbutt).
+function CombatService.notifyPoof(ownerUserId: number, position: Vector3)
+	fireCombatVisual(ownerUserId, {
+		kind = "Poof",
+		x = position.X,
+		y = position.Y,
+		z = position.Z,
+	})
+end
+
+-- Boneca God of Thunder: a blue bolt drops onto the struck monster, then
+-- Rolling Thunder currents arc from it to each chained monster.
+function CombatService.notifyLightningStrike(ownerUserId: number, monsterId: string, chainedIds: { string }?)
+	fireCombatVisual(ownerUserId, {
+		kind = "LightningStrike",
+		instanceId = monsterId,
+		chainedIds = chainedIds,
+	})
+end
+
 function CombatService.notifyInkDrop(ownerUserId: number, from: Vector3, to: Vector3, arcHeight: number?)
 	fireCombatVisual(ownerUserId, {
 		kind = "InkDrop",
@@ -891,6 +911,23 @@ function CombatService.fireTileExplosion(
 		kind = "Explosion",
 		row = row,
 		column = column,
+		muteSound = muteSound == true,
+	})
+end
+
+-- One mushroom cloud covering lawn tiles fromColumn..toColumn of a row (visual + boom only).
+function CombatService.fireMushroomExplosion(
+	ownerUserId: number,
+	row: number,
+	fromColumn: number,
+	toColumn: number,
+	muteSound: boolean?
+)
+	fireCombatVisual(ownerUserId, {
+		kind = "MushroomExplosion",
+		row = row,
+		fromColumn = fromColumn,
+		toColumn = toColumn,
 		muteSound = muteSound == true,
 	})
 end
