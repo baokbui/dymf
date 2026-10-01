@@ -512,6 +512,10 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 					+ math.sin(now * MonsterConfig.BUBBLE_BOB_SPEED) * MonsterConfig.BUBBLE_BOB_AMPLITUDE
 				syncTransform(runtime, bob)
 				MonsterFeedback.setBubbled(runtime.model, true)
+			elseif runtime.freezeVisual == "Stun" then
+				MonsterFeedback.setFrozen(runtime.model, false)
+				MonsterFeedback.setBubbled(runtime.model, false)
+				syncTransform(runtime)
 			else
 				MonsterFeedback.setFrozen(runtime.model, true)
 				syncTransform(runtime)

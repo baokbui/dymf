@@ -133,7 +133,12 @@ local function playDizzy(instanceId: string?, duration: unknown)
 	local model = findModelByInstanceId(instanceId)
 	if model then
 		VfxUtil.playDizzy(model, duration)
-		VfxUtil.playStatusFloater(model, "Stunned", VfxConfig.STATUS_FLOAT_STUN_COLOR)
+		-- Status words stay on Brainrots. Monsters only get the spinning stars.
+		local onBrainrot = model.Parent ~= nil and model.Parent.Name == "Brainrots"
+			or CollectionService:HasTag(model, Constants.TAGS.Brainrot)
+		if onBrainrot then
+			VfxUtil.playStatusFloater(model, "Stunned", VfxConfig.STATUS_FLOAT_STUN_COLOR)
+		end
 	end
 end
 

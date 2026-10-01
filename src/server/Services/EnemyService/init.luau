@@ -809,7 +809,8 @@ function EnemyService.applyStatusToMonster(
 	end
 	MonsterStatus.apply(runtime, kind, duration, magnitude)
 	if kind == "Freeze" or kind == "Stun" then
-		local style = if visual == "Bubble" then "Bubble" else "Ice"
+		-- Stun keeps the movement lock, but shows dizzy stars instead of the ice shell.
+		local style = if kind == "Stun" then "Stun" elseif visual == "Bubble" then "Bubble" else "Ice"
 		;(runtime :: any).freezeVisual = style
 		-- Cut a mid-cast channel so Pharaoh / similar cannot finish after freeze.
 		runtime.channelingUntil = 0
@@ -817,6 +818,14 @@ function EnemyService.applyStatusToMonster(
 		if style == "Bubble" then
 			MonsterFeedback.setFrozen(runtime.model, false)
 			MonsterFeedback.setBubbled(runtime.model, true)
+		elseif style == "Stun" then
+			MonsterFeedback.setBubbled(runtime.model, false)
+			MonsterFeedback.setFrozen(runtime.model, false)
+			local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+			local remain = runtime.frozenUntil - os.clock()
+			if type(ownerUserId) == "number" and remain > 0 then
+				CombatService.notifyDizzy(ownerUserId, instanceId, remain)
+			end
 		else
 			MonsterFeedback.setBubbled(runtime.model, false)
 			MonsterFeedback.setFrozen(runtime.model, true)

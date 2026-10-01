@@ -5,8 +5,8 @@
 	level gate. Epic `stats` compose onto the shared registry definition. Legendary extras
 	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names). GOD ultimates: `Jackpot`,
-	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, `AbyssalTorrent`, plus Lirili `freezeEntireLawn`
-	and Boneca `lastLaughDamage` (Last Laugh) overlays.
+	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, `AbyssalTorrent`, `PineappleExpress`,
+	plus Lirili `freezeEntireLawn` and Boneca `lastLaughDamage` (Last Laugh) overlays.
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
@@ -251,6 +251,44 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			abilityParams = { freezeAdjacentLane = 1 },
 		},
 		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freezes the whole lawn, then slows everyone 25% for 3 seconds after they thaw.", abilityParams = { freezeEntireLawn = 1, lawnSlowPercent = 25, lawnSlowDuration = 3 } },
+	},
+	OrangutiniAnanassini = {
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Heavy Fruit",
+			description = "Throws harder and faster: 60 damage and a 1.5 second attack.",
+			stats = { damage = 60, attackInterval = 1.5 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Second Serving",
+			description = "Every 4 seconds, the throw also sends a pineapple at the next monster behind the usual target.",
+			abilityParams = { secondServingCooldown = 4 },
+		},
+		{
+			rarity = "Mythic",
+			level = 30,
+			name = "Juice Splash",
+			description = "Each pineapple also splashes the monster it jumped over for 50% damage.",
+			abilityParams = { juiceSplashPercent = 50 },
+		},
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Overripe",
+			description = "A pineapple that kills its target bursts for 80% damage to every other monster on that tile.",
+			abilityParams = { overripePercent = 80 },
+		},
+		{
+			rarity = "God",
+			level = 50,
+			name = "Pineapple Express",
+			description = "Lobs a giant pineapple at the furthest monster in the row for 1200% damage and a 1.5 second stun. 30s cooldown.",
+			ability = "PineappleExpress",
+			abilityParams = { cooldown = 30, damagePercent = 1200, stunDuration = 1.5 },
+		},
 	},
 	BonecaAmbalabu = {
 		{

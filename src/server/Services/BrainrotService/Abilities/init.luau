@@ -107,6 +107,7 @@ local handlers: { [string]: AbilityHandler } = {
 	PrimalRetaliation = require(script.PrimalRetaliation),
 	ShadowRequiem = require(script.ShadowRequiem),
 	AbyssalTorrent = require(script.AbyssalTorrent),
+	PineappleExpress = require(script.PineappleExpress),
 }
 
 function Abilities.defaultBuffs(): EvolutionBuffs

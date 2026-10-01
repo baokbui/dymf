@@ -335,6 +335,7 @@ terrify cone (forward / toward the house — matching his column −
 `terrifyColumnsBehind` AoE) whenever he actually hits something, and each
 afflicted Brainrot gets three yellow ★ stars orbiting in a dizzy halo over
 its head (kind `"Dizzy"` → `VfxUtil.playDizzy`) for the freeze duration.
+A **Stun** on a monster uses that same halo instead of the ice shell. The "Stunned" word stays on Brainrots.
 The scream **never** fires while he's still in the forest, while
 last-standing, or when the cone has zero living Brainrots (short retry
 poll instead of burning the full cooldown / playing VFX).

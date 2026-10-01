@@ -50,6 +50,11 @@ export type ImpactSpec = {
 	-- Shadow Requiem: plant tile + extra HP per lawn tile past the first.
 	waveOriginColumn: number?,
 	waveTravelBonus: number?,
+	-- Juice Splash: damage the monster this shot jumped over.
+	splashInstanceId: string?,
+	splashDamage: number?,
+	-- Overripe: flat damage to other monsters on the target's tile when this shot kills.
+	overripeDamage: number?,
 	-- Bubble Barrage: this projectile is the seed; on Split, spawn one child per row.
 	splitBarrage: {
 		rangeTiles: number,
@@ -81,6 +86,8 @@ export type LaunchSpec = {
 	worldZ: number?,
 	-- Peak studs above the lane during flight (pineapple lob). Nil = flat.
 	arcHeight: number?,
+	-- Multiplier on the fitted pineapple size (Pineapple Express).
+	modelScale: number?,
 	-- Fan from mouth (originWorld.Z) into the target lane over zLerpColumns of travel.
 	originWorld: Vector3?,
 	zLerpColumns: number?,
@@ -1286,7 +1293,14 @@ local function applyHeldZ(part: BasePart, worldY: number, worldZ: number?): Vect
 	return Vector3.new(pos.X, worldY, worldZ)
 end
 
-local function createPineappleModel(): (Model, BasePart)
+local function applyModelScale(model: Model, scale: number?)
+	if type(scale) ~= "number" or scale <= 1.01 then
+		return
+	end
+	model:ScaleTo(model:GetScale() * scale)
+end
+
+local function createPineappleModel(scale: number?): (Model, BasePart)
 	local template = ModelUtil.findProjectileTemplate(CombatConfig.PINEAPPLE_MODEL_ID)
 	if template then
 		local model = template:Clone()
@@ -1312,6 +1326,7 @@ local function createPineappleModel(): (Model, BasePart)
 			model.Name = "PineappleProjectile"
 			model:SetAttribute("ProjectileKind", "Pineapple")
 			primary:SetAttribute("ProjectileKind", "Pineapple")
+			applyModelScale(model, scale)
 			return model, primary
 		end
 		model:Destroy()
@@ -1343,6 +1358,7 @@ local function createPineappleModel(): (Model, BasePart)
 	weldAccessory(body, leaf)
 	model.PrimaryPart = body
 	model:SetAttribute("ProjectileKind", "Pineapple")
+	applyModelScale(model, scale)
 	return model, body
 end
 
@@ -1391,7 +1407,7 @@ function Projectile.launch(
 		end
 		bubbleModel.Parent = folder
 	elseif kind == "Pineapple" then
-		local pineappleModel, hub = createPineappleModel()
+		local pineappleModel, hub = createPineappleModel(spec.modelScale)
 		model = pineappleModel
 		part = hub
 		pineappleModel.Parent = folder

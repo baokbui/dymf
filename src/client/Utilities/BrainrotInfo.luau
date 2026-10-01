@@ -54,6 +54,10 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 		label = "Lob Pineapple",
 		description = "Lobs a pineapple over the front monster and any grave, hitting the one behind. If only one monster is in the row, it hits that one.",
 	},
+	PineappleExpress = {
+		label = "Pineapple Express",
+		description = "Lobs a giant pineapple at the furthest monster in the row for 1200% damage and a 1.5 second stun. 30s cooldown.",
+	},
 	TileTrap = {
 		label = "Headbutt",
 		description = "Monsters walk onto her tile. She headbutts each one in front of her, hitting it and stunning it for 1 second. After her last headbutt she poofs away.",

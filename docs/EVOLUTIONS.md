@@ -31,7 +31,7 @@ not live code. “Gold” on the sheet is **coins**.
   ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
   Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
   (on plant); Cappuccino **Shadow Requiem** ✅; Tralalero **Abyssal Torrent** ✅;
-  Boneca **Last Laugh** ✅ (on her last headbutt).
+  Boneca **Last Laugh** ✅ (on her last headbutt); Orangutini **Pineapple Express** ✅.
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -120,7 +120,8 @@ Live base stats today (for Epic deltas): Ballerina interval **18s**; Chimpanzini
 **2000** HP; Tung Tung **1200** HP / **55** dmg; Tralalero interval **5s**;
 Cappuccino interval **2s**; Lirili plant cooldown **20s**, freeze **5s** / 2
 tiles. Mythic Permafrost overlays freeze duration to **7s**. Boneca **7**
-headbutts (`charges`) / **150** dmg / **1s** stun.
+headbutts (`charges`) / **150** dmg / **1s** stun. Orangutini **40** dmg / **2s**
+interval / **700** HP.
 
 **Girafa Celestre**, **Brr Brr Patapim**, and **Bombardino Crocodilo** are not
 on the sheet (TBD).
@@ -187,6 +188,16 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 | Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row (more monsters; ties go **lower**). |
 | GOD | Glacial Dominion | Freeze the **whole lawn** (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
 
+### Orangutini Ananassini
+
+| Tier | Name | Effect |
+| ---- | ---- | ------ |
+| Epic | Heavy Fruit | **60** damage (from 40) and attack interval **1.5s** (from 2s). |
+| Legendary | Second Serving | Every **4s**, that throw also sends a pineapple at the next monster behind the usual target. With one or two monsters in the row, the extra fruit hits the furthest one. Params-only (`secondServingCooldown`); it rides the normal throw. |
+| Mythic | Juice Splash | Each pineapple also damages the monster it jumped over for **50%**. A shot at the front monster (nothing to jump) has no splash. |
+| Immortal | Overripe | A pineapple that kills its target deals **80%** of that shot's damage to every other monster on that tile. |
+| GOD | Pineapple Express | A giant pineapple arcs to the **furthest** monster in the row for **1200%** of his current damage and stuns it for **1.5s**. Any monster in the row is enough. Holds the normal throw for the clip. **30s** CD. |
+
 ### Boneca Ambalabu
 
 | Tier | Name | Effect |
@@ -229,9 +240,10 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   passives use the same path (`RegenPulse`, `DesperateFury`, `Stoneheart`,
   `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
-  Frostbound Neighbor, Rattled, Rolling Thunder). **GOD** ultimates use the
+  Frostbound Neighbor, Rattled, Rolling Thunder, Second Serving, Juice Splash,
+  Overripe). **GOD** ultimates use the
   same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation`,
-  `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili `freezeEntireLawn` and Boneca
+  `ShadowRequiem`, `AbyssalTorrent`, `PineappleExpress` ✅; Lirili `freezeEntireLawn` and Boneca
   `lastLaughDamage` params overlays ✅). Boneca **God of Thunder** is a
   params-only Legendary overlay her headbutt reads.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
@@ -251,7 +263,7 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
   (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili Glacial Dominion
-  on plant ✅; Boneca Last Laugh on her last headbutt ✅).
+  on plant ✅; Boneca Last Laugh on her last headbutt ✅; Orangutini Pineapple Express ✅).
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   The server authors a dense flame column (core + extra layer). **High** shows both,

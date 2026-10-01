@@ -35,6 +35,9 @@ local CombatConfig = {
 	PINEAPPLE_MODEL_ID = "Pineapple",
 	PINEAPPLE_TARGET_EXTENT = 3.4,
 	PINEAPPLE_ARC_HEIGHT = 7,
+	-- Pineapple Express (Orangutini GOD): a bigger fruit on a higher arc.
+	GIANT_PINEAPPLE_SCALE = 2.2,
+	GIANT_PINEAPPLE_ARC_HEIGHT = 14,
 	PINEAPPLE_SPIN_RADIANS_PER_SECOND = math.pi * 2,
 	PINEAPPLE_COLOR = Color3.fromRGB(214, 168, 42),
 	PINEAPPLE_LEAF_COLOR = Color3.fromRGB(70, 140, 55),

@@ -459,6 +459,13 @@ export type ProjectileLaunchOptions = {
 	waveTravelBonus: number?,
 	-- Bubble Barrage / Double Bubble extras after the seed splits.
 	extraBubbleChance: number?,
+	-- Juice Splash / Overripe (Orangutini). Copied onto the impact.
+	splashInstanceId: string?,
+	splashDamage: number?,
+	overripeDamage: number?,
+	-- Overrides the pineapple lob height. Pineapple Express uses the giant arc.
+	arcHeight: number?,
+	modelScale: number?,
 }
 
 -- Fires a projectile at the first monster in range; damage (and optional status) apply on impact.
@@ -532,6 +539,9 @@ function CombatService.launchProjectile(
 			-- still attributes both hits if a stone is the first blocker.
 			pierceCount = pierceCount,
 			pierceGraves = if pierceGraves then true else nil,
+			splashInstanceId = options.splashInstanceId,
+			splashDamage = options.splashDamage,
+			overripeDamage = options.overripeDamage,
 		}
 	end
 
@@ -571,7 +581,12 @@ function CombatService.launchProjectile(
 			kind = if options then options.kind else nil,
 			impact = impact,
 			targetKind = targetKind,
-			arcHeight = if options and options.kind == "Pineapple" then CombatConfig.PINEAPPLE_ARC_HEIGHT else nil,
+			arcHeight = if options and type(options.arcHeight) == "number"
+				then options.arcHeight
+				elseif options and options.kind == "Pineapple"
+				then CombatConfig.PINEAPPLE_ARC_HEIGHT
+				else nil,
+			modelScale = if options then options.modelScale else nil,
 			originWorld = originWorld,
 			worldZ = worldZ,
 			zLerpColumns = zLerpColumns,
@@ -1602,6 +1617,39 @@ local function onProjectileImpact(
 					magnitude,
 					impact.statusVisual
 				)
+			end
+		end
+
+		-- Juice Splash: the monster this shot arced over. Overripe: a kill
+		-- bursts onto every other monster sharing the target's tile.
+		if impact then
+			local splashId = impact.splashInstanceId
+			local splashDamage = impact.splashDamage
+			if type(splashId) == "string" and splashId ~= instanceId and type(splashDamage) == "number" and splashDamage > 0 then
+				CombatService.damageMonster(splashId, splashDamage, impact.sourceBrainrotId)
+				fireCombatVisual(ownerUserId, {
+					kind = "Hit",
+					instanceId = splashId,
+					muteSound = true,
+				})
+			end
+			local burst = impact.overripeDamage
+			if killed and type(burst) == "number" and burst > 0 and plotModel and type(row) == "number" and type(column) == "number" then
+				local tile = GridUtil.tileAtColumn(column)
+				for _, otherId in CombatService.getAllMonstersInRow(plotModel, row) do
+					if otherId == instanceId then
+						continue
+					end
+					local otherColumn = monsterColumnOf(otherId)
+					if type(otherColumn) == "number" and GridUtil.tileAtColumn(otherColumn) == tile then
+						CombatService.damageMonster(otherId, burst, impact.sourceBrainrotId)
+						fireCombatVisual(ownerUserId, {
+							kind = "Hit",
+							instanceId = otherId,
+							muteSound = true,
+						})
+					end
+				end
 			end
 		end
 	end
