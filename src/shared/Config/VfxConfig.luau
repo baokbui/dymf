@@ -168,6 +168,14 @@ local VfxConfig = {
 	SAND_TORNADO_MESH_TRANSPARENCY = 0.35,
 	-- Studs in front of the boss along the funnel. The funnel itself stays level.
 	SAND_TORNADO_HAND_OFFSET = 2.5,
+
+	-- Vampire / Duke chew: red and white lines that fly into the right fist and repeat.
+	LIFE_VORTEX_COLOR = Color3.fromRGB(220, 25, 30),
+	LIFE_VORTEX_WHITE = Color3.fromRGB(255, 248, 245),
+	LIFE_VORTEX_REACH = 5.5,
+	LIFE_VORTEX_SUCK = 0.42,
+	LIFE_VORTEX_LENGTH = 1.15,
+	LIFE_VORTEX_COUNT = 16, -- High. Low stays at about half.
 	SAND_COLOR_A = Color3.fromRGB(210, 170, 95),
 	SAND_COLOR_B = Color3.fromRGB(160, 120, 70),
 	SAND_COLOR_C = Color3.fromRGB(235, 200, 140),
@@ -309,6 +317,28 @@ local VfxConfig = {
 	HEAVY_VFX_JACKPOT_RELEASE = 0.7,
 	HEAVY_VFX_MUSHROOM = 2,
 	HEAVY_VFX_MUSHROOM_RELEASE = 1.2,
+	HEAVY_VFX_BLACK_HOLE = 2,
+	HEAVY_VFX_BLACK_HOLE_RELEASE = 4.2,
+
+	-- La Vacca GOD. The hole opens, holds, then collapses. Suck time is per monster.
+	BLACK_HOLE_COLOR = Color3.fromRGB(2, 2, 2),
+	BLACK_HOLE_DISK_HOT = Color3.fromRGB(255, 244, 220),
+	BLACK_HOLE_DISK_COLOR = Color3.fromRGB(255, 140, 40),
+	BLACK_HOLE_OPEN_SECONDS = 0.28,
+	BLACK_HOLE_HOLD_SECONDS = 3,
+	BLACK_HOLE_CLOSE_SECONDS = 0.4,
+	BLACK_HOLE_SUCK_SECONDS = 1.05,
+	BLACK_HOLE_SUCK_STAGGER = 0.4,
+	BLACK_HOLE_RADIUS = 5.5,
+	-- Extra lift above her pivot so the sphere clears the sand. Her pivot is
+	-- already modelYOffset above the tile; without this the bottom sits on it.
+	BLACK_HOLE_HOVER = 5,
+	BLACK_HOLE_BOB_HEIGHT = 1.05,
+	BLACK_HOLE_BOB_PERIOD = 1.25,
+	BLACK_HOLE_RING_COLOR = Color3.fromRGB(255, 252, 235),
+	BLACK_HOLE_SUCK_COUNT = 16,
+	BLACK_HOLE_SUCK_REACH = 16,
+	BLACK_HOLE_SUCK_LAP = 0.85,
 
 	-- Boneca God of Thunder: a jagged bolt drops from the sky onto a monster.
 	LIGHTNING_COLOR = Color3.fromRGB(70, 150, 255),
@@ -372,9 +402,9 @@ local VfxConfig = {
 	HYDRO_JET_RING_RADIUS = TILE * 0.14,
 	HYDRO_JET_RING_GROW = TILE * 0.06,
 	HYDRO_JET_HELIX_RADIUS = TILE * 0.05,
-	HYDRO_JET_CORE_COLOR = Color3.fromRGB(220, 180, 255),
-	HYDRO_JET_WATER_COLOR = Color3.fromRGB(140, 50, 230),
-	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(48, 8, 90),
+	HYDRO_JET_CORE_COLOR = Color3.fromRGB(230, 250, 255),
+	HYDRO_JET_WATER_COLOR = Color3.fromRGB(120, 210, 255),
+	HYDRO_JET_DEEP_COLOR = Color3.fromRGB(40, 150, 230),
 	HYDRO_JET_RING_COUNT = 4,
 	HYDRO_JET_RING_SEGMENTS = 8,
 	HYDRO_JET_STREAKS = 6,
@@ -385,7 +415,7 @@ local VfxConfig = {
 	HYDRO_JET_BUBBLE_COUNT = 12,
 	HYDRO_JET_BUBBLE_SIZE = 2.2,
 	HYDRO_JET_BUBBLE_RADIUS = TILE * 0.24,
-	HYDRO_JET_BUBBLE_COLOR = Color3.fromRGB(245, 236, 255),
+	HYDRO_JET_BUBBLE_COLOR = Color3.fromRGB(220, 245, 255),
 	HYDRO_JET_BUBBLE_TRANSPARENCY = 0.18,
 
 	-- Magnet pull: translucent purple rings that spawn at the outer

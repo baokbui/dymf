@@ -56,6 +56,8 @@ local AudioConfig = {
 		"MonsterAttack_Scorpion",
 		"MonsterAttack_SmallMummy",
 		"MonsterAttack_PharaohMummy",
+		"MonsterAttack_Vampire",
+		"MonsterAttack_DukeVampire",
 		"SandTornado",
 		"Terrify",
 		"FreezeTime",
@@ -322,6 +324,15 @@ local AudioConfig = {
 		},
 		MonsterAttack_PharaohMummy = {
 			SoundId = "rbxassetid://78304267856955",
+			Volume = 0.85,
+		},
+		-- Vampire / Duke Vampire life-drain tick.
+		MonsterAttack_Vampire = {
+			SoundId = "rbxassetid://92913957136482",
+			Volume = 0.85,
+		},
+		MonsterAttack_DukeVampire = {
+			SoundId = "rbxassetid://92913957136482",
 			Volume = 0.85,
 		},
 		-- Pharaoh steal tornado (CombatVisual kind "SandTornado").

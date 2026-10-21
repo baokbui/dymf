@@ -234,7 +234,7 @@ local definitions: { [string]: Types.BrainrotDefinition } = {
 		ability = "TileTrap",
 		abilityParams = { stunDuration = 1 },
 		-- Headbutts before she poofs away.
-		charges = 7,
+		charges = 5,
 		ignoreMonsterChew = true,
 		plantCooldown = 10,
 		color = Color3.fromRGB(120, 170, 90),

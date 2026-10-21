@@ -5,7 +5,8 @@
 	club) to the remaining lane length, then Tung's melee swing arcs it
 	onto the row so it covers every tile from him to the east plot edge.
 
-	Gates: 3+ combat targets in the row, or a boss occupying the row.
+	Gates: 3+ combat targets still in front of him, or a boss still in front.
+	Monsters that have already walked past his tile are not hit.
 	The slam is 1000% on that row and 500% on the adjacent rows (left/right).
 	If several GOD Tungs in the same row are ready, the easternmost (closest
 	to incoming monsters) slams first; others stay ready until it finishes.
@@ -62,11 +63,9 @@ local function isRowBusy(plotModel: Model, row: number): boolean
 	return rows ~= nil and rows[row] == true
 end
 
-local function rowQualifies(plotModel: Model, row: number, minEnemies: number): boolean
-	if CombatService.rowHasBoss(plotModel, row) then
-		return true
-	end
-	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+local function rowQualifies(plotModel: Model, row: number, originColumn: number, minEnemies: number): boolean
+	local count, boss = CombatService.frontLaneThreat(plotModel, row, originColumn)
+	return boss or count >= minEnemies
 end
 
 local function projectilesFolder(plotModel: Model): Folder
@@ -267,7 +266,7 @@ local function runSlam(ctx, callbacks, damage: number)
 	end
 
 	callbacks.playSound("MeleeBat")
-	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row)
+	CombatService.fireBatSlam(ctx.ownerUserId, plotModel, ctx.position.row, ctx.position.column)
 
 	local ignoreIds: { [string]: boolean } = {}
 	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, ctx.position.row) do
@@ -331,7 +330,7 @@ function SahurWrath.tryAct(ctx, callbacks)
 	if isRowBusy(ctx.plotModel, ctx.position.row) then
 		return false
 	end
-	if not rowQualifies(ctx.plotModel, ctx.position.row, minEnemies) then
+	if not rowQualifies(ctx.plotModel, ctx.position.row, ctx.position.column, minEnemies) then
 		return false
 	end
 

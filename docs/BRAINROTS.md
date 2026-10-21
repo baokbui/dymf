@@ -52,7 +52,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `ignoreMonsterChew`       | boolean?               | Monsters phase through; no chew damage (Lirili, Patapim)                                 |
 | `plantCooldown`           | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)`                   |
 | `maxOnPlot`               | number?                | Cap of living plants of this id on one plot (Ballerina = 10). Nil = unlimited            |
-| `charges`                 | number?                | Uses before the plant despawns (Boneca = 7 headbutts, 10 with Epic). Remaining uses save with the lawn |
+| `charges`                 | number?                | Uses before the plant despawns (Boneca = 5 headbutts). Remaining uses save with the lawn |
 | `color`                   | Color3?                | Shop swatch + placeholder / ghost validity tint                                          |
 | `modelId`                 | string?                | Child name under `Assets.Brainrots` (defaults to `id`)                                   |
 | `modelOrientationDegrees` | Vector3?               | Local Euler after facing (+X)                                                            |
@@ -216,9 +216,9 @@ granted free on reach Day 25), **La Vacca** (60), **Boneca** (65), **Blueberrinn
 | Girafa Celestre | 50 | — (immune) | 0 | — | — | One-shot: gust anim, blow fog off the whole plot for 7s, despawn | — | ~7.5s |
 | Brr Brr Patapim | 50 | — (immune) | 0 | 2.6s | — | Plant on a grave; 2 smashes per clip (1s apart); 6 collapse it, then despawns | — | 12s |
 | Orangutini Ananassini | 100 | 700 (7) | 40 | 2.0s | Full row | Lobs a pineapple over the front monster and graves, hitting the one behind. A lone monster is the target. Evolutions (`EVOLUTIONS.md`): Heavy Fruit, Second Serving, Juice Splash, Overripe, and the GOD Pineapple Express. Store: 80 brains | — | ~11.6s |
-| La Vacca Saturno Saturnita | 75 | — (immune) | 0 | — | Adjacent rows | Floats and bobs above the tile, pulls the closest **1-tile** monster on each neighboring row onto her tile (edge: 1, middle: 2). Monsters **2+ tiles wide** are not pulled. Gravity-well VFX: High is dense, Low is thinner, Off skips it. Then she vanishes. Store: 60 brains | — | 18s |
+| La Vacca Saturno Saturnita | 75 | — (immune) | 0 | — | Adjacent rows | Floats and bobs above the tile, pulls the closest **1-tile** monster on each neighboring row onto her tile (edge: 1, middle: 2). Monsters **2+ tiles wide** are not pulled. Gravity-well VFX: High is dense, Low is thinner, Off skips it. Then she vanishes. Evolutions (`EVOLUTIONS.md`): Shorter Year, Wider Well, Hard Landing, Heavier Bodies, and the GOD Black Hole. Store: 60 brains | — | 18s |
 | Blueberrinni Octopusini | 50 | 600 (6) | 0 | 10s | Own row | Lobs ink onto a random empty tile in her row (never her own tile or a grave). A nearer tile arcs lower; a farther tile arcs higher. Puddle lasts 7 seconds and slows monsters only while they stand in it. High shows the droplet and tail, Low the droplet only, Off neither. No evolutions yet. Store: 70 brains | — | ~7.5s |
-| Boneca Ambalabu | 125 | — (immune) | 150 | 1.0s | Own tile (in front of her) | `TileTrap`. Monsters walk onto her tile. She headbutts each one still in front of her (east of her tile center): the head lands at 0.8s for 150 damage and a 1 second stun, once per monster. After **7** headbutts (`charges`, saved with the lawn) she disappears in a poof (High full puff, Low thinner, Off none). Evolutions (`EVOLUTIONS.md`) add God of Thunder, Rattled, Rolling Thunder chain currents, and the GOD Last Laugh mushroom cloud. Store: 65 brains | — | 10s |
+| Boneca Ambalabu | 125 | — (immune) | 150 | 1.0s | Own tile (in front of her) | `TileTrap`. Monsters walk onto her tile. She headbutts each one still in front of her (east of her tile center): the head lands at 0.8s for 150 damage and a 1 second stun, once per monster. After **5** headbutts (`charges`, saved with the lawn) she disappears in a poof (High full puff, Low thinner, Off none). Evolutions (`EVOLUTIONS.md`) add God of Thunder, Rattled, Rolling Thunder chain currents, and the GOD Last Laugh mushroom cloud. Store: 65 brains | — | 10s |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -324,7 +324,9 @@ compares by **tile index** (`tileAtColumn(column) ≤ COLUMNS`), not raw
 fractional column, so a monster stopped at its melee standoff on the frontmost
 tile (`COLUMNS + MELEE_CLOSE_REACH`, a fraction past that tile's center) still
 counts as on-plot; monsters still marching in the forest (a full tile+ away)
-are ignored. This matters for melee units planted on the last column — e.g.
+are ignored. A monster whose rig has a head part stays ignored until that
+head's west edge is on the lawn, even if a wide body already overlaps the
+edge. This matters for melee units planted on the last column — e.g.
 Tung Tung Sahur standing on the frontmost tile, or one tile behind a wall on
 that tile — which would otherwise never see the monster actively chewing
 them. Friendly Brainrots never block targeting: Tung Tung (`rangeTiles = 1`)

@@ -102,6 +102,11 @@ export type MonsterDefinition = {
 	keepWeldConstraints: boolean?,
 	walkAnimationId: string?, -- rbxassetid://… walk loop; "" disables walk
 	attackAnimationId: string?, -- rbxassetid://… melee swing; "" disables
+	-- Freeze the attack clip at attackHitDelay and keep that pose until the
+	-- unit walks or is stunned. Chew damage keeps ticking on attackInterval.
+	holdAttackPose: boolean?,
+	-- Client flourish while that pose is held. "LifeVortex" = red and white lines into the right hand.
+	attackVfx: string?,
 	-- One-shot clips keyed by ability handler id (e.g. PharaohSummon).
 	abilityAnimationIds: { [string]: string }?,
 	-- When true, EnemyService drives a procedural crawl gait on Motor6D/Bone/Weld

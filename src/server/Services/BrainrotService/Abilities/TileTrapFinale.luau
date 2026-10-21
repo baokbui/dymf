@@ -3,7 +3,8 @@
 	TileTrapFinale
 	What Boneca does after her last headbutt, from her claimed params:
 	- lastLaughDamage (GOD Last Laugh): mushroom cloud blast on her tile
-	  ± lastLaughRadius, then poof.
+	  and `lastLaughRadius` tiles east, then poof. Tiles west of her
+	  are not blasted.
 	- otherwise: poof.
 	Not an ability handler; TileTrap calls it.
 ]]
@@ -39,7 +40,7 @@ function TileTrapFinale.run(ctx, callbacks)
 	if type(damage) == "number" and damage > 0 then
 		local radius = math.max(0, math.floor(params.lastLaughRadius or 1))
 		local column = ctx.position.column
-		blastTiles(ctx, column - radius, column + radius, damage)
+		blastTiles(ctx, column, column + radius, damage)
 	end
 	CombatService.notifyPoof(ctx.ownerUserId, center)
 end

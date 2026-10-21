@@ -31,7 +31,8 @@ not live code. “Gold” on the sheet is **coins**.
   ultimates: Tung Tung **Sahur's Wrath** ✅; Ballerina **Jackpot** ✅;
   Chimpanzini **Primal Retaliation** ✅; Lirili **Glacial Dominion** ✅
   (on plant); Cappuccino **Shadow Requiem** ✅; Tralalero **Abyssal Torrent** ✅;
-  Boneca **Last Laugh** ✅ (on her last headbutt); Orangutini **Pineapple Express** ✅.
+  Boneca **Last Laugh** ✅ (on her last headbutt); Orangutini **Pineapple Express** ✅;
+  La Vacca **Black Hole** ✅ (on plant).
 - **How XP is earned** (`EvolutionConfig`):
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
@@ -119,9 +120,9 @@ Abilities. Combat math stays in `CombatService`.
 Live base stats today (for Epic deltas): Ballerina interval **18s**; Chimpanzini
 **2000** HP; Tung Tung **1200** HP / **55** dmg; Tralalero interval **5s**;
 Cappuccino interval **2s**; Lirili plant cooldown **20s**, freeze **5s** / 2
-tiles. Mythic Permafrost overlays freeze duration to **7s**. Boneca **7**
+tiles. Mythic Permafrost overlays freeze duration to **7s**. Boneca **5**
 headbutts (`charges`) / **150** dmg / **1s** stun. Orangutini **40** dmg / **2s**
-interval / **700** HP.
+interval / **700** HP. La Vacca plant recharge **18s**, pull from neighboring rows, 1-tile monsters only.
 
 **Girafa Celestre**, **Brr Brr Patapim**, and **Bombardino Crocodilo** are not
 on the sheet (TBD).
@@ -154,7 +155,7 @@ on the sheet (TBD).
 | Legendary | Ranged Rampage | Throw a spinning bat down the **whole row** for **10s**. Lawn hits knock back a **quarter tile**. **20s** CD. |
 | Mythic | Desperate Fury | Once per plant: below **50%** HP, **+50%** attack speed. |
 | Immortal | Tenfold Guard | Every **10** attacks: shield **30%** max HP for **5s**. Stun-immune while shielded. |
-| GOD | Sahur's Wrath | Giant bat slams the **whole row** to the plot edge for **1000%** damage, plus **500%** on the adjacent rows. Needs **3+** enemies **or a boss**. **30s** CD. |
+| GOD | Sahur's Wrath | Giant bat slams from him to the plot edge for **1000%** damage, plus **500%** on the adjacent rows. Monsters that have already walked past his tile are left alone. Needs **3+** enemies still in front **or a boss** still in front. **30s** CD. |
 
 ### Tralalero Tralala
 
@@ -164,7 +165,7 @@ on the sheet (TBD).
 | Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
-| GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Each second in the jet deals catalog base damage (**55**), plus **20%** more for every tile closer to his plant than the east edge of the row. Needs **3+** enemies **or a boss**. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
+| GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Monsters that have already walked past him are left alone. Each second in the jet deals catalog base damage (**55**), plus **20%** more for every tile closer to his plant than the east edge of the row. Needs **3+** enemies still in front **or a boss** still in front. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
 
 Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is weaker on bigger monsters: **25%** less at **2** rows, **50%** at **3**, **75%** at **4**, and **immune** at **5**. Damage is not reduced (`CombatConfig.TRALALERO_CC_RESIST_PER_EXTRA_ROW`).
 
@@ -176,7 +177,7 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 | Legendary | Piercing Brew | For **6s**, knives pierce the first monster and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. Needs **3+** enemies **or a boss**. Easternmost ready Cappuccino fires first. **45s** CD. |
+| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. Monsters that have already walked past him are left alone. Needs **3+** enemies still in front **or a boss** still in front. Easternmost ready Cappuccino fires first. **45s** CD. |
 
 ### Lirili Larila
 
@@ -186,7 +187,19 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 | Legendary | Winter's Grasp | Freeze a **whole lane**. |
 | Mythic | Permafrost | Freeze duration **7s**. |
 | Immortal | Frostbound Neighbor | Also freeze **one adjacent** lawn row (more monsters; ties go **lower**). |
-| GOD | Glacial Dominion | Freeze the **whole lawn** (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
+| GOD | Glacial Dominion | Freeze the **whole lawn**, including monsters that have already walked past her (existing freeze duration, **7s** with Permafrost) and apply **25%** Slow that lasts through the freeze plus **3s** after thaw. |
+
+### La Vacca Saturno Saturnita
+
+One-shot on plant. She still vanishes. **Black Hole** replaces the neighbor pull. Wider Well and Hard Landing stay on the normal pull.
+
+| Tier | Name | Effect |
+| ---- | ---- | ------ |
+| Epic | Shorter Year | Plant recharge **12s** (from 18s). |
+| Legendary | Wider Well | Pulls from **two rows out**. A middle tile can pull four monsters. An edge tile pulls two. Still one per row. |
+| Mythic | Hard Landing | Each pulled monster is stunned **1.5s** when it lands. |
+| Immortal | Heavier Bodies | She can pull monsters **2 tiles** wide. Anything **3 or wider** stays put. |
+| GOD | Black Hole | She becomes a black hole and swallows the **3** closest legal monsters on the lawn, including ones that have already walked past her. Each shrinks as it is pulled in and is removed with no death pose. The kill still counts as hers. The hole stays for **3s**, then collapses. Bosses are left alone. Heavier Bodies still decides who else can be swallowed. The hole floats and bobs above the tile while streaks fly straight in, fade, and new ones appear. High: black sphere, hot inner disc, orange outer disc, bright photon ring, more streaks. Low: sphere, one disc, ring, fewer streaks. Off: no hole (she still folds away, and the monsters still shrink out). |
 
 ### Orangutini Ananassini
 
@@ -202,11 +215,11 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
-| Epic | Thick Skull | **10** headbutts (from 7) and **200** damage (from 150). A Boneca already on the lawn gets **+3** headbutts when Epic is claimed. |
+| Epic | Thick Skull | **200** damage (from 150). Headbutt count stays **5**. |
 | Legendary | God of Thunder | **Every headbutt** also calls down a blue lightning bolt on that monster: **+200** damage on top of the headbutt, and its stun becomes **1.5s**. No cooldown; params-only (`lightningDamage` / `lightningStunDuration`). VFX: High glowing bolt + forks + flash + sparks, Low thin bolt + flash, Off none. |
 | Mythic | Rattled | When a headbutt stun ends, that monster is slowed **30%** for **3s**. |
 | Immortal | Rolling Thunder | Each lightning strike sends electric currents from the struck monster into **3–4** other monsters within **2 tiles** (any row, closest first; fewer if fewer are nearby): **50** damage each, no stun. Params-only (`chainDamage` / `chainMinTargets` / `chainMaxTargets` / `chainRangeTiles`). VFX: jagged blue arcs from the struck monster to each one (High glowing + spark pop, Low thin, Off none). |
-| GOD | Last Laugh | Her last headbutt ends in a mushroom cloud blast: **450** damage on her tile and **one tile each side** in her row, then she's gone. |
+| GOD | Last Laugh | Her last headbutt ends in a mushroom cloud blast: **450** damage on her tile and **one tile east**, then she's gone. The tile behind her is not blasted. |
 
 Her finale (`TileTrapFinale`): Last Laugh if claimed, otherwise a plain poof.
 
@@ -241,10 +254,10 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   `TenfoldGuard` with `orbitShield` for the authored Shield clone; params-only
   overlays: Golden Discount, Wound of the Shark, Assassin's Verdict,
   Frostbound Neighbor, Rattled, Rolling Thunder, Second Serving, Juice Splash,
-  Overripe). **GOD** ultimates use the
+  Overripe, Wider Well, Hard Landing, Heavier Bodies). **GOD** ultimates use the
   same extras path (`SahurWrath`, `Jackpot`, `PrimalRetaliation`,
   `ShadowRequiem`, `AbyssalTorrent`, `PineappleExpress` ✅; Lirili `freezeEntireLawn` and Boneca
-  `lastLaughDamage` params overlays ✅). Boneca **God of Thunder** is a
+  `lastLaughDamage`, and La Vacca `blackHole` params overlays ✅). Boneca **God of Thunder** is a
   params-only Legendary overlay her headbutt reads.
 - XP grants (`ProgressService.grantKillXp` / `grantBrainrotXp`): last-hit
   species for normal monsters (`SKIP_LAST_HIT` / `HIT_JOB` abilities
@@ -263,7 +276,7 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   prompt on click). **Epic** stats apply once claimed;   **Legendary** extras and **Mythic** / **Immortal** passives tick /
   overlay in combat. **GOD** ultimates tick the same extras path
   (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili Glacial Dominion
-  on plant ✅; Boneca Last Laugh on her last headbutt ✅; Orangutini Pineapple Express ✅).
+  on plant ✅; Boneca Last Laugh on her last headbutt ✅; Orangutini Pineapple Express ✅; La Vacca Black Hole on plant ✅).
 -   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
   Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
   The server authors a dense flame column (core + extra layer). **High** shows both,

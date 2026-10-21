@@ -26,6 +26,7 @@ local VfxUtil = require(script.Parent.Parent.Utilities.VfxUtil)
 local AudioController = require(script.Parent.AudioController)
 local MonsterNameplate = require(script.MonsterNameplate)
 local SpawnSandstorm = require(script.SpawnSandstorm)
+local LifeVortex = require(script.LifeVortex)
 local OtherPlotVfx = require(script.OtherPlotVfx)
 
 local CombatController = {}
@@ -483,17 +484,29 @@ local function onCombatVisual(payload: unknown)
 				AudioController.play("InkLand")
 			end)
 		end
+	elseif kind == "BlackHole" then
+		local center = asVector3(data.x, data.y, data.z)
+		local duration = if type(data.duration) == "number"
+			then data.duration
+			else VfxConfig.BLACK_HOLE_OPEN_SECONDS + VfxConfig.BLACK_HOLE_HOLD_SECONDS + VfxConfig.BLACK_HOLE_CLOSE_SECONDS
+		if center then
+			local _, release = VfxLoad.acquire(VfxConfig.HEAVY_VFX_BLACK_HOLE)
+			VfxUtil.playBlackHole(center, duration)
+			task.delay(VfxConfig.HEAVY_VFX_BLACK_HOLE_RELEASE, release)
+		end
 	elseif kind == "GravityPull" then
 		local center = asVector3(data.destX, data.destY, data.destZ)
 		if center then
 			local origins: { Vector3 } = {}
 			local first = asVector3(data.originX, data.originY, data.originZ)
-			local second = asVector3(data.origin2X, data.origin2Y, data.origin2Z)
 			if first then
 				table.insert(origins, first)
 			end
-			if second then
-				table.insert(origins, second)
+			for index = 2, 8 do
+				local point = asVector3(data["origin" .. index .. "X"], data["origin" .. index .. "Y"], data["origin" .. index .. "Z"])
+				if point then
+					table.insert(origins, point)
+				end
 			end
 			VfxUtil.playGravityPull(center, origins)
 		end
@@ -523,6 +536,7 @@ end
 function CombatController.start()
 	MonsterNameplate.start()
 	SpawnSandstorm.start()
+	LifeVortex.start()
 	OtherPlotVfx.start()
 	Remotes.getEvent("CombatVisual").OnClientEvent:Connect(onCombatVisual)
 	VfxLoad.onHighQualityChanged(function()

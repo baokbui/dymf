@@ -41,6 +41,12 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		attackInterval = 1.1,
 		isBoss = false,
 		color = Color3.fromRGB(80, 40, 60),
+		walkAnimationId = "rbxassetid://85689298177211",
+		attackAnimationId = "rbxassetid://105203629607445",
+		-- Outstretched-arm frame. The clip freezes here for the whole chew.
+		attackHitDelay = 0.5,
+		holdAttackPose = true,
+		attackVfx = "LifeVortex",
 	},
 
 	Werewolf = {
@@ -133,10 +139,9 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		color = Color3.fromRGB(40, 40, 40),
 		-- Toolbox mesh faces +X; yaw 180 so eyes look house-ward (−X).
 		modelOrientationDegrees = Vector3.new(0, 90, 0),
-		-- Toolbox AnimationId is often permission-locked; use AnimSaves (local)
-		-- or MonsterProceduralGait — never request the pack rbxassetid.
-		walkAnimationId = "",
-		attackAnimationId = "",
+		-- Authored crawl. proceduralWalk stays on so a failed load still uses the gait.
+		walkAnimationId = "rbxassetid://85950530012950",
+		attackAnimationId = "rbxassetid://116928127786111",
 		proceduralWalk = true,
 	},
 
@@ -199,10 +204,10 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 			poisonEvery = 2,
 		},
 		color = Color3.fromRGB(30, 30, 30),
-		-- Duplicated Spider Toolbox model — same procedural crawl gait.
+		-- Same Spider rig and crawl clip.
 		modelOrientationDegrees = Vector3.new(0, 90, 0),
-		walkAnimationId = "",
-		attackAnimationId = "",
+		walkAnimationId = "rbxassetid://85950530012950",
+		attackAnimationId = "rbxassetid://116928127786111",
 		proceduralWalk = true,
 	},
 
@@ -246,6 +251,11 @@ local definitions: { [string]: Types.MonsterDefinition } = {
 		-- signature boss "tell" from a distance.
 		auraColor = Color3.fromRGB(90, 15, 40),
 		auraScale = 1.6,
+		walkAnimationId = "rbxassetid://85689298177211",
+		attackAnimationId = "rbxassetid://105203629607445",
+		attackHitDelay = 0.5,
+		holdAttackPose = true,
+		attackVfx = "LifeVortex",
 	},
 
 	SmallMummy = {

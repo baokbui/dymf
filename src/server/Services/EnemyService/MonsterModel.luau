@@ -233,6 +233,54 @@ function MonsterModel.create(
 	return model
 end
 
+local function partWestX(part: BasePart): number
+	local cf = part.CFrame
+	local size = part.Size
+	local half = size.X * 0.5 * math.abs(cf.RightVector.X)
+		+ size.Y * 0.5 * math.abs(cf.UpVector.X)
+		+ size.Z * 0.5 * math.abs(cf.LookVector.X)
+	return cf.Position.X - half
+end
+
+local function headScore(name: string): number
+	local lower = string.lower(name)
+	if lower == "head" then
+		return 3
+	end
+	if string.find(lower, "head", 1, true) then
+		return 2
+	end
+	if string.find(lower, "cephalothorax", 1, true) then
+		return 1
+	end
+	return 0
+end
+
+-- Columns from the pivot to the head's west edge (the side that reaches the
+-- lawn first). Positive means the head is still east of the pivot. Nil when
+-- the rig has no head part.
+function MonsterModel.measureHeadLeadColumns(model: Model): number?
+	local best: BasePart? = nil
+	local bestScore = 0
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			local score = headScore(descendant.Name)
+			if score > bestScore or (score > 0 and score == bestScore and best ~= nil and descendant.Size.Magnitude > best.Size.Magnitude) then
+				best = descendant
+				bestScore = score
+			end
+		end
+	end
+	if not best then
+		return nil
+	end
+	local tile = PlotConfig.TILE_SIZE
+	if tile <= 0 then
+		return nil
+	end
+	return (partWestX(best) - model:GetPivot().Position.X) / tile
+end
+
 function MonsterModel.setColumn(model: Model, column: number)
 	model:SetAttribute("Column", column)
 end

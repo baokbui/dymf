@@ -6,7 +6,9 @@
 	deals Tralalero's base damage (catalog damage, not the evolved stat),
 	plus 20% of that base for every tile the monster is closer to his plant
 	than the east edge of the row.
-	Needs 3+ enemies in the row, or a boss. If several GOD Tralaleros in the
+	Needs 3+ enemies still in front of him, or a boss still in front.
+	Monsters that have already walked past him are not in the jet.
+	If several GOD Tralaleros in the
 	same row are ready, the easternmost (closest to incoming monsters) fires
 	first. One whose torrent is still cooling down is skipped.
 	Bubbles pause while the jet is out.
@@ -60,11 +62,9 @@ local function isRowBusy(plotModel: Model, row: number): boolean
 	return rows ~= nil and rows[row] == true
 end
 
-local function rowQualifies(plotModel: Model, row: number, minEnemies: number): boolean
-	if CombatService.rowHasBoss(plotModel, row) then
-		return true
-	end
-	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+local function rowQualifies(plotModel: Model, row: number, originColumn: number, minEnemies: number): boolean
+	local count, boss = CombatService.frontLaneThreat(plotModel, row, originColumn)
+	return boss or count >= minEnemies
 end
 
 local function hitDamage(base: number, plantColumn: number, monsterColumn: number, closePercent: number): number
@@ -184,9 +184,8 @@ end
 local function monstersInJet(plotModel: Model, row: number, fromColumn: number): { string }
 	local hits: { string } = {}
 	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
-		local column = CombatService.getMonsterColumn(monsterId)
 		-- The jet leaves the mouth toward the east end of the row.
-		if type(column) == "number" and column >= fromColumn then
+		if CombatService.isStillInFront(monsterId, fromColumn) then
 			table.insert(hits, monsterId)
 		end
 	end
@@ -536,7 +535,7 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 	if isRowBusy(ctx.plotModel, ctx.position.row) then
 		return false
 	end
-	if not rowQualifies(ctx.plotModel, ctx.position.row, minEnemies) then
+	if not rowQualifies(ctx.plotModel, ctx.position.row, ctx.position.column, minEnemies) then
 		return false
 	end
 

@@ -9,8 +9,8 @@
 	Immortal Frostbound Neighbor also freezes one adjacent lawn row
 	(`freezeAdjacentLane`): the neighbor with more monsters, ties go to
 	the lower row. GOD Glacial Dominion (`freezeEntireLawn`) freezes every
-	lawn row and Slow 25% for freezeDuration + lawnSlowDuration (felt
-	after thaw).
+	lawn row, including monsters that have already walked past her, and
+	Slow 25% for freezeDuration + lawnSlowDuration (felt after thaw).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

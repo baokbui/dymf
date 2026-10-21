@@ -75,6 +75,36 @@ local function monsterLaneSpanOf(instanceId: string): number
 	return 1
 end
 
+-- True when the monster's body still overlaps the caster's tile or any tile
+-- east of it. A unit that has walked fully west of that tile is already past.
+function CombatService.isStillInFront(monsterId: string, originColumn: number): boolean
+	local column = monsterColumnOf(monsterId)
+	if type(column) ~= "number" then
+		return false
+	end
+	return GridUtil.columnOverlapsTileBand(column, monsterLaneSpanOf(monsterId), originColumn, GridConfig.COLUMNS)
+end
+
+-- How many living lawn monsters on this row are still in front of `originColumn`,
+-- and whether any of them is a boss. Monsters that have walked past do not count.
+function CombatService.frontLaneThreat(plotModel: Model, row: number, originColumn: number): (number, boolean)
+	local count = 0
+	local boss = false
+	if not monsterHandlers then
+		return 0, false
+	end
+	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
+		if not CombatService.isStillInFront(monsterId, originColumn) then
+			continue
+		end
+		count += 1
+		if monsterHandlers.isBoss(monsterId) then
+			boss = true
+		end
+	end
+	return count, boss
+end
+
 -- Remaining strength of a Tralalero crowd-control effect (1 = full, 0 = immune).
 local function tralaleroCcKeep(laneSpan: number): number
 	local extraRows = math.max(0, math.floor(laneSpan) - 1)
@@ -251,6 +281,17 @@ function CombatService.notifyGravityPull(ownerUserId: number, center: Vector3, o
 		end
 	end
 	fireCombatVisual(ownerUserId, payload)
+end
+
+-- La Vacca GOD: a black hole opens on her tile while monsters are swallowed.
+function CombatService.notifyBlackHole(ownerUserId: number, position: Vector3, duration: number)
+	fireCombatVisual(ownerUserId, {
+		kind = "BlackHole",
+		x = position.X,
+		y = position.Y,
+		z = position.Z,
+		duration = duration,
+	})
 end
 
 -- One-shot plant leaving the lawn (Boneca's last headbutt).
@@ -947,7 +988,7 @@ function CombatService.fireMushroomExplosion(
 	})
 end
 
-function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number)
+function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: number, originColumn: number)
 	local GridService = require(script.Parent.GridService)
 	local hits: { { x: number, y: number, z: number } } = {}
 	local seen: { [string]: boolean } = {}
@@ -959,6 +1000,9 @@ function CombatService.fireBatSlam(ownerUserId: number, plotModel: Model, row: n
 			continue
 		end
 		seen[monsterId] = true
+		if not CombatService.isStillInFront(monsterId, originColumn) then
+			continue
+		end
 		local column = monsterColumnOf(monsterId)
 		if type(column) ~= "number" then
 			continue
@@ -1020,12 +1064,19 @@ function CombatService.dealEntireRowDamage(
 )
 	local targets = CombatService.getAllMonstersInRow(plotModel, row)
 	local ignoreIds = if options then options.ignoreIds else nil
+	local hitCount = 0
 	for _, monsterId in targets do
 		if ignoreIds and ignoreIds[monsterId] then
 			continue
 		end
+		-- The slam covers the caster's tile through the east edge. Units that
+		-- have already walked past that tile are left alone.
+		if not CombatService.isStillInFront(monsterId, originColumn) then
+			continue
+		end
 		CombatService.damageMonster(monsterId, damage, options and options.sourceBrainrotId)
 		fireCombatVisual(ownerUserId, { kind = "Hit", instanceId = monsterId })
+		hitCount += 1
 	end
 	if not (options and options.skipExplosion) then
 		CombatService.fireRowExplosion(
@@ -1036,8 +1087,8 @@ function CombatService.dealEntireRowDamage(
 			options and options.muteExplosionSound
 		)
 	end
-	if #targets > 0 then
-		log:info(string.format("entire-row damage %d on row %d (%d targets)", damage, row, #targets))
+	if hitCount > 0 then
+		log:info(string.format("entire-row damage %d on row %d (%d targets)", damage, row, hitCount))
 	end
 end
 
@@ -1089,8 +1140,8 @@ function CombatService.applyRowStatus(
 end
 
 -- Status on every monster on the row (ahead and behind the caster).
--- `fromColumn` is the caster tile for grave LOS (Winter's Grasp). Nil = house
--- (column 0), which would let a fog grave eat the whole freeze.
+-- `fromColumn` is the caster tile for grave LOS (Winter's Grasp, Glacial Dominion).
+-- Nil = house (column 0), which would let a fog grave eat the whole freeze.
 function CombatService.applyEntireRowStatus(
 	plotModel: Model,
 	row: number,
@@ -1461,12 +1512,16 @@ local function onWaveSweep(
 	end
 	local lo = math.min(fromColumn, toColumn)
 	local hi = math.max(fromColumn, toColumn)
+	local originColumn = if impact and type(impact.waveOriginColumn) == "number" then impact.waveOriginColumn else nil
 	for _, monsterId in CombatService.getAllMonstersInRow(plotModel, row) do
 		local column = monsterColumnOf(monsterId)
 		if type(column) ~= "number" then
 			continue
 		end
 		if column <= lo or column > hi then
+			continue
+		end
+		if originColumn and not CombatService.isStillInFront(monsterId, originColumn) then
 			continue
 		end
 		local waveId = if impact then impact.waveGroupId else nil

@@ -37,6 +37,9 @@ export type MonsterRuntime = {
 	plotModel: Model,
 	row: number,
 	column: number,
+	-- Pivot column + this is the head's west edge. Nil when the rig has no head.
+	-- Targeting waits until that edge is on the lawn.
+	headLeadColumns: number?,
 	model: Model,
 	health: number,
 	maxHealth: number,
@@ -446,6 +449,9 @@ local function setAttacking(runtime: MonsterRuntime, attacking: boolean)
 	end
 	runtime.isAttacking = attacking
 	MonsterAnimation.setAttacking(runtime.model, attacking)
+	if runtime.definition.attackVfx == "LifeVortex" then
+		runtime.model:SetAttribute("LifeVortex", if attacking then true else nil)
+	end
 end
 
 function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number, callbacks: BehaviorCallbacks)
@@ -490,6 +496,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		-- sync entirely so the manual tip/rise tween isn't fought every frame.
 		-- Freeze does not apply / refresh while downed (see applyStatusToMonster).
 		if now < runtime.downedUntil then
+			setAttacking(runtime, false)
 			continue
 		end
 
@@ -506,6 +513,8 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 		end
 
 		if frozen then
+			-- Stun / freeze / trap drops a held attack pose (arm down, vortex off).
+			setAttacking(runtime, false)
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
 			if runtime.freezeVisual == "Bubble" then
 				local bob = MonsterConfig.BUBBLE_FLOAT_OFFSET
@@ -640,6 +649,8 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 			end
 
 			if closeEnoughToAttack(runtime.column, brainrotColumn) then
+				local holdsPose = runtime.definition.holdAttackPose == true
+				local started = holdsPose and not runtime.isAttacking
 				setAttacking(runtime, true)
 
 				-- Keep closing to standoff stop while already on the tile (still chewing).
@@ -649,11 +660,17 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 				end
 				syncTransform(runtime)
 
+				-- First suck lands when the arm locks. Later ticks are the chew interval.
+				if started then
+					runtime.attackCooldown = resolveAttackHitDelay(runtime.definition)
+				end
+
 				runtime.attackCooldown -= dt
 				if runtime.attackCooldown <= 0 then
-					-- Start swing immediately; optional attackHitDelay defers
-					-- chew damage so the impact frame can match the clip.
-					MonsterAnimation.playMelee(runtime.model)
+					-- Held poses stay up; a normal swing replays each chew.
+					if not holdsPose then
+						MonsterAnimation.playMelee(runtime.model)
+					end
 					MonsterFeedback.pulseAttack(runtime.model)
 					runtime.attackCooldown = runtime.definition.attackInterval
 
@@ -661,7 +678,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 					-- just the Brainrot that first drew them in (e.g. Goblin Elite
 					-- one-shots Brainrots in all three of its lanes).
 					local targets = brainrotsAtColumn(runtime, brainrotColumn)
-					local hitDelay = resolveAttackHitDelay(runtime.definition)
+					local hitDelay = if holdsPose then 0 else resolveAttackHitDelay(runtime.definition)
 					local instanceId = runtime.instanceId
 					local applyHits = function()
 						if runtimes[instanceId] ~= runtime or runtime.health <= 0 then

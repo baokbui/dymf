@@ -8,8 +8,9 @@
 
 	walkAnimationId = "" explicitly disables walk (catalog R15 walks often look
 	wrong on Toolbox rigs that snap along the grid).
-	proceduralWalk: skip Toolbox AnimationIds (often permission-locked) and use
-	AnimSaves KeyframeSequences or MonsterProceduralGait instead.
+	proceduralWalk: skip Toolbox AnimationIds (often permission-locked). An
+	authored walkAnimationId plays first; otherwise AnimSaves, then
+	MonsterProceduralGait if that track fails to load.
 ]]
 
 local AnimationClipProvider = game:GetService("AnimationClipProvider")
@@ -31,6 +32,11 @@ type AnimState = {
 	attack: AnimationTrack?,
 	ability: { [string]: AnimationTrack },
 	mode: "Walk" | "Attack" | "Idle",
+	-- Pin the attack clip at attackHoldTime instead of replaying a full swing.
+	holdAttackPose: boolean,
+	attackHoldTime: number,
+	holding: boolean,
+	holdToken: number,
 }
 
 local states: { [Model]: AnimState } = {}
@@ -106,19 +112,28 @@ local function resolveAnimationId(
 	kind: "Walk" | "Attack"
 ): string?
 	-- Toolbox packs often ship AnimationIds the experience can't play. For
-	-- proceduralWalk units, only try local AnimSaves (then gait fallback).
+	-- proceduralWalk units, an authored walkAnimationId wins. Otherwise try
+	-- local AnimSaves, then the gait fallback.
 	if kind == "Walk" and definition.proceduralWalk then
+		if definition.walkAnimationId ~= nil and definition.walkAnimationId ~= "" then
+			return definition.walkAnimationId
+		end
 		local savesId = registerAnimSavesWalkId(model)
 		if savesId then
 			return savesId
-		end
-		if definition.walkAnimationId ~= nil and definition.walkAnimationId ~= "" then
-			return definition.walkAnimationId
 		end
 		return nil
 	end
 
 	if kind == "Walk" then
+		-- Authored id beats a Toolbox Animation child and AnimSaves. "" disables.
+		-- Nil falls through to those, then the default catalog walk.
+		if definition.walkAnimationId ~= nil then
+			if definition.walkAnimationId == "" then
+				return nil
+			end
+			return definition.walkAnimationId
+		end
 		local embedded = findChildAnimation(model, "WalkAnimation")
 		if embedded then
 			return embedded.AnimationId
@@ -131,13 +146,6 @@ local function resolveAnimationId(
 		local savesId = registerAnimSavesWalkId(model)
 		if savesId then
 			return savesId
-		end
-		-- Explicit field: "" disables walk; nil falls back to default catalog walk.
-		if definition.walkAnimationId ~= nil then
-			if definition.walkAnimationId == "" then
-				return nil
-			end
-			return definition.walkAnimationId
 		end
 		return MonsterConfig.DEFAULT_WALK_ANIMATION_ID
 	end
@@ -207,13 +215,19 @@ function MonsterAnimation.bind(model: Model, definition: Types.MonsterDefinition
 		end
 	end
 
+	local holdTime = definition.attackHitDelay
 	local state: AnimState = {
 		animator = animator,
 		walk = walkTrack,
 		-- One-shot club / melee swing; replayed each chew hit.
+		-- holdAttackPose pins it at attackHoldTime for the whole chew.
 		attack = loadTrack(animator, attackId, false, Enum.AnimationPriority.Action),
 		ability = abilityTracks,
 		mode = "Idle",
+		holdAttackPose = definition.holdAttackPose == true,
+		attackHoldTime = if type(holdTime) == "number" then math.max(0, holdTime) else 0,
+		holding = false,
+		holdToken = 0,
 	}
 	states[model] = state
 
@@ -223,6 +237,49 @@ function MonsterAnimation.bind(model: Model, definition: Types.MonsterDefinition
 	else
 		state.mode = "Idle"
 	end
+end
+
+local function endHold(state: AnimState)
+	if not state.holding then
+		return
+	end
+	state.holding = false
+	state.holdToken += 1
+end
+
+-- Play the attack clip up to the outstretched frame, then freeze it.
+local function beginHold(model: Model, state: AnimState)
+	if state.holding then
+		return
+	end
+	state.holding = true
+	state.holdToken += 1
+	local token = state.holdToken
+	if state.walk and state.walk.IsPlaying then
+		state.walk:Stop(0.12)
+	end
+	state.mode = "Attack"
+	local track = state.attack
+	if not track then
+		return
+	end
+	track:Play(0.1)
+	track:AdjustSpeed(1)
+	track.TimePosition = 0
+	local holdAt = state.attackHoldTime
+	task.delay(holdAt, function()
+		if states[model] ~= state or not state.holding or state.holdToken ~= token then
+			return
+		end
+		if not track.IsPlaying then
+			track:Play(0)
+		end
+		local length = track.Length
+		if typeof(length) == "number" and length > 0.05 then
+			track.TimePosition = math.clamp(holdAt, 0, length - 0.05)
+		end
+		track:AdjustSpeed(0)
+	end)
 end
 
 function MonsterAnimation.setAttacking(model: Model, attacking: boolean)
@@ -237,6 +294,10 @@ function MonsterAnimation.setAttacking(model: Model, attacking: boolean)
 	end
 
 	if attacking then
+		if state.holdAttackPose then
+			beginHold(model, state)
+			return
+		end
 		if state.mode == "Attack" then
 			return
 		end
@@ -245,6 +306,7 @@ function MonsterAnimation.setAttacking(model: Model, attacking: boolean)
 		end
 		state.mode = "Attack"
 	else
+		endHold(state)
 		if state.mode == "Walk" or state.mode == "Idle" then
 			if not state.walk then
 				state.mode = "Idle"
@@ -268,6 +330,10 @@ end
 function MonsterAnimation.playMelee(model: Model)
 	local state = states[model]
 	if not state or not state.attack then
+		return
+	end
+	-- The held pose stays up; chew ticks must not replay the swing.
+	if state.holdAttackPose then
 		return
 	end
 	if state.walk and state.walk.IsPlaying then
@@ -326,6 +392,7 @@ function MonsterAnimation.resumeWalk(model: Model)
 	if not state then
 		return
 	end
+	endHold(state)
 	for _, track in state.ability do
 		if track.IsPlaying then
 			track:Stop(0.1)
@@ -352,6 +419,7 @@ function MonsterAnimation.setLocomotionPaused(model: Model, paused: boolean, kee
 		return
 	end
 	if paused then
+		endHold(state)
 		if not keepCombatAnims then
 			if state.attack and state.attack.IsPlaying then
 				state.attack:Stop(0.05)

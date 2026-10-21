@@ -91,6 +91,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `MonsterAttack_Goblin` / `_GoblinElite` / `_GoblinKing` | Goblin club swing |
 | `MonsterAttack_Scorpion` | Scorpion chew landing on a Brainrot |
 | `MonsterAttack_SmallMummy` / `_PharaohMummy` | Mummy chew landing on a Brainrot |
+| `MonsterAttack_Vampire` / `_DukeVampire` | Vampire and Duke Vampire life-drain tick |
 | `SandTornado` | Pharaoh steal tornado (`CombatVisual` kind `SandTornado`) |
 | `Terrify` | Duke Vampire Terrify scream (`CombatVisual` kind `Terrify`) |
 | `MeleeBat` | Tung Tung bat hit via `BrainrotAction` (every connecting hit) |

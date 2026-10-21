@@ -1303,6 +1303,145 @@ local function cframeFromUp(position: Vector3, up: Vector3, spin: number): CFram
 	return CFrame.fromMatrix(position, right, axis) * CFrame.Angles(0, spin, 0)
 end
 
+local lifeVortexStops: { [Model]: () -> () } = {}
+
+local RIGHT_ARM_NAMES = { "Right Arm", "RightArm", "RArm", "RightLowerArm" }
+
+local function findRightArm(model: Model): BasePart?
+	for _, name in RIGHT_ARM_NAMES do
+		local child = model:FindFirstChild(name, true)
+		if child and child:IsA("BasePart") then
+			return child
+		end
+	end
+	return nil
+end
+
+-- R6 Right Arm: the shoulder pivot is the part center, the hand is the -Y end.
+-- The grip attachment sits on that same end when the rig has one.
+local function rightFist(arm: BasePart): (Vector3, Vector3)
+	local grip = arm:FindFirstChild("RightGripAttachment", true)
+	local fist: Vector3
+	if grip and grip:IsA("Attachment") then
+		fist = grip.WorldPosition
+	else
+		fist = arm.CFrame:PointToWorldSpace(Vector3.new(0, -arm.Size.Y * 0.5, 0))
+	end
+	local axis = fist - arm.Position
+	if axis.Magnitude < 0.05 then
+		axis = -arm.CFrame.UpVector
+	else
+		axis = axis.Unit
+	end
+	return fist + axis * 0.15, axis
+end
+
+function VfxUtil.stopLifeVortex(model: Model)
+	local stop = lifeVortexStops[model]
+	if not stop then
+		return
+	end
+	lifeVortexStops[model] = nil
+	stop()
+end
+
+type LifeStreak = {
+	part: Part,
+	yaw: number,
+	lift: number,
+	phase: number,
+	generation: number,
+}
+
+-- Red and white lines fly into the right fist, fade, then new ones repeat.
+function VfxUtil.startLifeVortex(model: Model)
+	if lifeVortexStops[model] or VfxLoad.quality() == "Minimal" then
+		return
+	end
+	local arm = findRightArm(model)
+	if not arm then
+		return
+	end
+	local count = if VfxLoad.quality() == "Full" then VfxConfig.LIFE_VORTEX_COUNT else scaledBurstCount(8)
+	if not count then
+		return
+	end
+	local folder = effectsFolder()
+	local streaks: { LifeStreak } = {}
+	for index = 1, count do
+		local part = effectPart(
+			"LifeStreak",
+			if index % 2 == 0 then VfxConfig.LIFE_VORTEX_WHITE else VfxConfig.LIFE_VORTEX_COLOR,
+			0.05
+		)
+		part.Parent = folder
+		table.insert(streaks, {
+			part = part,
+			yaw = (index / count) * math.pi * 2,
+			lift = (index % 3 - 1) * 0.35,
+			phase = (index - 1) / count * VfxConfig.LIFE_VORTEX_SUCK,
+			generation = -1,
+		})
+	end
+
+	local alive = true
+	local started = os.clock()
+	local conn: RBXScriptConnection? = nil
+	local function stop()
+		if not alive then
+			return
+		end
+		alive = false
+		if lifeVortexStops[model] == stop then
+			lifeVortexStops[model] = nil
+		end
+		if conn then
+			conn:Disconnect()
+		end
+		for _, streak in streaks do
+			if streak.part.Parent then
+				streak.part:Destroy()
+			end
+		end
+	end
+	lifeVortexStops[model] = stop
+
+	local suck = math.max(VfxConfig.LIFE_VORTEX_SUCK, 0.05)
+	conn = RunService.Heartbeat:Connect(function()
+		if not alive or not model.Parent or not arm.Parent then
+			stop()
+			return
+		end
+		local fist, axis = rightFist(arm)
+		local side = axis:Cross(Vector3.yAxis)
+		if side.Magnitude < 0.2 then
+			side = axis:Cross(Vector3.zAxis)
+		end
+		side = side.Unit
+		local up = side:Cross(axis).Unit
+		local elapsed = os.clock() - started
+		local reach = VfxConfig.LIFE_VORTEX_REACH
+		for _, streak in streaks do
+			local generation = math.floor((elapsed + streak.phase) / suck)
+			if generation ~= streak.generation then
+				streak.generation = generation
+				streak.yaw = math.random() * math.pi * 2
+				streak.lift = (math.random() - 0.5) * 0.9
+			end
+			local alpha = ((elapsed + streak.phase) / suck) % 1
+			local pulled = alpha * alpha
+			local dist = reach * (1 - pulled)
+			local dir = (axis + side * math.cos(streak.yaw) * 0.55 + up * (math.sin(streak.yaw) * 0.55 + streak.lift)).Unit
+			local head = fist + dir * dist
+			local length = VfxConfig.LIFE_VORTEX_LENGTH * (0.4 + 0.6 * (1 - alpha))
+			local tail = head + dir * length
+			streak.part.Size = Vector3.new(0.07, 0.07, math.max(length, 0.08))
+			streak.part.CFrame = CFrame.lookAt((head + tail) * 0.5, head)
+			streak.part.Transparency = if alpha < 0.72 then 0.02 else (alpha - 0.72) / 0.28
+		end
+	end)
+end
+
 type SandFunnel = {
 	root: Model,
 	pose: (Vector3, Vector3, number) -> (),
@@ -2170,6 +2309,173 @@ function VfxUtil.playInkDrop(from: Vector3, to: Vector3, arcHeight: number?)
 		if alpha >= 1 then
 			conn:Disconnect()
 			drop:Destroy()
+		end
+	end)
+end
+
+-- Flat disc. A cylinder's length runs along X, so tip it onto the lawn plane.
+local function accretionDisc(name: string, color: Color3, transparency: number, center: Vector3): Part
+	local disc = effectPart(name, color, transparency)
+	disc.Shape = Enum.PartType.Cylinder
+	disc.Material = Enum.Material.Neon
+	disc.CFrame = CFrame.new(center) * CFrame.Angles(0, 0, math.rad(90))
+	disc.Parent = effectsFolder()
+	return disc
+end
+
+type SuckBit = {
+	part: Part,
+	yaw: number,
+	lift: number,
+	reach: number,
+	lap: number,
+	phase: number,
+	born: number,
+}
+
+local function destroyBlackHole(sphere: Part, outer: Part, inner: Part?, ring: Part?, streaks: { SuckBit })
+	if sphere.Parent then
+		sphere:Destroy()
+	end
+	if outer.Parent then
+		outer:Destroy()
+	end
+	if inner and inner.Parent then
+		inner:Destroy()
+	end
+	if ring and ring.Parent then
+		ring:Destroy()
+	end
+	for _, bit in streaks do
+		if bit.part.Parent then
+			bit.part:Destroy()
+		end
+	end
+end
+
+-- La Vacca GOD. A black sphere with a spinning accretion disc. It bobs while
+-- streaks fly straight in, vanish, and new ones appear. Full adds a hot inner
+-- disc and more streaks. Reduced is the sphere, one disc, the ring, and fewer streaks.
+-- Minimal draws nothing. `duration` is unused; open / hold / close come from VfxConfig.
+function VfxUtil.playBlackHole(center: Vector3, _duration: number)
+	local quality = VfxLoad.quality()
+	if quality == "Minimal" then
+		return
+	end
+	local full = quality == "Full"
+	local openSeconds = VfxConfig.BLACK_HOLE_OPEN_SECONDS
+	local holdSeconds = VfxConfig.BLACK_HOLE_HOLD_SECONDS
+	local closeSeconds = VfxConfig.BLACK_HOLE_CLOSE_SECONDS
+	local radius = VfxConfig.BLACK_HOLE_RADIUS
+	local life = openSeconds + holdSeconds + closeSeconds
+	local folder = effectsFolder()
+
+	local sphere = domePart("BlackHole", VfxConfig.BLACK_HOLE_COLOR, 0, center)
+	sphere.Material = Enum.Material.SmoothPlastic
+	sphere.Size = Vector3.one * 0.4
+	local glow = Instance.new("PointLight")
+	glow.Name = "BlackHoleGlow"
+	glow.Color = VfxConfig.BLACK_HOLE_RING_COLOR
+	glow.Brightness = 0
+	glow.Range = radius * 4.5
+	glow.Shadows = false
+	glow.Parent = sphere
+
+	local outer = accretionDisc("BlackHoleDisc", VfxConfig.BLACK_HOLE_DISK_COLOR, 0.15, center)
+	outer.Size = Vector3.new(0.22, 0.4, 0.4)
+
+	local ring = accretionDisc("BlackHolePhotonRing", VfxConfig.BLACK_HOLE_RING_COLOR, 0, center)
+	ring.Size = Vector3.new(0.55, 0.4, 0.4)
+
+	local inner: Part? = nil
+	if full then
+		inner = accretionDisc("BlackHoleInnerDisc", VfxConfig.BLACK_HOLE_DISK_HOT, 0, center)
+		inner.Size = Vector3.new(0.2, 0.4, 0.4)
+	end
+
+	local streakCount = if full then VfxConfig.BLACK_HOLE_SUCK_COUNT else math.max(3, math.floor(VfxConfig.BLACK_HOLE_SUCK_COUNT / 2))
+	local streaks: { SuckBit } = {}
+	for index = 1, streakCount do
+		local hot = index % 2 == 0
+		local part = effectPart(
+			"BlackHoleSuck",
+			if hot then VfxConfig.BLACK_HOLE_RING_COLOR else VfxConfig.BLACK_HOLE_DISK_COLOR,
+			0.05
+		)
+		part.Parent = folder
+		table.insert(streaks, {
+			part = part,
+			yaw = (index / streakCount) * math.pi * 2,
+			lift = ((index % 5) - 2) * 0.35,
+			reach = VfxConfig.BLACK_HOLE_SUCK_REACH * (0.72 + (index % 3) * 0.16),
+			lap = VfxConfig.BLACK_HOLE_SUCK_LAP * (0.82 + (index % 4) * 0.09),
+			phase = ((index - 1) / streakCount) * VfxConfig.BLACK_HOLE_SUCK_LAP,
+			born = -1,
+		})
+	end
+
+	local started = os.clock()
+	local spin = 0
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function(dt)
+		local elapsed = os.clock() - started
+		if elapsed >= life or not sphere.Parent then
+			conn:Disconnect()
+			destroyBlackHole(sphere, outer, inner, ring, streaks)
+			return
+		end
+		local scale = 1
+		if elapsed < openSeconds then
+			scale = math.clamp(elapsed / openSeconds, 0.05, 1)
+		elseif elapsed > openSeconds + holdSeconds then
+			local closeAlpha = (elapsed - openSeconds - holdSeconds) / closeSeconds
+			scale = math.clamp(1 - closeAlpha, 0.02, 1)
+		end
+		local bobWindow = if elapsed < openSeconds then elapsed / openSeconds else 1
+		local bob = math.sin((elapsed / VfxConfig.BLACK_HOLE_BOB_PERIOD) * math.pi * 2) * VfxConfig.BLACK_HOLE_BOB_HEIGHT * bobWindow
+		local pos = center + Vector3.new(0, bob, 0)
+		spin += dt * (if full then 2.4 else 1.6)
+		local yaw = CFrame.Angles(0, spin, 0)
+		local flat = CFrame.Angles(0, 0, math.rad(90))
+		sphere.Size = Vector3.one * radius * 2 * scale
+		sphere.CFrame = CFrame.new(pos)
+		glow.Brightness = (if full then 6 else 3) * scale
+		glow.Range = radius * 4.5 * math.max(scale, 0.2)
+		outer.Size = Vector3.new(0.28 * scale, radius * 4.4 * scale, radius * 4.4 * scale)
+		outer.CFrame = CFrame.new(pos) * yaw * flat
+		if inner then
+			inner.Size = Vector3.new(0.22 * scale, radius * 2.6 * scale, radius * 2.6 * scale)
+			inner.CFrame = CFrame.new(pos) * CFrame.Angles(0, spin * 1.4, 0) * flat
+		end
+		ring.Size = Vector3.new(0.62 * scale, radius * 2.2 * scale, radius * 2.2 * scale)
+		ring.CFrame = CFrame.new(pos) * CFrame.Angles(0, -spin * 1.8, 0) * flat
+
+		for _, bit in streaks do
+			if not bit.part.Parent then
+				continue
+			end
+			local clock = elapsed + bit.phase
+			local generation = math.floor(clock / bit.lap)
+			if generation ~= bit.born then
+				bit.born = generation
+				bit.yaw = math.random() * math.pi * 2
+				bit.lift = (math.random() - 0.5) * 1.6
+				bit.reach = VfxConfig.BLACK_HOLE_SUCK_REACH * (0.6 + math.random() * 0.5)
+			end
+			local alpha = (clock % bit.lap) / bit.lap
+			local pulled = alpha * alpha
+			local dist = bit.reach * (1 - pulled) * scale
+			local height = bit.lift * radius * (1 - pulled) * scale
+			local world = pos + Vector3.new(math.cos(bit.yaw) * dist, height, math.sin(bit.yaw) * dist)
+			local toward = pos - world
+			if toward.Magnitude > 0.08 then
+				bit.part.CFrame = CFrame.lookAt(world, pos)
+			else
+				bit.part.CFrame = CFrame.new(pos)
+			end
+			local length = (0.35 + (1 - alpha) * 2.2) * scale
+			bit.part.Size = Vector3.new(0.28 * scale, 0.28 * scale, math.max(length, 0.12))
+			bit.part.Transparency = if alpha < 0.62 then 0.04 else (alpha - 0.62) / 0.38
 		end
 	end)
 end

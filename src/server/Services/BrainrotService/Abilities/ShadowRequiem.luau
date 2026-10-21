@@ -7,7 +7,9 @@
 	explodes into a white light pillar. Pierce every monster and grave.
 	Crescent damage is 2000% at 1 tile, plus 100% per extra tile of travel.
 	The last-tile pillar bonus stays a flat extra 1000%.
-	Needs 3+ enemies in the row, or a boss. If several GOD Cappuccinos in the
+	Needs 3+ enemies still in front of him, or a boss still in front.
+	The wave does not hit monsters that have already walked past him.
+	If several GOD Cappuccinos in the
 	same row are ready, the easternmost (closest to incoming monsters) fires first.
 ]]
 
@@ -52,11 +54,9 @@ local function isRowBusy(plotModel: Model, row: number): boolean
 	return rows ~= nil and rows[row] == true
 end
 
-local function rowQualifies(plotModel: Model, row: number, minEnemies: number): boolean
-	if CombatService.rowHasBoss(plotModel, row) then
-		return true
-	end
-	return #CombatService.getAllMonstersInRow(plotModel, row) >= minEnemies
+local function rowQualifies(plotModel: Model, row: number, originColumn: number, minEnemies: number): boolean
+	local count, boss = CombatService.frontLaneThreat(plotModel, row, originColumn)
+	return boss or count >= minEnemies
 end
 
 local SWORD_KEYS = { "sword", "blade", "katana", "saber", "scimitar", "ninjato", "wakizashi" }
@@ -164,7 +164,7 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 	if isRowBusy(ctx.plotModel, ctx.position.row) then
 		return false
 	end
-	if not rowQualifies(ctx.plotModel, ctx.position.row, minEnemies) then
+	if not rowQualifies(ctx.plotModel, ctx.position.row, ctx.position.column, minEnemies) then
 		return false
 	end
 

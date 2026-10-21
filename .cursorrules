@@ -358,7 +358,7 @@ Avoid unnecessary Instance creation.
 Reuse objects when practical.
 
 Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
-Jackpot burst, Abyssal Torrent, Last Laugh mushroom cloud) go through `Shared.Utilities.VfxLoad`. Quality
+Jackpot burst, Abyssal Torrent, Last Laugh mushroom cloud, La Vacca black hole) go through `Shared.Utilities.VfxLoad`. Quality
 is a client Settings toggle (High = Full, Low = Reduced, Off = Minimal). The
 server always authors the full effect. Settings can hide Brainrot VFX on other
 players' plots. Damage, targeting, status, and animations are never throttled.

@@ -32,7 +32,7 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	SahurWrath = {
 		label = "Sahur's Wrath",
-		description = "A giant bat slams the whole row for 1000% damage, and the rows beside it for 500%. Needs 3 or more monsters, or a boss.",
+		description = "A giant bat slams from him to the end of the row for 1000% damage, and the rows beside it for 500%. Monsters that already walked past him are left alone. Needs 3 or more monsters still in front, or a boss.",
 	},
 	BubbleTrap = {
 		label = "Bubble Trap",
@@ -104,11 +104,11 @@ local ABILITY_INFO: { [string]: { label: string, description: string } } = {
 	},
 	ShadowRequiem = {
 		label = "Shadow Requiem",
-		description = "Sends a growing sword wave down the row for 2000% damage, plus 100% per tile, then a 1000% blast on the last tile. Needs 3 or more monsters, or a boss. 45s cooldown.",
+		description = "Sends a growing sword wave down the row for 2000% damage, plus 100% per tile, then a 1000% blast on the last tile. Monsters that already walked past him are left alone. Needs 3 or more monsters still in front, or a boss. 45s cooldown.",
 	},
 	AbyssalTorrent = {
 		label = "Abyssal Torrent",
-		description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster in the way. Each second in the jet deals 55 damage, plus 20% more for every tile closer to him. Needs 3 or more monsters, or a boss. The closest one fires first. 45s cooldown.",
+		description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster still in front of him. Each second in the jet deals 55 damage, plus 20% more for every tile closer to him. Needs 3 or more monsters still in front, or a boss. The closest one fires first. 45s cooldown.",
 	},
 }
 

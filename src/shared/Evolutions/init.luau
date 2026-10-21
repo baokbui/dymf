@@ -6,7 +6,7 @@
 	and Mythic / Immortal passives resolve from `ability` ids / `abilityParams` (never
 	mutate the catalog; never branch on unit names). GOD ultimates: `Jackpot`,
 	`PrimalRetaliation`, `SahurWrath`, `ShadowRequiem`, `AbyssalTorrent`, `PineappleExpress`,
-	plus Lirili `freezeEntireLawn` and Boneca `lastLaughDamage` (Last Laugh) overlays.
+	plus Lirili `freezeEntireLawn`, Boneca `lastLaughDamage` (Last Laugh), and La Vacca `blackHole` overlays.
 ]]
 
 local EvolutionConfig = require(script.Parent.Config.EvolutionConfig)
@@ -136,7 +136,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Sahur's Wrath",
-			description = "A giant bat slams the whole row for 1000% damage, and the rows beside it for 500%. Needs 3 or more monsters, or a boss. 30s cooldown.",
+			description = "A giant bat slams from him to the end of the row for 1000% damage, and the rows beside it for 500%. Monsters that already walked past him are left alone. Needs 3 or more monsters still in front, or a boss. 30s cooldown.",
 			ability = "SahurWrath",
 			abilityParams = { cooldown = 30, damagePercent = 1000, splashPercent = 500, minEnemies = 3 },
 		},
@@ -176,7 +176,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Abyssal Torrent",
-			description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster in the way. Each second in the jet deals 55 damage, plus 20% more for every tile closer to him. Needs 3 or more monsters, or a boss. The closest one fires first. 45s cooldown.",
+			description = "Shoots a water jet from his mouth to the end of the row for 15 seconds. It goes through every monster still in front of him. Each second in the jet deals 55 damage, plus 20% more for every tile closer to him. Needs 3 or more monsters still in front, or a boss. The closest one fires first. 45s cooldown.",
 			ability = "AbyssalTorrent",
 			abilityParams = { cooldown = 45, duration = 15, minEnemies = 3, closePercent = 20 },
 		},
@@ -216,7 +216,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Shadow Requiem",
-			description = "Sends a growing sword wave down the row for 2000% damage, plus 100% per tile, then a 1000% blast on the last tile. Needs 3 or more monsters, or a boss. 45s cooldown.",
+			description = "Sends a growing sword wave down the row for 2000% damage, plus 100% per tile, then a 1000% blast on the last tile. Monsters that already walked past him are left alone. Needs 3 or more monsters still in front, or a boss. 45s cooldown.",
 			ability = "ShadowRequiem",
 			abilityParams = { cooldown = 45, damagePercent = 2000, travelPercent = 100, finisherPercent = 1000, minEnemies = 3 },
 		},
@@ -250,7 +250,44 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			description = "Also freezes the neighboring row with the most monsters.",
 			abilityParams = { freezeAdjacentLane = 1 },
 		},
-		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freezes the whole lawn, then slows everyone 25% for 3 seconds after they thaw.", abilityParams = { freezeEntireLawn = 1, lawnSlowPercent = 25, lawnSlowDuration = 3 } },
+		{ rarity = "God", level = 50, name = "Glacial Dominion", description = "Freezes the whole lawn, including monsters that already walked past her, then slows them 25% for 3 seconds after they thaw.", abilityParams = { freezeEntireLawn = 1, lawnSlowPercent = 25, lawnSlowDuration = 3 } },
+	},
+	LaVaccaSaturnoSaturnita = {
+		{
+			rarity = "Epic",
+			level = 10,
+			name = "Shorter Year",
+			description = "Recharges in 12 seconds.",
+			stats = { plantCooldown = 12 },
+		},
+		{
+			rarity = "Legendary",
+			level = 20,
+			name = "Wider Well",
+			description = "Pulls from two rows out. A middle tile can pull four monsters. An edge tile pulls two. Still one per row.",
+			abilityParams = { pullReach = 2 },
+		},
+		{
+			rarity = "Mythic",
+			level = 30,
+			name = "Hard Landing",
+			description = "Each monster she pulls is stunned for 1.5 seconds when it lands.",
+			abilityParams = { landingStun = 1.5 },
+		},
+		{
+			rarity = "Immortal",
+			level = 40,
+			name = "Heavier Bodies",
+			description = "She can pull monsters that are 2 tiles wide. Anything 3 or wider stays put.",
+			abilityParams = { maxLaneSpan = 2 },
+		},
+		{
+			rarity = "God",
+			level = 50,
+			name = "Black Hole",
+			description = "She becomes a black hole, swallows the 3 closest monsters anywhere on the lawn, and stays for 3 seconds. Then the hole collapses.",
+			abilityParams = { blackHole = 1, blackHoleCount = 3 },
+		},
 	},
 	OrangutiniAnanassini = {
 		{
@@ -295,8 +332,8 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "Epic",
 			level = 10,
 			name = "Thick Skull",
-			description = "10 headbutts before she poofs, and 33% more damage.",
-			stats = { charges = 10, damage = 200 },
+			description = "33% more damage.",
+			stats = { damage = 200 },
 		},
 		{
 			rarity = "Legendary",
@@ -323,7 +360,7 @@ local TRACKS: { [string]: { EvolutionRow } } = {
 			rarity = "God",
 			level = 50,
 			name = "Last Laugh",
-			description = "Her last headbutt ends in a mushroom cloud blast that deals 450 damage on her tile and one tile on each side.",
+			description = "Her last headbutt ends in a mushroom cloud blast that deals 450 damage on her tile and one tile toward the monsters.",
 			abilityParams = { lastLaughDamage = 450, lastLaughRadius = 1 },
 		},
 	},

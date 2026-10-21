@@ -340,6 +340,7 @@ local function spawnInternal(
 		plotModel = plotModel,
 		row = gridRow,
 		column = column,
+		headLeadColumns = MonsterModel.measureHeadLeadColumns(model),
 		model = model,
 		health = definition.health,
 		maxHealth = definition.health,
@@ -482,6 +483,16 @@ local function occupiesRow(runtime: MonsterRuntime, row: number): boolean
 	return GridUtil.occupiesLaneRow(runtime.row, runtime.definition.laneSpan or 1, row)
 end
 
+-- A rig with a head is not a target until that head's west edge has crossed
+-- onto the lawn. The body's wide footprint can overlap the plot first.
+local function headHasEntered(runtime: MonsterRuntime): boolean
+	local lead = runtime.headLeadColumns
+	if lead == nil then
+		return true
+	end
+	return GridUtil.isOnPlotColumn(runtime.column + lead)
+end
+
 function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { string }
 	local result: { string } = {}
 	for _, runtime in monsters do
@@ -489,6 +500,7 @@ function EnemyService.getAllMonstersInRow(plotModel: Model, row: number): { stri
 			and isCombatTarget(runtime)
 			and occupiesRow(runtime, row)
 			and GridUtil.isOnPlotColumn(runtime.column, runtime.definition.laneSpan)
+			and headHasEntered(runtime)
 		then
 			table.insert(result, runtime.instanceId)
 		end
@@ -510,6 +522,9 @@ function EnemyService.getFirstMonsterInRow(
 			continue
 		end
 		if not isCombatTarget(runtime) then
+			continue
+		end
+		if not headHasEntered(runtime) then
 			continue
 		end
 		if not GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -538,6 +553,9 @@ function EnemyService.getFirstMonsterInMeleeReach(
 		if not isCombatTarget(runtime) then
 			continue
 		end
+		if not headHasEntered(runtime) then
+			continue
+		end
 		if not GridUtil.isWithinMeleeReach(fromColumn, runtime.column, reachColumns) then
 			continue
 		end
@@ -562,6 +580,9 @@ function EnemyService.getMonstersInRow(
 			continue
 		end
 		if not isCombatTarget(runtime) then
+			continue
+		end
+		if not headHasEntered(runtime) then
 			continue
 		end
 		if GridUtil.isColumnInRange(fromColumn, runtime.column, rangeTiles, fullLine) then
@@ -786,6 +807,35 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 		return true
 	end
 	return false
+end
+
+-- Black Hole: the monster shrinks into the hole and is removed. No death pose.
+-- The kill still counts for XP, the damage meter, and wave progress.
+function EnemyService.consumeMonster(instanceId: string, sourceBrainrotId: string): boolean
+	local runtime = monsters[instanceId]
+	if not runtime or runtime.health <= 0 then
+		return false
+	end
+	if os.clock() < runtime.invulnerableUntil then
+		return false
+	end
+	runtime.lastHitBrainrotId = sourceBrainrotId
+	local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
+	if type(ownerUserId) == "number" and runtime.health > 0 then
+		local DamageMeterService = require(script.Parent.DamageMeterService)
+		DamageMeterService.recordBrainrot(ownerUserId, sourceBrainrotId, runtime.health)
+		local player = Players:GetPlayerByUserId(ownerUserId)
+		if player then
+			local ProgressService = require(script.Parent.ProgressService)
+			ProgressService.grantKillXp(player, sourceBrainrotId, false)
+			ProgressService.incrementStat(player, ProgressConfig.STAT_MONSTERS_DEFEATED)
+		end
+		if killHandler then
+			killHandler(ownerUserId, runtime.monsterId)
+		end
+	end
+	destroyMonster(runtime, true)
+	return true
 end
 
 function EnemyService.applyStatusToMonster(

@@ -31,6 +31,9 @@ local function furthestInRow(ctx): string?
 	local bestId: string? = nil
 	local bestColumn = -math.huge
 	for _, monsterId in CombatService.getMonstersInRow(ctx.plotModel, ctx.position.row, ctx.position.column, ctx.definition.rangeTiles) do
+		if not CombatService.isStillInFront(monsterId, ctx.position.column) then
+			continue
+		end
 		local column = columnOf(monsterId)
 		if column > bestColumn then
 			bestColumn = column

@@ -50,7 +50,9 @@ From `Shared.Types.MonsterDefinition`:
 | `walkAnimationId`         | string?                 | Walk loop (`rbxassetid://…`); falls back to config                     |
 | `attackAnimationId`       | string?                 | Melee swing while chewing; falls back to config                        |
 | `abilityAnimationIds`     | `{ [string]: string }?` | One-shot clips keyed by ability id (`PharaohSummon` / `PharaohSteal`)  |
-| `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick) |
+| `attackHitDelay`          | number?                 | Seconds after melee anim starts before chew damage (nil/0 = same tick). With `holdAttackPose`, this is also the frame the clip freezes on. |
+| `holdAttackPose`          | boolean?                | Pin the attack clip instead of replaying a full swing each chew. Arm drops on walk / stun. |
+| `attackVfx`               | string?                 | Client flourish while that pose is held. `LifeVortex` = red and white lines into the right fist. |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin King / Pharaoh Mummy = 2, Goblin Elite / Queen Spider = 3) |
 | `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
@@ -88,8 +90,10 @@ fight our own grid-driven movement or draw Roblox's built-in nameplate.
 Clones use `preserveAnimationRig = true`: only the root part is Anchored so
 Motor6D limbs can animate. `MonsterAnimation` binds walk/attack tracks from:
 
-1. Walk: `WalkAnimation` child / pack `Animation` / AnimSaves, then
-  `walkAnimationId` (`""` disables); `proceduralWalk` skips Toolbox ids
+1. Walk: authored `walkAnimationId` when set (`""` disables). Otherwise
+  `WalkAnimation` child / pack `Animation` / AnimSaves, then the default
+  catalog walk. `proceduralWalk` skips Toolbox ids and uses the gait if the
+  authored walk fails to load
 2. Attack: `attackAnimationId` when set (`""` disables); else `AttackAnimation`
   child; else `MonsterConfig.DEFAULT_ATTACK_ANIMATION_ID`
 
@@ -103,15 +107,25 @@ with `attackHitDelay` 0.7; each has its own `walkAnimationId`.
 **Goblin King** uses his own walk (`134618618846294`) and attack
 (`92113851689341`) clips, also with `attackHitDelay` 0.7.
 
+**Vampire** and **Duke Vampire** share walk `85689298177211` and attack
+`105203629607445`. `holdAttackPose` freezes that clip at `attackHitDelay`
+0.5s (arm out) for the whole chew. Red and white lines (`attackVfx = "LifeVortex"`)
+fly into the far end of the Right Arm and repeat. Damage still ticks on
+`attackInterval`. The arm and the lines drop when they walk or are stunned
+(freeze / trap).
+
 **Spider** / **Scorpion** Toolbox packs often ship a Script named `Animation`
 with a child `Animation` (`rbxassetid`). Those IDs are usually **permission-locked**
-for other experiences — do not play them. With `proceduralWalk = true`,
-`MonsterAnimation` registers a KeyframeSequence from `AnimSaves` via
-`AnimationClipProvider` (local, owned by this place) when present; otherwise
-`MonsterProceduralGait` drives the legs (Scorpion also waves pincers / tail
-when those joints exist). Unnamed Toolbox `Part` meshes get synthetic Motor6Ds
-from the root — no rename required. Sanitize still strips the Script. Scorpion
-**walk** stays procedural; **chew** uses authored `attackAnimationId`
+for other experiences — do not play them. With `proceduralWalk = true`, an
+authored `walkAnimationId` plays first. Otherwise `MonsterAnimation` registers
+a KeyframeSequence from `AnimSaves` via `AnimationClipProvider` (local, owned
+by this place) when present, and `MonsterProceduralGait` drives the legs if
+that track fails to load (Scorpion also waves pincers / tail when those joints
+exist). Unnamed Toolbox `Part` meshes get synthetic Motor6Ds from the root —
+no rename required. Sanitize still strips the Script. **Spider** and **Queen
+Spider** share the crawl clip `85950530012950` and attack clip
+`116928127786111`. Scorpion **walk** stays
+procedural; **chew** uses authored `attackAnimationId`
 (`rbxassetid://134435243507976`) with `attackHitDelay` 0.4. Scorpion **burrow** is the Spider jump
 equivalent: sink / travel / rise in `MonsterBehavior` (no uploaded clip).
 
