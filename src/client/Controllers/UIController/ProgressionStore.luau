@@ -24,6 +24,7 @@ local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPr
 local BrainrotInfo = require(script.Parent.Parent.Parent.Utilities.BrainrotInfo)
 local AudioController = require(script.Parent.Parent.AudioController)
 
+local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
 local ProgressionStore = {}
 ProgressionStore.__index = ProgressionStore
 
@@ -276,6 +277,9 @@ function ProgressionStore.new(parent: Frame): ProgressionStoreHud
 		self:hideStats()
 	end)
 
+	UIEvents.retentionUpdated:Connect(function()
+		if self.frame.Visible and self.selectedId then self:showStats(self.selectedId) end
+	end)
 	return self
 end
 
@@ -537,6 +541,7 @@ local function placeBuyButton(
 	if clickable then
 		button.MouseButton1Click:Connect(onClick)
 	end
+	return button
 end
 
 function ProgressionStore.tryBuy(self: ProgressionStoreHud, shop: string, id: string, cost: number)
@@ -552,6 +557,7 @@ end
 
 function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 	self.selectedId = id
+	self.statsCard.Size = UDim2.fromOffset(STATS_WIDTH, 420)
 	self:clearBanners()
 	clearBody(self.statsBody)
 
@@ -636,6 +642,15 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 			placeBuyButton(self.statsBody, "SOLD", false, false, function() end)
 		else
 			local price = cost
+			local retention = UIEvents.getRetentionState()
+			local tickets = if retention then retention.brainrotTickets or 0 else 0
+			if tickets > 0 then
+				self.statsCard.Size = UDim2.fromOffset(STATS_WIDTH, 470)
+				local ticket = placeBuyButton(self.statsBody, string.format("Use ticket (%d left)", tickets), true, true, function()
+					Remotes.getEvent("BuyStoreItem"):FireServer({ shop = StoreConfig.SHOP_BRAINROTS, id = id, useTicket = true })
+				end)
+				ticket.Name, ticket.Position = "UseTicket", UDim2.new(0.5, 0, 1, -54)
+			end
 			placeBuyButton(
 				self.statsBody,
 				string.format("Buy for %d brains", price),

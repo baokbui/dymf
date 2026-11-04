@@ -184,11 +184,15 @@ function Index.new(parent: Frame): IndexPanel
 	local list = Instance.new("ScrollingFrame")
 	list.Name = "List"
 	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0 -- the default border draws a dark line beside the thumb
+	list.ClipsDescendants = true
 	list.Position = UDim2.fromOffset(12, 92)
-	list.Size = UDim2.new(1, -24, 1, -104)
+	list.Size = UDim2.new(1, -60, 1, -104)
 	list.CanvasSize = UDim2.new(0, 0, 0, 0)
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.ScrollBarThickness = 6
+	list.ScrollingDirection = Enum.ScrollingDirection.Y
+	list.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 	list.Parent = parent
 
 	local listPad = Instance.new("UIPadding")

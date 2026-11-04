@@ -2,7 +2,7 @@
 
 Each **roster Brainrot** (registry id — Ballerina, Tung Tung, …) has its own
 **Brainrot level**, independent of campaign **days**. That meter climbs as the
-player uses / progresses that unit (XP rules at impl). At fixed Brainrot
+player uses that unit (XP rules below). At fixed Brainrot
 levels they unlock a **five-tier rarity ladder**. Tiers are **cumulative**:
 later unlocks add their aura and bonus on top of earlier ones. The base unit
 (shop id, core ability) does not change.
@@ -12,8 +12,10 @@ Sheet labels “Level 10” mean **Brainrot level 10**.
 
 Status: ✅ Milestone 19 (ladder + GOD ultimates live)
 
-Authoring source: design sheet (Epic → God). Numbers below are targets,
-not live code. “Gold” on the sheet is **coins**.
+The live catalog is `Shared.Evolutions`; XP, gates, colors, and claim costs live
+in `EvolutionConfig`. Descriptions below summarize implemented behavior.
+“Gold” in older design sheets means **coins**. Nine units have full tracks;
+Blueberrinni, Girafa, Patapim, and Bombardino have no authored tiers yet.
 
 ---
 
@@ -22,7 +24,7 @@ not live code. “Gold” on the sheet is **coins**.
 - One level + XP pool **per owned Brainrot id**, shared by every planted copy
   of that unit. Not per tile, not per match. Four Tung Tungs on the lawn share
   one meter.
-- Persist via `SaveService` (`SaveData.brainrotXp`, schema **v5**). Server owns
+- Persist via `SaveService` (`SaveData.brainrotXp`, introduced in **v5**, current schema **v11**). Server owns
   XP; the client never sets it. XP from a day is **committed on victory** only.
   Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
   overrides and **Legendary** extras are applied at place / restore / claim
@@ -37,7 +39,7 @@ not live code. “Gold” on the sheet is **coins**.
   - **Normal monster** — `KILL_XP` goes to the **species that landed the last hit**.
     If one Cappuccino kills a Zombie, every Cappuccino (the shared pool) gains
     that XP. Poison / status ticks keep the previous last hit; silent deaths
-    (house breach, plot clear) grant nothing. `BubbleTrap`, `MeleeBat`, and
+    (house breach, plot clear) grant nothing. `BubbleTrap`, `BubbleBarrage`, `MeleeBat`, and
     `TileTrap` do **not** claim last-hit (they use landed-hit jobs instead).
   - **Boss** — `BOSS_XP` is split **evenly across every living plant** on the
     lawn (integer remainder on the first plants). Four Tungs + one Ballerina
@@ -65,14 +67,18 @@ not live code. “Gold” on the sheet is **coins**.
   | -------------- | ---------- | ------------------------ |
   | 1 → 2 | 70 | 5 |
   | 9 → 10 (Epic) | 199 | 15 |
-  | 19 → 20 (Legendary) | 843 | 61 |
-  | 29 → 30 (Mythic) | 3,128 | 224 |
-  | 39 → 40 (Immortal) | 11,598 | 829 |
+  | 19 → 20 (Legendary) | 740 | 53 |
+  | 29 → 30 (Mythic) | 2,744 | 196 |
+  | 39 → 40 (Immortal) | 10,173 | 727 |
   | 49 → 50 (GOD) | 37,716 | 2,694 |
 
 ---
 
 ## Tiers
+
+Claim costs: **Epic 25**, **Legendary 50**, **Mythic 100**, **Immortal 200**,
+**GOD 400** brains (`EvolutionConfig.TIER_BRAINS`). The previous tier must be
+claimed first; reaching the level alone does not grant stats or abilities.
 
 Unlock gate is **Brainrot level** (the unit’s own meter).
 
@@ -115,7 +121,7 @@ Abilities. Combat math stays in `CombatService`.
 
 ---
 
-## Authoring (sheet)
+## Authoring (live catalog)
 
 Live base stats today (for Epic deltas): Ballerina interval **18s**; Chimpanzini
 **2000** HP; Tung Tung **1200** HP / **55** dmg; Tralalero interval **5s**;
@@ -124,8 +130,8 @@ tiles. Mythic Permafrost overlays freeze duration to **7s**. Boneca **5**
 headbutts (`charges`) / **150** dmg / **1s** stun. Orangutini **40** dmg / **2s**
 interval / **700** HP. La Vacca plant recharge **18s**, pull from neighboring rows, 1-tile monsters only.
 
-**Girafa Celestre**, **Brr Brr Patapim**, and **Bombardino Crocodilo** are not
-on the sheet (TBD).
+**Girafa Celestre**, **Brr Brr Patapim**, **Blueberrinni Octopusini**, and
+**Bombardino Crocodilo** have no evolution rows yet.
 
 ### Ballerina Cappucina
 
@@ -162,7 +168,7 @@ on the sheet (TBD).
 | Tier | Name | Effect |
 | ---- | ---- | ------ |
 | Epic | Ocean's Rhythm | Attack interval **3s** (from 5s), **+10** damage (**65**, from 55), and **+0.25s** trap (**0.75s**, from 0.5s). |
-| Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Does **not** fire (or start CD) if the plot has **no monsters**. **15s** CD. |
+| Legendary | Bubble Barrage | Shoot **one** bubble from the mouth; it splits into **5** (one per lawn row). Empty rows still get a bubble. Only fires when a monster **in his own row** is on the lawn and still in front. **15s** CD. |
 | Mythic | Double Bubble | Each bubble **33%** chance to spawn an extra trap bubble. |
 | Immortal | Wound of the Shark | Monsters leaving a bubble are slowed **40%** for **3s**. |
 | GOD | Abyssal Torrent | Water jet from the mouth to the end of the row for **15s**. Pierces every monster in that stretch. Monsters that have already walked past him are left alone. Each second in the jet deals catalog base damage (**55**), plus **20%** more for every tile closer to his plant than the east edge of the row. Needs **3+** enemies still in front **or a boss** still in front. Easternmost ready Tralalero fires first. **45s** CD. Bubbles pause while it fires. |
@@ -177,7 +183,7 @@ Tralalero crowd control (trap, knockback, stun, and the bubble-exit slow) is wea
 | Legendary | Piercing Brew | For **6s**, knives pierce the first monster and the one behind (flies through graves). **10s** CD. |
 | Mythic | Fifth Strike | Every **5th** attack deals **200%** dmg. |
 | Immortal | Assassin's Verdict | Execute on hit if target is below **7.5%** HP (**2%** for bosses). |
-| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** plus **100%** per tile, then a last-tile pillar for **+1000%**. Monsters that have already walked past him are left alone. Needs **3+** enemies still in front **or a boss** still in front. Easternmost ready Cappuccino fires first. **45s** CD. |
+| GOD | Shadow Requiem | A sword wave flies down the row, growing as it goes. **2000%** at the first tile away, plus **100%** per additional tile, then a last-tile pillar for **+1000%**. Monsters that have already walked past him are left alone. Needs **3+** enemies still in front **or a boss** still in front. Easternmost ready Cappuccino fires first. **45s** CD. |
 
 ### Lirili Larila
 
@@ -233,7 +239,7 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
 
 ---
 
-## Architecture (when building)
+## Architecture ✅
 
 - Data-driven catalog keyed by `brainrotId` + rarity (config / registry — not
   hardcoded in combat).
@@ -265,7 +271,7 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   across living plants; support jobs on `GenerateCoins` / `Wall` / `FreezeTime`
   / landed-hit jobs (`BubbleTrap` every 2, `MeleeBat` every 3, `TileTrap`
   every 2). Never trust the client.
-- Eligibility from that unit’s Brainrot level (+ optional spend); never trust
+- Eligibility requires that unit’s level, previous claimed tier, and brains spend; never trust
   the client, never gate on campaign day unless a later pass adds it.
 - Grants / composition on the server (`ProgressService` or a dedicated API).
 - Inventory / field inspect: portrait header (name, HP bar, level, XP bar) plus

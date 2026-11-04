@@ -10,7 +10,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 ## Core principles
 
-In priority order (from `.cursorrules`):
+In priority order (from `AGENTS.md`):
 
 1. Maintainability
 2. Readability
@@ -22,7 +22,8 @@ Supporting rules:
 
 - Every major gameplay feature lives in its own **Service** (server) or
   **Controller** (client).
-- No giant scripts. Target < ~300 lines per file; split into focused modules.
+- Aim for files under ~300 lines where a clean split exists. Cohesive modules
+  may be longer; avoid artificial fragmentation.
 - Never duplicate logic — reused logic becomes a ModuleScript.
 - Never hardcode gameplay values — they live in `Shared/Config`.
 - Never trust RemoteEvents — the server validates everything.
@@ -33,7 +34,7 @@ Supporting rules:
 
 - Roblox Studio + Luau (`--!strict` in all modules)
 - Rojo for filesystem ↔ Studio sync (`rojo 7.7.0`, pinned in `aftman.toml`)
-- Cursor + Claude for development
+- Codex for development (Cursor compatibility via the `.cursorrules` pointer)
 
 Build the place from source:
 
@@ -42,7 +43,17 @@ rojo build -o bvm.rbxlx   # one-off build
 rojo serve                 # live sync into Studio
 ```
 
-`bvm.rbxlx` is git-ignored; only source is committed.
+`bvm.rbxlx` is git-ignored; source is committed. Authored models in Studio
+are not exported into Git merely by enabling `$ignoreUnknownInstances`.
+A source-only build uses fallbacks when those assets are unavailable.
+
+For live sync, keep `rojo serve` running and connect Studio’s Rojo plugin to
+`127.0.0.1:34872` (default). Studio MCP is a separate inspection/editing
+connection and does not sync local files. Restart the playtest after config
+edits: required modules are cached and join cheats run during save hydration.
+
+`AGENTS.md` is the canonical project-wide rules file; `.cursorrules` is only a
+compatibility pointer. Current runtime caveats: `IMPLEMENTATION_NOTES.md`.
 
 ---
 
@@ -92,6 +103,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         SaveService/
         StoreService/     (Brainrot stall + shop ownership — M18)
         ProgressService/  (brains, unlocks, loadout, upgrades, statistics)
+        RetentionService/ (DailyQuests, LoginRewards, Achievements, NextGoal, analytics; M20)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
@@ -106,10 +118,19 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
         StoreController/  (hide other players' store Talk prompts — M18)
         WeatherController/ (night/fog + desert pyramids)
+        QuestController/ (quest/login/achievement tabs, NextGoal hint, UTC countdown, claims)
+        UIController/MenuPages.luau (adapts existing panels into the shared Menu)
     Utilities/
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)
         TextShine.luau    (shared rarity-title gleam)
+        MenuRouter.luau  (single Menu window, tile launcher, page registry, badges and responsive hosting)
+        MenuTiles.luau   (seven compact icon/name buttons and lightweight illustrations)
+        MenuDrawer.luau  (HUD slide-out/retraction and Menu/X morph)
+        BrainAmount.luau (inline number + brain texture for rewards/statistics)
+        UISizing.luau    (event-driven desktop HUD scaling and screen bounds)
+        HudLayout.luau   (shared window bounds reserving planting/navigation bands and HUD rails)
+        ScrollPolicy.luau (overflow-only scrollbar chrome and balanced gutters)
 
 Workspace/
     Plots/        plot models are generated here at runtime
@@ -165,8 +186,8 @@ to call, e.g. `PlotService.getPlot(player)`.
   `GRID.md`).
 - **Brainrots / Monsters / Levels** — data-driven registries with `get`,
   `exists`, `getAll` (Levels also exposes `getByNumber` / `getOrdered`).
-  Behavior and campaign content are resolved from data; never branch on names
-  or level numbers.
+  Behavior and ordinary campaign content are resolved from data. Avoid new
+  name/number branches; Day 40 → Hidden Day is an explicit service-owned exception.
 - **Remotes** — the single client/server boundary. See `NETWORKING.md`.
 
 ---
@@ -315,8 +336,8 @@ Brainrot is a portrait card (swatch → name → cost). Layout constants live in
 
 Full details in `BRAINROTS.md`. Summary:
 
-- **`Shared.Brainrots`** — seven data-driven roster entries (replaces the M4
-  Shooter / Money Generator placeholders). Stats use hit-based health, tile
+- **`Shared.Brainrots`** — 13 data-driven roster entries (the launch seven replaced
+  the M4 Shooter / Money Generator placeholders). Stats use hit-based health, tile
   range, and `attackInterval` (seconds between actions).
 - **`Shared.Config.BrainrotConfig`** — global knobs (`FULL_LINE_RANGE`,
   `BEHAVIOR_TICK`, attack pulse, sound keys).
@@ -341,7 +362,7 @@ Full details in `BRAINROTS.md`. Summary:
 
 Full details in `MONSTERS.md`. Summary:
 
-- **`Shared.Monsters`** — eleven data-driven entries (replaces BasicMonster).
+- **`Shared.Monsters`** — 14 data-driven entries (including the unused Necromancer prototype).
   Movement uses `secondsPerGrid`; attacks use `attackInterval`.
 - **`Shared.Config.MonsterConfig`** — behavior tick, spawn column, campaign HP aging, dev test spawns.
 - **`EnemyService`** — `spawn` (level = current day; non-boss HP scaled for that day), `MonsterBehavior` grid movement, attack-on-tile,
@@ -379,10 +400,14 @@ Full details in `LEVELS.md`. Summary:
   is cleared, the lawn switches to the Hidden Day night. Continue returns to
   preparation; the player presses Start Day to run it. Win or lose shows the
   reward popup, then Day 41.
-- **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows. Numbered days keep the existing group handoff. The Hidden Day sets `exactSpawns` so each group spawns as authored.
+- **`LevelService/LevelRun`** — spawn-group timing, big-wave warning, random rows.
+  Every spawn carries its authored group before the scheduler advances; species
+  and row settings stay correct at boundaries for numbered and Hidden days.
+  Rejected spawn attempts log a warning; victory still waits for living enemies.
 - **`UIController/Level.luau`** — bottom-right day title, Start Day button, progress bar, big-wave banner.
 - **`UIController/GameOverPopup.luau`** — defeat overlay + Rewind Day N.
-- **`EnemyService.setHouseBreachHandler`** — defeat on house breach.
+- **`EnemyService.setHouseBreachHandler`** — subtract one house heart per breach;
+  defeat only at zero.
 - **`MonsterConfig.DEV_SPAWN.ENABLED = false`** — campaign spawns replace dev waves.
 
 ### Milestone 9 — Save System ✅
@@ -445,16 +470,18 @@ Full details in `UI.md`. Summary:
   (`grantUnlockForLevel`, called from `LevelService.onVictory`) — see
   `BRAINROTS.md`.
 - **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
-- **Settings** — bottom-left bare icon + name; mute, volume steps, Brainrot SFX toggle,
-  VFX choice (High / Low / Off), statistics, double-confirm Reset Progress. Level Select deferred to a later UI.
-- **Inventory** — bottom-left bare icon + name (left of Index) + modal; click a packet
+- **Settings** — Menu section; mute, volume steps, Brainrot SFX toggle,
+  VFX choice (High / Low / Off), double-confirm Reset Progress. Statistics has its own Menu section. Level Select deferred to a later UI.
+- **Inventory** — Menu section; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
   stats + gray/lit evolutions, Equip / Equipped). Clicking a planted unit
   on your lawn opens the same card with live HP. Clicking a monster on your
   plot opens `MonsterInspect` (portrait, live HP, stats, ability — no
   evolutions).
 - **Reward popup** — victory shows brains earned (store purchases → M18). The Hidden Day after Day 40 uses the same popup for a clear or a loss.
-- Save schema **v5** (`SAVE_SYSTEM.md`) includes brains, equipped, upgrades, intro lists, and `brainrotXp`.
+- Current save schema is **v11** (`SAVE_SYSTEM.md`): progression, XP, claimed
+  evolutions, intro lists, and optional `hiddenDayPending`. Coins are a legacy
+  placeholder, not a persisted gameplay balance.
 
 ### Milestone 18 — Progression Store ✅
 
@@ -465,12 +492,13 @@ Full details in `STORE.md` / `UI.md`. Summary:
   `CLOSE_DISTANCE` from the mascot. HUD **Upgrades** only need an owned plot.
 - **`ProgressService`** validates `BuyStoreItem` (stall range for Brainrots, own plot
   for Upgrades, brains spend, catalog, owned /
-  max level). Catalogs in `ProgressConfig.STORE_CATALOG` (Girafa Celestre) and
+  max level). Catalogs in `ProgressConfig.STORE_CATALOG` (five units; see `STORE.md`) and
   `UPGRADE_CATALOG` (WalkSpeed, 20 ranks; Magnet 1–5). Speed applied on spawn / rejoin via
   `PlotService` + `ProgressService.getWalkSpeed`.
 - **`UIController/ProgressionStore`** — list + stats card to the right; kaching /
-  stacked error banners. HUD: mid-left Coins / Brains / Speed glyphs; bottom-left
-  row Inventory / Index / Upgrades / Settings (bare icon + name); Magnet square bottom-center.
+  stacked error banners. Upgrades is hosted in Menu; the physical Brainrot store
+  detaches the shared view. HUD: mid-left Coins / Brains / Speed glyphs; one
+  bottom-left Menu entry; Magnet square bottom-center.
 - **`UIController/Index`** — Brainrots / Monsters catalog; unseen units are
   black silhouettes with **?**. Encountered from unlocks / intro lists (Day 1
   Zombie is always shown — no intro popup).
@@ -484,9 +512,9 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   ultimate). Tiers stack; base shop id stays.
 - Persist level + XP + owned tiers via `SaveService`. Combat extras stay
   data-driven ability ids.
-- **XP (live):** last-hit species for normal kills (`BubbleTrap` and `MeleeBat`
-  use landed-hit XP instead); boss XP split per living plant on the lawn;
-  persisted as `brainrotXp` (save v5). Inspect UI shows level / XP. XP from a
+- **XP (live):** last-hit species for normal kills (`BubbleTrap`, `BubbleBarrage`, `MeleeBat`,
+  and `TileTrap` skip last-hit XP; configured hit jobs grant separately); boss XP split per living plant on the lawn;
+  persisted as `brainrotXp` (introduced v5; current save schema v11). Inspect UI shows level / XP. XP from a
   failed or unfinished day rewinds to the Start Day snapshot.
 - **Epic stats + Legendary extras + Mythic / Immortal passives + aura (live):** claimed Epic overlays `stats`
   onto the registry definition (interval / HP / damage / plant cooldown).
@@ -522,10 +550,10 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
 
 - **`Shared.Levels`** — data-driven campaign level registry (mirrors
   `Brainrots`/`Monsters`). Each `LevelDefinition` contains an ordered list of
-  `SpawnGroup` entries (the internal "waves"). `LevelService` reads these; code
-  never branches on level numbers.
+  `SpawnGroup` entries (the internal "waves"). `LevelService` reads these. The Hidden Day transition after Day 40 is an
+  explicit exception to the numbered registry flow.
 - **`Shared.Config.LevelConfig`** — global pacing knobs (preparation time,
-  optional countdown, big-wave warning, spawn interval defaults). Plant/setup
+  Start Day countdown, big-wave warning, spawn interval defaults). Plant/setup
   time is the forest march (`MonsterConfig.SPAWN_COLUMN_OFFSET`). Per-level
   content lives in the registry, not here.
 - **`Shared.Types`** — added `SpawnGroup`, `LevelDefinition`. `SaveData` now
@@ -538,6 +566,25 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
 
 ---
 
+## Milestone 20 foundation
+
+`Config.Retention` / `RetentionConfig` define immutable quest and mixed first-time reward
+catalogs and progression bands. `Utilities.RetentionTime` provides pure UTC
+date/countdown helpers; `Types.Retention` defines quest/login save contracts
+and reserved types for later retention tracks.
+RetentionService owns daily/weekly quests and finite first-time offers, pure DailyQuests/LoginRewards rules,
+and analytics. Achievements tracks permanent milestones and NextGoal selects
+one actionable hint from the existing authoritative profile/registries.
+QuestController registers Quests (daily/weekly tabs) and Achievements in the
+shared Menu. QuestTracker adds a right-side daily/weekly progress panel between
+Damage and the day UI; QuestPresentation supplies shared display rows. FirstTimeRewards hosts LoginRewardsPanel in a standalone temporary
+HUD window, hiding its gift entry after authoritative completion. OutsideDismiss
+shares outside-only click regions between that window and Menu. RewardGrant prepares durable upgrade/ticket
+snapshot mutations; the physical shop also accepts a saved free-ticket intent. MenuPages
+adapts existing feature panels without duplicating their logic. Save schema v11 and SaveService.SessionStore
+provide session/revision-guarded writes and durable claims distinct from saveNow.
+Other reward tracks remain planned; see `RETENTION.md`.
+
 ## Conventions
 
 - **PascalCase**: modules, classes, services, folders.
@@ -547,3 +594,25 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
 - Prefer early returns; avoid nesting deeper than three levels.
 - Prefer events over polling; disconnect connections when done; cache services.
 - Freeze config/constant tables with `table.freeze`.
+
+Desktop UI readability is centralized in `Client.Utilities.UISizing`, using
+UITheme reference-size/max-scale tokens. UIController binds current and future
+MainUI children once. Full-screen overlays stay in screen coordinates, while
+Menu and FirstTimeRewards fit their own scaled windows. Reparented Menu pages
+use host scaling, avoiding compounded UIScales. See `UI.md` for geometry/tests.
+
+ShovelIcon shares the user-supplied shovel texture between toolbar and cursor. UISizing skips
+`ScreenSpaceUI` objects such as ShovelCursor: pointer screen coordinates must
+not receive authored HUD offset scaling. See `UI.md` for removal regressions.
+
+Menu navigation now uses an animated horizontal HUD drawer, not a large grid
+launcher. MenuRouter retains its feature-panel registry/hosting; MenuDrawer
+manages the seven icons and Menu/X state, including resize/tween cancellation.
+Selecting a section leaves the drawer open; feature windows have no top-left
+Menu button. HudLayout keeps hosted and standalone windows within the reserved
+HUD rectangle, with event-driven updates shared by UISizing and the Menu host.
+
+UIController starts ScrollPolicy once for current/future MainUI scrollers.
+It controls chrome/gutters, not gameplay or claim state. Menu pages own their
+internal scrolling and the host scrolls only actual overflow. The quest tracker
+uses one Daily/Weekly toggle, retaining period-specific completion animation.

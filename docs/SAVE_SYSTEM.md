@@ -1,7 +1,7 @@
 # BVM Save System
 
 Player progress is persistent across sessions. **Only `SaveService` touches
-DataStore** — no other service accesses it (`.cursorrules`).
+DataStore** — no other service accesses it (`AGENTS.md`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -20,8 +20,13 @@ Saved (player-owned progression):
 - Equipped loadout
 - Upgrades (`WalkSpeed` ranks, **Magnet** 1–5)
 - Statistics
+- Intro popup flags and optional v7 `hiddenDayPending`
 - **Brainrot XP** (per registry id — shared species pool)
 - **Claimed evolution tiers** (per Brainrot id, after brains spend)
+- Daily quest assignment, progress, snapshotted rewards, and claimed flags (v8)
+- Welcome/weekly counts, last claim date, and snapshotted current login offer (v9)
+- Permanent achievement progress and claimed flags (v10)
+- Weekly quest progress/claims, finite first-time rewards and Brainrot tickets (v11)
 - Future progression systems (collected bosses, …)
 
 Not saved (transient / runtime):
@@ -42,7 +47,7 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number (`SAVE_VERSION` = 7)|
+| `version`      | number (`SAVE_VERSION` = 11)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
@@ -59,6 +64,7 @@ Not saved (transient / runtime):
 | `introducedBrainrots` | `{ string }` (Brainrot intro popups already shown) |
 | `introducedMechanics` | `{ string }` (mechanic intro popups already shown, e.g. Grave) |
 | `hiddenDayPending` | boolean? (true after Day 40 is cleared until the Hidden Day ends) |
+| `retention` | Quest progress/claims, login counts/date/offer achievement flags, weekly quests and tickets (internal version 4) |
 | `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health, charges? }`.
@@ -70,11 +76,19 @@ plants save `health = 0`, so restore decides by `charges` instead of HP.
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 7` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 11` — bump when the schema changes; migrate older payloads.
   **v4 → v5:** add `brainrotXp` (empty map if missing).
   **v5 → v6:** add `evolutions` (empty map if missing).
   **v6 → v7:** add `introducedMechanics` (empty list if missing).
-  `hiddenDayPending` is optional on v7; missing means false.
+  `hiddenDayPending` was optional in v7; missing means false.
+  **v7 → v8:** sanitize daily quests; missing data means fresh quests.
+  **v8 → v9:** preserve quests; initialize login welcome/weekly state if missing.
+  **v9 → v10:** preserve both tracks; initialize permanent achievements.
+  **v10 → v11:** retain paid welcome steps/date; remove recurring weekly login
+  state, add weekly quests and ticket count. Legacy completed welcome tracks
+  receive one final ticket catch-up (see `RETENTION.md`).
+  Catch up owned types/claimed Epic from sanitized profile fields, not intro flags.
+  Newer-than-supported schemas are refused, never downgraded.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
   Retains its original `BVZ_` prefix despite the rename to Monsters, so existing
   player saves are never orphaned (the DataStore key is identity, not branding).
@@ -97,9 +111,10 @@ Relevant constants (`Shared.Constants`):
   `BrainrotService` clear the lawn on `PlayerRemoving`. Snapshot is captured
   synchronously; if a save is already in flight, the leave payload is queued
   and flushed when the in-flight write finishes (never dropped).
-- Writes via `UpdateAsync` with JSON round-trip + retries (Studio may still log
-  transient Roblox-cloud `HTTP 500` lines; look for `SaveService` retry/success
-  logs — enable **Studio Access to API Services** in Game Settings).
+- Writes via `UpdateAsync` with JSON round-trip, bounded retries, and session /
+  revision guards. Studio cloud errors can still appear; API access must be
+  enabled for real saves. Exhausted or uncertain writes end the unsafe session;
+  failed loads do not substitute writable defaults. See the retention section.
 - Coordinate restore: day/hearts via `LevelService`, unlocks/stats/XP via
   `ProgressService` (**hydrated synchronously on join** so autosave cannot wipe
   defaults over real statistics), purse via `CoinService.applyDayPurse`, lawn via
@@ -122,7 +137,7 @@ The DataStore lawn is a **checkpoint**, not a live mirror of the plot:
 - **Brainrot XP** is the same idea: a **Start Day snapshot**. Live grants during
   the day are not written to DataStore until **Victory** (`commitBrainrotXp`).
   Defeat restores that snapshot onto the profile (inspect bars / nameplates
-  rewind with Rewind). Leave / autosave persist the snapshot, not mid-day XP.
+  rewind on defeat, before Rewind). Leave / autosave persist the snapshot, not mid-day XP.
 
 So if a player starts Day 2, plants more Brainrots, then leaves: only the lawn
 from after Day 1 victory is saved. Day 2 mid-day plants are discarded; on rejoin
@@ -166,6 +181,47 @@ On rejoin:
 See `LEVELS.md` / `BALANCE.md` — campaign spawn pressure assumes carry-over.
 
 ---
+
+## Hidden Day persistence
+
+Clearing Day 40 saves current day 41 plus `hiddenDayPending = true` and the Day
+40 victory lawn. Pending/active Hidden Day displays Night. Continue after the
+Day 40 reward enters Preparation; Start Day is manual. Leaving an unfinished
+Hidden Day preserves its pending flag, not monsters, kill brains, or elapsed
+time. Rejoin restores the checkpoint and Preparation for a full attempt.
+On finish the flag clears; a clear commits lawn/XP, a loss restores the Day 40
+lawn and XP checkpoint. Kill brains and leftover conversion pay at finish;
+both outcomes proceed to Day 41 via Continue. Day Select and Studio FORCE_DAY
+clear the pending state.
+
+## Retention foundation (Milestone 20)
+
+Schema v11 persists daily/weekly quests, finite first-time rewards, tickets and achievements under `retention`.
+Ordinary `saveNow` queues snapshots; `claimRetentionReward` durably saves
+the claim flag/date together with its brains/statistic, permanent upgrade or
+ticket grant. Ticket redemption commits ticket consumption with the store unlock
+before UI success. Queued save/leave snapshots merge the committed reward delta
+and claim state without replacing concurrent purchases/progress. `claimDailyQuest`
+delegates to this writer for API compatibility. Quest credit survives
+failed days; Brainrot XP rollback is unchanged.
+Achievement progress/claims survive day resets and defeat. A claim does not
+expire at midnight. Next-goal hints and current-attempt breach markers are
+runtime-only. Confirmed Reset Progress clears all retention tracks.
+
+SessionStore acquires/renews a 180s session lease via UpdateAsync. All writes
+check owner/revision and use operation ids to reconcile lost responses. Autosave
+renews every 60s; leave/shutdown releases only its own lease. Unavailable loads
+never become writable defaults; uncertain exhausted writes end the unsafe
+session. Retire legacy published writers at deployment; they do not honor leases.
+See `RETENTION.md` for isolated test coverage and remaining live QA.
+
+## Studio overrides
+
+After save hydration, `SaveService.hydrateProgression` applies `DevConfig`
+(day, roster, Brainrot level/tier, brains, and coins). Overrides only run when
+`ENABLED` and `RunService:IsStudio()` are true. They can still be saved; Studio
+does not use a separate DataStore name. FORCE_DAY is clamped to the numbered
+registry count, applies on join, and clears Hidden Day. See `IMPLEMENTATION_NOTES.md`.
 
 ## Reset Progress
 

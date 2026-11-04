@@ -12,6 +12,7 @@ local Utilities = {
 	WeatherUtil = require(script.WeatherUtil),
 	CollisionUtil = require(script.CollisionUtil),
 	VfxLoad = require(script.VfxLoad),
+	RetentionTime = require(script.RetentionTime),
 }
 
 table.freeze(Utilities)

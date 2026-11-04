@@ -1,6 +1,6 @@
 # BVM Networking
 
-How the client and server communicate. The guiding rule from `.cursorrules`:
+How the client and server communicate. The guiding rule from `AGENTS.md`:
 **never trust RemoteEvents — validate everything on the server.**
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
@@ -44,7 +44,7 @@ Remotes module. That is the only required step.
 | `CoinsUpdated`     | server → client | ✅ M3  | Pushes the authoritative coin balance   |
 | `BrainrotAction`   | server → client | ✅ M5/M12 | Ability feedback (`action`, `instanceId`) → owner-only SFX/pulse |
 | `FogRowsChanged`   | server → client | ✅ | Lawn rows whose Night Fog plant-block is lifted (Giraffa plot gust); `{ rows }` **plot owner only** |
-| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / MushroomExplosion / LightningStrike / BlackHole / BatSlam / Jackpot / Terrify / SandTornado / GravityPull / InkDrop / WindGust / Dizzy / Poison / Venom / MonsterAttack VFX + SFX (**plot owner only**) |
+| `CombatVisual`     | server → client | ✅ M7/M11/M12 | Hit / death / explosion / MushroomExplosion / LightningStrike / BlackHole / BatSlam / Jackpot / Terrify / SandTornado / GravityPull / InkDrop / WindGust / Dizzy / Poison / Venom / Heal / MonsterAttack VFX + SFX (**plot owner only**) |
 | `StartLevel`       | client → server | ✅ M8  | Player presses Start Day (Preparation only) |
 | `LevelStateChanged`| server → client | ✅ M8  | Phase / level number / progress / weather updates  |
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
@@ -60,6 +60,10 @@ Remotes module. That is the only required step.
 | `EvolveBrainrot`   | client → server | ✅ M19 | Claim an evolution (`brainrotId`, `rarity`); server checks level, previous tier, brains |
 | `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown (rejects while paused) |
 | `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt, pausedRemaining }` (`GetServerTimeNow`; remaining seconds frozen between days) |
+| `RetentionUpdated` | server → client | ✅ M20 | Quest/login state and UTC resetAt |
+| `ClaimRetentionReward` | client → server | ✅ M20 | Claim server-validated quest/bonus or login offer |
+| `RetentionClaimResult` | server → client | ✅ M20 | Durable result or bounded failure reason |
+| `ViewRetentionGoal` | client → server | ✅ M20 | Current goal id; validated/rate-limited engagement only |
 | `DamageMeterUpdated` | server → client | ✅ | `{ brainrots, monsters }` ranked `{ id, damage }` lists (plot owner; coalesced) |
 
 ### RemoteFunctions
@@ -68,7 +72,7 @@ Remotes module. That is the only required step.
 | -------------- | --------------- | ------ | ------------------------------------ |
 | `RequestState` | client → server | ✅ M3  | Initial state pull on join/UI        |
 
-`RequestState` returns `{ coins, level, profile, plantCooldowns, magnet, damageMeter }` — handled by `LevelService.start()`
+`RequestState` returns `{ coins, level, profile, plantCooldowns, magnet, damageMeter, retention }` — handled by `LevelService.start()`
 (`plantCooldowns` is `brainrotId` → `readyAt` server time for shop recharge UI;
 `magnet` is `{ level, activeUntil, readyAt, pausedRemaining }`;
 `damageMeter` is `{ brainrots, monsters }` ranked `{ id, damage }` lists).
@@ -84,7 +88,8 @@ plot's `SpawnLocation`, and spawns the character there (`CharacterAutoLoads`
 is off so join doesn't spawn before a plot exists). On Reset Character / death,
 `PlotService` calls `LoadCharacter` again after `Players.RespawnTime`. The
 camera uses Roblox's default third-person behavior, so no client handshake is
-required. Clients cannot choose, move, or learn about other players' plots.
+required. Clients cannot choose or move their assigned plot. Plot instances and ownership
+attributes replicate for spectating; server checks prevent acting on another plot.
 
 ---
 
@@ -174,7 +179,7 @@ keeps `currentLevel` on the failed day, refills hearts, applies the day purse
 (Day 1 → 125; later → 0), and sets phase to `Defeat`. The client shows
 **GameOverPopup** (slow GAME OVER + Rewind Day N). **Victory** —
 when all spawn groups are finished and no monsters remain, the server grants
-coins and unlocks the next level. The Victory payload's `reward` table may
+day brains plus leftover-pocket conversion and unlocks the next level. The Victory payload's `reward` table may
 include `unlockedBrainrotId` when clearing that day grants a starter-roster
 Brainrot (`ProgressConfig.UNLOCK_SCHEDULE`). Phase stays **Victory** until the
 player presses **Continue** (`ContinueVictory`); then Preparation. Unlock
@@ -185,6 +190,22 @@ popups queue after Continue. Join / Preparation payloads may include
 ---
 
 ## Validation rules (server authority)
+
+M20 boundary is active. RequestState.retention and RetentionUpdated carry
+ready/dayKey/resetAt/quests/bonusBrains/bonusClaimed/login/achievements/nextGoal. Login state includes
+track/step/dayKey/brains/ready/claimed/rewards and next-track/reward preview.
+Achievement rows include id/name/description/progress/target/brains/claimed.
+NextGoal contains an id, bounded kind, title/description and applicable unit/tier
+or campaign target. ClaimRetentionReward accepts
+`{ kind = "Quest" | "Login" | "Achievement", dayKey, id }`
+(bonus id DailyComplete; login id Welcome/Weekly; known achievement id). Finite integer dates,
+bounded ids, server completion/claim flags, ownership, and a 0.5s throttle are
+validated. No client progress/amount/outcome is accepted. RetentionClaimResult
+announces success only after the durable reward/brains write. One login claim
+per distinct UTC date is enforced on the server. See `RETENTION.md`.
+Achievement flags are permanent, so their claims do not expire at midnight.
+ViewRetentionGoal accepts only the current server-selected goal id, with a
+two-second throttle. It records engagement and grants nothing.
 
 When implementing client → server events in later milestones:
 
@@ -202,3 +223,16 @@ When implementing client → server events in later milestones:
 - `CFrame`, `Vector3`, numbers, strings, and tables of these are safe to send.
 - Prefer sending **identifiers** (tile coordinates, Brainrot ids) over full
   instances; the server resolves them against authoritative state.
+
+## Retention v11 and ticket intent
+
+`ClaimRetentionReward.kind` also accepts `WeeklyQuest`; its `dayKey` is the
+Monday UTC day key. Login still uses the internal `Welcome` id for the finite
+First-time Rewards track, never `Weekly`. `RetentionUpdated` adds `weekly`,
+`weeklyResetAt` and `brainrotTickets`; login reward slots are typed descriptors
+(Brains, Upgrade, Ticket), and completion stops the track permanently.
+`RetentionClaimResult.reward` describes the durable non-brain grant.
+`BuyStoreItem` optionally sets `useTicket = true`; only eligible unowned catalog
+Brainrots at the owner's physical shop can use a ticket. SaveService validates
+and atomically consumes it with the unlock. Retention claim remotes cannot
+request the internal Ticket transaction kind. See `RETENTION.md`.

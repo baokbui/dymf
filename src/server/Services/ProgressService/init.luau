@@ -314,7 +314,9 @@ local function broadcast(player: Player)
 		return
 	end
 	cancelXpBroadcast(player.UserId)
-	Remotes.getEvent("ProfileUpdated"):FireClient(player, buildPayload(profile))
+	local payload = buildPayload(profile)
+	Remotes.getEvent("ProfileUpdated"):FireClient(player, payload)
+	require(script.Parent.RetentionService).profileChanged(player, payload)
 end
 
 -- Coin / soak / freeze ticks are frequent (Encore Ballerina especially).
@@ -633,8 +635,8 @@ function ProgressService.addBrains(player: Player, amount: number)
 	if amount <= 0 then
 		return
 	end
-	local profile = ensureProfile(player)
-	if not profile.hydrated then
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then
 		return
 	end
 	local grant = math.floor(amount)
@@ -825,6 +827,21 @@ function ProgressService.applyMovement(player: Player)
 	applyWalkSpeedToCharacter(player, ProgressService.getWalkSpeed(player))
 end
 
+-- Called only after SaveService durably commits the matching reward snapshot.
+function ProgressService.applyDurableReward(player: Player, grant: any)
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then return end
+	if grant.kind == "Upgrade" then
+		profile.upgrades[grant.upgradeId] = math.max(profile.upgrades[grant.upgradeId] or 0, grant.level)
+		ProgressService.applyMovement(player)
+	elseif grant.kind == "Brainrot" then
+		if not table.find(profile.unlocks, grant.brainrotId) then table.insert(profile.unlocks, grant.brainrotId) end
+		if #profile.equipped < ProgressConfig.MAX_EQUIPPED and not table.find(profile.equipped, grant.brainrotId) then table.insert(profile.equipped, grant.brainrotId) end
+		markIntroduced(profile.introducedBrainrots, grant.brainrotId)
+	end
+	broadcast(player)
+end
+
 local function failPurchase(player: Player, reason: string)
 	Remotes.getEvent("StorePurchaseFailed"):FireClient(player, reason)
 end
@@ -905,7 +922,13 @@ local function onBuyStoreItem(player: Player, raw: unknown)
 	if not StoreService.canPlayerUseShop(player, shop) then
 		return
 	end
-	if shop == StoreConfig.SHOP_BRAINROTS then
+	local SaveService = require(script.Parent.SaveService)
+	if SaveService.isProgressionLocked(player) then failPurchase(player, "Saving progress. Try again shortly."); return end
+	if shop == StoreConfig.SHOP_BRAINROTS and data.useTicket == true then
+		local ok, reason = SaveService.claimRetentionReward(player, "Ticket", 0, id)
+		if ok then Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, 0)
+		else failPurchase(player, if reason == "NotReady" then "No free Brainrot tickets available." else "Unable to redeem ticket. Try again shortly.") end
+	elseif shop == StoreConfig.SHOP_BRAINROTS then
 		tryBuyBrainrot(player, id)
 	elseif shop == StoreConfig.SHOP_UPGRADES then
 		tryBuyUpgrade(player, id)

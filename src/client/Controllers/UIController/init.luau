@@ -31,6 +31,7 @@ local BrainsCounter = require(script.BrainsCounter)
 local SpeedHud = require(script.SpeedHud)
 local Hearts = require(script.Hearts)
 local Settings = require(script.Settings)
+local Statistics = require(script.Statistics)
 local Inventory = require(script.Inventory)
 local Index = require(script.Index)
 local RewardPopup = require(script.RewardPopup)
@@ -44,6 +45,11 @@ local BrainrotInspect = require(script.BrainrotInspect)
 local MonsterInspect = require(script.MonsterInspect)
 local MagnetHud = require(script.MagnetHud)
 local DamageMeter = require(script.DamageMeter)
+local MenuPages = require(script.MenuPages)
+local Menu = require(script.Parent.Parent.Utilities.MenuRouter)
+local UISizing = require(script.Parent.Parent.Utilities.UISizing)
+local ScrollPolicy = require(script.Parent.Parent.Utilities.ScrollPolicy)
+local FirstTimeRewards = require(script.Parent.QuestController.FirstTimeRewards)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
 local InputController = require(script.Parent.InputController)
@@ -64,6 +70,7 @@ local shop: Shop.Shop? = nil
 local levelPanel: Level.LevelPanel? = nil
 local heartsHud: Hearts.HeartsHud? = nil
 local settingsPanel: Settings.SettingsPanel? = nil
+local statisticsPanel: any = nil
 local inventoryPanel: Inventory.InventoryPanel? = nil
 local indexPanel: Index.IndexPanel? = nil
 local rewardPopup: RewardPopup.RewardPopupHud? = nil
@@ -77,22 +84,6 @@ local fieldInspect: BrainrotInspect.InspectCard? = nil
 local monsterInspect: MonsterInspect.InspectCard? = nil
 local lastBrainrotXp: { [string]: number } = {}
 local lastEvolutions: { [string]: { string } } = {}
-local settingsEntry: TextButton? = nil
-local inventoryEntry: TextButton? = nil
-local HUD_ENTRY_WIDTH = 96
-local HUD_ENTRY_ICON = 64
-local HUD_ENTRY_CAPTION = 22
-local HUD_ENTRY_GAP = 10
-local HUD_LEFT = 16
-local HUD_BOTTOM = 16
-local HUD_ENTRY_HEIGHT = HUD_ENTRY_ICON + 8 + HUD_ENTRY_CAPTION
--- Image asset ids are for Studio lookup; ImageLabel uses the texture id.
--- Inventory 18224282281 / 18224282235; Settings 18801194979 / 18801194936;
--- Upgrades 82741329688839 / 90725732857650; Brainrots 81515598422680 / 110444066627259.
-local HUD_ICON_INVENTORY = "rbxassetid://18224282235"
-local HUD_ICON_SETTINGS = "rbxassetid://18801194936"
-local HUD_ICON_UPGRADES = "rbxassetid://90725732857650"
-local HUD_ICON_BRAINROTS = "rbxassetid://110444066627259"
 local selectedId: string? = nil
 local lastBalance: number? = nil
 local spendPending = false
@@ -253,9 +244,7 @@ local function applyProfile(profile: { [string]: any }?)
 	if progressionStore then
 		progressionStore:setProfile(profile)
 	end
-	if settingsPanel and type(profile.statistics) == "table" then
-		settingsPanel:applyStatistics(profile.statistics :: { [string]: number })
-	end
+	if statisticsPanel then statisticsPanel:applyProfile(profile) end
 end
 
 local function buildMain(): Frame
@@ -410,63 +399,6 @@ local function buildSettings(): Settings.SettingsPanel
 	return Settings.new(buildMain():WaitForChild("Settings") :: Frame)
 end
 
-local function hudEntryPosition(index: number): UDim2
-	return UDim2.new(0, HUD_LEFT + index * (HUD_ENTRY_WIDTH + HUD_ENTRY_GAP), 1, -HUD_BOTTOM)
-end
-
-local function makeHudEntry(
-	name: string,
-	label: string,
-	iconTextureId: string,
-	index: number,
-	onClick: () -> ()
-): TextButton
-	local main = buildMain()
-	local button = Instance.new("TextButton")
-	button.Name = name
-	button.AnchorPoint = Vector2.new(0, 1)
-	button.Position = hudEntryPosition(index)
-	button.Size = UDim2.fromOffset(HUD_ENTRY_WIDTH, HUD_ENTRY_HEIGHT)
-	button.AutoButtonColor = false
-	button.BackgroundTransparency = 1
-	button.BorderSizePixel = 0
-	button.Text = ""
-	button.ZIndex = 15
-	button.Parent = main
-
-	local icon = Instance.new("ImageLabel")
-	icon.Name = "Icon"
-	icon.BackgroundTransparency = 1
-	icon.AnchorPoint = Vector2.new(0.5, 0)
-	icon.Position = UDim2.new(0.5, 0, 0, 0)
-	icon.Size = UDim2.fromOffset(HUD_ENTRY_ICON, HUD_ENTRY_ICON)
-	icon.Image = iconTextureId
-	icon.ScaleType = Enum.ScaleType.Fit
-	icon.Active = false
-	icon.ZIndex = 16
-	icon.Parent = button
-
-	local caption = Instance.new("TextLabel")
-	caption.Name = "Caption"
-	caption.BackgroundTransparency = 1
-	caption.AnchorPoint = Vector2.new(0.5, 1)
-	caption.Position = UDim2.new(0.5, 0, 1, 0)
-	caption.Size = UDim2.new(1, 0, 0, HUD_ENTRY_CAPTION)
-	caption.ZIndex = 16
-	caption.Text = label
-	caption.TextSize = 14
-	caption.Active = false
-	caption.Parent = button
-	UITheme.applyOutlinedTitle(caption)
-	caption.TextSize = 14
-
-	button.Activated:Connect(function()
-		AudioController.play("UiClick")
-		onClick()
-	end)
-	return button
-end
-
 local function closeProgressionStore()
 	if progressionStore then
 		progressionStore:close()
@@ -480,6 +412,7 @@ local function closeIndex()
 end
 
 local function openProgressionShop(shopKind: string, anchor: Vector3?)
+	FirstTimeRewards.close()
 	if not progressionStore then
 		return
 	end
@@ -500,102 +433,22 @@ local function openProgressionShop(shopKind: string, anchor: Vector3?)
 		progressionStore:close()
 		return
 	end
+	Menu.close()
+	Menu.detach("Upgrades")
 	progressionStore:open(shopKind, anchor)
 end
 
-local function toggleIndex()
-	if not indexPanel then
-		return
-	end
-	local opening = not indexPanel:isOpen()
-	if inventoryPanel then
-		inventoryPanel:setOpen(false)
-	end
-	if settingsPanel then
-		settingsPanel:setOpen(false)
-	end
-	closeProgressionStore()
-	if opening then
-		if fieldInspect then
-			fieldInspect:hide()
+local function buildMenu()
+	MenuPages.register(buildMain() :: any, {
+		inventory = inventoryPanel, index = indexPanel, store = progressionStore,
+		settings = settingsPanel, statistics = statisticsPanel, field = fieldInspect, monster = monsterInspect,
+		upgradeKind = StoreConfig.SHOP_UPGRADES,
+	}, function()
+		local ok, state = pcall(function() return Remotes.getFunction("RequestState"):InvokeServer() end)
+		if ok and type(state) == "table" then
+			if type(state.profile) == "table" then applyProfile(state.profile) end
+			if type(state.retention) == "table" then UIEvents.fireRetentionState(state.retention) end
 		end
-		if monsterInspect then
-			monsterInspect:hide()
-		end
-	end
-	indexPanel:setOpen(opening)
-end
-
-local function buildHudEntries()
-	-- Bottom-left row: Inventory, Index, Upgrades, Settings.
-	inventoryEntry = makeHudEntry(
-		"InventoryEntry",
-		"Inventory",
-		HUD_ICON_INVENTORY,
-		0,
-		function()
-		if not inventoryPanel then
-			return
-		end
-		local opening = not inventoryPanel:isOpen()
-		if settingsPanel then
-			settingsPanel:setOpen(false)
-		end
-		closeProgressionStore()
-		closeIndex()
-		inventoryPanel:setOpen(opening)
-		if opening then
-			if fieldInspect then
-				fieldInspect:hide()
-			end
-			if monsterInspect then
-				monsterInspect:hide()
-			end
-		end
-	end)
-	makeHudEntry(
-		"IndexEntry",
-		"Index",
-		HUD_ICON_BRAINROTS,
-		1,
-		function()
-			toggleIndex()
-		end
-	)
-	makeHudEntry(
-		"UpgradeStoreEntry",
-		"Upgrades",
-		HUD_ICON_UPGRADES,
-		2,
-		function()
-			openProgressionShop(StoreConfig.SHOP_UPGRADES)
-		end
-	)
-	settingsEntry = makeHudEntry(
-		"SettingsEntry",
-		"Settings",
-		HUD_ICON_SETTINGS,
-		3,
-		function()
-		if not settingsPanel then
-			return
-		end
-		local opening = not settingsPanel:isOpen()
-		if inventoryPanel then
-			inventoryPanel:setOpen(false)
-		end
-		closeProgressionStore()
-		closeIndex()
-		if opening then
-			-- Pull fresh statistics (includes live session time) when opening.
-			local ok, state = pcall(function()
-				return Remotes.getFunction("RequestState"):InvokeServer()
-			end)
-			if ok and type(state) == "table" and type(state.profile) == "table" then
-				applyProfile(state.profile)
-			end
-		end
-		settingsPanel:setOpen(opening)
 	end)
 end
 
@@ -606,6 +459,7 @@ local function applyLevelState(state: { [string]: any }?)
 	if type(state) ~= "table" then
 		return
 	end
+	if state.phase == Constants.PHASE.Victory or state.phase == Constants.PHASE.Defeat then Menu.close(); FirstTimeRewards.close() end
 
 	if heartsHud and type(state.playerHealth) == "number" then
 		local maxHealth = if type(state.maxPlayerHealth) == "number"
@@ -748,10 +602,24 @@ function UIController.init()
 	gameOverPopup = buildGameOverPopup()
 	progressionStore = buildProgressionStore()
 	settingsPanel = buildSettings()
-	buildHudEntries()
+	statisticsPanel = Statistics.new(buildMain())
+	buildMenu()
+	UISizing.start(buildMain())
+	ScrollPolicy.start(buildMain())
 end
 
 function UIController.start()
+	UIEvents.inspectOwnedBrainrot:Connect(function(id)
+		local definition = Brainrots.get(id)
+		if not definition or not inventoryPanel then return end
+		if settingsPanel then settingsPanel:setOpen(false) end
+		closeIndex()
+		closeProgressionStore()
+		if fieldInspect then fieldInspect:hide() end
+		if monsterInspect then monsterInspect:hide() end
+		Menu.open("Inventory")
+		inventoryPanel:showStats(definition)
+	end)
 	Remotes.getEvent("CoinsUpdated").OnClientEvent:Connect(function(amount: number)
 		if spendPending and lastBalance and amount < lastBalance then
 			if coinCounter then
@@ -789,6 +657,8 @@ function UIController.start()
 			end
 			return
 		end
+		Menu.close()
+		FirstTimeRewards.close()
 		if inventoryPanel then
 			inventoryPanel:setOpen(false)
 		end
@@ -968,6 +838,9 @@ function UIController.start()
 		end
 		if type(state.damageMeter) == "table" then
 			applyDamageMeter(state.damageMeter)
+		end
+		if type(state.retention) == "table" then
+			UIEvents.fireRetentionState(state.retention)
 		end
 	end
 

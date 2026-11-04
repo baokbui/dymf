@@ -1367,6 +1367,9 @@ function CombatService.notifyMonsterDeath(
 		local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 		ProgressService.grantKillXp(player, lastHitBrainrotId, isBoss)
 		ProgressService.incrementStat(player, ProgressConfig.STAT_MONSTERS_DEFEATED)
+		local level = require(script.Parent.LevelService)
+		require(script.Parent.RetentionService).recordEvent(player, "MonsterDefeated", 1,
+			if level.isHiddenDayActiveForUser(player.UserId) then "Hidden" else "Campaign", { isBoss = isBoss })
 	end
 end
 

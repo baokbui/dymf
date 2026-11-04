@@ -208,6 +208,7 @@ local function grantLeftoverCoinBrains(player: Player): number
 end
 
 finishHidden = function(player: Player, state: PlayerState, cleared: boolean)
+	require(script.Parent.RetentionService).endRun(player)
 	if state.hiddenDay ~= "active" then
 		return
 	end
@@ -284,6 +285,7 @@ local function onVictory(player: Player, state: PlayerState)
 	local unlockedBrainrotId = ProgressService.grantUnlockForLevel(player, clearedNumber)
 	ProgressService.addBrains(player, brainsEarned)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_LEVELS_CLEARED)
+	require(script.Parent.RetentionService).recordEvent(player, "CampaignDayCleared", 1, "Campaign")
 
 	if state.currentLevel >= state.highestUnlockedLevel then
 		state.highestUnlockedLevel = math.min(state.currentLevel + 1, Levels.count())
@@ -345,6 +347,7 @@ local function onVictory(player: Player, state: PlayerState)
 end
 
 local function onDefeat(player: Player, state: PlayerState)
+	require(script.Parent.RetentionService).endRun(player)
 	local failedLevel = state.currentLevel
 	state.activeRun = nil
 	state.playerHealth = ProgressConfig.MAX_PLAYER_HEALTH
@@ -420,7 +423,7 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	end
 
 	if step.spawn then
-		local group = step.spawnGroup or run:getCurrentGroup()
+		local group = step.spawnGroup
 		if group then
 			local monsterDef = Monsters.get(group.monsterId)
 			local span = if monsterDef and monsterDef.laneSpan then monsterDef.laneSpan else 1
@@ -428,7 +431,17 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 				then math.clamp(math.floor(group.row), 1, GridConfig.ROWS - span + 1)
 				else LevelRun.randomRowForSpan(span)
 			local allowDuplicate = state.hiddenDay == "active" and group.monsterId == "GoblinElite"
-			EnemyService.spawn(plotModel, group.monsterId, row, allowDuplicate)
+			local instanceId = EnemyService.spawn(plotModel, group.monsterId, row, allowDuplicate)
+			if not instanceId then
+				log:warn(string.format(
+					"spawn attempt %d/%d rejected for %s on %s row %d",
+					run.totalSpawned,
+					run.totalToSpawn,
+					group.monsterId,
+					plotModel.Name,
+					row
+				))
+			end
 		end
 	end
 
@@ -471,6 +484,7 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	local DamageMeterService = require(script.Parent.DamageMeterService)
 	DamageMeterService.reset(player)
 	setPhase(player, state, PHASE.Active)
+	require(script.Parent.RetentionService).beginRun(player, if state.hiddenDay == "active" then "Hidden" else "Campaign")
 
 	-- Fresh seed-packet recharges each Start Day (PvZ-style).
 	BrainrotService.clearPlantCooldowns(player)
@@ -560,6 +574,8 @@ local function onHouseBreach(plotModel: Model, _row: number)
 	end
 
 	state.playerHealth = math.max(0, state.playerHealth - 1)
+	require(script.Parent.RetentionService).recordEvent(player, "HouseBreached", 1,
+		if state.hiddenDay == "active" then "Hidden" else "Campaign")
 	if state.playerHealth <= 0 and state.hiddenDay == "active" then
 		finishHidden(player, state, false)
 		return
@@ -813,6 +829,7 @@ function LevelService.start()
 			plantCooldowns = BrainrotService.getPlantCooldowns(player),
 			magnet = MagnetService.getClientState(player),
 			damageMeter = DamageMeterService.getClientState(player),
+			retention = require(script.Parent.RetentionService).getClientState(player),
 		}
 	end
 

@@ -5,7 +5,8 @@ controllers never branch on day numbers for fog/night/desert — they read the
 current day's definition (or the `weather` field on `LevelStateChanged`).
 
 Status: ✅ `Night` (Days 21–24) · ✅ `NightFog` (Days 25–34) · ✅ `NightFogReceded`
-(Days 35–40) · ✅ `Desert` (Days 41–50).
+(Days 35–40) · ✅ `Desert` (Days 41–50). Hidden Day (pending and active)
+uses `Night`, with no fog banks, blocked columns, or graves.
 
 ---
 
@@ -13,7 +14,7 @@ Status: ✅ `Night` (Days 21–24) · ✅ `NightFog` (Days 25–34) · ✅ `Nigh
 
 | Id | Config constant | Campaign | Effects |
 | -- | --------------- | -------- | ------- |
-| `Night` | `WeatherConfig.NIGHT` | Days **21–24** | Moonlit night Lighting only |
+| `Night` | `WeatherConfig.NIGHT` | Days **21–24** and Hidden Day | Moonlit night Lighting only |
 | `NightFog` | `WeatherConfig.NIGHT_FOG` | Days **25–34** | Night + fog bank; **3** east lawn columns unplantable |
 | `NightFogReceded` | `WeatherConfig.NIGHT_FOG_RECEDED` | Days **35–40** | Same night fog look; only **2** east columns unplantable |
 | `Desert` | `WeatherConfig.DESERT` | Days **41–50** | Hot lighting; **sand lawn**; fog off; east forest hidden locally and replaced with **pyramids**. Full lawn plantable |
@@ -25,7 +26,7 @@ Status: ✅ `Night` (Days 21–24) · ✅ `NightFog` (Days 25–34) · ✅ `Nigh
 | Effect | Owner | Behavior |
 | ------ | ----- | -------- |
 | Visible fog banks | Client `WeatherController` | Lighting Fog + Atmosphere carry the look. Three particle volumes (one lawn bank + near/deep forest) add local mist; monsters stay fully visible. Lawn bank width follows `WeatherConfig.fogStartColumn(weather)`. Giraffa hides all three banks for the timed clear. |
-| Unplantable fog columns | Server `BrainrotService` + client placement | Easternmost `fogPlotColumns(weather)` lawn columns reject **permanent** plants unless those **rows** are cleared (`FogRowsChanged`). **Giraffa Celeste** (`ClearFogRow`) is a one-shot: after her gust anim, wind VFX lifts fog on **the whole plot** for 7s then fog returns. **One-shot** Brainrots (`triggersOnPlace`) and **grave-busters** (`plantOnGrave`) may still be placed on fog tiles. Other plants on fog columns are cleared on prep / lawn restore unless the row is fog-cleared |
+| Unplantable fog columns | Server `BrainrotService` + client placement | Easternmost `fogPlotColumns(weather)` lawn columns reject **permanent** plants unless those **rows** are cleared (`FogRowsChanged`). **Girafa Celestre** (`ClearFogRow`) is a one-shot: after her gust anim, wind VFX lifts fog on **the whole plot** for 7s then fog returns. **One-shot** Brainrots (`triggersOnPlace`) and **grave-busters** (`plantOnGrave`) may still be placed on fog tiles. Other plants on fog columns are cleared on prep / lawn restore unless the row is fog-cleared |
 | Fog graves | Server `GraveService` | From Day 31, random fog tiles get graves at Start Day; a Zombie or Skeleton emerges later; monsters phase through graves **and** Patapim. Graves **block Brainrot shots and status** aimed at monsters **east** of the stone (invulnerable except to Patapim). **Piercing Brew** knives fly through. **Bombardino** column bombs still hit those monsters and do not shake or damage the grave. Only **Patapim** smashes shake the stone. **Brr Brr Patapim** (`BustGrave`, `ignoreMonsterChew`) must be planted on a grave; it smashes until **6 hits** collapse it, then both fade like a monster death |
 | No fog-tile hover | Client `GridController` | Fog columns do not show a hover highlight |
 | Clear-lawn coin drops | Server `CoinService` | Passive rain + Ballerina spit land only on non-fog tiles |
@@ -98,7 +99,8 @@ through the player margin + full enemy-column forest (aligned with
   see `AUDIO.md`).
 - Desert: desert Lighting + `DesertVisuals` (hide forest, spawn pyramids).
 - `PlacementController.setWeather` blocks ghost/place on fog columns except
-  when the selected Brainrot has `triggersOnPlace`.
+  for `triggersOnPlace`, `plantsOnFog`, or `plantOnGrave` definitions, or cleared
+  rows. Server validation still decides placement.
 - `GridController` does **not** highlight fog tiles on hover.
 
 ---

@@ -31,6 +31,8 @@ local Config = {
 	House = require(script.HouseConfig),
 	Store = require(script.StoreConfig),
 	Magnet = require(script.MagnetConfig),
+	Retention = require(script.RetentionConfig),
+	Save = require(script.SaveConfig),
 }
 
 table.freeze(Config)

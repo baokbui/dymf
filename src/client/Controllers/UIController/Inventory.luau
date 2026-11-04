@@ -186,6 +186,7 @@ function Inventory.new(parent: Frame): InventoryPanel
 	list.Position = UDim2.fromOffset(12, 74)
 	list.Size = UDim2.new(1, -24, 1, -86)
 	list.CanvasSize = UDim2.new(0, 0, 0, 0)
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.ScrollBarThickness = SCROLLBAR
 	list.ScrollingDirection = Enum.ScrollingDirection.Y
 	list.Parent = parent
@@ -237,9 +238,6 @@ function Inventory.new(parent: Frame): InventoryPanel
 		self:setOpen(false)
 	end)
 
-	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		list.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 12)
-	end)
 
 	return self
 end

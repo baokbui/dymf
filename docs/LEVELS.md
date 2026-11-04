@@ -2,10 +2,11 @@
 
 BVM is a **day-based campaign** (PvZ-style), not an endless wave grinder.
 Players progress through a sequence of discrete, hand-authored **days**; each
-day is won by surviving its scripted monsters and lost if the house is
-breached. **`LevelService` is the only system that advances days**
-(`.cursorrules`) — no other service starts a day, spawns its monsters, or
-grants its completion reward.
+day is won by clearing its scripted monsters and lost when all house hearts
+are gone (one heart per breach). **`LevelService` is the only system that advances days**
+(`AGENTS.md`) — no other service advances the campaign. EnemyService performs spawns; abilities
+can summon minions, GraveService spawns grave monsters, and ProgressService
+owns balance grants requested by LevelService.
 
 Player-facing UI says **Day** (e.g. "Day 1 — First Contact", "Start Day").
 Code, remotes, and save fields stay `Level*` / `levelNumber` for stability.
@@ -75,7 +76,8 @@ Day overlay), `Active`, `Victory`, `Defeat`.
 
 Levels are **authored data**, not generated. They live in the
 `ReplicatedStorage.Shared.Levels` registry (mirrors the Brainrots/Monsters
-registries). Add a level by adding one entry — never branch on level numbers.
+registries). Add ordinary days with registry entries. The Day 40 → Hidden Day transition is
+an explicit special case in LevelService.
 
 API:
 
@@ -86,7 +88,9 @@ Levels.getByNumber(n)      -- LevelDefinition?  (campaign position, 1-based)
 Levels.getOrdered()        -- { LevelDefinition }  in `number` order
 Levels.exists(id)          -- boolean
 Levels.getAll()            -- { [id]: LevelDefinition }  (do not mutate)
-Levels.count()             -- number of authored levels
+Levels.count()             -- 50 numbered campaign days
+Levels.getHidden()         -- separate unnumbered Hidden Day definition
+Levels.firstDayForMonster(id) -- first authored numbered day, nil if absent
 ```
 
 ### `LevelDefinition` (`Shared.Types`)
@@ -99,7 +103,7 @@ Levels.count()             -- number of authored levels
 | `groups`  | `{ SpawnGroup }` | Ordered internal waves to spawn               |
 | `weather` | string?          | Optional weather id (`Night`, `NightFog`, …); see `WEATHER.md` |
 | `graves`  | boolean?         | If true, place 3–5 fog graves (`GraveConfig.COUNT_MIN`/`MAX`) |
-| `reward`  | number?          | Completion coins (defaults to economy base)   |
+| `reward`  | number?          | Legacy/reserved; victory uses ProgressService brains + leftover conversion |
 
 ### `SpawnGroup` (`Shared.Types`)
 
@@ -117,63 +121,69 @@ Omitted timing falls back to `LevelConfig.DEFAULT_SPAWN_INTERVAL` /
 
 ### Seeded campaign ✅ (Milestones 8 + 10; retuned for lawn carry-over)
 
+Every scheduled spawn carries the group that produced it, including the final
+unit before a group transition. Species, row settings, start delays, and
+big-wave warnings therefore follow the authored groups below. Hidden Day
+permits multiple Elites; normal duplicate-boss guards still apply. Rejected
+spawn attempts are logged and counted as attempted progress; victory still
+requires all living enemies and pending grave spawns to clear.
+
 All early levels use the same **`Zombie`** grunt stats. Day 1 is authored for an
 **empty lawn**; Days 2+ assume the player kept plants from prior victories, so
 counts and pacing are higher than a wipe-each-day campaign:
 
-| Day | name              | mix (count per group) · total                  |
-| ----- | ----------------- | ---------------------------------------------- |
-| 1     | First Contact     | 1, 2, **2** Zombie · **5**                     |
-| 2     | Rising Tide       | 2, 3, **3** Zombie · **8**                     |
-| 3     | Greenhorns        | 3, 3, **4** Zombie · **10**                    |
-| 4     | Pressing Forward  | 3, 4, **5** Zombie · **12**                    |
-| 5     | Goblin Scout      | 4 Zombie, **2** Goblin, 3 Zombie, **3** Goblin · **12** |
-| 6     | Quick Feet        | 4 Zombie, 3 Goblin, 3 Zombie, **4** Goblin · **14** |
-| 7     | Crooked Charge    | 4 Goblin, 4 Zombie, 3 Goblin, **3** Zombie · **14** |
-| 8     | Hold the Line     | 4 Zombie, 4 Goblin, 3 Zombie, **5** Goblin · **16** |
-| 9     | Before the Banner | 5 Goblin, 4 Zombie, 4 Goblin, **5** Zombie · **18** |
-| 10    | Goblin Elite      | 5 Zombie, 5 Goblin, 4 Zombie, **1** GoblinElite · **15** |
-| 11    | Advancing Ranks   | 5 Zombie, 5 Goblin, 4 Zombie, **5** Goblin · **19** |
-| 12    | Iron Ranks        | 5 Goblin, 5 Zombie, 5 Goblin, **6** Zombie · **21** |
-| 13    | Elite Vanguard    | 5 Zombie, 5 Goblin, 4 Zombie, **1** GoblinElite · **15** |
-| 14    | Elite Pressure    | 5 Zombie, **1** GoblinElite, 6 Goblin, **5** Zombie · **17** |
-| 15    | Night Falls       | 5 Zombie, 5 Goblin, 2 Vampire, **3** Vampire · **15** |
-| 16    | Bloodlust Rising  | 5 Zombie, 5 Goblin, 4 Vampire, **4** Vampire · **18** |
-| 17    | Crimson Vanguard  | 5 Zombie, 4 Vampire, 5 Goblin, **1** GoblinElite · **15** |
-| 18    | Twin Terror       | 5 Zombie, 5 Vampire, **1** GoblinElite, 5 Vampire · **16** |
-| 19    | Final Bloodline   | 5 Zombie, 5 Vampire, **1** GoblinElite, 6 Vampire · **17** |
-| 20    | Duke Vampire      | 5 Zombie, 5 Vampire, 5 Goblin, **1** DukeVampire · **16** |
-| 21    | Fogbound          | Night · Zombie/Goblin/Vampire · **15** |
-| 22    | Mist March        | Night · + GoblinElite finale · **15** |
-| 23    | Quiet Night       | Night · easier breather · **13** |
-| 24    | Blood Fog         | Night · DukeVampire finale · **16** |
-| 25    | Webbed Path       | NightFog · **Spider** intro · **13** |
-| 26    | Silk and Steel    | NightFog · Spider + GoblinElite · **13** |
-| 27    | Lull in the Mist  | NightFog · easier mix · **13** |
-| 28    | Duke's Night      | NightFog · DukeVampire finale · **14** |
-| 29    | Closing Webs      | NightFog · Spider pressure + Elite · **15** |
-| 30    | Queen Spider      | NightFog · **QueenSpider** boss finale · **13** |
-| 31    | Rattling Fog      | NightFog · **Skeleton** intro + graves · **11** |
-| 32    | Royal Remnant     | NightFog · Queen mid · graves · **9** |
-| 33    | Duke Returns      | NightFog · Duke mid · graves · **11** |
-| 34    | Thickening Dark   | NightFog · Elite open · graves · **10** |
-| 35    | Howl in the Mist  | NightFogReceded · **Werewolf** intro · graves · **10** |
-| 36    | Pack Pressure     | NightFogReceded · Werewolf mix · **11** |
-| 37    | Silk and Fang     | NightFogReceded · Queen mid · **10** |
-| 38    | Blood Pack        | NightFogReceded · Duke mid · **10** |
-| 39    | Moonlit March     | NightFogReceded · Elite + Werewolf · **9** |
-| 40    | Throne of Silk    | NightFogReceded · Queen + Duke big wave · **8** |
-| 41    | First Wrappings   | Desert · **SmallMummy** only · **16** |
-| 42    | Linen March       | Desert · mummy packs · **17** |
-| 43    | Silk and Sand     | Desert · mummy packs · **19** |
-| 44    | Dust and Fang     | Desert · mummy packs · **20** |
-| 45    | Tomb Pressure     | Desert · **Scorpion** intro · **18** |
-| 46    | Bandage Pack      | Desert · mummy + scorpion · **18** |
-| 47    | Royal Dust        | Desert · mummy + scorpion · **20** |
-| 48    | Blood Linen       | Desert · mummy + scorpion · **21** |
-| 49    | Before the Tomb   | Desert · mummy + scorpion · **23** |
-| 50    | Pharaoh Mummy     | Desert · scorpion + **PharaohMummy** finale · **12** |
-| 51    | Sand Horde        | Playtest · Desert · **SmallMummy** + **Scorpion** only · **80** |
+| Day | Name | Weather | Authored groups · total |
+| --- | --- | --- | --- |
+| 1 | First Contact | Day | 1 Zombie, 2 Zombie, 2 Zombie · **5** |
+| 2 | Rising Tide | Day | 2 Zombie, 3 Zombie, 3 Zombie · **8** |
+| 3 | Greenhorns | Day | 3 Zombie, 3 Zombie, 4 Zombie · **10** |
+| 4 | Pressing Forward | Day | 3 Zombie, 4 Zombie, 5 Zombie · **12** |
+| 5 | Goblin Scout | Day | 4 Zombie, 2 Goblin, 3 Zombie, 3 Goblin · **12** |
+| 6 | Quick Feet | Day | 4 Zombie, 3 Goblin, 3 Zombie, 4 Goblin · **14** |
+| 7 | Crooked Charge | Day | 4 Goblin, 4 Zombie, 3 Goblin, 3 Zombie · **14** |
+| 8 | Hold the Line | Day | 4 Zombie, 4 Goblin, 3 Zombie, 5 Goblin · **16** |
+| 9 | Before the Banner | Day | 5 Goblin, 4 Zombie, 4 Goblin, 5 Zombie · **18** |
+| 10 | Goblin Elite | Day | 5 Zombie, 5 Goblin, 4 Zombie, 1 GoblinElite · **15** |
+| 11 | Advancing Ranks | Day | 5 Zombie, 5 Goblin, 4 Zombie, 5 Goblin · **19** |
+| 12 | Iron Ranks | Day | 5 Goblin, 5 Zombie, 5 Goblin, 6 Zombie · **21** |
+| 13 | Elite Vanguard | Day | 5 Zombie, 1 GoblinElite, 5 Goblin, 5 Zombie · **16** |
+| 14 | Elite Pressure | Day | 1 GoblinElite, 5 Zombie, 6 Goblin, 5 Zombie · **17** |
+| 15 | Night Falls | Day | 5 Zombie, 5 Goblin, 2 Vampire, 3 Vampire · **15** |
+| 16 | Bloodlust Rising | Day | 5 Zombie, 5 Goblin, 4 Vampire, 4 Vampire · **18** |
+| 17 | Crimson Vanguard | Day | 5 Zombie, 1 GoblinElite, 4 Vampire, 6 Goblin · **16** |
+| 18 | Twin Terror | Day | 5 Zombie, 5 Vampire, 1 GoblinElite, 5 Vampire · **16** |
+| 19 | Final Bloodline | Day | 1 GoblinElite, 5 Zombie, 5 Vampire, 6 Vampire · **17** |
+| 20 | Duke Vampire | Day | 5 Zombie, 5 Vampire, 5 Goblin, 1 DukeVampire · **16** |
+| 21 | Fogbound | Night | 4 Zombie, 4 Goblin, 2 Vampire, 5 Zombie · **15** |
+| 22 | Mist March | Night | 5 Zombie, 1 GoblinElite, 5 Goblin, 4 Vampire · **15** |
+| 23 | Quiet Night | Night | 4 Zombie, 3 Goblin, 2 Vampire, 4 Goblin · **13** |
+| 24 | Blood Fog | Night | 5 Zombie, 1 DukeVampire, 4 Vampire, 6 Goblin · **16** |
+| 25 | Webbed Path | NightFog | 4 Zombie, 4 Goblin, 2 Spider, 3 Spider · **13** |
+| 26 | Silk and Steel | NightFog | 5 Zombie, 1 GoblinElite, 3 Spider, 4 Vampire · **13** |
+| 27 | Lull in the Mist | NightFog | 4 Zombie, 2 Spider, 4 Goblin, 3 Vampire · **13** |
+| 28 | Duke's Night | NightFog | 5 Zombie, 3 Spider, 1 DukeVampire, 5 Vampire · **14** |
+| 29 | Closing Webs | NightFog | 1 GoblinElite, 5 Goblin, 4 Spider, 5 Vampire · **15** |
+| 30 | Queen Spider | NightFog | 5 Zombie, 4 Spider, 3 Vampire, 1 QueenSpider · **13** |
+| 31 | Rattling Fog | NightFog | 3 Zombie, 3 Skeleton, 2 Spider, 3 Goblin · **11** |
+| 32 | Royal Remnant | NightFog | 2 Goblin, 1 QueenSpider, 3 Skeleton, 3 Vampire · **9** |
+| 33 | Duke Returns | NightFog | 2 Zombie, 3 Vampire, 1 DukeVampire, 3 Skeleton, 2 Spider · **11** |
+| 34 | Thickening Dark | NightFog | 1 GoblinElite, 3 Skeleton, 2 Vampire, 4 Goblin · **10** |
+| 35 | Howl in the Mist | NightFogReceded | 3 Zombie, 2 Goblin, 2 Werewolf, 3 Werewolf · **10** |
+| 36 | Pack Pressure | NightFogReceded | 3 Spider, 3 Werewolf, 2 Vampire, 3 Goblin · **11** |
+| 37 | Silk and Fang | NightFogReceded | 3 Zombie, 1 QueenSpider, 3 Werewolf, 3 Vampire · **10** |
+| 38 | Blood Pack | NightFogReceded | 3 Werewolf, 1 DukeVampire, 2 Spider, 4 Goblin · **10** |
+| 39 | Moonlit March | NightFogReceded | 1 GoblinElite, 3 Werewolf, 2 Vampire, 3 Spider · **9** |
+| 40 | Throne of Silk | NightFogReceded | 2 Werewolf, 2 Vampire, 2 Spider, 1 QueenSpider, 1 DukeVampire · **8** |
+| 41 | First Wrappings | Desert | 5 SmallMummy, 5 SmallMummy, 6 SmallMummy · **16** |
+| 42 | Linen March | Desert | 5 SmallMummy, 6 SmallMummy, 6 SmallMummy · **17** |
+| 43 | Silk and Sand | Desert | 6 SmallMummy, 6 SmallMummy, 7 SmallMummy · **19** |
+| 44 | Dust and Fang | Desert | 6 SmallMummy, 7 SmallMummy, 7 SmallMummy · **20** |
+| 45 | Tomb Pressure | Desert | 6 SmallMummy, 5 Scorpion, 7 SmallMummy · **18** |
+| 46 | Bandage Pack | Desert | 6 SmallMummy, 5 Scorpion, 7 SmallMummy · **18** |
+| 47 | Royal Dust | Desert | 7 SmallMummy, 6 Scorpion, 7 SmallMummy · **20** |
+| 48 | Blood Linen | Desert | 7 SmallMummy, 7 Scorpion, 7 SmallMummy · **21** |
+| 49 | Before the Tomb | Desert | 8 SmallMummy, 7 Scorpion, 8 SmallMummy · **23** |
+| 50 | Pharaoh Mummy | Desert | 6 SmallMummy, 5 Scorpion, 1 PharaohMummy · **12** |
 
 Days **21–24** use `weather = "Night"` (moonlit night, full lawn plantable).
 Days **25–34** use `weather = "NightFog"` (night + visible forest/east-lawn fog;
@@ -184,8 +194,12 @@ Days **41–50** use `weather = "Desert"` (sand lawn, no fog, pyramids instead o
 the dark forest; full lawn plantable).
 Fog days keep moderate totals and alternate easier/harder pacing.
 
+Day 50 (Pharaoh Mummy) is the final numbered encounter. Clearing it keeps
+current/highest day at 50; Continue returns to Preparation on Day 50.
+Saved days above the current registry limit are clamped on load.
+
 **Hidden Day** (after clearing Day 40, before Day 41 preparation): not a numbered
-level (`Levels.getHidden()`, `exactSpawns`). Clearing Day 40 switches the lawn
+level (`Levels.getHidden()`). Clearing Day 40 switches the lawn
 to this day's night (`weather = "Night"`, no fog, no graves) instead of Day 41's
 desert. Continue returns to preparation. The player presses Start Day to run it.
 Leaving and rejoining while it is still pending (`hiddenDayPending`) stays in
@@ -196,8 +210,10 @@ Goblin Elite (spaced through the day; more than one elite can be alive), then
 Goblin King does not. Kill brains (`ProgressConfig.HIDDEN_DAY_KILL_BRAINS`):
 Goblin 1, Goblin Elite 10, Goblin King 25 — **100** if every one dies. Brains are
 granted once when the day ends, on the same reward screen for a clear or a loss.
-A loss refills hearts and restores the Day 40 victory lawn. A clear keeps the
-lawn as it stands. Either way Continue goes to Day 41 preparation. Goblin King's
+A loss refills hearts and restores the Day 40 victory lawn and Start Day XP
+snapshot. A clear commits the live lawn and XP. An unfinished Hidden Day restarts from Preparation on rejoin; kill
+brains are paid only at finish and are not saved mid-run. Either way Continue
+goes to Day 41 preparation. Goblin King's
 intro plays when this day starts, not when the player reaches Day 40.
 
 Milestone 10 adds roster variety through **one new monster at a time**, not a
@@ -205,7 +221,7 @@ bundle of types in a single level.
 
 Introduction cadence:
 
-- **Every 5 levels:** introduce exactly **one** new non-boss monster (Level 5 =
+- **Every 5 levels:** use a non-boss introduction cadence (Level 5 =
   `Goblin`; Level 15 = `Vampire`; Level 25 = `Spider`; Level 35 = `Werewolf`).
   **Exception:** Level 31 also introduces `Skeleton` (ranged archer) plus fog **graves**,
   and grants **Brr Brr Patapim** (grave buster) on first reach of that day.
@@ -215,11 +231,11 @@ Introduction cadence:
   **Exception:** Level 45 introduces `Scorpion` (matches the 5-level cadence).
   Days **41–50** authored waves are desert-only: **SmallMummy** from 41,
   **Scorpion** from 45, **PharaohMummy** on 50. **No graves** on desert days.
-- **Every 10 levels:** introduce **one** boss as the big final wave (Level 10 =
+- **Every 10 levels:** use a boss finale cadence (Level 10 =
   `GoblinElite`; Level 20 = `DukeVampire`; Level 30 = `QueenSpider`; Level 40
   dual-boss wave `QueenSpider` + `DukeVampire`; Level 50 = `PharaohMummy`).
   **Goblin King** is not on Day 40. He is the finale of the **Hidden Day**
-  that starts after Day 40 is cleared (see above).
+  made available after Day 40 is cleared; the player starts it manually (see above).
 - The first time a player **reaches** an intro day (or skips ahead via Day
   Select), `LevelService` queues **MonsterIntroPopup**s for every
   `MONSTER_INTRO_SCHEDULE` entry with `day` ≤ current that has not been
@@ -340,3 +356,13 @@ later as its own mode).
   as defeat); clear combat runtimes. The unfinished day resets to Preparation.
 - On rejoin: restore day + hearts + brains/unlocks + committed plants; coins via
   day purse; press Start Day.
+
+## Retention event hooks (M20)
+
+Entering Active begins a transient attempt marker in RetentionService. Each
+actual house breach marks that attempt; a numbered-day victory with no breach
+qualifies for Perfect Defense. Initial hearts need not be full. Defeat, Hidden
+Day results and rejoin clear the marker. Hidden Day is not a numbered clear.
+Completed achievement progress survives defeat; Brainrot XP retains its existing
+rollback rules. These hooks never advance days or change combat/rewards/purses.
+See `RETENTION.md` for permanent reward and catch-up rules.

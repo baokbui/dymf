@@ -2,6 +2,11 @@
 
 ## Purpose
 
+Completion markers describe delivered scope, not a guarantee of zero bugs or
+full coverage for future units. Current caveats live in `IMPLEMENTATION_NOTES.md`.
+M0–19 are delivered; M20 is in progress; M21–25 remain planned. Days 1–50 and the manual Hidden Day
+after 40 are present. Day Select has a server API but no shipped UI.
+
 This roadmap defines the development milestones for Brainrots vs. Monsters. Every milestone should result in a working, playable version of the game. Do not begin a new milestone until the current one is complete and tested.
 
 ---
@@ -19,7 +24,7 @@ Create a solid foundation for the project.
 - Create Git repository
 - Configure Rojo
 - Connect Rojo to Roblox Studio
-- Create `.cursorrules`
+- Maintain `AGENTS.md` (canonical rules) + `.cursorrules` compatibility pointer
 - Create documentation
 - Create project folder structure
 - Create empty services
@@ -29,7 +34,7 @@ Create a solid foundation for the project.
 
 ## Complete When
 
-- Project syncs correctly between Cursor and Roblox Studio.
+- Project syncs correctly between local source and Roblox Studio via Rojo.
 - Folder structure is complete.
 - Documentation exists.
 
@@ -203,7 +208,7 @@ Create enemies.
 ## Tasks
 
 - Base Monster
-- Pathfinding
+- Grid-based movement (no PathfindingService)
 - Health
 - Damage
 - Death
@@ -211,11 +216,11 @@ Create enemies.
 
 
 
-## Roster
+## Current registry
 
-- Zombie, Vampire, Werewolf, Skeleton, Goblin
-- Bosses: Goblin Elite, Necromancer, Goblin King, Queen Spider, Duke Vampire
-- Spider (jump ability)
+- Zombie, Vampire, Werewolf, Skeleton, Goblin, Spider, Small Mummy, Scorpion
+- Bosses: Goblin Elite, Necromancer, Goblin King, Queen Spider, Duke Vampire, Pharaoh Mummy
+- Necromancer is a prototype, not in authored days; lane-change handler is a stub.
 
 
 
@@ -281,7 +286,8 @@ Create the gameplay loop: a PvZ-style campaign of discrete, authored levels.
 ## Complete When
 
 - Players can play a level, win it, and advance to the next one.
-- Losing (house breached) lets the player retry the same level.
+- Losing (all five house hearts gone) lets the player retry the same level.
+- Hidden Day after Day 40 is manually started; win/loss proceeds to Day 41.
 
 ---
 
@@ -305,7 +311,8 @@ Persist player progress.
 - Unlocks
 - Equipped loadout
 - Upgrades
-- Statistics
+- Statistics, Brainrot XP checkpoints, claimed evolution tiers, intro flags,
+  optional Hidden Day pending flag (introduced in v7; current schema v11)
 
 
 
@@ -415,7 +422,8 @@ Persist player progress.
 - Shop (Already implemented in a previous milestone. Can improve if needed) ✅
 - Brainrots Store (Buy new brainrots) → **Milestone 18** (HUD shops)
 - Brains (currency) ✅ granted on victory; spent at store in M18
-- Reward System ✅ victory popup shows brains earned (level number × config)
+- Reward System ✅ persistent Continue popup: day brains + leftover conversion;
+  Hidden Day uses kill brains on either outcome
 - Inventory / Loadout ✅ equip & unequip unlocked Brainrots for the shop bar
 - Coins ✅ (prior milestone)
 - Level display ✅ (Day panel). Level Select in Settings was **not** shipped —
@@ -470,9 +478,8 @@ Persist player progress.
 
 ## Replace placeholder visuals
 
-The current roster uses **test placeholders** — colored `Part` bodies built by
-`BrainrotModel` from each definition's `color` swatch. Replace them with authored
-3D models for every shipped Brainrot.
+Authored templates are used by `BrainrotModel` for shipped Brainrots.
+Colored Part placeholders remain only as missing-asset fallbacks.
 
 ## Add
 
@@ -486,7 +493,7 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
   (`PlotConfig.BRAINROT_FOOTPRINT_RATIO`), and preserves identity attributes /
   `Brainrot` tag ✅ (`ModelUtil`; Part fallback if missing)
 - Shop cards and placement ghost use model preview or thumbnail where applicable
-  (still display-only on the client) ✅ ghost clones template; shop keeps color swatch
+  (still display-only on the client) ✅ ghost clones template; shop uses previews on High/Low and swatches on Off
 - Wall / line-bomb / fly-over units keep correct bounds and pivot after swap ✅
   - Attack pulse uses `Model:ScaleTo` (not Size-tween)
   - LineBomb fly-over uses `PivotTo` + extents height
@@ -508,9 +515,8 @@ The current roster uses **test placeholders** — colored `Part` bodies built by
 
 ## Replace placeholder visuals
 
-Monsters currently use **test placeholders** — colored `Part` bodies from
-`MonsterModel` / definition `color` swatches. Replace them with authored 3D
-models for campaign enemies (same pattern as Milestone 15 Brainrots).
+Campaign monsters use authored templates through `MonsterModel`. Colored Parts
+remain as missing-asset fallbacks.
 
 ## Add
 
@@ -552,7 +558,7 @@ M15–M16 model pipelines. **Combat outcomes stay server-authoritative.** Unit
 Animator tracks (idle / attack / walk) are driven on the **server** so Motor6D
 poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 `BrainrotAnimation` ✅). Client still owns SFX, particles, and UI juice
-(`.cursorrules` presentation layer).
+(`AGENTS.md` presentation layer).
 
 ## Add
 
@@ -587,7 +593,8 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
 - HUD **Upgrades** next to Inventory (no red stall)
 - HUD **Index** catalog of encountered Brainrots / Monsters
 - **Brainrots** shop: spend **Brains** on `STORE_CATALOG`
-  (Girafa Celestre for now; still free on reach Day 25). Starter roster and
+  (five units: Girafa, Orangutini, La Vacca, Blueberrinni, Boneca;
+  Girafa is also free on reach Day 25). Starter roster and
   Patapim stay campaign/reach unlocks.
 - **Upgrades** shop: spend Brains on player upgrades (Speed, Magnet)
 - Catalog in `ProgressConfig.STORE_CATALOG` / `UPGRADE_CATALOG`
@@ -625,7 +632,8 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
   (red-orange, passive), Immortal (dark red, passive), God (rainbow,
   ultimate)
 - **Authored rows** for Ballerina, Chimpanzini, Tung Tung, Tralalero,
-  Cappuccino, Lirili (Girafa / Patapim / Bombardino TBD)
+  Cappuccino, Lirili, Orangutini, La Vacca, and Boneca
+  (Girafa / Patapim / Blueberrinni / Bombardino TBD)
 
 ## Tasks
 
@@ -634,11 +642,12 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
   **Mythic passives**) ✅; **Immortal passives** ✅; GOD ultimates: Tung
   Tung Sahur (`SahurWrath`), Ballerina (`Jackpot`), Chimpanzini
   (`PrimalRetaliation`), Lirili Glacial Dominion, Cappuccino
-  (`ShadowRequiem`), Tralalero (`AbyssalTorrent`) ✅
+  (`ShadowRequiem`), Tralalero (`AbyssalTorrent`), Orangutini (`PineappleExpress`),
+  Boneca (Last Laugh), and La Vacca (Black Hole) ✅
 - XP grant rules ✅ — last-hit species for normal kills (`BubbleTrap` /
-  `MeleeBat` skipped); boss XP split evenly across every living plant; support
+  `BubbleBarrage` / `MeleeBat` / `TileTrap` skipped); boss XP split evenly across every living plant; support
   jobs (`COIN_XP` / `SOAK_XP` / `FREEZE_XP` / `BUBBLE_XP` every 2 landed
-  bubbles / `MELEE_XP` every 3 connecting hits)
+  bubbles / `MELEE_XP` every 3 connecting hits / TileTrap every 2 headbutts)
 - Compose Epic stats onto the common placement runtime ✅
   (`Evolutions.applyStats` — no name branches). Legendary extras ✅
   (`claimedExtras` + `tickExtras`). Mythic passives ✅
@@ -646,7 +655,8 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
   Epic combat stats ✅; Legendary combat extras ✅; Mythic passives ✅;
   Immortal passives ✅; GOD ultimates: Tung Tung (`SahurWrath`), Ballerina
   (`Jackpot`), Chimpanzini (`PrimalRetaliation`), Lirili Glacial Dominion,
-  Cappuccino (`ShadowRequiem`), Tralalero (`AbyssalTorrent`) ✅
+  Cappuccino (`ShadowRequiem`), Tralalero (`AbyssalTorrent`), Orangutini (`PineappleExpress`),
+  Boneca (Last Laugh), and La Vacca (Black Hole) ✅
 - Inventory / field inspect show portrait header (name, HP bar, level, XP bar)
   plus Stats and evolution rows (gray until the Brainrot level gate,
   then light rarity fill + shiny title; lock until brains claim, with a
@@ -677,68 +687,188 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
 
 # Milestone 20 — Retention Systems
 
-**Status: 🔜 Planned**
-
-
+**Status: 🛠 In progress — Steps 0–4 complete; quests, login rewards, achievements and next-goal display implemented**
 
 ## Goal
 
-Add first-time and recurring meta rewards that bring players back without
-touching core combat or level authority. Server owns all claim/progress state;
-UI only displays and sends intents.
+Give players achievable goals for a session, a reason to return, and longer-term
+progress through the existing campaign and Brainrot roster. Implement the steps
+below **one at a time, in order**. Check an item only after its behavior is
+implemented and verified. Keep partial features marked in progress; do not mark
+the whole milestone complete until its acceptance checks pass.
 
-## Systems
+## Step 0 — Fix the campaign spawn handoff
 
+- [x] Keep the final spawn of each group attached to its authored species and row.
+- [x] Verify mixed-species boundaries, single-monster groups, boss timing, and
+  the final group; confirm a rejected duplicate boss cannot silently break progress.
+- [x] Preserve Hidden Day's 35 Goblins, 4 Elites, and 1 King, plus its manual start.
+- [x] Update `LEVELS.md` / `IMPLEMENTATION_NOTES.md` after verification.
 
+**Verified:** the Day 13 bug was reproduced, then 54 isolated scheduler scenarios
+passed (768 spawn events, 53 big-wave warnings). Service-handler checks covered
+rejected duplicates, live-enemy victory gating, and Hidden Day manual start.
+Rojo build passes. This is a prerequisite bug fix, not a new reward feature.
+Full gameplay/multiplayer playtests remain in Step 7.
 
-### 7-Day First-Time Rewards
+## Step 1 — Define reward rules and shared infrastructure
 
-- One-time login streak for new players (days 1–7)
-- Authored reward table (coins and/or unlocks)
-- Persist claimed days + streak day via `SaveService`
-- Missed-day rules (reset streak vs. pause — decide at implementation)
-- Claim UI; server validates eligibility before granting
+- [x] Set a combined brains budget for quests, login rewards, achievements,
+  challenges, and free spins against existing day rewards and shop/evolution costs.
+- [x] Author reward/objective definitions in shared configuration; decide the
+  initial reward catalog before implementing claims.
+- [x] Define server UTC dates and provide a pure countdown helper; UI wiring is Step 2.
+  Login reward days mean real-world claim dates, not campaign Day N.
+- [x] Define versioned persistence, migration defaults, and reconnect-safe,
+  repeat-safe claim transactions through SaveService and the existing currency APIs.
+- [x] Define server gameplay events for objective progress, plus validated claim
+  remotes. Avoid scanning every plant/monster each frame.
+- [x] Define analytics events for eligibility, progress, claim success, and rejection.
+  Add instrumentation with each feature below.
+- [x] Document an isolated test setup and verify pure helpers without player data;
+  preserve developer cheat preferences for gameplay/economy tests.
 
+**Verified:** `RetentionConfig`, `RetentionTime`, and `Types.Retention` are
+implemented. `RETENTION.md` defines budgets, expiry/claim rules, migration and
+durable SaveService requirements, event contracts, and service responsibilities.
+133 isolated Luau checks and Rojo build passed. Claims, migrations, server
+subscriptions/remotes, analytics emission, and UI were deferred to Step 2 and
+are now implemented for daily quests.
 
+## Step 2 — Daily quests
 
-### Spinner
+- [x] Assign three daily quests using only mechanics/Brainrots available to the player.
+- [x] Include varied objectives such as collecting coins, defeating monsters, or
+  clearing a day; avoid requiring a purchase or unavailable content.
+- [x] Add a once-per-day completion bonus for finishing all three.
+- [x] Track progress server-side; persist assigned quests, progress, date, and claims.
+- [x] Add a compact quest UI with progress, reward, claim state, and reset timer.
+- [x] Verify midnight rollover, reconnects, repeated claims, failed days, and
+  eligibility for new versus advanced players.
+- [x] Record quest participation, completion, and rewards granted.
 
-- Weighted reward wheel (coins, unlocks, cosmetics placeholders as available)
-- Free spin cadence (e.g. daily) + optional paid/extra spins later
-- Server rolls outcome; client only animates the result
-- Persist last spin time / remaining free spins
+**Done when:** quests refresh correctly and each eligible reward pays exactly
+once, including after reconnecting.
 
+**Verified:** 32 versioned regression assertions plus isolated service/save/UI
+checks passed. Coverage includes UTC rollover, reconnects, duplicate claims,
+Hidden Day filtering, failed-day credit, queued purchases/saves, disconnects
+during a claim, and lost write responses. Save schema v8 commits claim flags
+and balances together under a guarded session writer. The UI renders all four
+rows and server claim states. Tests use in-memory storage; complete visual and
+four-player QA, real DataStore fault testing, and live analytics ingestion remain
+Step 7 acceptance checks. See `RETENTION.md`.
 
+## Step 3 — First-time rewards and weekly quests
 
-### Daily Quests
+- [x] Add a finite seven-day first-time track: brains, Speed/Magnet upgrade
+  levels, and a free Brainrot-store ticket on Day 7.
+- [x] Advance once per distinct eligible UTC date; missed dates preserve progress.
+- [x] End permanently after seven claims; remove recurring weekly login rewards.
+- [x] Preserve existing paid steps; give legacy seven-brain-reward completions
+  one final ticket catch-up without repeating the migration.
+- [x] Commit mixed rewards and ticket redemption atomically through SaveService.
+- [x] Split Quests into Daily Quests and Weekly Quests tabs, with independent
+  progress/claims and Monday 00:00 UTC weekly resets.
+- [x] Verify dates, duplicates, migration, maxed upgrade fallback, ticket purchases
+  and queued save/leave merges with isolated fixtures.
 
-- Small rotating quest pool (e.g. place N Brainrots, clear a level, collect coins)
-- Daily reset (timezone / UTC — decide at implementation)
-- Progress tracked server-side; claim rewards when complete
-- Persist quest ids, progress, and claim state via `SaveService`
+**Done when:** each first-time reward pays once, the final ticket buys one
+unowned store Brainrot for free, and weekly quests reset/pay independently.
+Live battle/device/cloud verification remains Step 7. See `RETENTION.md` for
+catalogs, budgets and the schema-v11 transaction rules.
 
+## Step 4 — Achievements and the next-goal display
 
+- [x] Add permanent milestones: first boss defeat, first Epic evolution, first
+  perfect defense, and Brainrot ownership milestones.
+- [x] Define objective semantics precisely (e.g. perfect defense means no house
+  breaches during that successful encounter).
+- [x] Persist progress/claims; show rewards and completion state in one clear UI.
+- [x] Show one relevant next goal: next campaign unlock, evolution level gate,
+  or brains needed to claim an eligible evolution.
+- [x] Update that goal from authoritative state without adding HUD clutter.
+- [x] Verify catch-up for existing saves, unavailable goals, max-level players,
+  and repeat-safe achievement claims.
+- [x] Record milestone completion and next-goal engagement where measurable
+  (instrumented; live ingestion/cohort review remains Step 7).
 
-## Architecture Notes
+**Done when:** both new and existing players receive accurate, reachable goals
+and cannot claim a permanent achievement twice.
 
-- New service(s) own eligibility, rolls, and quest progress (e.g. `RewardService`,
-`QuestService`) — never trust client claim/spin results
-- Grants go through existing economy / unlock APIs (`CoinService`, etc.)
-- Remotes for claim / spin / quest claim with full server validation
-- UI panels under `UIController` (display-only)
+**Verified:** 32 achievement/goal assertions join 32 quest/storage and 55 login
+checks (119 total). Isolated SaveService/RetentionService tests cover v7/v8/v9
+migration, concurrent saves/purchases/progress, repeated claims, permanent
+claims across midnight, disconnects during achievement commits, attempt breach
+tracking, Hidden/Challenge filtering, two-player isolation and goal-view validation.
+The shared Menu has an Achievements section with five rows and one next goal,
+using the restored UI style and transparent dismissal layer. Ownership/Epic
+catch-up is verified; boss/perfect history begins with new events. Schema v10
+stores permanent progress/claims. Full battle/device/multiplayer and live
+analytics remain Step 7 checks; Step 5 is next. Menu also hosts Inventory, Index,
+Upgrades, Settings, Statistics and Quests behind one HUD entry. First-time
+Rewards has its own temporary gift HUD entry, hidden after all seven claims.
 
+## Step 5 — Daily challenge encounter
 
+- [ ] Author a separate optional challenge with a readable modifier and difficulty.
+- [ ] Use a separate challenge lawn/state; safely preserve and restore the player's
+  campaign day, hearts, pending Hidden Day, lawn checkpoint, and coin rules.
+- [ ] Define challenge XP, quest/achievement credit, and retry rules explicitly
+  before wiring it into campaign services.
+- [ ] Give a fixed first-clear reward per UTC day; permit free retries afterward.
+- [ ] Handle victory, defeat, leaving, reconnecting, and daily rollover without
+  replacing or corrupting campaign progress.
+- [ ] Add entry/result UI and record attempts, clears, retries, and rewards.
 
-## Complete When
+**Done when:** a challenge can be played and retried independently of campaign
+progress, with only one first-clear payout per eligible day.
 
-- New players can claim a 7-day first-time reward track.
-- Players can use the spinner on its free cadence and receive the rolled reward.
-- Daily quests appear, track progress, reset on schedule, and grant rewards on claim.
-- All progress survives leave/rejoin; exploits (double-claim, fake progress) fail server checks.
+## Step 6 — Free daily spinner
+
+- [ ] Author a small reward pool with visible odds and the agreed economy budget.
+- [ ] Grant one free spin per eligible UTC day; paid spins are outside this scope.
+- [ ] Choose and record the outcome on the server; the client animates that outcome.
+- [ ] Persist spin eligibility/outcome so disconnects cannot lose a reward or reroll it.
+- [ ] Add UI, claim feedback, and analytics.
+- [ ] Verify repeated requests, leaving mid-animation, reconnecting, and rollover.
+
+**Done when:** each daily spin produces one authoritative reward regardless of
+client animation or connection state.
+
+## Step 7 — Integration, balance, and release checks
+
+- [ ] Test migration from current saves and reconnect/restart behavior for all tracks.
+- [ ] Test invalid remote arguments, spam, simultaneous claims, and duplicate payouts.
+- [ ] Test interaction with victory/defeat, Hidden Day, Reset Progress, and upgrades.
+- [ ] Verify mobile/desktop layouts and four-player server isolation/performance.
+- [ ] Review total brains income against shop/evolution prices; adjust config as needed.
+- [ ] Verify analytics and compare D1/D7/D30 cohorts once enough live data exists;
+  do not claim a retention improvement from implementation alone.
+- [ ] Update NETWORKING, SAVE_SYSTEM, ECONOMY, UI, AUDIO, ARCHITECTURE, and relevant
+  gameplay docs as each feature ships; update AGENTS.md if an invariant changes.
+
+**Done when:** the features pass functional/integration checks, their rewards
+fit the economy, and observability is ready. Longer-term retention evaluation
+continues after release as cohorts mature.
+
+## Architecture constraints
+
+RetentionService and durable daily quest claims implement the shared boundary;
+challenge lifecycle and the remaining reward tracks are still planned:
+
+- Dedicated server services/modules own retention eligibility, objectives,
+  challenge lifecycle, and claims; use the existing service bootstrap.
+- Only SaveService accesses DataStore. Bump/migrate the schema when adding fields.
+- Reward grants use ProgressService / CoinService; clients never choose balances,
+  random outcomes, timestamps, progress, or claim eligibility.
+- Challenge progression must explicitly distinguish itself from campaign
+  LevelService progression; no other service advances campaign days.
+- UI stays under client Controllers and only presents state/sends intent.
+- Seasonal/live events, trading, rebirths, and paid spins are deferred.
+  Offline house income remains Milestone 21.
 
 ---
-
-
 
 # Milestone 21 — Boss Collection House
 
@@ -787,6 +917,8 @@ and evolutions (M19).
 
 # Milestone 22 — Optimization
 
+**Status: 🔜 Planned**
+
 
 
 ## Improve
@@ -808,6 +940,8 @@ and evolutions (M19).
 
 
 # Milestone 23 — Testing
+
+**Status: 🔜 Planned**
 
 
 
@@ -834,6 +968,8 @@ and evolutions (M19).
 
 # Milestone 24 — Release
 
+**Status: 🔜 Planned**
+
 
 
 ## Final Tasks
@@ -858,11 +994,13 @@ and evolutions (M19).
 
 # Milestone 25 — Post-Launch
 
+**Status: 🔜 Planned**
+
 
 
 ## Continue Development
 
-- **New Brainrots** — expand the roster beyond the launch seven (registry +
+- **New Brainrots** — expand the current 13-unit roster (registry +
   ability handlers; additional model work as needed)
 - **Brainrot mutations** — a layer separate from the Epic→God ladder: replace
   or add an unrelated ability, independent of Brainrot level. Evolutions

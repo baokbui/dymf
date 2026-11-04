@@ -12,6 +12,7 @@
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -32,6 +33,7 @@ local InputController = require(script.Parent.InputController)
 local AudioController = require(script.Parent.AudioController)
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 
+local ShovelIcon = require(script.Parent.Parent.Utilities.ShovelIcon)
 local PlacementController = {}
 PlacementController.Name = "PlacementController"
 
@@ -261,7 +263,8 @@ local function ensureShovelCursor(): Frame
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
 	local cursor = Instance.new("Frame")
 	cursor.Name = "ShovelCursor"
-	cursor.Size = UDim2.fromOffset(28, 28)
+	cursor.Size = UDim2.fromOffset(32, 38)
+	cursor:SetAttribute("ScreenSpaceUI", true)
 	cursor.BackgroundTransparency = 1
 	cursor.Visible = false
 	cursor.ZIndex = 1000
@@ -269,31 +272,7 @@ local function ensureShovelCursor(): Frame
 	cursor.Active = false
 	cursor.Parent = playerGui:WaitForChild("MainUI")
 
-	local handle = Instance.new("Frame")
-	handle.Name = "Handle"
-	handle.AnchorPoint = Vector2.new(0.5, 0)
-	handle.Position = UDim2.new(0.5, 0, 0, 2)
-	handle.Size = UDim2.fromOffset(6, 14)
-	handle.BackgroundColor3 = Color3.fromRGB(120, 80, 40)
-	handle.BorderSizePixel = 0
-	handle.Active = false
-	handle.Parent = cursor
-	local handleCorner = Instance.new("UICorner")
-	handleCorner.CornerRadius = UDim.new(0, 2)
-	handleCorner.Parent = handle
-
-	local blade = Instance.new("Frame")
-	blade.Name = "Blade"
-	blade.AnchorPoint = Vector2.new(0.5, 1)
-	blade.Position = UDim2.new(0.5, 0, 1, -2)
-	blade.Size = UDim2.fromOffset(18, 10)
-	blade.BackgroundColor3 = Color3.fromRGB(180, 180, 190)
-	blade.BorderSizePixel = 0
-	blade.Active = false
-	blade.Parent = cursor
-	local bladeCorner = Instance.new("UICorner")
-	bladeCorner.CornerRadius = UDim.new(0, 3)
-	bladeCorner.Parent = blade
+	ShovelIcon.mount(cursor)
 
 	shovelCursor = cursor
 	return cursor
@@ -310,7 +289,8 @@ local function updateShovelCursorPosition(position: Vector2)
 	if not cursor or not cursor.Visible then
 		return
 	end
-	cursor.Position = UDim2.fromOffset(position.X + 12, position.Y + 12)
+	local inset = GuiService:GetGuiInset()
+	cursor.Position = UDim2.fromOffset(position.X - inset.X + 12, position.Y - inset.Y + 12)
 end
 
 local function fireShovelModeChanged()
@@ -327,6 +307,18 @@ local function setSelected(id: string?)
 end
 
 local function tryRemoveAt(position: Vector2)
+	local hit = GridController.raycastAt(position.X, position.Y)
+	local model = if hit then hit.Instance:FindFirstAncestorWhichIsA("Model") else nil
+	while model do
+		local row, column = model:GetAttribute("Row"), model:GetAttribute("Column")
+		if model:GetAttribute("BrainrotId") and type(row) == "number" and type(column) == "number"
+			and PlotUtil.getLocalBrainrotAt(row, column) == model then
+			removeRemote:FireServer({ row = row, column = column })
+			AudioController.play("RemoveBrainrot")
+			return
+		end
+		model = model:FindFirstAncestorWhichIsA("Model")
+	end
 	local tile = GridController.resolveTileAt(position.X, position.Y)
 	if not tile or tile:GetAttribute("Occupied") ~= true then
 		return
@@ -456,8 +448,7 @@ function PlacementController.setShovelMode(enabled: boolean)
 	setShovelCursorVisible(enabled)
 	if enabled then
 		UIEvents.fireFieldInspect(nil)
-		local mouse = localPlayer:GetMouse()
-		updateShovelCursorPosition(Vector2.new(mouse.X, mouse.Y))
+		updateShovelCursorPosition(UserInputService:GetMouseLocation())
 		AudioController.play("UiClick")
 	end
 	fireShovelModeChanged()

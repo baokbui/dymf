@@ -15,6 +15,7 @@ UITheme.PANEL_BG_ALT = Color3.fromRGB(70, 155, 240)
 UITheme.CHIP_BG = Color3.fromRGB(90, 175, 255)
 UITheme.CARD_BG = Color3.fromRGB(255, 225, 90)
 UITheme.CARD_SELECTED_BG = Color3.fromRGB(120, 255, 170)
+UITheme.CARD_CLAIMED_BG = Color3.fromRGB(175, 180, 185)
 UITheme.ROW_BG = Color3.fromRGB(255, 170, 210)
 UITheme.BUTTON_BG = Color3.fromRGB(160, 210, 255)
 UITheme.MODAL_SCRIM = Color3.fromRGB(20, 24, 40)
@@ -27,6 +28,8 @@ UITheme.CHIP_BG_BRAINS = Color3.fromRGB(180, 120, 255) -- purple
 UITheme.CHIP_BG_SPEED = Color3.fromRGB(70, 205, 220) -- cyan
 UITheme.CHIP_BG_HEARTS = Color3.fromRGB(255, 120, 150) -- rosy red
 UITheme.CHIP_BG_MAGNET = Color3.fromRGB(235, 75, 85) -- magnet red
+UITheme.PANEL_BG_QUESTS = Color3.fromRGB(255, 145, 125) -- coral; distinct from teal Upgrades
+UITheme.PANEL_BG_ACHIEVEMENTS = Color3.fromRGB(185, 150, 245) -- lavender
 UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
 UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
 UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold
@@ -58,6 +61,10 @@ UITheme.SHOVEL = Color3.fromRGB(140, 200, 90)
 UITheme.CANCEL = Color3.fromRGB(230, 70, 70)
 UITheme.TOAST_BG = Color3.fromRGB(255, 150, 150)
 UITheme.TOAST_TEXT = Color3.fromRGB(90, 20, 20)
+
+-- Viewport readability: baseline laptop size, capped desktop enlargement.
+UITheme.DESKTOP_REFERENCE = Vector2.new(1536, 864)
+UITheme.DESKTOP_MAX_SCALE = 1.5
 
 -- Geometry
 UITheme.CORNER_PANEL = 14

@@ -1,8 +1,10 @@
 # BVM Combat
 
-Combat is handled **exclusively** by `CombatService` on the server. Brainrots and
+Combat damage, projectiles, and status application route through server
+`CombatService`. Brainrot healing uses its registered handler; monster
+regeneration uses `MonsterBehavior`’s shared `pendingHeal` queue. Brainrots and
 monsters never modify each other's health directly — they send intents through
-this service (`.cursorrules`).
+this service (`AGENTS.md`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -12,7 +14,7 @@ Status legend: ✅ implemented · 🔜 planned (with milestone)
 
 | System | Role |
 | ------ | ---- |
-| `CombatService` | Damage, healing, death routing, target acquisition, projectiles, status effects |
+| `CombatService` | Damage, Brainrot healing, death notification, target acquisition, projectiles, status effects |
 | `DamageMeterService` | Per-day HP ranks (Brainrot vs Monster tabs); reset on Start Day |
 | `EnemyService` | Monster runtime state, movement, status fields, death cleanup. Spawn copies HP from `Monsters.scaledForDay` (non-boss campaign aging) and sets `MonsterLevel` to the current day. |
 | `BrainrotService` | Brainrot runtime state, status on planted units |
@@ -125,8 +127,8 @@ shine, 3D portraits). **Low** = **Reduced** (fewer bursts, thin aura, shine
 stays still, portraits stay 3D). **Off** = **Minimal** (no flame particles,
 hit/death/coin sparks, or heavy ult decoration — the rarity outline stays).
 Off also turns shop, inventory, and index portraits into color swatches.
-Inspect portraits stay 3D. The server always authors the full GOD ult. **Other
-plots** (default **On**) hides Brainrot auras and Brainrot projectiles on plots
+Inspect portraits stay 3D. The server always authors the full GOD ult. Turning **Other
+plots** (default **On**) **Off** hides Brainrot auras and Brainrot projectiles on plots
 you do not own. Monster attacks stay. Combat math is unchanged.
 
 Client trail/glow branches on the `ProjectileKind`
@@ -173,7 +175,7 @@ fit a 3-row footprint on the 5-row lawn). Does **not** jump. Each chew applies
 `"Stun"` for `stunDuration` (2s). Every **2nd** chew (`poisonEvery`) applies
 `"Poison"` for `poisonDuration` (4s) at `poisonPercent` (3% of the Brainrot's
 max HP per 1s tick). A cleave across her lanes counts as one chew. Stun/poison visuals: dizzy stars + yellow "Stunned" floater;
-slight purple model tint + purple "Poisoned" floater (queued so they don't overlap).
+purple model tint + purple "Poisoned" floater (queued so they don't overlap).
 Uses the default tip-over death like other monsters.
 
 **GOD ultimates** ✅ — extras path or params overlay:
@@ -229,18 +231,20 @@ east of the stone from the caster. Freeze/Stun are rejected while a monster is
 **Duke Vampire** ✅ — `DukeVampireFreeze` is a **once-only** last stand: at
 ≤20% HP he falls over (`MonsterDeath.playDowned`, rig intact —
 `MonsterBehavior` suspends movement/attack/sync via `runtime.downedUntil`)
-for 1.4s while invulnerable (`MonsterRuntime.invulnerableUntil`, checked in
-`EnemyService.damageMonster`), then rises (`MonsterDeath.riseUp`) already
-healed to 25% max HP. `DukeVampireTerrify`
-deals **no damage**; on a 10s cooldown it applies `Weaken` + `Stun` to his row
-± 1 (independent of `laneSpan`, which stays 1). His regular chew is a plain
+for 1.0s, lies grounded for 3s, and rises over 0.7s (`MonsterDeath.riseUp`).
+He is invulnerable throughout (`MonsterRuntime.invulnerableUntil`, checked in
+`EnemyService.damageMonster`), and heals to 25% max HP as he starts rising. `DukeVampireTerrify`
+deals **no damage**; on a 10s cooldown it applies 15% `Weaken` + a **4s** `Stun`
+to his row ±1 and up to two columns toward the house (independent of
+`laneSpan`, which stays 1). His regular chew is a plain
 stat-driven attack (no ability) at Vampire pace with more damage. Both share
 attack clip `105203629607445` held at the outstretched frame (`holdAttackPose`,
 0.5s) until they walk or are stunned. Red and white lines fly into the far
 end of the Right Arm and repeat (`VfxUtil.startLifeVortex`). Each
 `attackInterval` tick is a chew.
-Goblin
-King's speed-buff stub still awaits a follow-up milestone.
+Goblin King’s regen and attack buff are implemented: heal 5% max HP every 10s;
+on spawn, grant himself and living Goblins +10% chew damage. Later Goblins
+inherit while he lives; already granted boosts persist after his death.
 
 ---
 
@@ -296,9 +300,8 @@ values remain in `CombatConfig`.
    particle burst. After tip-over + linger, a Thanos-style ash disintegrate
    (`VfxUtil.playDeathDisintegrate`) plays as the corpse fades.
 4. Server `MonsterDeath` bakes the live pose into welds (keeps overlay meshes
-   glued; does not teleport named arms), then plays the definition's
-   `deathStyle` (default: tip onto the ground — randomized faceplant / side
-   flop / backfall), leaves the corpse for
+   glued; does not teleport named arms), then plays a randomized tip-over (faceplant / side flop / backfall).
+   The `deathStyle` parameter is reserved and currently ignored; leaves the corpse for
    `CombatConfig.DEATH_CORPSE_LINGER` (2s), fades it out, then destroys the model.
 5. Brainrot death destroys the placement and frees the tile (unchanged from M5).
 

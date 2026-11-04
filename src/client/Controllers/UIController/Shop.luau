@@ -24,26 +24,27 @@ local TextShine = require(script.Parent.Parent.Parent.Utilities.TextShine)
 local PlotUtil = require(script.Parent.Parent.Parent.Utilities.PlotUtil)
 local PlantCost = require(Shared.Utilities.PlantCost)
 
+local ShovelIcon = require(script.Parent.Parent.Parent.Utilities.ShovelIcon)
 local Shop = {}
 Shop.__index = Shop
 
-local CARD_WIDTH = 64
-local CARD_HEIGHT = 78
+local CARD_WIDTH = 84
+local CARD_HEIGHT = 110
 local CARD_PADDING = 10
 local PANEL_PADDING_X = 12
 local PANEL_PADDING_Y = 8
-local SWATCH_SIZE = 36
+local SWATCH_SIZE = 48
 local CARD_STROKE = 2
 local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
 local PANEL_CORNER_RADIUS = UITheme.CORNER_PANEL
-local NAME_TEXT_SIZE = 9
+local NAME_TEXT_SIZE = 12
 local NAME_MAX_WIDTH = CARD_WIDTH - 8
-local NAME_HEIGHT = 20
-local NAME_HEIGHT_CAPPED = 14
-local COUNT_HEIGHT = 12
-local COUNT_TEXT_SIZE = 11
+local NAME_HEIGHT = 25
+local NAME_HEIGHT_CAPPED = 25
+local COUNT_HEIGHT = 14
+local COUNT_TEXT_SIZE = 13
 
-local TOOL_COLUMN_WIDTH = 44
+local TOOL_COLUMN_WIDTH = 52
 local TOOL_GAP = 6
 local CANCEL_SIZE = 56
 local TOOL_BUTTON_HEIGHT = math.floor((CARD_HEIGHT - TOOL_GAP) / 2)
@@ -232,27 +233,7 @@ function Shop.buildShovelButton(self: Shop, parent: Instance): TextButton
 	button.Parent = parent
 	UITheme.applyButtonLook(button, UITheme.CARD_BG)
 
-	local handle = Instance.new("Frame")
-	handle.AnchorPoint = Vector2.new(0.5, 0)
-	handle.Position = UDim2.new(0.5, 0, 0, 8)
-	handle.Size = UDim2.fromOffset(5, 12)
-	handle.BackgroundColor3 = Color3.fromRGB(120, 80, 40)
-	handle.BorderSizePixel = 0
-	handle.Active = false
-	handle.Parent = button
-	UITheme.styleCorner(handle, 2)
-	UITheme.applyStroke(handle, 2)
-
-	local blade = Instance.new("Frame")
-	blade.AnchorPoint = Vector2.new(0.5, 1)
-	blade.Position = UDim2.new(0.5, 0, 1, -8)
-	blade.Size = UDim2.fromOffset(16, 8)
-	blade.BackgroundColor3 = Color3.fromRGB(220, 225, 235)
-	blade.BorderSizePixel = 0
-	blade.Active = false
-	blade.Parent = button
-	UITheme.styleCorner(blade, 2)
-	UITheme.applyStroke(blade, 2)
+	ShovelIcon.mount(button)
 
 	button.Activated:Connect(function()
 		self.callbacks.onShovelClicked()
@@ -384,15 +365,15 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	costLabel.BackgroundTransparency = 1
 	costLabel.AnchorPoint = Vector2.new(0.5, 1)
 	costLabel.Position = UDim2.new(0.5, 0, 1, if hasCap then 0 else -5)
-	costLabel.Size = UDim2.new(1, -6, 0, 12)
-	costLabel.TextSize = 12
+	costLabel.Size = UDim2.new(1, -6, 0, 18)
+	costLabel.TextSize = 15
 	costLabel.TextXAlignment = Enum.TextXAlignment.Center
 	costLabel.Text = tostring(definition.cost)
 	costLabel.Parent = button
 	passthrough(costLabel)
 	UITheme.applyOutlinedTitle(costLabel, UITheme.GOLD_TEXT)
 	costLabel.Font = Enum.Font.GothamBold
-	costLabel.TextSize = 12
+	costLabel.TextSize = 15
 
 	local cooldownCover = Instance.new("Frame")
 	cooldownCover.Name = "CooldownCover"
@@ -460,7 +441,7 @@ function Shop.refresh(self: Shop)
 		else
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.DANGER)
 		end
-		card.costLabel.TextSize = 12
+		card.costLabel.TextSize = 15
 		card.costLabel.Text = tostring(plantCost)
 		local countLabel = card.countLabel
 		local cap = card.definition.maxOnPlot

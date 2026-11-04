@@ -2,7 +2,7 @@
 
 Brainrots are the player's defensive units, placed on the grid. They are
 **data-driven**: behavior is resolved from definition data, never from giant
-if/elseif chains (`.cursorrules`).
+if/elseif chains (`AGENTS.md`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -46,13 +46,16 @@ From `Shared.Types.BrainrotDefinition`:
 | `coinGeneration`          | number?                | Coins per cycle for producers                                                            |
 | `abilityParams`           | `{ [string]: number}`? | Per-ability tuning (trap/freeze duration, …)                                             |
 | `triggersOnPlace`         | boolean?               | Fires ability once on placement (line bomb / freeze cast); may plant on NightFog columns |
-| `plantsOnFog`             | boolean?               | May plant on NightFog columns before the row is cleared (Giraffa)                        |
+| `plantsOnFog`             | boolean?               | May plant on NightFog columns before the row is cleared (Girafa)                        |
 | `hidden`                  | boolean?               | Omit from shop, inventory, unlock-all, lawn restore                                      |
 | `plantOnGrave`            | boolean?               | Must be planted on a grave (Patapim); graves sit on fog tiles                            |
 | `ignoreMonsterChew`       | boolean?               | Monsters phase through; no chew damage (Lirili, Patapim)                                 |
 | `plantCooldown`           | number?                | Seconds before re-plant; nil → `BrainrotConfig.plantCooldownFor(cost)`                   |
 | `maxOnPlot`               | number?                | Cap of living plants of this id on one plot (Ballerina = 10). Nil = unlimited            |
 | `charges`                 | number?                | Uses before the plant despawns (Boneca = 5 headbutts). Remaining uses save with the lawn |
+| `immovable` | boolean? | Cannot be stolen/moved (claimed Chimpanzini Epic) |
+| `anchorAllParts` | boolean? | Authored asset anchoring override (Blueberrinni/Girafa) |
+| `abilityAnimationIds` | `{ [string]: string }?` | Extra action clips keyed by ability id |
 | `color`                   | Color3?                | Shop swatch + placeholder / ghost validity tint                                          |
 | `modelId`                 | string?                | Child name under `Assets.Brainrots` (defaults to `id`)                                   |
 | `modelOrientationDegrees` | Vector3?               | Local Euler after facing (+X)                                                            |
@@ -236,8 +239,8 @@ Ability handlers live in `BrainrotService/Abilities/` and are resolved from
 `CoinService`; combat intents route through `CombatService`. Models are built
 by `BrainrotModel`. Public: `getPlacements`, `getPlacement`.
 - `CombatService` (server) ✅ M7 — row targeting, projectiles, status effects,
-target acquisition (first-in-row vs splash vs entire-row). Boss skill polish
-for Duke Vampire / Goblin King continues in M10.
+target acquisition (first-in-row vs splash vs entire-row). Duke Vampire and Goblin King have implemented handlers; Necromancer lane
+change remains a stub and he is not authored into the campaign.
 - `CoinService` — credits producer output via `dropRandomCoinForOwner` (spit from unit onto a random grid tile).
 
 Placed models are tagged `Brainrot` with `InstanceId` / `BrainrotId` /
@@ -340,17 +343,17 @@ independently of monster presence rules.
 
 ## Planned roster (Milestone 25)
 
-Expand beyond the initial seven after launch. Each addition is registry data
+Expand beyond the current 13-unit roster. Each addition is registry data
 plus an ability handler module when needed (see `ROADMAP.md` Post-Launch).
 
-## Planned evolution (Milestone 19)
+## Brainrot evolution ✅ (Milestone 19)
 
 Each roster Brainrot has its own **Brainrot level** (not campaign day). At
 levels 10 / 20 / 30 / 40 / 50 they unlock Epic → God (aura + stat / active /
 passive / ultimate). Tiers stack; core shop id and base ability stay the same.
 
 Full sheet + architecture: `docs/EVOLUTIONS.md`. XP is live (shared per
-registry id; last-hit normal kills except `BubbleTrap` / `MeleeBat`; boss XP
+registry id; last-hit normal kills except landed-hit job abilities; boss XP
 split across plants on the lawn; coin / soak / freeze / bubble-every-2 /
 melee-every-3 jobs). Claiming an evolution after the level gate spends
 brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
@@ -361,5 +364,8 @@ passives tick in combat from evolution ability ids / `abilityParams`. GOD
 ultimates: Tung Tung **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini
 **Primal Retaliation**, Lirili **Glacial Dominion**, Cappuccino **Shadow
 Requiem** ✅; Tralalero **Abyssal Torrent** ✅.
+Blueberrinni, Girafa, Patapim, and Bombardino have no evolution rows yet.
+Boneca Last Laugh, Orangutini Pineapple Express, and La Vacca Black Hole are
+also implemented; see `EVOLUTIONS.md`.
 A separate mutation layer (replace or add an unrelated ability) is post-launch
 (Milestone 25), not part of this ladder.

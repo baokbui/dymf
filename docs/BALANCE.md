@@ -1,7 +1,7 @@
 # BVM Balance (Milestone 14+)
 
 Gameplay tuning lives in **Config modules** and **data registries** — never
-hardcoded in services (`.cursorrules`). This doc explains the design targets;
+hardcoded in services (`AGENTS.md`). This doc explains the design targets;
 numbers are authoritative in code.
 
 Status: ✅ Milestone 14 (retuned after plant cooldowns)
@@ -27,8 +27,8 @@ keeps its authored base HP, then HP grows **+30% per 10 days** since its intro
 day (`MonsterConfig.STAT_SCALE_*`, applied at spawn via `Monsters.scaledForDay`).
 A monster’s **level** is that same campaign day (`Monsters.levelForDay`): Zombie
 starts at Lv. 1, Goblin Elite at Lv. 10, Queen Spider at Lv. 30. Day 11 Zombies
-are Lv. 11. **Bosses (`isBoss`) do not scale.** Damage, speed, and attack interval stay at
-the intro values. Day 40 Zombies (debut Day 1) are **+120% HP** (2.2×). Goblins
+are Lv. 11. **Bosses (`isBoss`) do not scale.** Outside Hidden Day and Goblin King’s damage buff, damage, speed, and attack
+interval stay at the intro values. Day 40 Zombies (debut Day 1) are **+120% HP** (2.2×). Goblins
 (debut Day 5) are one step behind at Day 40 (+90% HP). Intro popups still show
 base stats.
 
@@ -92,9 +92,13 @@ Hit-based **defender** HP: `maxHealth / health` = HP lost per monster chew hit
 | Lirili | 75 | — | One-shot freeze 2 tiles ahead + behind (5s; Mythic 7s); uneatable; plant cooldown 20s |
 | Cappuccino | 100 | 5 | Row sniper (50 / 2.0s = 25 DPS; 5 hits vs Zombie) |
 | Tralalero | 175 | 5 | Bubble (55 / 5.0s) + 0.5s trap |
-| Bombardino | 325 | 1 | Row nuke (1000) — ~4 zombies, ~7% of Elite |
-| Girafa Celestre | 50 | — | One-shot plot fog clear 7s (unlock: reach Day 25) |
+| Bombardino | 325 | 1 | Row nuke (1000) — 4 base Zombies or ~17% of base Elite HP |
+| Girafa Celestre | 50 | — | One-shot plot fog clear 7s (reach Day 25 or buy early for 50 brains) |
 | Brr Brr Patapim | 50 | — | Immune; two hits per swing (1s apart); 6 collapse the grave (unlock: Day 31) |
+| Orangutini | 100 | 7 | Pineapple lob (40 / 2s), skips front target when another is behind |
+| La Vacca | 75 | — | One-shot neighboring-row pull; base 1-tile targets, evolved exceptions |
+| Blueberrinni | 50 | 6 | Ink every 10s; random empty non-grave tile in own row; 50% slow while standing in 7s puddle |
+| Boneca | 125 | — | Immune; 5 headbutts, 150 damage + 1s stun each |
 
 Intent: Cappuccino is reliable lane DPS; Tung Tung rewards the front line;
 Lirili is a panic freeze (Bombardino-style one-shot); Tralalero is bubble
@@ -117,7 +121,7 @@ were raised so early boards need real DPS:
 | `Spider` | Jump grunt (L25+) | 550 | 1.8 | 90 / 1.4s; glass-cannon jumper |
 | `QueenSpider` | Boss (L30; recurs L32/37; Day 40 wave with Duke) | 13000 | 6.3 | 120 / 1.5s; laneSpan 3; stun every bite; poison 3%/4s every 2nd bite; no jump |
 | `Werewolf` | Fast heavy grunt (L35+) | 1400 | 2.0 | 60 / 1.5s; lifesteal 5% max HP / chew; authored walk/attack clips |
-| `GoblinKing` | Boss (Hidden Day finale, after Day 40) | 13000 | 4.0 | 130 / 1.5s; laneSpan 2; +5% max HP / 10s; while alive, +10% attack for himself and Goblins; authored walk/attack clips |
+| `GoblinKing` | Boss (Hidden Day finale, after Day 40) | 13000 | 4.0 | 130 / 1.5s; laneSpan 2; +5% max HP / 10s; on spawn, +10% attack for himself and living Goblins; later Goblins inherit while he lives; existing boosts persist; authored walk/attack clips |
 | `Skeleton` | Ranged grunt (L31+) | 200 | 4.0 | 90 / 1.5s; stops 3 tiles east and shoots arrows; does not chew |
 | `SmallMummy` | Fast grunt (L41+) | 1000 | 2.0 | 100 / 1.5s |
 | `Scorpion` | Burrow grunt (L45+) | 500 | 1.8 | 100 / 1.2s; Venom DoT every 3rd bite (3%/4s); digs on plot entry only if the lane has a Brainrot |
@@ -137,9 +141,14 @@ east of the plant center so models don't overlap.
 
 ## Day pacing (`Shared.Levels` + `LevelConfig`)
 
+Counts describe authored tuning. The scheduler preserves each spawn’s original
+group across transitions. Duplicate-boss guards can still reject an invalid
+spawn attempt; that refusal logs a warning. Hidden Day permits its four Elites.
+
 - First spawn group uses a short delay; **≥16–21s** plant time comes from the
   forest march (`SPAWN_COLUMN_OFFSET` × `secondsPerGrid`).
-- Adjacent levels change **counts/pacing/species** — never hidden HP scaling.
+- Adjacent levels change **counts/pacing/species** alongside documented
+  non-boss HP aging; Hidden Day adds its explicit Goblin/Elite bonus.
 - Big-wave groups use `isBigWave`; warning lead = `BIG_WAVE_WARNING_TIME` (5s).
 - Level 10 Goblin Elite wave: `startDelay` 18s before the boss spawns. Level 20
   Duke Vampire wave uses the same 18s lead-in.
@@ -166,7 +175,7 @@ east of the plant center so models don't overlap.
 
 ## Player movement (`PlayerConfig` + Speed shop)
 
-Unupgraded walk speed is Roblox default **16** so the red-store Speed upgrade
+Unupgraded walk speed is Roblox default **16** so the HUD Speed upgrade
 is worth buying. Twenty levels add **+1 WalkSpeed** each (noticeable over a
 couple of ranks). Max is **36**. Brains costs: **6 / 10 / 14 / 19 / 25 / 32 /
 41 / 52 / 65 / 80 / 98 / 118 / 142 / 170 / 204 / 245 / 294 / 353 / 424 / 509**.
@@ -180,6 +189,14 @@ Cooldown remaining when a day ends is frozen until the next Start Day.
 ---
 
 ## Where to tune
+
+Daily quests grant 6/12/18 brains per UTC day; weekly quests grant 13/26/39
+per Monday-based week. The finite first-time catalog grants 12 base brains,
+two Speed levels, one Magnet level, and one free store Brainrot ticket. Maxed
+upgrade claims substitute 10 brains. There is no recurring weekly login payout.
+Permanent achievements add 28 fixed brains once. Challenge/spinner remain
+planned. Review weekly income and upgrade/ticket value in live cohorts before
+claiming balance or retention success; see `RETENTION.md`.
 
 | What | Where |
 | ---- | ----- |

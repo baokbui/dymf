@@ -137,15 +137,12 @@ function LevelRun.advance(self: LevelRun, now: number): {
 		self.spawnedInGroup += 1
 		self.totalSpawned += 1
 		result.spawn = true
+		-- Capture the authored group before _finishGroup advances groupIndex.
+		-- Every spawn, including a group's final unit, keeps its species/row.
+		result.spawnGroup = group
 		if self.spawnedInGroup < group.count then
 			self.nextActionTime = now + self:spawnInterval()
 		else
-			-- Numbered days keep the existing handoff: the last unit of a group
-			-- is created as the next group's monster. exactSpawns (Hidden Day)
-			-- records this group so that unit stays the one that was authored.
-			if self.definition.exactSpawns then
-				result.spawnGroup = group
-			end
 			self:_finishGroup(now)
 		end
 		return result

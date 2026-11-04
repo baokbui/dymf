@@ -73,8 +73,8 @@ side-by-side columns along X:
 [ west: player plots (4 lanes) ] [ east: enemy spawn lanes (4 lanes) ]
 ```
 
-Every player receives their own **isolated plot** in the west column (one lane
-per row, up to four concurrent players). The matching row in the east column is
+Every player receives their own **isolated plot** in the west column (one plot
+per shared-world lane, up to four concurrent players). The matching east lane is
 that plot's **enemy spawn lane** — monsters stage there and enter the player's
 grid from +X. There are no player grids in the east column.
 
@@ -137,8 +137,9 @@ Coins are earned by:
 
 Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a
 stingy leftover-coin conversion at day end — see `ECONOMY.md`. Spend them at
-the HUD **Upgrades** shop or the Brainrot stall beside your house — see `STORE.md`. Speed upgrades
-persist in `SaveData.upgrades`.
+the HUD **Upgrades** shop, the Brainrot stall beside your house, or on evolution
+claims — see `STORE.md` / `EVOLUTIONS.md`. Speed and Magnet ranks persist in
+`SaveData.upgrades`.
 
 Only the server controls currency. Clients display balances and send intent.
 
@@ -163,13 +164,18 @@ Each Brainrot defines (see `BRAINROTS.md` for the full schema):
 - Optional coin generation, ability params, on-place triggers
 - Visual tint (placement ghost + body)
 
-**Current roster (Milestone 5 ✅):** Ballerina Cappucina, Tung Tung Sahur,
+**Launch roster (Milestone 5 ✅):** Ballerina Cappucina, Tung Tung Sahur,
 Tralalero Tralala, Bombardino Crocodilo, Lirili Larila, Cappuccino Assassino,
 Chimpanzini Bananini.
 
-Attack animations use a server-side pulse tween today; ability SFX play via the
-`BrainrotAction` remote through `AudioController` / `AudioConfig` (Milestone 12 ✅).
-Full character rig animations arrive in later polish milestones.
+The current registry has **13** Brainrots: the launch seven plus Girafa Celestre,
+Brr Brr Patapim, Orangutini Ananassini, La Vacca Saturno Saturnita, Blueberrinni
+Octopusini, and Boneca Ambalabu. See `BRAINROTS.md` for unlocks and roles.
+Nine have authored Epic→GOD tracks; the other four have no evolution rows yet.
+
+Authored idle/attack clips play on the server through `BrainrotAnimation`;
+non-animated units retain a ScaleTo pulse fallback. Ability SFX play locally via
+`BrainrotAction` and `AudioController` / `AudioConfig` (M12/M17 ✅).
 
 ---
 
@@ -243,7 +249,8 @@ Next Day Preparation
 
 Within a day, monsters arrive in an ordered list of **spawn groups** (the
 internal "waves") shown on a progress bar, building to a **big final wave**. A
-day is won by clearing every group and lost if a monster reaches the house.
+day is won by clearing every group and lost when all five house hearts are gone.
+A single breach costs one heart.
 
 Each authored day controls its own difficulty through its data:
 
@@ -253,24 +260,37 @@ Each authored day controls its own difficulty through its data:
 - Whether/where bosses and special enemies appear
 
 Progression is **linear**: clearing a day unlocks the next; cleared days can
-be replayed via Day Select. There is no endless mode (yet).
+be replayed through the server `SelectLevel` intent; a player-facing Day Select
+screen is not shipped. There is no endless mode.
+
+The registry contains **50 numbered days**. Day 50 (Pharaoh Mummy) is the final
+numbered encounter. After Day 40, a separate **Hidden Day** becomes
+pending: Night, no fog or graves, manual Start Day. It has 35 Goblins, 4 Elites,
+and Goblin King. Kill rewards total 100 brains if all die. Win or lose, the
+player proceeds to Day 41; a loss restores the Day 40 lawn. See `LEVELS.md` and
+`IMPLEMENTATION_NOTES.md` for scheduling caveats.
 
 ---
 
 # Combat
 
-Combat is handled entirely by CombatService.
+Combat damage, projectiles, and status application route through CombatService.
+Brainrot healing uses its registered handler. Monster regeneration/lifesteal
+uses MonsterBehavior’s shared pending-heal queue; no public monster-heal API
+exists in CombatService.
 
 Brainrots never directly modify enemy health.
 
 Enemies never directly modify Brainrot health.
 
-Everything routes through CombatService.
+Cross-unit damage and status requests route through CombatService. Runtime
+owners apply registered handlers; monster self-heal uses the shared queue above.
 
 Supported effects:
 
 - Slow
-- Freeze
+- Freeze / Stun
+- Weaken (Brainrot outgoing damage reduction)
 - Poison
 - Venom
 - Burn
@@ -294,6 +314,10 @@ Saved:
 - Equipped loadout
 - Upgrades
 - Statistics
+- Brainrot XP (victory-committed) and claimed evolution tiers
+- Intro flags and optional Hidden Day pending flag
+- Daily/weekly quests, first-time reward counts/dates/offers, tickets and claims
+- Permanent achievement progress and claimed rewards
 - Future progression systems
 
 Not Saved:
@@ -345,7 +369,26 @@ Reset deletes:
 
 Player returns to Day 1.
 
-Reset should require confirmation.
+Reset requires two confirmations in Settings. It also clears brains, XP,
+claimed evolutions, intro flags, pending Hidden Day state, quests, login rewards
+and achievements.
+
+---
+
+# Daily Quests (Milestone 20, Step 2) ✅
+
+Players can open Daily Quests from the bottom-left Menu. Collect 150 coins,
+defeat 15 monsters, and clear one numbered campaign day; finishing all three
+also unlocks a bonus. Rewards total 6, 12, or 18 brains based on the highest
+unlocked day when assigned. Quests reset at UTC midnight. Actual pickup/kill
+progress survives failed days; rewards must be claimed and each pays once.
+The Quests section also has a Weekly Quests tab: 1,500 coins, 150 monsters,
+and seven numbered clears, resetting Monday at 00:00 UTC. First-time Rewards
+ends after seven claims on distinct UTC dates, offering brains, Speed/Magnet
+levels and a free store Brainrot ticket on step seven. No recurring weekly
+login reward follows. The Achievements section adds five permanent milestones and a next-goal hint for campaign
+unlocks or Brainrot evolutions. Milestones grant 28 brains total, once per profile.
+Challenges and spinner remain planned. See `RETENTION.md`.
 
 ---
 
@@ -371,4 +414,5 @@ animations, weather, graves (M10–17)
 **Phase 4 ✅** — Progression Store (M18): Brainrot stall + HUD Upgrades, brains spends,
 Speed upgrades
 
-**Phase 5 🔜** — Brainrot leveling + evolutions (M19 ✅), retention (M20), house boss collection (M21)
+**Phase 5** — Brainrot leveling + evolutions (M19 ✅); retention (M20 🛠 in progress) and
+house boss collection (M21 🔜).

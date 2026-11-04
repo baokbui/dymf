@@ -7,7 +7,7 @@
 	persisted (Day 1 purse / later days = 0). Mid-day placements are session-
 	only until the day is won. Monsters and other combat transients are not saved.
 
-	Milestone 9 / schema v2 (Milestone 13); lawn checkpoint for leave/rejoin.
+	Schema v11: first-time mixed rewards, weekly quests and atomic Brainrot tickets.
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -35,10 +35,19 @@ SaveService.Name = "SaveService"
 local log = Logger.new(SaveService.Name)
 
 local store = DataStoreService:GetDataStore(Constants.SAVE_DATASTORE_NAME)
-local AUTOSAVE_INTERVAL = 60
-local LOAD_RETRIES = 3
-local SAVE_RETRIES = 5
-local PLOT_WAIT_TIMEOUT = 10
+local SaveConfig = require(Shared.Config.SaveConfig)
+local RetentionTime = require(Shared.Utilities.RetentionTime)
+local DailyQuests = require(script.Parent.RetentionService.DailyQuests)
+local LoginRewards = require(script.Parent.RetentionService.LoginRewards)
+local Achievements = require(script.Parent.RetentionService.Achievements)
+local RewardGrant = require(script.Parent.RetentionService.RewardGrant)
+local SessionStore = require(script.SessionStore)
+local storage = SessionStore.new(store, os.time, function()
+	return HttpService:GenerateGUID(false)
+end, task.wait, SaveConfig)
+local AUTOSAVE_INTERVAL = SaveConfig.AUTOSAVE_INTERVAL
+local PLOT_WAIT_TIMEOUT = SaveConfig.PLOT_WAIT_TIMEOUT
+local leaving: { [number]: boolean } = {}
 
 local loadedProfiles: { [number]: Types.SaveData } = {}
 -- Lawn checkpoint: only updates on victory / wipe / load — never mid-day live plants.
@@ -238,6 +247,7 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 	end
 
 	save.hiddenDayPending = payload.hiddenDayPending == true
+	save.retention = DailyQuests.sanitize(payload.retention)
 
 	local brainrots = payload.brainrots
 	if type(brainrots) == "table" then
@@ -321,6 +331,8 @@ local function collectSnapshot(player: Player): Types.SaveData
 			then deepCopyStringList(fallback.introducedMechanics)
 			else {},
 		hiddenDayPending = LevelService.isHiddenDayPending(player),
+		retention = require(script.Parent.RetentionService).getSaveSlice(player)
+			or DailyQuests.sanitize(if fallback then fallback.retention else nil),
 	}
 end
 
@@ -343,50 +355,31 @@ local function encodeForStore(snapshot: Types.SaveData): Types.SaveData?
 	return migrateAndSanitize(decodedOrErr)
 end
 
-local function saveKey(userId: number): string
-	return string.format("Player_%d", userId)
-end
-
-local function loadFromStore(userId: number): Types.SaveData
-	local key = saveKey(userId)
-	local attempts = 0
-	while attempts < LOAD_RETRIES do
-		attempts += 1
-		local ok, raw = pcall(function()
-			return store:GetAsync(key)
-		end)
-		if ok then
-			return migrateAndSanitize(raw)
-		end
-		log:warn(string.format("GetAsync failed (attempt %d/%d)", attempts, LOAD_RETRIES), raw)
-		task.wait(0.75 * attempts)
+local function loadFromStore(userId: number): Types.SaveData?
+	local raw, reason = storage:acquire(userId)
+	if not raw then
+		log:warn("profile load refused", userId, reason)
+		return nil
 	end
-	return defaultSaveData()
+	if type(raw.version) == "number" and raw.version > Constants.SAVE_VERSION then
+		storage:release(userId)
+		log:warn("refusing a newer save schema", userId, raw.version)
+		return nil
+	end
+	return migrateAndSanitize(raw)
 end
 
-local function saveToStore(userId: number, snapshot: Types.SaveData): boolean
+local function saveToStore(userId: number, snapshot: Types.SaveData, valid: (() -> boolean)?): (boolean, string?)
 	local payload = encodeForStore(snapshot)
-	if not payload then
-		return false
-	end
+	if not payload then return false, "SaveUnavailable" end
+	return storage:write(userId, payload, valid)
+end
 
-	local key = saveKey(userId)
-	local attempts = 0
-	while attempts < SAVE_RETRIES do
-		attempts += 1
-		local ok, err = pcall(function()
-			store:UpdateAsync(key, function(_old)
-				return payload
-			end)
-		end)
-		if ok then
-			return true
-		end
-		-- Studio often surfaces transient Roblox-cloud HTTP 500s here; retry with backoff.
-		log:warn(string.format("UpdateAsync failed (attempt %d/%d)", attempts, SAVE_RETRIES), err)
-		task.wait(math.min(4, 0.6 * (2 ^ (attempts - 1))))
+local function stopUnsafeSession(player: Player, reason: string?)
+	log:warn("stopping session to protect saved progress", player.Name, reason)
+	if player.Parent then
+		player:Kick("Your progress could not be safely saved. Please rejoin in a moment.")
 	end
-	return false
 end
 
 local function waitForPlot(player: Player, timeoutSeconds: number): Model?
@@ -424,12 +417,14 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		saveData.hiddenDayPending == true
 	)
 	local forcedDay = LevelService.applyDevDay(player)
-	LevelService.queueJoinIntros(player)
 	CoinService.applyDayPurse(player, forcedDay or saveData.currentLevel)
 	ProgressService.applyDevRoster(player)
 	ProgressService.applyDevEvolutions(player)
 	ProgressService.applyDevBrains(player)
 	CoinService.applyDevPurse(player)
+	require(script.Parent.RetentionService).hydrate(player, saveData.retention)
+	-- Intro persistence can yield: every save slice must be hydrated first.
+	LevelService.queueJoinIntros(player)
 end
 
 local function restoreLawn(player: Player, saveData: Types.SaveData)
@@ -457,6 +452,7 @@ end
 -- queue a resave so victory/leave are never dropped while autosave yields.
 local function savePlayer(player: Player, reason: string)
 	local userId = player.UserId
+	if not storage:isWritable(userId) then return end
 	local snapshot = collectSnapshot(player)
 	latestSnapshots[userId] = snapshot
 	loadedProfiles[userId] = snapshot
@@ -477,7 +473,8 @@ local function savePlayer(player: Player, reason: string)
 				break
 			end
 			if not saveToStore(userId, toWrite) then
-				log:warn("failed save", player.Name, reason)
+				stopUnsafeSession(player, "save failed")
+				break
 			else
 				log:info("saved", player.Name, reason)
 			end
@@ -489,6 +486,82 @@ local function savePlayer(player: Player, reason: string)
 	if not ok then
 		log:warn("save threw", player.Name, reason, err)
 	end
+end
+
+-- Claim flags and reward are written in the same revision-guarded player record.
+function SaveService.isProgressionLocked(player: Player): boolean
+	return saveInFlight[player.UserId] == true or leaving[player.UserId] == true or not storage:isWritable(player.UserId)
+end
+
+function SaveService.claimRetentionReward(player: Player, kind: string, day: number, id: string): (boolean, string?, number?, any?)
+	if kind ~= "Quest" and kind ~= "WeeklyQuest" and kind ~= "Login" and kind ~= "Achievement" and kind ~= "Ticket" then return false, "InvalidRequest", nil end
+	local userId = player.UserId
+	if saveInFlight[userId] then return false, "Busy", nil end
+	if leaving[userId] or not storage:isWritable(userId) then return false, "SaveUnavailable", nil end
+	saveInFlight[userId] = true
+	local snapshot = collectSnapshot(player)
+	snapshot.retention = DailyQuests.sanitize(snapshot.retention)
+	local claim = if kind == "Login" then LoginRewards.claim elseif kind == "Achievement" then Achievements.claim else DailyQuests.claim
+	local reward, reason, grant
+	if kind == "Ticket" then
+		if not require(script.Parent.StoreService).canPlayerUseShop(player, require(Shared.Config.StoreConfig).SHOP_BRAINROTS) then
+			saveInFlight[userId] = nil
+			return false, "InvalidRequest", nil
+		end
+		reward, reason, grant = RewardGrant.redeem(snapshot, id)
+	else reward, reason, grant = claim(snapshot.retention, day, id, os.time(), kind == "WeeklyQuest") end
+	if not reward then
+		saveInFlight[userId] = nil
+		return false, reason, nil
+	end
+	reward += RewardGrant.prepare(snapshot, grant)
+	RewardGrant.apply(snapshot, grant)
+	snapshot.brains += reward
+	local stat = ProgressConfig.STAT_BRAINS_EARNED
+	snapshot.statistics[stat] = (snapshot.statistics[stat] or 0) + reward
+	local ok, failure = saveToStore(userId, snapshot, function()
+		return kind == "Achievement" or kind == "Ticket" or (if kind == "WeeklyQuest" then RetentionTime.weekKey(os.time()) else RetentionTime.dayKey(os.time())) == day
+	end)
+	if ok then
+		-- Merge with live actions/leave snapshot captured while UpdateAsync yielded.
+		if player.Parent and not leaving[userId] then
+			ProgressService.addBrains(player, reward)
+			if grant then ProgressService.applyDurableReward(player, grant) end
+		end
+		require(script.Parent.RetentionService).markCommitted(player, day, id, kind, snapshot.retention)
+		local queued = latestSnapshots[userId]
+		if needsResave[userId] and queued then
+			queued.brains += reward
+			queued.statistics[stat] = (queued.statistics[stat] or 0) + reward
+			queued.retention = DailyQuests.sanitize(queued.retention)
+			if grant and grant.kind ~= "Ticket" then RewardGrant.apply(queued, grant) end
+			queued.retention.brainrotTickets = snapshot.retention.brainrotTickets
+			if kind == "Login" then LoginRewards.markCommitted(queued.retention, snapshot.retention)
+			elseif kind == "Achievement" then Achievements.markCommitted(queued.retention, id)
+			elseif kind ~= "Ticket" then DailyQuests.markCommitted(queued.retention, day, id, kind == "WeeklyQuest") end
+		else
+			latestSnapshots[userId] = snapshot
+		end
+		loadedProfiles[userId] = latestSnapshots[userId]
+	elseif failure ~= "Expired" then
+		stopUnsafeSession(player, failure)
+	end
+	-- Flush queued snapshots before releasing the per-player writer.
+	while needsResave[userId] and storage:isWritable(userId) do
+		needsResave[userId] = false
+		local queued = latestSnapshots[userId]
+		if queued then
+			local saved, err = saveToStore(userId, queued)
+			if not saved then stopUnsafeSession(player, err); break end
+		end
+	end
+	saveInFlight[userId] = nil
+	return ok, failure, if ok then reward else nil, if ok then grant else nil
+end
+
+-- Preserve the existing quest API; both reward kinds share one durable writer.
+function SaveService.claimDailyQuest(player: Player, day: number, id: string): (boolean, string?, number?)
+	return SaveService.claimRetentionReward(player, "Quest", day, id)
 end
 
 -- Snapshot the live plot into the committed lawn (call on victory before saveNow).
@@ -524,19 +597,22 @@ function SaveService.saveNow(player: Player, reason: string?)
 end
 
 function SaveService.resetProgress(player: Player)
+	if not storage:isWritable(player.UserId) or leaving[player.UserId] then return end
+	while saveInFlight[player.UserId] do task.wait() end
+	if leaving[player.UserId] or not storage:isWritable(player.UserId) then return end
 	-- Full wipe: Day 1, empty lawn checkpoint, starter coins (125), default
 	-- unlocks/loadout/stats. Requires two client confirmations before this fires.
 	local defaults = defaultSaveData()
 	loadedProfiles[player.UserId] = defaults
 	latestSnapshots[player.UserId] = defaults
 	committedBrainrots[player.UserId] = {}
-	saveToStore(player.UserId, defaults)
 
 	ProgressService.reset(player)
 	ProgressService.applyDevRoster(player)
 	ProgressService.applyDevEvolutions(player)
 	ProgressService.applyDevBrains(player)
 	LevelService.applySaveProgress(player, 1, 1, LevelConfig.STARTING_PLAYER_HEALTH)
+	require(script.Parent.RetentionService).hydrate(player, nil)
 	CoinService.resetBalance(player)
 
 	local plotModel = PlotService.getPlotModel(player)
@@ -549,11 +625,14 @@ function SaveService.resetProgress(player: Player)
 	end
 	BrainrotService.clearPlantCooldowns(player)
 
+	savePlayer(player, "reset")
 	log:info("progress reset", player.Name)
 end
 
 local function onPlayerAdded(player: Player)
 	local saveData = loadFromStore(player.UserId)
+	if not saveData then stopUnsafeSession(player, "profile unavailable or open elsewhere"); return end
+	if not player.Parent then storage:release(player.UserId); return end
 	loadedProfiles[player.UserId] = saveData
 	committedBrainrots[player.UserId] = deepCopyPlanted(saveData.brainrots)
 	latestSnapshots[player.UserId] = saveData
@@ -569,13 +648,18 @@ local function onPlayerAdded(player: Player)
 end
 
 local function onPlayerRemoving(player: Player)
-	-- Always capture a leave snapshot (committed lawn + current day). If another
-	-- save is yielding, this queues a resave instead of being dropped.
+	local userId = player.UserId
+	leaving[userId] = true
+	-- Capture synchronously before other services remove live profiles.
 	savePlayer(player, "leave")
-	loadedProfiles[player.UserId] = nil
-	committedBrainrots[player.UserId] = nil
-	-- Do not clear saveInFlight / latestSnapshots here — an in-flight write may
-	-- still need them to flush the leave snapshot after UpdateAsync resumes.
+	while saveInFlight[userId] do task.wait() end
+	storage:release(userId)
+	loadedProfiles[userId] = nil
+	committedBrainrots[userId] = nil
+	latestSnapshots[userId] = nil
+	needsResave[userId] = nil
+	leaving[userId] = nil
+	require(script.Parent.RetentionService).cleanup(player)
 end
 
 function SaveService.init()
@@ -594,7 +678,7 @@ function SaveService.init()
 		end
 		-- A save already in flight only queues a resave and returns. Stay
 		-- alive until that resave writes, or Studio stop drops the new loadout.
-		local deadline = os.clock() + 20
+		local deadline = os.clock() + SaveConfig.SHUTDOWN_WAIT
 		while os.clock() < deadline do
 			local busy = false
 			for _, player in players do
@@ -604,6 +688,7 @@ function SaveService.init()
 				end
 			end
 			if not busy then
+				for _, player in players do storage:release(player.UserId) end
 				break
 			end
 			task.wait(0.1)

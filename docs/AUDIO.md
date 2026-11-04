@@ -47,7 +47,7 @@ UI clicks and weather/boss BGM are local to each client (not plot-scoped).
 | Key / track | Trigger |
 | ----------- | ------- |
 | `Default` music | Days 1–20 (no weather) — Relaxed Scene, chill daytime |
-| `Night` music | Days 21–40 (`Night` / `NightFog` / `NightFogReceded`) — chill, slightly spooky |
+| `Night` music | Days 21–40 and Hidden Day (`Night` / `NightFog` / `NightFogReceded`) — chill, slightly spooky |
 | `Desert` music | Days 41–50 (`Desert`) — chill sand / oasis |
 | `Boss` music | Big-wave warning (`LevelStateChanged.bigWaveWarning`) — overrides theme; restores weather track after victory / defeat / prep |
 | `Plot` ambient | Disabled (empty id) — no extra loop besides weather / boss |
@@ -145,6 +145,10 @@ the client watcher is non-blocking so death/hit SFX stay in sync.
 ---
 
 ## Rules
+
+Daily/weekly quest, first-time reward, ticket purchase and achievement claims reuse `PurchaseKaching` after a durable success and
+`PurchaseError` for a rejected claim. Opening the panel uses `UiClick`.
+QuestController routes these through AudioController and existing settings.
 
 - Playback is client-only; never trust the client for rewards or combat.
 - Prefer `AudioController.play` over ad-hoc `Instance.new("Sound")`.

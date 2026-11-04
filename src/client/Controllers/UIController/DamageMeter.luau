@@ -21,10 +21,10 @@ local AudioController = require(script.Parent.Parent.AudioController)
 local DamageMeter = {}
 DamageMeter.__index = DamageMeter
 
-local WIDTH = 220
-local TITLE_H = 18
-local TAB_H = 26
-local ROW_H = 36
+local WIDTH = 270
+local TITLE_H = 22
+local TAB_H = 30
+local ROW_H = 44
 local PAD = 8
 local HEADER_TOP = 4
 local TITLE_TAB_GAP = 2
@@ -108,29 +108,29 @@ local function makeRow(parent: Instance, index: number): Row
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Position = UDim2.fromOffset(0, 0)
-	nameLabel.Size = UDim2.new(1, -56, 0, 18)
+	nameLabel.Size = UDim2.new(1, -64, 0, 22)
 	nameLabel.Text = ""
-	nameLabel.TextSize = 13
+	nameLabel.TextSize = 15
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.ZIndex = 15
 	nameLabel.Parent = frame
 	UITheme.applyOutlinedTitle(nameLabel)
-	nameLabel.TextSize = 13
+	nameLabel.TextSize = 15
 
 	local damageLabel = Instance.new("TextLabel")
 	damageLabel.Name = "Damage"
 	damageLabel.BackgroundTransparency = 1
 	damageLabel.AnchorPoint = Vector2.new(1, 0)
 	damageLabel.Position = UDim2.new(1, 0, 0, 0)
-	damageLabel.Size = UDim2.fromOffset(52, 18)
+	damageLabel.Size = UDim2.fromOffset(60, 22)
 	damageLabel.Text = "0"
-	damageLabel.TextSize = 13
+	damageLabel.TextSize = 15
 	damageLabel.TextXAlignment = Enum.TextXAlignment.Right
 	damageLabel.ZIndex = 15
 	damageLabel.Parent = frame
 	UITheme.applyOutlinedTitle(damageLabel, UITheme.GOLD_TEXT)
-	damageLabel.TextSize = 13
+	damageLabel.TextSize = 15
 
 	local barTrack = Instance.new("Frame")
 	barTrack.Name = "BarTrack"
@@ -249,12 +249,12 @@ function DamageMeter.new(parent: Frame): DamageMeterHud
 	emptyLabel.Position = UDim2.fromOffset(PAD, headerHeight())
 	emptyLabel.Size = UDim2.new(1, -PAD * 2, 0, 28)
 	emptyLabel.Text = "No damage yet"
-	emptyLabel.TextSize = 14
+	emptyLabel.TextSize = 16
 	emptyLabel.ZIndex = 14
 	emptyLabel.Visible = false
 	emptyLabel.Parent = parent
 	UITheme.applyOutlinedTitle(emptyLabel, UITheme.TITLE)
-	emptyLabel.TextSize = 14
+	emptyLabel.TextSize = 16
 
 	local rows: { Row } = {}
 	for i = 1, top do

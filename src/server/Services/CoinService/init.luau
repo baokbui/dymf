@@ -284,6 +284,9 @@ local function creditCoin(player: Player, coinId: string)
 	local value = entry.value
 	removeCoin(coinId)
 	CoinService.addCoins(player, value)
+	local level = require(script.Parent.LevelService)
+	require(script.Parent.RetentionService).recordEvent(player, "CoinsCollected", value,
+		if level.isHiddenDayActiveForUser(player.UserId) then "Hidden" else "Campaign")
 end
 
 local function onCollectCoin(player: Player, coinId: unknown)

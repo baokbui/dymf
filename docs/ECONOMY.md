@@ -4,7 +4,7 @@ The single **match** currency is **Coins**. **Brains** are a separate soft
 currency for progression unlocks (Milestone 13 grants; Milestone 18 store;
 Milestone 19 Brainrot leveling / evolution tiers; Milestone 21 house boss income).
 Only the server controls currency — clients send collection intent and display
-balances, never set them (`.cursorrules`).
+balances, never set them (`AGENTS.md`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -16,7 +16,7 @@ From `GAME_DESIGN.md`:
 
 - Passive drops (every ~25 seconds) ✅
 - Coin-producing Brainrots (e.g. **Ballerina Cappucina** — see `BRAINROTS.md`) ✅
-- Completing a level ✅ Milestone 8 — after Day 1, purse resets to **0**;
+- Day purse ✅ Milestone 8 — after advancing past Day 1, purse resets to **0**;
   Day 1 gets `STARTING_COINS` (125). Leftover **pocket** coins convert to
   brains first (`COINS_PER_LEFTOVER_BRAIN`), then the
   purse applies. Defeat uses the same conversion + day-purse rules for the
@@ -62,7 +62,8 @@ See **`docs/BALANCE.md`** for the full Milestone 14 economy rationale.
 
 ## Responsibilities (Milestone 3) ✅
 
-`CoinService` (server) is the **sole authority** over currency:
+`CoinService` (server) is the **sole authority over coins**; `ProgressService`
+owns brains. CoinService:
 
 - Holds each player's authoritative coin balance (`applyDayPurse` on join /
   day end: Day 1 → `STARTING_COINS`, later days → 0; `applyRewindPurse` after
@@ -121,6 +122,18 @@ call `dropRandomCoinForOwner` with the unit’s world position so coins spit out
 onto a random tile.
 
 ---
+
+## Retention reward budget (Milestone 20 foundation)
+
+Milestone 20 tuning lives in `RetentionConfig`. Daily quests pay 6/12/18 brains
+per UTC day; weekly quests pay 13/26/39 per Monday-based week. First-time rewards
+are finite: 2/4/6 base brains on steps 1/3/5, Speed levels on 2/6, a Magnet level
+on 4, and a free Brainrot-store ticket on 7. Brain grants use the assigned
+progression band; a maxed upgrade substitutes 10 brains. No recurring weekly
+login payout remains. Permanent achievements add 28 fixed brains once.
+Tickets unlock one eligible unowned store unit without spending brains; grant,
+spend and unlock are guarded SaveService transactions. Retention does not grant
+match coins, cap balances or change coin conversion. See `RETENTION.md`.
 
 ## Persistence (see `SAVE_SYSTEM.md`)
 

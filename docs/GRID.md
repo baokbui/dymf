@@ -138,6 +138,13 @@ server, and highlighting is a local visual.
 - Cannot plant outside the grid.
 - Cannot plant without enough coins.
 - Cannot plant on NightFog / NightFogReceded fog columns (easternmost 3 or 2),
-  except one-shot `triggersOnPlace` Brainrots (Lirili / Bombardino) — see
-  `WEATHER.md`. Desert days have a full plantable lawn.
+  unless the row is temporarily cleared, or the selected definition permits fog
+  placement (`triggersOnPlace`, `plantsOnFog`, or `plantOnGrave`). Grave busters
+  still require a grave. See `WEATHER.md`. Desert and Hidden Day have no blocked
+  fog columns.
 - The server validates every placement (via `GridService` + cost checks).
+
+Shovel input can resolve a directly clicked planted model via its replicated
+Row/Column and PlotUtil local ownership check, falling back to the occupied
+grid tile. Raw screen coordinates still feed the camera ray; GUI inset
+subtraction applies only to the cosmetic cursor position, not world targeting.

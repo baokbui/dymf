@@ -2,7 +2,7 @@
 
 Monsters are the enemies that cross the battlefield. All monsters derive from
 one base implementation; special types and bosses are **data entries** plus
-optional ability handlers — avoid duplicated AI (`.cursorrules`).
+optional ability handlers — avoid duplicated AI (`AGENTS.md`).
 
 Status legend: ✅ implemented · 🔜 planned (with milestone)
 
@@ -54,7 +54,11 @@ From `Shared.Types.MonsterDefinition`:
 | `holdAttackPose`          | boolean?                | Pin the attack clip instead of replaying a full swing each chew. Arm drops on walk / stun. |
 | `attackVfx`               | string?                 | Client flourish while that pose is held. `LifeVortex` = red and white lines into the right fist. |
 | `laneSpan`                | number?                 | Rows this unit occupies for targeting (default 1; Goblin King / Pharaoh Mummy = 2, Goblin Elite / Queen Spider = 3) |
-| `deathStyle`              | string?                 | Death pose (`TipOver` default)                                         |
+| `deathStyle`              | string?                 | Reserved parameter; MonsterDeath currently ignores it and uses tip-over for all, including Queen |
+| `modelScale` | number? | Authored model size multiplier (Werewolf 1.45) |
+| `proceduralWalk` | boolean? | Procedural gait fallback for crawlers |
+| `rangedTiles` | number? | Stop this many tiles from a plant to shoot (Skeleton 3) |
+| `auraColor` / `auraScale` | Color3? / number? | Persistent model aura tint and size |
 | `spawnStyle`              | string?                 | Entrance (`RiseFromGround` = buried then tween up; mummies)            |
 | `spawnRiseDuration`       | number?                 | Rise duration; nil = `MonsterConfig.SPAWN_RISE_DURATION`               |
 | `spawnVfx`                | string?                 | Entrance visual. `Sandstorm` (Pharaoh) is the steal sand tornado stood upright and sized over his whole body. High hides him inside it, Low leaves him partly visible, Off spawns none. Fades on his first step |
@@ -159,8 +163,8 @@ After Rojo connects, place Models under `ReplicatedStorage.Assets.Monsters`
 
 Spider / Queen Spider / Scorpion Toolbox meshes often face the wrong way
 relative to `MODEL_FACE_DIRECTION` (−X); they set `modelOrientationDegrees`.
-Boss spawns refuse a second living copy of the same `monsterId` on a plot
-(guards Studio soft-reload double-bootstrap).
+Boss spawns normally refuse a second living copy of the same `monsterId` on a
+plot. Hidden Day explicitly permits duplicate Goblin Elites.
 
 Also insert any other types you spawn in `Shared.Levels`. Set `PrimaryPart`
 (prefer `HumanoidRootPart`). You do **not** need to hand-delete Scripts —
@@ -189,12 +193,12 @@ M16 **Complete When** ✅ — campaign monsters in authored levels use real mode
 | Goblin Elite  | 6000   | 6.2      | 8000   | 3.5s         | Y    | One-shot club, cleaves all occupied lanes; **laneSpan 3**                                                                              |
 | Spider        | 550    | 1.8      | 90     | 1.4s         |      | Jump over first Brainrot (visible arc) ✅                                                                                                |
 | Necromancer   | 9000   | 5.5      | 0      | 5s           | Y    | Summon zombie/skeleton; lane change (passive stub)                                                                                      |
-| Goblin King   | 13000  | 4.0      | 130    | 1.5s         | Y    | **laneSpan 2**; +5% max HP / 10s; while he is alive, he and Goblins gain +10% chew damage; chew hits both lanes |
+| Goblin King   | 13000  | 4.0      | 130    | 1.5s         | Y    | **laneSpan 2**; +5% max HP / 10s; he and living Goblins gain +10% chew damage on spawn; later Goblins inherit while he lives; chew hits both lanes |
 | Queen Spider  | 13000  | 6.3      | 120    | 1.5s         | Y    | **laneSpan 3**; stun every bite; poison DoT every 2nd bite; no jump ✅                                                                   |
 | Duke Vampire  | 8000   | 4.8      | 100    | 1.1s         | Y    | Regular chew (Vampire-paced, a bit stronger); Terrify (row ±1 Weaken+Stun, no dmg, 10s CD); once-only last-stand invuln+heal at ≤20% HP |
 | Small Mummy   | 1000   | 2.0      | 100    | 1.5s         |      | Fast linen grunt (Day 41+); `spawnStyle = RiseFromGround`                                                                               |
 | Scorpion      | 500    | 1.8      | 100    | 1.2s         |      | RiseFromGround; burrow (`ScorpionBurrow`); Venom DoT every 3rd bite ✅                                                                   |
-| Pharaoh Mummy | 15000  | 5.0      | 200    | 2.5s         | Y    | **laneSpan 2**; rises inside the steal sand tornado, which clears on his first step; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
+| Pharaoh Mummy | 15000  | 5.0      | 200    | 1.0s         | Y    | **laneSpan 2**; rises inside the steal sand tornado, which clears on his first step; summon Small Mummy in all 5 lanes (20s); steal 1 Brainrot from 3 random lanes (15s). Skips immovable plants ✅ |
 
 
 Milestone 14 tuning rationale: `docs/BALANCE.md`.
@@ -207,8 +211,8 @@ Milestone 14 tuning rationale: `docs/BALANCE.md`.
 
 - `EnemyService` (server) ✅ M6 — spawning, grid movement, per-instance state,
 death. One `MonsterBehavior` tick pipeline; abilities in `EnemyService/Abilities/`.
-On death, `MonsterDeath` plays the unit's `deathStyle` (default: tip-over, 3
-random styles), lingers 2s, fades, then destroys. Driven by
+On death, `MonsterDeath` uses tip-over (3 random directions), lingers 2s,
+fades, then destroys. Its `deathStyle` argument is currently ignored. Driven by
 `LevelService` in M8. Public: `spawn`, `spawnAt`, `clearPlot`.
 `MonsterConfig.DEV_SPAWN` is disabled while `LevelService` drives campaign
 spawns (set `ENABLED = true` in config for isolated monster testing).
@@ -293,12 +297,14 @@ monsters phase through and never deal chew damage.
 - Reaching column `≤ 0.5` breaches the house (defeat handled in M8).
 - Brainrots damage monsters through `CombatService.damageMonster` (M5 abilities work today).
 - On death, `MonsterDeath` bakes the live Motor6D pose into welds (overlay
-  meshes stay glued; no arm-teleport), then plays `deathStyle` (default tip
-  forward / side / back), then lingers and fades.
+  meshes stay glued; no arm-teleport), then tips forward / sideways / back, lingers, and fades. `deathStyle` is
+  currently an unused parameter.
 
-**Goblin King** `GoblinKingAttackBuff`: while he is alive, he and every **Goblin**
-on the plot gain +10% chew damage (`attackBuffPercent`), including Goblins that
-spawn after he does. Goblin Elite is not included.
+**Goblin King** `GoblinKingAttackBuff`: on spawn, he and every living **Goblin**
+on his plot gain +10% chew damage (`attackBuffPercent`). Goblins spawning while
+he is alive inherit it. Existing recipients keep the boost after his death;
+new arrivals after his death do not inherit it. Repeated grants take the
+stronger multiplier rather than stacking. Goblin Elites are excluded.
 **Werewolf** `WerewolfLifesteal` heals
 `lifestealPercent` (5) of max HP on every chew via `pendingHeal`. Any heal
 that raises HP (bite, Goblin King regen, Duke last stand) shows green "+"
@@ -308,7 +314,7 @@ two skills are fully implemented:
 - `DukeVampireFreeze` (last stand) — a small `onTick` state machine that
 does nothing until his HP first drops to/below `lastStandTriggerPercent`
 (20%). It then triggers exactly **once** (`state.lastStandUsed` guard) and
-runs two phases, both covered by a single `setInvulnerable` call
+runs three phases, all covered by a single `setInvulnerable` call
 (`MonsterRuntime.invulnerableUntil`, checked in
 `EnemyService.damageMonster` — every monster damage path, including DoT,
 routes through it) sized to the full sequence so Brainrots can't finish him
@@ -441,7 +447,8 @@ walk/attack clips; **lifesteal** 5% max HP per chew; template under
 - **Levels 36–39:** Werewolf pack pressure with Queen / Duke / Elite mid spikes.
 - **Level 40:** decade closer under receded fog. `QueenSpider` flags the big
   wave and `DukeVampire` spawns with her.
-- **Hidden Day:** after Day 40 is cleared. Night, no fog, no graves. 35 Goblins,
+- **Hidden Day:** pending after Day 40 is cleared; Continue → Preparation →
+  manual Start Day. Night, no fog, no graves. 35 Goblins,
   4 Goblin Elites, then **Goblin King** (`laneSpan` 2) as the finale. Goblins and
   Goblin Elites gain +20% max HP, attack speed, and movement speed on this day
   only. Kill brains pay out on the reward screen (1 / 10 / 25). Win or lose,

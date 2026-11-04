@@ -25,7 +25,20 @@ spectate; you cannot plant or collect on theirs.
 
 The campaign runs through fifty authored days, ramping from zombies and goblins
 into vampires, spiders, werewolves, and desert mummies, with weather (night fog,
-desert) on later stretches.
+desert) on later stretches. A manually started **Hidden Day** after Day 40
+rewards goblin kills with brains, even on a loss.
+
+Brainrots share XP by species and claim Epic→GOD evolutions with brains
+at levels 10/20/30/40/50. Nine units currently have authored evolution tracks.
+Daily quests reward collecting coins, defeating monsters, and clearing a day,
+with a bonus for completing all three. They reset at UTC midnight.
+Weekly quests share the Quests menu with daily quests and reset Mondays at
+00:00 UTC. A separate First-time Rewards button offers seven one-time claims: brains, Speed/Magnet
+levels, and a free Brainrot-store ticket on Day 7. Claim once per real-world UTC
+date; missed dates preserve progress. Its button disappears after all seven
+rewards are collected. There is no repeating weekly login reward.
+Permanent achievements reward boss defeats, evolutions, perfect defenses and
+collecting Brainrots. A next-goal hint points toward campaign unlocks or evolutions.
 
 ## Tech stack
 
@@ -34,7 +47,7 @@ desert) on later stretches.
 | [Roblox Studio](https://create.roblox.com) | Place, playtests, Toolbox assets |
 | [Luau](https://luau.org) (`--!strict`) | All game code |
 | [Rojo](https://github.com/rojo-rbx/rojo) 7.7.0 | Filesystem ↔ Studio sync (`aftman.toml`) |
-| [Cursor](https://cursor.com) | Editor + agent workflow |
+| Codex | Agent workflow, local project edits, and connected Studio inspection |
 
 Gameplay values live in `Shared.Config` and data registries (`Brainrots`,
 `Monsters`, `Levels`) — not hardcoded in services. The **server** owns combat,
@@ -60,8 +73,11 @@ Studio sync via `$ignoreUnknownInstances`.
 | --- | -------- |
 | [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) | What the game is |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Codebase structure and conventions |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones (through M18 store; M19–21 planned) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones (M0–19 delivered; M20 in progress; M21–25 planned) |
 | [`docs/LEVELS.md`](docs/LEVELS.md) | Campaign days, victory / defeat / rewind |
 | [`docs/BRAINROTS.md`](docs/BRAINROTS.md) / [`docs/MONSTERS.md`](docs/MONSTERS.md) | Unit registries |
 | [`docs/STORE.md`](docs/STORE.md) | Per-plot shops and brains spends |
 | [`docs/EVOLUTIONS.md`](docs/EVOLUTIONS.md) | Brainrot leveling + Epic→God tiers (M19) |
+| [`AGENTS.md`](AGENTS.md) | Canonical project engineering rules |
+| [`docs/IMPLEMENTATION_NOTES.md`](docs/IMPLEMENTATION_NOTES.md) | Current caveats and audit scope |
+| [`docs/RETENTION.md`](docs/RETENTION.md) | M20 daily quests, budgets, and durable claim rules |

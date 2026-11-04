@@ -159,9 +159,6 @@ export type LevelDefinition = {
 	weather: string?,
 	-- Fog-tile graves for this day (NightFog / NightFogReceded). Nil = none.
 	graves: boolean?,
-	-- When set, each spawn uses the group that produced it. Numbered days leave
-	-- this unset so the existing group handoff stays as authored.
-	exactSpawns: boolean?,
 }
 
 -- Runtime tile state tracked by the grid (server-authoritative).
@@ -189,8 +186,11 @@ export type CollectedBoss = {
 }
 
 -- Versioned player save data. Only player-owned progression is persisted.
+local RetentionTypes = require(script.Retention)
+
 export type SaveData = {
 	version: number,
+	retention: RetentionTypes.RetentionSave?,
 	currentLevel: number, -- campaign level the player is on / resumes
 	highestLevel: number, -- furthest level unlocked (drives Level Select)
 	coins: number,

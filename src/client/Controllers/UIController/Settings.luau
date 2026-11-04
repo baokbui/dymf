@@ -1,14 +1,13 @@
 --!strict
 --[[
 	Settings
-	Mute / volume / Brainrot SFX / high-quality VFX toggles, statistics,
+	Mute / volume / Brainrot SFX / high-quality VFX toggles,
 	reset progress. Cartoon thick-outline look via UITheme.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local ProgressConfig = require(Shared.Config.ProgressConfig)
 local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
 local VfxLoad = require(Shared.Utilities.VfxLoad)
@@ -21,7 +20,6 @@ Settings.__index = Settings
 export type SettingsPanel = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
-		statsLabel: TextLabel,
 		resetStep: number,
 		resetButton: TextButton,
 	},
@@ -45,7 +43,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.Visible = false
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
-	parent.Size = UDim2.fromOffset(440, 540)
+	parent.Size = UDim2.fromOffset(440, 560)
 	parent.ZIndex = 25
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_SETTINGS)
 
@@ -94,7 +92,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	bodyPad.PaddingTop = UDim.new(0, 6)
 	bodyPad.PaddingLeft = UDim.new(0, 6)
 	bodyPad.PaddingRight = UDim.new(0, 6)
-	bodyPad.PaddingBottom = UDim.new(0, 16)
+	bodyPad.PaddingBottom = UDim.new(0, 8)
 	bodyPad.Parent = body
 
 	local function section(label: string, order: number): Frame
@@ -198,7 +196,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	qualityButton.TextSize = 13
 	local qualityHint = Instance.new("TextLabel")
 	qualityHint.BackgroundTransparency = 1
-	qualityHint.Size = UDim2.new(1, 0, 0, 72)
+	qualityHint.Size = UDim2.new(1, 0, 0, 60)
 	qualityHint.LayoutOrder = 2
 	qualityHint.TextSize = 13
 	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
@@ -214,7 +212,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	otherPlotsButton.TextSize = 13
 	local otherPlotsHint = Instance.new("TextLabel")
 	otherPlotsHint.BackgroundTransparency = 1
-	otherPlotsHint.Size = UDim2.new(1, 0, 0, 56)
+	otherPlotsHint.Size = UDim2.new(1, 0, 0, 44)
 	otherPlotsHint.LayoutOrder = 4
 	otherPlotsHint.TextSize = 13
 	otherPlotsHint.TextXAlignment = Enum.TextXAlignment.Left
@@ -243,20 +241,6 @@ function Settings.new(parent: Frame): SettingsPanel
 	end)
 	applyGraphics()
 
-	local statsSection = section("Statistics", 3)
-	local statsLabel = Instance.new("TextLabel")
-	statsLabel.BackgroundTransparency = 1
-	statsLabel.Size = UDim2.new(1, 0, 0, 130)
-	statsLabel.LayoutOrder = 1
-	statsLabel.TextSize = 16
-	statsLabel.TextXAlignment = Enum.TextXAlignment.Left
-	statsLabel.TextYAlignment = Enum.TextYAlignment.Top
-	statsLabel.Text = "Loading…"
-	statsLabel.TextWrapped = true
-	statsLabel.Parent = statsSection
-	UITheme.applyOutlinedTitle(statsLabel, UITheme.TITLE)
-	statsLabel.TextSize = 16
-
 	local dangerSection = section("Danger Zone", 4)
 	local dangerHint = Instance.new("TextLabel")
 	dangerHint.BackgroundTransparency = 1
@@ -276,7 +260,6 @@ function Settings.new(parent: Frame): SettingsPanel
 
 	local self = setmetatable({
 		frame = parent,
-		statsLabel = statsLabel,
 		resetStep = 0,
 		resetButton = resetButton,
 	}, Settings) :: SettingsPanel
@@ -308,21 +291,6 @@ function Settings.new(parent: Frame): SettingsPanel
 
 	applyAudio()
 	return self
-end
-
-function Settings.applyStatistics(self: SettingsPanel, statistics: { [string]: number }?)
-	local stats = statistics or {}
-	local function get(key: string): number
-		return stats[key] or 0
-	end
-	local minutes = math.floor(get(ProgressConfig.STAT_TIME_PLAYED) / 60)
-	self.statsLabel.Text = table.concat({
-		string.format("Days cleared: %d", get(ProgressConfig.STAT_LEVELS_CLEARED)),
-		string.format("Brainrots placed: %d", get(ProgressConfig.STAT_BRAINROTS_PLACED)),
-		string.format("Monsters defeated: %d", get(ProgressConfig.STAT_MONSTERS_DEFEATED)),
-		string.format("Brains earned: %d", get(ProgressConfig.STAT_BRAINS_EARNED)),
-		string.format("Time played: %d min", minutes),
-	}, "\n")
 end
 
 function Settings.setOpen(self: SettingsPanel, open: boolean)

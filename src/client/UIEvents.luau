@@ -7,10 +7,30 @@
 
 local UIEvents = {}
 
+local inspectOwnedBindable = Instance.new("BindableEvent")
+UIEvents.inspectOwnedBrainrot = inspectOwnedBindable.Event
+
+function UIEvents.fireInspectOwnedBrainrot(id: string)
+	inspectOwnedBindable:Fire(id)
+end
+
 local coinDeltaBindable = Instance.new("BindableEvent")
 local pendingSpendBindable = Instance.new("BindableEvent")
 local plantFailedBindable = Instance.new("BindableEvent")
 local fieldInspectBindable = Instance.new("BindableEvent")
+local retentionBindable = Instance.new("BindableEvent")
+local retentionState: any = nil
+
+UIEvents.retentionUpdated = retentionBindable.Event
+
+function UIEvents.fireRetentionState(state: any)
+	retentionState = state
+	retentionBindable:Fire(state)
+end
+
+function UIEvents.getRetentionState(): any
+	return retentionState
+end
 
 -- Fired with a positive coin amount collected from the ground.
 UIEvents.coinDelta = coinDeltaBindable.Event

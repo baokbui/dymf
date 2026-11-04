@@ -670,28 +670,15 @@ local definitions: { [string]: Types.LevelDefinition } = {
 		},
 	},
 
-	-- Playtest stress day: Small Mummy + Scorpion only, 80 spawns.
-	Level51 = {
-		id = "Level51",
-		number = 51,
-		name = "Sand Horde",
-		weather = "Desert",
-		groups = {
-			{ monsterId = "SmallMummy", count = 30, startDelay = 1.5, spawnInterval = 0.25 },
-			{ monsterId = "Scorpion", count = 20, startDelay = 1, spawnInterval = 0.25 },
-			{ monsterId = "SmallMummy", count = 30, startDelay = 1, spawnInterval = 0.25, isBigWave = true },
-		},
-	},
 }
 
 -- Not a numbered day. Runs once after Day 40 is cleared, then the player
--- continues into Day 41. exactSpawns so the counts below are what actually appear.
+-- continues into Day 41. Uses the same exact group scheduling as numbered days.
 local hiddenDay: Types.LevelDefinition = {
 	id = "HiddenDay",
 	number = 0,
 	name = "Hidden Day",
 	weather = "Night",
-	exactSpawns = true,
 	groups = {
 		{ monsterId = "Goblin", count = 8, startDelay = 2, spawnInterval = 1.4 },
 		{ monsterId = "GoblinElite", count = 1, startDelay = 8, spawnInterval = 2 },
