@@ -81,7 +81,9 @@ The **Daily Spinner** HUD button unlocks after clearing Day 2 and resets at 00:0
 The base pool awards 1 brain at 60%, 2 brains at 30%, or 5 brains at 10%.
 The normal highest-unlocked-day multiplier scales amounts. The panel shows
 current payouts and odds. The server chooses the result and commits the receipt
-and brains together before the client reveal. Rejoining shows the committed
+and brains together before the client reveal. The client shows a rotating wheel
+with proportional 60/30/10 sectors and a fixed pointer. It makes five full turns
+over four seconds, slowing to the saved reward's sector. Rejoining shows the committed
 result for that date. Reset Progress preserves the daily receipt.
 
 ## First-time rewards
@@ -104,6 +106,16 @@ permanent profile upgrades, not match bonuses. There are no match coins or XP
 in this catalog. After claim seven, the track stays completed permanently and
 has no reset countdown or next weekly track. First-time cards use centered icons and explicit captions such as `+4 brains`;
 claimed cards use gray fills and retain their reward beneath a red Claimed stamp.
+
+Reset Progress preserves this track's claim history, including partial progress,
+so completed rewards never reopen. Only Speed/Magnet levels actually awarded
+by the track carry over (normally Speed 2 and Magnet 2 including its base level).
+Purchased levels reset. Unused tickets survive; redeemed tickets are not refunded.
+Brains reset without replaying any first-time brain payouts. The optional
+`login.upgradeRewards` map records actual granted levels, excluding max-level
+brain fallbacks. Older profiles infer carryover once from claimed upgrade steps,
+capped by currently owned levels; their historical fallback payouts cannot be
+distinguished because the previous schema did not record their source.
 
 Existing welcome counts and last-claim dates are preserved. Legacy weekly-login
 state is discarded, while previously earned balances/upgrades remain intact.
@@ -149,8 +161,9 @@ snapshots merge committed reward deltas and flags while preserving unrelated
 progress. Daily claims revalidate their date in the write callback; weekly claims
 revalidate their week and can cross ordinary midnight. Achievements/ticket spends
 have no calendar expiry. Reconnect never replays a completed grant. Reset Progress
-clears retention claims, ticket balances, unlocks, and upgrades while preserving
-the Daily Challenge and Daily Spin receipts.
+clears quest/achievement claims and unlocks while preserving first-time claim
+history, first-time upgrade levels, unused tickets, and Daily Challenge/Daily
+Spin receipts. Other upgrade levels reset.
 
 ## Achievements and goals
 

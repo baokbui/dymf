@@ -827,7 +827,7 @@ claims, reconnects and the next UTC day's payout. See `RETENTION.md`.
 - [x] Publish the reward pool and odds in the Daily Spinner HUD button.
 - [x] Unlock one free spin per UTC day after clearing Day 2.
 - [x] Select the result on the server and save it atomically with the reward.
-- [x] Reveal the committed outcome in the client reel and show it on reconnect.
+- [x] Reveal the committed outcome on a spinning wheel and show it on reconnect.
 - [x] Record success and rejected requests with retention analytics.
 - [x] Verify stale dates, concurrent requests, disconnect during the save,
   reconnect, and UTC rollover in the SaveService fixture.

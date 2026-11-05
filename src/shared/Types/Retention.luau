@@ -24,6 +24,7 @@ export type LoginTrack = {
 	pendingBrains: number?, -- fixed when today's offer is first prepared
 	pendingTrack: string?, -- Welcome only; retained after claiming for today's UI
 	pendingStep: number?,
+	upgradeRewards: { [string]: number }?, -- first-time levels actually granted; excludes max-level brains fallbacks
 }
 
 export type DailyReward = {

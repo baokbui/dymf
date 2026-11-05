@@ -22,7 +22,7 @@ function DailySpinHud.new(main: ScreenGui, request: (number) -> ())
 	layer.Size, layer.ZIndex, layer.Parent = UDim2.fromScale(1, 1), 19, main
 	local view = Panel.build(layer, request)
 	local window = view.frame
-	window.AnchorPoint, window.Size = Vector2.new(0.5, 0.5), UDim2.fromOffset(448, 320)
+	window.AnchorPoint, window.Size = Vector2.new(0.5, 0.5), UDim2.fromOffset(448, 510)
 	window.Active, window.ZIndex, window.Visible = true, 25, true
 	closeCurrent = function() layer.Visible = false end
 	OutsideDismiss.mount(layer, window, DailySpinHud.close)
@@ -39,7 +39,7 @@ function DailySpinHud.new(main: ScreenGui, request: (number) -> ())
 	zoom.Parent = window
 	local function resize()
 		local origin, bounds = HudLayout.bounds(main)
-		zoom.Scale = math.max(0.1, math.min(UISizing.desktop(main.AbsoluteSize), bounds.X / 448, bounds.Y / 320))
+		zoom.Scale = math.max(0.1, math.min(UISizing.desktop(main.AbsoluteSize), bounds.X / 448, bounds.Y / 510))
 		window.Position = UDim2.fromOffset(origin.X + bounds.X / 2, origin.Y + bounds.Y / 2)
 	end
 	HudLayout.watch(main, window, resize)

@@ -424,6 +424,8 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 	ProgressService.applyDevEvolutions(player)
 	ProgressService.applyDevBrains(player)
 	CoinService.applyDevPurse(player)
+	saveData.retention = DailyQuests.sanitize(saveData.retention)
+	LoginRewards.ensureUpgradeHistory(saveData.retention, saveData.upgrades)
 	require(script.Parent.RetentionService).hydrate(player, saveData.retention)
 	-- Intro persistence can yield: every save slice must be hydrated first.
 	LevelService.queueJoinIntros(player)
@@ -454,6 +456,10 @@ end
 -- queue a resave so victory/leave are never dropped while autosave yields.
 local function savePlayer(player: Player, reason: string)
 	local userId = player.UserId
+	-- PlayerRemoving owns the final snapshot. Shutdown/autosave can run after
+	-- gameplay cleanup while that write yields; their default state must not
+	-- replace the captured day, profile, or lawn.
+	if leaving[userId] and reason ~= "leave" then return end
 	if not storage:isWritable(userId) then return end
 	local snapshot = collectSnapshot(player)
 	latestSnapshots[userId] = snapshot
@@ -503,6 +509,7 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 	saveInFlight[userId] = true
 	local snapshot = collectSnapshot(player)
 	snapshot.retention = DailyQuests.sanitize(snapshot.retention)
+	LoginRewards.ensureUpgradeHistory(snapshot.retention, snapshot.upgrades)
 	if kind == "Achievement" then Achievements.syncCampaign(snapshot.retention, snapshot.highestLevel) end
 	local claim = if kind == "Login" then LoginRewards.claim elseif kind == "Achievement" then Achievements.claim else DailyQuests.claim
 	local reward, reason, grant
@@ -532,6 +539,7 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 	end
 	reward += RewardGrant.prepare(snapshot, grant)
 	RewardGrant.apply(snapshot, grant)
+	if kind == "Login" then LoginRewards.recordUpgrade(snapshot.retention, grant) end
 	snapshot.brains += reward
 	local stat = ProgressConfig.STAT_BRAINS_EARNED
 	snapshot.statistics[stat] = (snapshot.statistics[stat] or 0) + reward
@@ -624,6 +632,12 @@ function SaveService.resetProgress(player: Player)
 	local retention = require(script.Parent.RetentionService)
 	local prior = retention.getSaveSlice(player)
 	local resetRetention = DailyQuests.sanitize(nil)
+	local progress = ProgressService.getSaveSlice(player)
+	if prior then
+		defaults.upgrades = LoginRewards.resetUpgrades(prior, if progress then progress.upgrades else {})
+		resetRetention.login = LoginRewards.sanitize(prior.login)
+		resetRetention.brainrotTickets = prior.brainrotTickets
+	end
 	resetRetention.challengeClaimDay = if prior then prior.challengeClaimDay else nil
 	resetRetention.spin = if prior then prior.spin else nil
 	defaults.retention = resetRetention
@@ -631,7 +645,7 @@ function SaveService.resetProgress(player: Player)
 	latestSnapshots[player.UserId] = defaults
 	committedBrainrots[player.UserId] = {}
 
-	ProgressService.reset(player)
+	ProgressService.reset(player, defaults.upgrades)
 	ProgressService.applyDevRoster(player)
 	ProgressService.applyDevEvolutions(player)
 	ProgressService.applyDevBrains(player)

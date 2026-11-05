@@ -2,6 +2,7 @@
 -- Seven first-time claims, once per distinct UTC date. No recurring track.
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Config = require(Shared.Config.RetentionConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Time = require(Shared.Utilities.RetentionTime)
 local Types = require(Shared.Types.Retention)
 local LoginRewards = {}
@@ -16,12 +17,56 @@ function LoginRewards.sanitize(raw: any): Types.LoginTrack
 	if not source.firstTimeVersion and claims == 7 then claims = 6 end
 	local state: Types.LoginTrack = { welcomeClaims = claims, firstTimeVersion = 1,
 		lastClaimDay = integer(source.lastClaimDay) }
+	if type(source.upgradeRewards) == "table" then
+		state.upgradeRewards = {}
+		for _, definition in ProgressConfig.UPGRADE_CATALOG do
+			state.upgradeRewards[definition.id] = math.min(definition.maxLevel, integer(source.upgradeRewards[definition.id]) or 0)
+		end
+	end
 	local day, step = integer(source.eligibleDay), integer(source.pendingStep)
 	if source.pendingTrack == "Welcome" and day and step and step >= 1 and step <= 7 then
 		state.eligibleDay, state.pendingStep, state.pendingTrack = day, step, "Welcome"
 		state.pendingBrains = integer(source.pendingBrains) or 0
 	end
 	return state
+end
+
+-- Older profiles lack reward provenance. Infer at most the claimed catalog
+-- levels they still own once; subsequent claims record only actual upgrades.
+function LoginRewards.ensureUpgradeHistory(state: Types.RetentionSave, upgrades: { [string]: number })
+	local login = state.login
+	if not login or login.upgradeRewards then return end
+	local earned: { [string]: number } = {}
+	for index, reward in Config.FIRST_TIME_REWARDS do
+		if index <= login.welcomeClaims and reward.kind == "Upgrade" then
+			earned[reward.upgradeId] = (earned[reward.upgradeId] or 0) + reward.amount
+		end
+	end
+	for id, amount in earned do
+		local definition = ProgressConfig.upgradeById(id)
+		local baseline = definition.defaultLevel or 0
+		earned[id] = math.min(amount, math.max(0, (upgrades[id] or baseline) - baseline))
+	end
+	login.upgradeRewards = earned
+end
+
+function LoginRewards.recordUpgrade(state: Types.RetentionSave, grant: any)
+	local login = state.login
+	if not login or not grant or grant.kind ~= "Upgrade" then return end
+	local earned = login.upgradeRewards or {}
+	earned[grant.upgradeId] = (earned[grant.upgradeId] or 0) + grant.amount
+	login.upgradeRewards = earned
+end
+
+function LoginRewards.resetUpgrades(state: Types.RetentionSave, upgrades: { [string]: number }): { [string]: number }
+	LoginRewards.ensureUpgradeHistory(state, upgrades)
+	local result = {}
+	local earned = if state.login then state.login.upgradeRewards else nil
+	for _, definition in ProgressConfig.UPGRADE_CATALOG do
+		local baseline = definition.defaultLevel or 0
+		result[definition.id] = math.min(definition.maxLevel, baseline + (if earned then earned[definition.id] or 0 else 0))
+	end
+	return result
 end
 function LoginRewards.ensure(state: Types.RetentionSave, now: number, highestDay: number): boolean
 	local login = state.login or LoginRewards.sanitize(nil)

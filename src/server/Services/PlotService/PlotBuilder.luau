@@ -32,6 +32,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
 local HouseBuilder = require(script.Parent.HouseBuilder)
+local PlotDecor = require(script.Parent.PlotDecor)
 local StoreService = require(script.Parent.Parent.StoreService)
 
 local PlotBuilder = {}
@@ -134,6 +135,7 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addFolder("Monsters", model)
 	addFolder("Brainrots", model)
 	addFolder("Coins", model)
+	PlotDecor.build(model, originPosition, playLeftX, index)
 
 	return model, base, spawnLocation
 end

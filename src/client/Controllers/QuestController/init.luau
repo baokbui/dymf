@@ -315,6 +315,8 @@ function QuestController.start()
 		end
 		if result.success and result.kind == "Login" then
 			Audio.play("FirstTimeRewardStamp")
+		elseif result.success and (result.kind == "Quest" or result.kind == "WeeklyQuest" or result.kind == "Achievement") then
+			Audio.play("ClaimReward")
 		else
 			Audio.play(if result.success then "PurchaseKaching" else "PurchaseError")
 		end

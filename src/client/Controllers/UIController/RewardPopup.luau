@@ -16,8 +16,8 @@ local RewardPopup = {}
 RewardPopup.__index = RewardPopup
 
 local POP_INFO = TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-local POP_START_DELAY = 0.22
-local POP_STAGGER = 0.38
+local POP_START_DELAY = 0.75
+local POP_STAGGER = 0.9
 
 export type RewardPopupHud = typeof(setmetatable(
 	{} :: {
@@ -190,6 +190,7 @@ local function present(self: RewardPopupHud)
 	end
 
 	self.frame.Visible = true
+	AudioController.play("Victory")
 
 	for index, gui in self.popOrder do
 		local delay = POP_START_DELAY + (index - 1) * POP_STAGGER
@@ -198,6 +199,9 @@ local function present(self: RewardPopupHud)
 				return
 			end
 			popIn(gui, self.popScales[gui])
+			if gui ~= self.continueButton then
+				AudioController.play("RewardLine")
+			end
 		end)
 	end
 end

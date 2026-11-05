@@ -464,13 +464,13 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	ProgressService.applyMovement(player)
 end
 
-function ProgressService.reset(player: Player)
+function ProgressService.reset(player: Player, retainedUpgrades: { [string]: number }?)
 	dayStartXp[player.UserId] = nil
 	profiles[player.UserId] = {
 		brains = ProgressConfig.STARTING_BRAINS,
 		unlocks = defaultUnlocks(),
 		equipped = defaultEquipped(),
-		upgrades = {},
+		upgrades = sanitizeUpgrades(retainedUpgrades),
 		statistics = {},
 		brainrotXp = {},
 		evolutions = {},

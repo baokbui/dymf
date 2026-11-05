@@ -169,7 +169,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	hint(graphicsSection, "Turn off effects from other players’ Brainrots to improve performance.", 4, 42)
 
 	local dangerSection = section("Danger Zone", 4)
-	hint(dangerSection, "Back to Day 1, with an empty lawn and 125 coins. You’ll be asked twice.", 1, 42)
+	hint(dangerSection, "Back to Day 1 with 125 coins. First-time rewards stay claimed; their upgrades and unused tickets stay yours. Brains and purchased upgrades reset.", 1, 70)
 
 	local resetButton = makeButton(dangerSection, "Reset Progress", UITheme.DANGER)
 	UITheme.applySurfaceDepth(resetButton)

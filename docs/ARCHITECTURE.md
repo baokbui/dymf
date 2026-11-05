@@ -91,6 +91,7 @@ ReplicatedStorage/Shared/
 ServerScriptService/Server/            (init.server.luau = bootstrap)
     Services/
         PlotService/      (init + Plot + PlotBuilder)
+            PlotDecor     (permanent side gardens, paths, benches and small trees)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
         MagnetService/    (player magnet pull + cooldown)
@@ -141,6 +142,20 @@ Workspace/
 ---
 
 ## Bootstrap & lifecycle
+
+PlotBuilder builds permanent garden scenery once under each plot's `Scenery`
+folder. `PlotDecorConfig` controls its density, palette, path width and offsets.
+PlotDecor reuses ForestDecor's static part/tree helpers. Garden bushes clone
+`Assets.Decor.GardenBush` (Toolbox asset `8647777369`) through ModelUtil,
+fit to the configured footprint/height and grounded at each shrub position.
+Keep this authored template saved in the Studio place; Rojo preserves it.
+A procedural shrub is used if the template is absent. All garden geometry is
+anchored, non-colliding, non-touchable and non-queryable. Side paths and beds sit
+beyond the lawn's Z edges, with the east monster approach open. Scenery survives
+Plot.release because it is outside the per-owner cleanup folders. The default
+four-plot garden adds 532 static parts. Edit-mode geometry checks verified lawn
+and lane-boundary clearance and owner-release persistence; an isolated garden
+preview was visually inspected. Full gameplay/performance QA remains pending.
 
 Both bootstrappers auto-discover their modules — adding a Service/Controller
 requires **no** bootstrap edits.

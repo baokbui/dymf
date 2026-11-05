@@ -86,7 +86,8 @@ Each player plot contains:
   `Assets.Houses` when present (see `HOUSE.md`); boss pedestals for Milestone 21
 - House anchor (legacy marker on the plot base)
 - Coin spawner marker (passive drop origin)
-- Path / Decorations folders (populated in later milestones)
+- Permanent side gardens with pebble walks, flower beds, low shrubs, benches,
+  and small trees under `Scenery`. Path / Decorations remain per-owner folders.
 
 `Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane4`).
 `Workspace.Maps.DarkForest` fills that east column with a dense, non-colliding

@@ -29,6 +29,9 @@ Saved (player-owned progression):
 - Weekly quest progress/claims, finite first-time rewards and Brainrot tickets (v11)
 - Daily Challenge first-clear UTC receipt (v12), preserved by Reset Progress
 - Daily Spin UTC receipt and selected outcome (v13), preserved by Reset Progress
+- First-time upgrade provenance (`retention.login.upgradeRewards`, optional in v13).
+  Reset Progress preserves first-time claims, their upgrade levels and unused
+  tickets; first-time brains are not replayed and purchased levels reset.
 - Future progression systems (collected bosses, …)
 
 Not saved (transient / runtime):
@@ -113,6 +116,9 @@ Relevant constants (`Shared.Constants`):
   `BrainrotService` clear the lawn on `PlayerRemoving`. Snapshot is captured
   synchronously; if a save is already in flight, the leave payload is queued
   and flushed when the in-flight write finishes (never dropped).
+- Once PlayerRemoving begins, only its final leave snapshot may enter the
+  ordinary save queue. Shutdown/autosave requests are ignored for that leaving
+  player, preventing cleared runtime defaults from overwriting saved progress.
 - Writes via `UpdateAsync` with JSON round-trip, bounded retries, and session /
   revision guards. Studio cloud errors can still appear; API access must be
   enabled for real saves. Exhausted or uncertain writes end the unsafe session;

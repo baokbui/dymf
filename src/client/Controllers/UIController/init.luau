@@ -519,7 +519,6 @@ local function applyLevelState(state: { [string]: any }?)
 
 		if lastLevelPhase ~= phase then
 			if phase == Constants.PHASE.Victory then
-				AudioController.play("Victory")
 				AudioController.setBossMusic(false)
 			elseif phase == Constants.PHASE.Defeat then
 				AudioController.play("Defeat")

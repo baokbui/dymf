@@ -35,6 +35,10 @@ local AudioConfig = {
 
 	-- Preload on join so combat SFX aren't delayed by first asset download.
 	PRELOAD_SFX = {
+		"RemoveBrainrot",
+		"Victory",
+		"RewardLine",
+		"ClaimReward",
 		"FirstTimeRewardStamp",
 		"MeleeBat",
 		"ThrowKnifeHit",
@@ -149,6 +153,14 @@ local AudioConfig = {
 			SoundId = "rbxassetid://521293072",
 			Volume = 0.75,
 		},
+		RewardLine = {
+			SoundId = "rbxassetid://72264591133889",
+			Volume = 0.7,
+		},
+		ClaimReward = {
+			SoundId = "rbxassetid://88761861442974",
+			Volume = 0.8,
+		},
 
 		-- Economy / placement
 		CoinCollect = {
@@ -222,7 +234,7 @@ local AudioConfig = {
 			Volume = 0.85,
 		},
 		RemoveBrainrot = {
-			SoundId = "rbxassetid://135342195223049",
+			SoundId = "rbxassetid://9114084044",
 			Volume = 0.7,
 		},
 
@@ -291,9 +303,8 @@ local AudioConfig = {
 			Volume = 0.65,
 		},
 		Victory = {
-			SoundId = "rbxasset://sounds/electronicpingshort.wav",
+			SoundId = "rbxassetid://96102213526905",
 			Volume = 0.7,
-			PlaybackSpeed = 0.85,
 		},
 		Defeat = {
 			SoundId = "rbxassetid://12221967",

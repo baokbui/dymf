@@ -34,7 +34,7 @@ return function(sources: any, modules: any): string
 	  if profile then profile.brains+=amount;profile.statistics.brainsEarned=(profile.statistics.brainsEarned or 0)+amount end
 	 end,
 	 applyDurableReward=function(_,reward) if reward.kind~="Ticket" then grant.apply(profile,reward) end end,
-	 reset=function() profile.brains=0; profile.statistics={}; profile.upgrades={} end,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
+	 reset=function(_,upgrades) profile.brains=0; profile.statistics={}; profile.upgrades=copy(upgrades or {}) end,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
 	}
 	local ret={
 	 hydrate=function(_,s) retention=rules.sanitize(s);rules.ensure(retention,now,highest);login.ensure(retention,now,highest);rules.ensure(retention,now,highest,true) end,
@@ -224,13 +224,40 @@ return function(sources: any, modules: any): string
 
 	local spinReceipt=retention.spin
 	local challengeReceipt=retention.challengeClaimDay
+	local loginReceipt=copy(retention.login)
+	retention.brainrotTickets=1
+	profile.upgrades.WalkSpeed=15;profile.upgrades.Magnet=5
 	Save.resetProgress(player)
 	assert(current==1 and highest==1 and backend.record.brains==0,"Reset Progress did not reset campaign")
 	assert(backend.record.retention.spin.dayKey==spinReceipt.dayKey
 		and backend.record.retention.spin.rewardId==spinReceipt.rewardId
 		and backend.record.retention.challengeClaimDay==challengeReceipt,"Reset Progress reopened a daily reward")
 	assert(not backend.record.retention.achievements.ReachDay30.claimed,"Reset Progress retained permanent quest claims")
+	assert(retention.login.welcomeClaims==7 and retention.login.lastClaimDay==loginReceipt.lastClaimDay,"reset reopened first-time rewards")
+	assert(backend.record.upgrades.WalkSpeed==2 and backend.record.upgrades.Magnet==2,"reset must retain only first-time upgrade levels")
+	assert(profile.upgrades.WalkSpeed==2 and profile.upgrades.Magnet==2,"live reset upgrades disagree with save")
+	assert(backend.record.retention.brainrotTickets==1,"reset lost an unused ticket")
+	Save.resetProgress(player)
+	assert(backend.record.upgrades.WalkSpeed==2 and backend.record.upgrades.Magnet==2
+		and backend.record.retention.brainrotTickets==1 and backend.record.brains==0,"repeated reset duplicated rewards")
+	retention.brainrotTickets=0
+	Save.resetProgress(player)
+	assert(backend.record.retention.brainrotTickets==0,"reset refunded a spent ticket")
 
+	handlers.remove(player)
+	player.Parent=true;handlers.add(player)
+	current,highest=2,2
+	backend.hook=function()
+		-- Simulate gameplay cleanup while the final leave write yields, then
+		-- BindToClose attempting another snapshot of the cleared runtime.
+		current,highest=1,1
+		profile=nil
+		Save.saveNow(player,"shutdown")
+	end
+	handlers.remove(player)
+	assert(backend.record.currentLevel==2 and backend.record.highestLevel==2,"shutdown replaced final leave snapshot with Day 1")
+	player.Parent=true;handlers.add(player)
+	assert(current==2 and highest==2,"rejoin lost the saved day after shutdown")
 	handlers.remove(player)
 	backend.record.version=14
 	player.Parent=true

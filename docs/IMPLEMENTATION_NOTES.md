@@ -14,6 +14,35 @@ Normalized source checksums matched **all 174 Luau scripts** between the local
 animation permissions, visual correctness, or a multiplayer/performance playtest.
 No gameplay source or developer cheat settings were changed by this audit.
 
+## Shutdown save overlap — corrected 2026-11-05
+
+PlayerRemoving captured the final progression snapshot, but BindToClose could
+queue another snapshot after gameplay services cleared their state. That later
+snapshot could replace the saved day with the runtime's Day 1 default.
+SaveService now rejects ordinary shutdown/autosave requests once the player's
+leave handler begins, preserving its final snapshot until the writer finishes.
+The in-memory SaveRetention fixture reproduces Day 2 → Day 1 without this guard
+and verifies Day 2 survives shutdown/rejoin with it. The full fixture and Rojo
+build passed. No existing player save was modified or restored by this check.
+
+## Daily wheel and first-time reset carryover — 2026-11-05
+
+DailySpinPanel now reveals the committed result using a four-second wheel
+rotation, with proportional reward sectors. The initial radial-strip layout
+incorrectly treated AnchorPoint as a rotation pivot, bunching colors to one
+side. Strips now use centered anchors and radial center positions, with scale
+coordinates to retain subpixel precision. The old layout fails the new hub
+alignment regression. All 191 isolated GUI checks pass, covering all 180 strip
+endpoints, sector proportions, stopping angles, reconnect display, eligibility,
+stale-state rejection and UTC rollover. A full visual/input playtest remains pending.
+The SaveRetention in-memory integration fixture verifies first-time claim
+completion, earned upgrade levels and unused tickets survive Reset Progress,
+while purchased levels and brains reset. Repeated resets do not duplicate
+levels/tickets or refund redeemed tickets. Forty-nine LoginRewards checks pass,
+including actual-grant provenance, max-level brain fallback and legacy carryover.
+Eight affected runtime modules compile in Studio; Rojo build passes. These
+checks use fixtures and do not reset or modify any real player profile.
+
 ## Spawn scheduling — corrected in Milestone 20 Step 0
 
 Previously the last unit of a numbered-day group could use the next group's

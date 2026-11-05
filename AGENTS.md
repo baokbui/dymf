@@ -324,7 +324,10 @@ All writes use owner, revision, and operation-id checks. Never bypass that write
 or claim by addBrains + ordinary saveNow. Unavailable loads must not become
 writable defaults; uncertain writes fail closed.
 First-time rewards advance once per distinct server UTC claim date and stop
-permanently after seven claims. Missed dates never reset/skip steps. Weekly
+permanently after seven claims. Missed dates never reset/skip steps.
+Reset Progress preserves first-time claim history, its earned Speed/Magnet
+levels and unspent Brainrot tickets; it does not replay brains or refund spent
+tickets. Purchased upgrade levels still reset. Weekly
 quests reset Monday at 00:00 UTC; recurring weekly login rewards are removed.
 Permanent achievements and Campaign quests do not expire. Ownership, claimed
 evolutions, statistics, and highest unlocked day use verified server fields.

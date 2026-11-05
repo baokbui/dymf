@@ -62,12 +62,15 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `LevelStart` | Start / Restart Level button |
 | `CountdownTick` | Start Day overlay ticks (3…0) |
 | `BigWave` | First frame of big-wave warning |
-| `Victory` / `Defeat` | Level phase change |
+| `Victory` | Day reward screen appears (including Hidden Day) — `96102213526905` |
+| `RewardLine` | Each of the three reward amounts pops in; excludes Continue — `72264591133889` |
+| `Defeat` | Defeat phase change |
+| `ClaimReward` | Server confirms a daily/weekly quest or achievement claim — `88761861442974` |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
 | `FirstTimeRewardStamp` | Server confirms a First-time Rewards claim |
 | `PurchaseKaching` | Store purchase succeeded (cash register) |
 | `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
-| `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
+| `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent; shovel uses `9114084044` |
 | `PlaceBrainrot_<BrainrotId>` | Per-unit plant SFX for every roster Brainrot |
 | `PlaceBrainrot_BrrBrrPatapim` | Patapim plant / spawn |
 | `PlaceBrainrot_GiraffaCeleste` | Giraffa plant / spawn |
@@ -147,9 +150,10 @@ the client watcher is non-blocking so death/hit SFX stay in sync.
 
 ## Rules
 
-Daily/weekly quest, first-time reward, ticket purchase and achievement claims reuse `PurchaseKaching` after a durable success and
-`PurchaseError` for a rejected claim. Opening the panel uses `UiClick`.
-QuestController routes these through AudioController and existing settings. The Daily Spinner uses UiClick on open and on spin intent. Its reveal reel and Forest Rush results have no dedicated sound cue.
+Daily/weekly quest and achievement claims use `ClaimReward` after a durable
+success. First-time rewards use `FirstTimeRewardStamp`; store/ticket purchases
+use `PurchaseKaching`. Rejected claims use `PurchaseError`. Opening the panel uses `UiClick`.
+QuestController routes these through AudioController and existing settings. The Daily Spinner uses UiClick on open and on spin intent. Its wheel reveal and Forest Rush results have no dedicated sound cue.
 
 - Playback is client-only; never trust the client for rewards or combat.
 - Prefer `AudioController.play` over ad-hoc `Instance.new("Sound")`.

@@ -42,6 +42,9 @@ StarterGui/
 ```
 
 `UIController` builds each panel at runtime (except scaffolding frames).
+The Settings top-bar shortcut starts hidden until its safe-inset container
+matches `GuiService.TopbarInset`. Its size is capped at 48 pixels so transient
+full-viewport bounds during loading cannot produce an oversized button.
 MenuRouter hosts Inventory, Index, Upgrades, Settings, Quests, Achievements
 and Statistics in one window. Existing panel instances are reused;
 Inventory/Index/Settings/ProgressionStore move into its content host at runtime.
@@ -262,7 +265,8 @@ hardcode a second palette in new UI.
   brains (smaller), and a large **Total Brains Earned**. The Hidden Day uses
   the same overlay titled **Hidden Day**, with **Brains earned** for kills
   (win or loss). After the title, those
-  lines and **Continue** scale-pop in one at a time (no fade). Stays until
+  lines and **Continue** scale-pop in one at a time (no fade), starting
+  0.75 seconds after the title with 0.9 seconds between reveals. Stays until
   **Continue** (`ContinueVictory`); then unlock intros may play.
 
 ### Index ✅
@@ -590,10 +594,19 @@ panel displays the result and a free retry after restoring the campaign.
 
 ### Free Spin
 
-The Daily Spinner HUD icon opens a standalone panel with odds and a reveal
-reel. Its timer shows Ready or counts down to the next UTC reset. The spinner
-sits above First-time Rewards, which has its own readiness timer. The reel lands on the outcome already recorded by the server. A spent
+The Daily Spinner HUD icon opens a standalone panel with a rotating wheel and
+fixed pointer. Colored sectors match reward odds; the four-second spin slows
+onto the outcome already recorded by the server.
+The radial strips are positioned by their geometric centers so every sector
+meets the hub and fills the rim, including when the wheel rotates.
+Its timer shows Ready or
+counts down to the next UTC reset. The spinner sits above First-time Rewards,
+which has its own readiness timer. A spent
 spin shows the result and the next reset instead of offering another spin.
+
+Reset Progress keeps first-time reward claim history, the upgrade levels it
+granted and unused tickets. Completed first-time rewards remain hidden.
+First-time brains are not paid again; purchased upgrades reset.
 
 Settings opens from a shortcut beside the Roblox top-bar controls. It uses
 the same Menu window as the six drawer destinations.
