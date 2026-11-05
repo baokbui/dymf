@@ -68,7 +68,7 @@ end
 
 local function onActivate(player: Player)
 	local LevelService = require(script.Parent.LevelService)
-	if not LevelService.isLevelActive(player) then
+	if not LevelService.isLevelActive(player) or LevelService.isChallengeActiveForUser(player.UserId) then
 		return
 	end
 

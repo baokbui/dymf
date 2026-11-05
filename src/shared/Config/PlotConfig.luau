@@ -106,12 +106,23 @@ local PlotConfig = {
 	FOREST_CLEAR_WEST = 18, -- studs kept open near plot boundary for entry path (~1 tile)
 	FOREST_MARGIN_EAST = 6,
 	FOREST_MARGIN_Z = 8,
-	FOREST_SPACING = 18,
-	FOREST_JITTER = 6,
-	FOREST_GROUND_COLOR = Color3.fromRGB(16, 28, 16),
-	FOREST_TRUNK_COLOR = Color3.fromRGB(32, 22, 14),
-	FOREST_FOLIAGE_A = Color3.fromRGB(10, 26, 12),
-	FOREST_FOLIAGE_B = Color3.fromRGB(6, 18, 10),
+	FOREST_SPACING = 22,
+	FOREST_JITTER = 7,
+	FOREST_SEED = 74021, -- stable scenery across joins; never consumes gameplay RNG
+	FOREST_CANOPY_INSET = 20,
+	FOREST_CONIFER_CHANCE = 0.42,
+	FOREST_CLEARING_CHANCE = 0.05,
+	FOREST_EDGE_SPACING = 23,
+	FOREST_DEEP_COLOR = Color3.fromRGB(25, 52, 49),
+	FOREST_HIGHLIGHT_COLOR = Color3.fromRGB(106, 147, 73),
+	FOREST_ROCK_COLOR = Color3.fromRGB(101, 113, 102),
+	FOREST_GROUND_COLOR = Color3.fromRGB(94, 134, 73), -- invisible bounds marker
+	FOREST_MIN_SCALE = 0.6,
+	FOREST_MAX_SCALE = 1.6,
+	FOREST_REAR_HEIGHT_BONUS = 0.35,
+	FOREST_TRUNK_COLOR = Color3.fromRGB(83, 62, 44),
+	FOREST_FOLIAGE_A = Color3.fromRGB(52, 106, 68),
+	FOREST_FOLIAGE_B = Color3.fromRGB(35, 78, 65),
 }
 
 table.freeze(PlotConfig)

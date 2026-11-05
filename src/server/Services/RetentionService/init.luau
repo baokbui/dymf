@@ -10,6 +10,7 @@ local LoginRewards = require(script.LoginRewards)
 local Achievements = require(script.Achievements)
 local NextGoal = require(script.NextGoal)
 local Analytics = require(script.Analytics)
+local DailySpin = require(script.DailySpin)
 local RetentionService = { Name = "RetentionService" }
 local states: { [number]: Types.RetentionSave } = {}
 local pushes: { [number]: thread } = {}
@@ -55,6 +56,7 @@ function RetentionService.getClientState(player: Player): { [string]: any }
 	ensure(player)
 	local state = states[player.UserId]
 	if not state or not state.dailyQuests then return { ready = false } end
+	Achievements.syncCampaign(state, highestDay(player))
 	local daily = Rules.sanitize(state).dailyQuests
 	assert(daily)
 	local goal = NextGoal.select(profiles[player.UserId] or {}, highestDay(player), require(Shared.Levels).count())
@@ -67,7 +69,8 @@ function RetentionService.getClientState(player: Player): { [string]: any }
 		weekly = state.weeklyQuests, weeklyResetAt = Time.nextWeeklyResetAt(os.time()), brainrotTickets = state.brainrotTickets or 0,
 		quests = daily.quests, bonusBrains = daily.bonusBrains, bonusClaimed = daily.bonusClaimed,
 		login = LoginRewards.clientState(state, os.time(), highestDay(player)),
-		achievements = Achievements.clientState(state), nextGoal = goal }
+		achievements = Achievements.clientState(state), campaign = Achievements.clientState(state, true), nextGoal = goal,
+		spin = DailySpin.clientState(state, os.time(), highestDay(player)) }
 end
 
 local function push(player: Player)
@@ -162,6 +165,8 @@ function RetentionService.markCommitted(player: Player, day: number, id: string,
 	if state then
 		if kind == "Login" and committed then LoginRewards.markCommitted(state, committed)
 		elseif kind == "Achievement" then Achievements.markCommitted(state, id)
+		elseif kind == "Challenge" and committed then state.challengeClaimDay = committed.challengeClaimDay
+		elseif kind == "Spin" and committed then state.spin = committed.spin
 		elseif kind ~= "Ticket" then Rules.markCommitted(state, day, id, kind == "WeeklyQuest") end
 		if committed then state.brainrotTickets = committed.brainrotTickets or 0 end
 	end
@@ -178,30 +183,31 @@ function RetentionService.cleanup(player: Player)
 end
 
 local function onClaim(player: Player, request: any)
+	local isSpin = type(request) == "table" and request.kind == "Spin"
 	local now = os.clock()
 	if now < (requests[player.UserId] or 0) then
-		Remotes.getEvent("RetentionClaimResult"):FireClient(player, { success = false, reason = "RateLimited" })
+		Remotes.getEvent("RetentionClaimResult"):FireClient(player, { success = false, reason = "RateLimited", kind = if isSpin then "Spin" else nil })
 		return
 	end
 	requests[player.UserId] = now + Config.CLAIM_REQUEST_INTERVAL
 	local reason: string? = "InvalidRequest"
 	local success, amount = false, nil :: number?
 	local grant: any = nil
-	if type(request) == "table" and (request.kind == "Quest" or request.kind == "WeeklyQuest" or request.kind == "Login" or request.kind == "Achievement") and type(request.id) == "string"
+	if type(request) == "table" and (request.kind == "Quest" or request.kind == "WeeklyQuest" or request.kind == "Login" or request.kind == "Achievement" or (isSpin and request.id == "DailySpin")) and type(request.id) == "string"
 		and #request.id <= 32 and type(request.dayKey) == "number" and request.dayKey == request.dayKey
 		and request.dayKey >= 0 and request.dayKey < math.huge and request.dayKey % 1 == 0 then
 		ensure(player)
 		success, reason, amount, grant = require(script.Parent.SaveService).claimRetentionReward(player, request.kind, request.dayKey, request.id)
 	end
 	Analytics.log(player, if success then "Claimed" else "Rejected", amount, reason,
-		if type(request) == "table" and request.kind == "Login" then "Login"
+		if isSpin then "Spin" elseif type(request) == "table" and request.kind == "Login" then "Login"
 		elseif type(request) == "table" and request.kind == "Achievement" then "Achievement"
 		elseif type(request) == "table" and request.kind == "WeeklyQuest" then "WeeklyQuest" else "Quest",
 		if type(request) == "table" and type(request.id) == "string" then request.id else nil)
 	if player.Parent then
 		Remotes.getEvent("RetentionClaimResult"):FireClient(player, {
 			success = success, reason = reason, brainsGranted = amount, reward = grant,
-			kind = if type(request) == "table" and request.kind == "Login" then "Login"
+			kind = if isSpin then "Spin" elseif type(request) == "table" and request.kind == "Login" then "Login"
 				elseif type(request) == "table" and request.kind == "Achievement" then "Achievement"
 				elseif type(request) == "table" and request.kind == "WeeklyQuest" then "WeeklyQuest" else "Quest",
 		})

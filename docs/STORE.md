@@ -53,6 +53,11 @@ Already owned units gray out with a red **SOLD** stamp.
 | Blueberrinni Octopusini | 70 | Ink puddle on a random empty tile in her row, skipping graves; lower arc when close, higher when far; slows while they stand in it |
 | Boneca Ambalabu | 65 | Headbutts each monster on her tile in front of her (hit + 1 second stun); poofs away after 5 headbutts |
 
+The Upgrade Shop shows your brains balance and a card for each upgrade.
+Cards show the current level, progress toward the cap, and the next price.
+Selecting a card opens current and next stat values with the purchase button.
+Maxed upgrades show a Max Level badge and their final stats.
+
 **Speed** (`WalkSpeed`): 20 levels, each `+walkSpeedBonusPerLevel` (1) on top of
 Roblox-default `PlayerConfig.WALK_SPEED` (16 → 36 at max). Costs rise each
 level (`6 / 10 / 14 / 19 / 25 / 32 / 41 / 52 / 65 / 80 / 98 / 118 / 142 /

@@ -25,6 +25,7 @@ local BrainrotInfo = require(script.Parent.Parent.Parent.Utilities.BrainrotInfo)
 local AudioController = require(script.Parent.Parent.AudioController)
 
 local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
+local UpgradeCards = require(script.Parent.UpgradeCards)
 local ProgressionStore = {}
 ProgressionStore.__index = ProgressionStore
 
@@ -50,6 +51,7 @@ export type ProgressionStoreHud = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
 		titleLabel: TextLabel,
+		balanceLabel: TextLabel,
 		list: ScrollingFrame,
 		statsCard: Frame,
 		statsBody: Frame,
@@ -176,6 +178,7 @@ function ProgressionStore.new(parent: Frame): ProgressionStoreHud
 	parent.ZIndex = 45
 	parent.ClipsDescendants = false
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_STORE)
+	UITheme.applySurfaceDepth(parent)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -187,6 +190,15 @@ function ProgressionStore.new(parent: Frame): ProgressionStoreHud
 	title.Text = "Shop"
 	title.Parent = parent
 	UITheme.applyOutlinedTitle(title)
+
+	local balance = Instance.new("TextLabel")
+	balance.Name = "BrainsBalance"
+	balance.Position, balance.Size = UDim2.new(1, -154, 0, 12), UDim2.fromOffset(138, 28)
+	balance.TextSize = 13
+	balance.Visible = false
+	UITheme.applyButtonLook(balance, UITheme.FIELD_INSET, 8)
+	UITheme.applyOutlinedTitle(balance, UITheme.FIELD_ACCENT)
+	balance.Parent = parent
 
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
@@ -255,6 +267,7 @@ function ProgressionStore.new(parent: Frame): ProgressionStoreHud
 	local self = setmetatable({
 		frame = parent,
 		titleLabel = title,
+		balanceLabel = balance,
 		list = list,
 		statsCard = statsCard,
 		statsBody = statsBody,
@@ -562,6 +575,7 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 	clearBody(self.statsBody)
 
 	local kind = self.shopKind
+	self.statsCard.BackgroundColor3 = if kind == StoreConfig.SHOP_UPGRADES then UITheme.UPGRADE_PANEL else STATS_FILL
 	if kind == StoreConfig.SHOP_BRAINROTS then
 		local definition: Types.BrainrotDefinition? = Brainrots.get(id)
 		local cost: number? = nil
@@ -670,82 +684,26 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 		local level = ProgressConfig.upgradeLevel(def, self.upgrades[id])
 		local atMax = level >= def.maxLevel
 		local nextCost = nextUpgradeCost(def, level)
-		local bonus = if type(def.walkSpeedBonusPerLevel) == "number" then def.walkSpeedBonusPerLevel else 0
-		local currentSpeed = PlayerConfig.WALK_SPEED + level * bonus
-		local nextSpeed = PlayerConfig.WALK_SPEED + math.min(level + 1, def.maxLevel) * bonus
+		local nextLevel = math.min(level + 1, def.maxLevel)
 		local isMagnet = def.id == MagnetConfig.ID
-		local currentRange = MagnetConfig.rangeTilesFor(level)
-		local nextRange = MagnetConfig.rangeTilesFor(math.min(level + 1, def.maxLevel))
-		local currentCooldown = MagnetConfig.cooldownFor(level)
-		local nextCooldown = MagnetConfig.cooldownFor(math.min(level + 1, def.maxLevel))
-
-		local name = Instance.new("TextLabel")
-		name.BackgroundTransparency = 1
-		name.Position = UDim2.fromOffset(0, 8)
-		name.Size = UDim2.new(1, 0, 0, 28)
-		name.Text = string.format("%s  %d / %d", def.name, level, def.maxLevel)
-		name.TextSize = 20
-		name.Parent = self.statsBody
-		UITheme.applyOutlinedTitle(name)
-		name.TextSize = 20
-
-		local body = Instance.new("TextLabel")
-		body.BackgroundTransparency = 1
-		body.Position = UDim2.fromOffset(0, 44)
-		body.Size = UDim2.new(1, 0, 0, 80)
-		body.TextWrapped = true
-		body.TextXAlignment = Enum.TextXAlignment.Left
-		body.TextYAlignment = Enum.TextYAlignment.Top
-		body.TextSize = 15
-		body.Text = def.description
-		body.Parent = self.statsBody
-		UITheme.applyOutlinedTitle(body)
-		body.TextSize = 15
-
-		local stats = Instance.new("TextLabel")
-		stats.BackgroundTransparency = 1
-		stats.Position = UDim2.fromOffset(0, 132)
-		stats.Size = UDim2.new(1, 0, 0, 120)
-		stats.TextWrapped = true
-		stats.TextXAlignment = Enum.TextXAlignment.Left
-		stats.TextYAlignment = Enum.TextYAlignment.Top
-		stats.TextSize = 14
-		if atMax then
-			if isMagnet then
-				stats.Text = string.format(
-					"Duration: %s\nRange: %s  (maxed)\nCooldown: %s  (maxed)",
-					MagnetConfig.formatSeconds(MagnetConfig.DURATION),
-					MagnetConfig.formatTiles(currentRange),
-					MagnetConfig.formatSeconds(currentCooldown)
-				)
-			else
-				stats.Text = string.format("Walk speed: %d  (maxed)", currentSpeed)
-			end
-		elseif isMagnet then
-			stats.Text = string.format(
-				"Duration: %s\nRange: %s\nCooldown: %s\nNext level: %s cooldown, %s range\nCost: %d brains",
-				MagnetConfig.formatSeconds(MagnetConfig.DURATION),
-				MagnetConfig.formatTiles(currentRange),
-				MagnetConfig.formatSeconds(currentCooldown),
-				MagnetConfig.formatSeconds(nextCooldown),
-				MagnetConfig.formatTiles(nextRange),
-				nextCost or 0
-			)
+		local stats
+		if isMagnet then
+			stats = {
+				{ label = "Duration", current = MagnetConfig.formatSeconds(MagnetConfig.DURATION) },
+				{ label = "Range", current = MagnetConfig.formatTiles(MagnetConfig.rangeTilesFor(level)),
+					nextValue = if atMax then nil else MagnetConfig.formatTiles(MagnetConfig.rangeTilesFor(nextLevel)) },
+				{ label = "Cooldown", current = MagnetConfig.formatSeconds(MagnetConfig.cooldownFor(level)),
+					nextValue = if atMax then nil else MagnetConfig.formatSeconds(MagnetConfig.cooldownFor(nextLevel)) },
+			}
 		else
-			stats.Text = string.format(
-				"Walk speed: %d\nNext level: %d  (+%d)\nCost: %d brains",
-				currentSpeed,
-				nextSpeed,
-				bonus,
-				nextCost or 0
-			)
+			local bonus = def.walkSpeedBonusPerLevel or 0
+			stats = { { label = "Walk speed", current = tostring(PlayerConfig.WALK_SPEED + level * bonus),
+				nextValue = if atMax then nil else tostring(PlayerConfig.WALK_SPEED + nextLevel * bonus) } }
 		end
-		stats.Parent = self.statsBody
-		UITheme.applyOutlinedTitle(stats, UITheme.TITLE)
-		stats.TextSize = 14
+		UpgradeCards.details(self.statsBody, def.name, isMagnet, level, def.maxLevel, def.description, stats)
 
 		if atMax then
-			placeBuyButton(self.statsBody, "Max", false, false, function() end)
+			placeBuyButton(self.statsBody, "Max Level", false, false, function() end)
 		elseif nextCost then
 			local price = nextCost
 			placeBuyButton(
@@ -786,6 +744,8 @@ function ProgressionStore.rebuildList(self: ProgressionStoreHud)
 	end
 
 	local kind = self.shopKind
+	self.balanceLabel.Visible = kind == StoreConfig.SHOP_UPGRADES
+	self.balanceLabel.Text = string.format("%d BRAINS", self.brains)
 	if kind == StoreConfig.SHOP_BRAINROTS then
 		self.titleLabel.Text = "Brainrot Shop"
 		for index, entry in ProgressConfig.STORE_CATALOG do
@@ -827,7 +787,8 @@ function ProgressionStore.rebuildList(self: ProgressionStoreHud)
 			local name = Instance.new("TextLabel")
 			name.BackgroundTransparency = 1
 			name.Position = UDim2.fromOffset(74, 0)
-			name.Size = UDim2.new(1, if owned then -140 else -16, 1, 0)
+			name.Size = UDim2.new(1, -170, 1, 0)
+			name.TextWrapped = true
 			name.TextXAlignment = Enum.TextXAlignment.Left
 			name.TextSize = 16
 			name.Text = definition.name
@@ -838,6 +799,16 @@ function ProgressionStore.rebuildList(self: ProgressionStoreHud)
 
 			if owned then
 				stampSold(row)
+			else
+				local price = Instance.new("TextLabel")
+				price.Name = "Price"
+				price.AnchorPoint = Vector2.new(1, 0.5)
+				price.Position, price.Size = UDim2.new(1, -10, 0.5, 0), UDim2.fromOffset(80, 28)
+				price.BackgroundColor3, price.BorderSizePixel = UITheme.FIELD_PANEL, 0
+				price.Text, price.TextSize = string.format("%d brains", entry.brainsCost), 12
+				UITheme.styleCorner(price, 8)
+				UITheme.applyOutlinedTitle(price, UITheme.FIELD_TEXT)
+				price.Parent = row
 			end
 
 			local id = entry.brainrotId
@@ -848,33 +819,12 @@ function ProgressionStore.rebuildList(self: ProgressionStoreHud)
 	elseif kind == StoreConfig.SHOP_UPGRADES then
 		self.titleLabel.Text = "Upgrade Shop"
 		for index, def in ProgressConfig.UPGRADE_CATALOG do
-			local selected = self.selectedId == def.id
-			local row = Instance.new("TextButton")
-			row.Name = def.id
-			row.Size = UDim2.new(1, 0, 0, ROW_HEIGHT)
-			row.LayoutOrder = index
-			row.AutoButtonColor = true
-			row.Text = ""
-			row.Parent = self.list
-			styleRow(row, false, selected)
-
-			local level = ProgressConfig.upgradeLevel(def, self.upgrades[def.id])
-			local name = Instance.new("TextLabel")
-			name.BackgroundTransparency = 1
-			name.Position = UDim2.fromOffset(16, 0)
-			name.Size = UDim2.new(1, -24, 1, 0)
-			name.TextXAlignment = Enum.TextXAlignment.Left
-			name.TextSize = 18
-			name.Text = string.format("%s  %d / %d", def.name, level, def.maxLevel)
-			name.Active = false
-			name.Parent = row
-			UITheme.applyOutlinedTitle(name)
-			name.TextSize = 18
-
 			local id = def.id
-			row.MouseButton1Click:Connect(function()
-				self:selectItem(id)
-			end)
+			local level = ProgressConfig.upgradeLevel(def, self.upgrades[id])
+			local price = nextUpgradeCost(def, level)
+			local row = UpgradeCards.card(self.list, id, def.name, id == MagnetConfig.ID, level, def.maxLevel,
+				price, price ~= nil and self.brains >= price, self.selectedId == id, index)
+			row.Activated:Connect(function() self:selectItem(id) end)
 		end
 	end
 end

@@ -1,5 +1,5 @@
 --!strict
--- Milestone 20 catalogs. Quests, login rewards and achievements are active.
+-- Milestone 20 catalogs. Quests, first-time rewards, achievements, challenges and spins.
 local RetentionConfig = {}
 
 export type RewardBand = { id: string, minimumDay: number, multiplier: number }
@@ -17,7 +17,7 @@ RetentionConfig.QUESTS_PER_DAY = 3
 RetentionConfig.DAILY_QUEST_BONUS = 2
 RetentionConfig.CHALLENGE_MINIMUM_DAY = 10
 RetentionConfig.CHALLENGE_BRAINS = 4
-RetentionConfig.SPIN_MINIMUM_DAY = 5
+RetentionConfig.SPIN_MINIMUM_DAY = 3 -- clearing Day 2 unlocks Day 3
 RetentionConfig.CLAIM_REQUEST_INTERVAL = 0.5
 RetentionConfig.STATE_PUSH_INTERVAL = 0.35
 RetentionConfig.GOAL_UNLOCK_LOOKAHEAD = 3
@@ -66,7 +66,38 @@ RetentionConfig.ACHIEVEMENTS = {
 	{ id = "FirstPerfectDefense", name = "Perfect Defense", description = "Clear a numbered day without a house breach.", event = "CampaignDayCleared", target = 1, brains = 3, requirement = "NoBreaches" },
 	{ id = "OwnFiveBrainrots", name = "Growing Collection", description = "Own five different Brainrot types.", event = "BrainrotUnlocked", target = 5, brains = 5, requirement = "OwnedTotal" },
 	{ id = "OwnTenBrainrots", name = "Brainrot Collector", description = "Own ten different Brainrot types.", event = "BrainrotUnlocked", target = 10, brains = 10, requirement = "OwnedTotal" },
+	{ id = "FirstLegendary", name = "Legend in the Making", description = "Claim a Legendary Brainrot evolution.", event = "EvolutionClaimed", target = 1, brains = 8, requirement = "Legendary" },
+	{ id = "FirstGod", name = "Godlike", description = "Claim a God Brainrot evolution.", event = "EvolutionClaimed", target = 1, brains = 15, requirement = "God" },
+	{ id = "Defeat100", name = "Monster Hunter", description = "Defeat 100 monsters.", event = "MonsterDefeated", target = 100, brains = 6, requirement = "Kills" },
+	{ id = "Defeat500", name = "Monster Slayer", description = "Defeat 500 monsters.", event = "MonsterDefeated", target = 500, brains = 12, requirement = "Kills" },
+	{ id = "Plant100", name = "Seasoned Planter", description = "Place 100 Brainrots.", event = "BrainrotPlaced", target = 100, brains = 6, requirement = "Placements" },
 }
+
+-- Permanent Campaign quests share the claim ledger, with a separate UI track.
+local campaignMilestones = {
+	{ day = 5, title = "The Scout’s Trail" },
+	{ day = 10, title = "The Elite Draws Near" },
+	{ day = 15, title = "When Darkness Falls" },
+	{ day = 20, title = "Invitation from the Duke" },
+	{ day = 25, title = "Threads Across the Trail" },
+	{ day = 30, title = "Into the Queen’s Web" },
+	{ day = 35, title = "A Howl Beyond the Fog" },
+	{ day = 40, title = "Court of Silk" },
+	{ day = 45, title = "The Tomb Closes In" },
+	{ day = 50, title = "At the Pharaoh’s Gate" },
+}
+for rank, milestone in campaignMilestones do
+	local day = milestone.day
+	table.insert(RetentionConfig.ACHIEVEMENTS, {
+		id = "ReachDay" .. day,
+		name = milestone.title,
+		description = "Unlock campaign Day " .. day .. ".",
+		event = "CampaignDayCleared",
+		target = day,
+		brains = 4 + rank,
+		requirement = "CampaignDay",
+	})
+end
 
 -- Future server event boundary. No RemoteEvent is used for objective credit.
 RetentionConfig.GAMEPLAY_EVENTS = {

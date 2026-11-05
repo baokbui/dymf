@@ -18,7 +18,7 @@ MagnetHud.__index = MagnetHud
 local SIZE = 64
 local ICON = 36
 -- Image asset 114934566416428; ImageLabel uses the texture id.
-local MAGNET_ICON_TEXTURE_ID = "rbxassetid://73519143112132"
+local MAGNET_ICON_TEXTURE_ID = UITheme.MAGNET_ICON
 
 export type MagnetHud = typeof(setmetatable(
 	{} :: {

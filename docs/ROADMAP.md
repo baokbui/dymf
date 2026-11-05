@@ -312,7 +312,7 @@ Persist player progress.
 - Equipped loadout
 - Upgrades
 - Statistics, Brainrot XP checkpoints, claimed evolution tiers, intro flags,
-  optional Hidden Day pending flag (introduced in v7; current schema v11)
+  optional Hidden Day pending flag (introduced in v7; current schema v13)
 
 
 
@@ -687,7 +687,7 @@ Do **not** treat sheet “Level 10” as campaign Day 10.
 
 # Milestone 20 — Retention Systems
 
-**Status: 🛠 In progress — Steps 0–4 complete; quests, login rewards, achievements and next-goal display implemented**
+**Status: 🛠 In progress — Steps 0–6 implemented; full integration and release verification remains in Step 7**
 
 ## Goal
 
@@ -801,52 +801,53 @@ checks (119 total). Isolated SaveService/RetentionService tests cover v7/v8/v9
 migration, concurrent saves/purchases/progress, repeated claims, permanent
 claims across midnight, disconnects during achievement commits, attempt breach
 tracking, Hidden/Challenge filtering, two-player isolation and goal-view validation.
-The shared Menu has an Achievements section with five rows and one next goal,
-using the restored UI style and transparent dismissal layer. Ownership/Epic
+Step 4 shipped the original five achievements and one next goal. The shared
+Menu now shows ten achievements, with Campaign milestones under Quests. Ownership/Epic
 catch-up is verified; boss/perfect history begins with new events. Schema v10
 stores permanent progress/claims. Full battle/device/multiplayer and live
-analytics remain Step 7 checks; Step 5 is next. Menu also hosts Inventory, Index,
+analytics remain Step 7 checks. Menu also hosts Inventory, Index,
 Upgrades, Settings, Statistics and Quests behind one HUD entry. First-time
 Rewards has its own temporary gift HUD entry, hidden after all seven claims.
 
 ## Step 5 — Daily challenge encounter
 
-- [ ] Author a separate optional challenge with a readable modifier and difficulty.
-- [ ] Use a separate challenge lawn/state; safely preserve and restore the player's
-  campaign day, hearts, pending Hidden Day, lawn checkpoint, and coin rules.
-- [ ] Define challenge XP, quest/achievement credit, and retry rules explicitly
-  before wiring it into campaign services.
-- [ ] Give a fixed first-clear reward per UTC day; permit free retries afterward.
-- [ ] Handle victory, defeat, leaving, reconnecting, and daily rollover without
-  replacing or corrupting campaign progress.
-- [ ] Add entry/result UI and record attempts, clears, retries, and rewards.
+- [x] Author Forest Rush with Day 10 enemy scaling, three hearts and no magnet.
+- [x] Isolate the temporary challenge lawn, hearts and coins from campaign saves.
+- [x] Exclude challenge play from campaign XP, statistics, quests and achievements.
+- [x] Commit one UTC first-clear payout and allow free retries.
+- [x] Add entry/result UI and analytics for attempts, clears, retries and rewards.
+- [ ] Verify a complete Studio battle, including defeat, leaving, reconnecting
+  and restoring a populated lawn in a multiplayer session (Step 7).
 
-**Done when:** a challenge can be played and retried independently of campaign
-progress, with only one first-clear payout per eligible day.
+In-memory SaveService coverage verifies stale dates, queued saves, repeated
+claims, reconnects and the next UTC day's payout. See `RETENTION.md`.
 
 ## Step 6 — Free daily spinner
 
-- [ ] Author a small reward pool with visible odds and the agreed economy budget.
-- [ ] Grant one free spin per eligible UTC day; paid spins are outside this scope.
-- [ ] Choose and record the outcome on the server; the client animates that outcome.
-- [ ] Persist spin eligibility/outcome so disconnects cannot lose a reward or reroll it.
-- [ ] Add UI, claim feedback, and analytics.
-- [ ] Verify repeated requests, leaving mid-animation, reconnecting, and rollover.
-
-**Done when:** each daily spin produces one authoritative reward regardless of
-client animation or connection state.
+- [x] Publish the reward pool and odds in the Daily Spinner HUD button.
+- [x] Unlock one free spin per UTC day after clearing Day 2.
+- [x] Select the result on the server and save it atomically with the reward.
+- [x] Reveal the committed outcome in the client reel and show it on reconnect.
+- [x] Record success and rejected requests with retention analytics.
+- [x] Verify stale dates, concurrent requests, disconnect during the save,
+  reconnect, and UTC rollover in the SaveService fixture.
+- [ ] Verify the full in-game reveal and real-device layout in Step 7.
 
 ## Step 7 — Integration, balance, and release checks
 
 - [ ] Test migration from current saves and reconnect/restart behavior for all tracks.
-- [ ] Test invalid remote arguments, spam, simultaneous claims, and duplicate payouts.
+- [x] Test invalid remote arguments, spam, simultaneous claims, and duplicate payouts in isolated fixtures.
 - [ ] Test interaction with victory/defeat, Hidden Day, Reset Progress, and upgrades.
 - [ ] Verify mobile/desktop layouts and four-player server isolation/performance.
-- [ ] Review total brains income against shop/evolution prices; adjust config as needed.
+- [x] Review configured brains income against shop/evolution prices. Catalog review is recorded in ECONOMY.md.
 - [ ] Verify analytics and compare D1/D7/D30 cohorts once enough live data exists;
   do not claim a retention improvement from implementation alone.
-- [ ] Update NETWORKING, SAVE_SYSTEM, ECONOMY, UI, AUDIO, ARCHITECTURE, and relevant
+- [x] Update NETWORKING, SAVE_SYSTEM, ECONOMY, UI, AUDIO, ARCHITECTURE, and relevant
   gameplay docs as each feature ships; update AGENTS.md if an invariant changes.
+
+Isolated checks cover v7–v13 migration, reconnects, reset, challenge defeat and
+clear, and guarded reward writes. Real DataStore, four-player battle, device, and
+live analytics checks remain open.
 
 **Done when:** the features pass functional/integration checks, their rewards
 fit the economy, and observability is ready. Longer-term retention evaluation
@@ -854,8 +855,7 @@ continues after release as cohorts mature.
 
 ## Architecture constraints
 
-RetentionService and durable daily quest claims implement the shared boundary;
-challenge lifecycle and the remaining reward tracks are still planned:
+RetentionService and the durable retention writer implement the shared boundary:
 
 - Dedicated server services/modules own retention eligibility, objectives,
   challenge lifecycle, and claims; use the existing service bootstrap.

@@ -21,17 +21,17 @@ local AudioController = require(script.Parent.Parent.AudioController)
 local DamageMeter = {}
 DamageMeter.__index = DamageMeter
 
-local WIDTH = 270
-local TITLE_H = 22
-local TAB_H = 30
-local ROW_H = 44
-local PAD = 8
+local WIDTH = 240
+local TITLE_H = 18
+local TAB_H = 28
+local ROW_H = 36
+local PAD = 7
 local HEADER_TOP = 4
 local TITLE_TAB_GAP = 2
-local TAB_BOTTOM_PAD = 6
-local LIST_BOTTOM_PAD = 6
-local BAR_H = 12
-local BAR_CORNER = 6
+local TAB_BOTTOM_PAD = 4
+local LIST_BOTTOM_PAD = 4
+local BAR_H = 8
+local BAR_CORNER = 4
 local BAR_TWEEN = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 export type RankEntry = { id: string, damage: number }
@@ -98,7 +98,7 @@ local function makeRow(parent: Instance, index: number): Row
 	frame.Name = "Row" .. index
 	frame.BackgroundTransparency = 1
 	frame.BorderSizePixel = 0
-	frame.Size = UDim2.new(1, 0, 0, ROW_H - 6)
+	frame.Size = UDim2.new(1, 0, 0, ROW_H - 4)
 	frame.LayoutOrder = index
 	frame.ZIndex = 14
 	frame.Visible = false
@@ -108,29 +108,29 @@ local function makeRow(parent: Instance, index: number): Row
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Position = UDim2.fromOffset(0, 0)
-	nameLabel.Size = UDim2.new(1, -64, 0, 22)
+	nameLabel.Size = UDim2.new(1, -57, 0, 20)
 	nameLabel.Text = ""
-	nameLabel.TextSize = 15
+	nameLabel.TextSize = 13
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.ZIndex = 15
 	nameLabel.Parent = frame
 	UITheme.applyOutlinedTitle(nameLabel)
-	nameLabel.TextSize = 15
+	nameLabel.TextSize = 13
 
 	local damageLabel = Instance.new("TextLabel")
 	damageLabel.Name = "Damage"
 	damageLabel.BackgroundTransparency = 1
 	damageLabel.AnchorPoint = Vector2.new(1, 0)
 	damageLabel.Position = UDim2.new(1, 0, 0, 0)
-	damageLabel.Size = UDim2.fromOffset(60, 22)
+	damageLabel.Size = UDim2.fromOffset(53, 20)
 	damageLabel.Text = "0"
-	damageLabel.TextSize = 15
+	damageLabel.TextSize = 13
 	damageLabel.TextXAlignment = Enum.TextXAlignment.Right
 	damageLabel.ZIndex = 15
 	damageLabel.Parent = frame
 	UITheme.applyOutlinedTitle(damageLabel, UITheme.GOLD_TEXT)
-	damageLabel.TextSize = 15
+	damageLabel.TextSize = 13
 
 	local barTrack = Instance.new("Frame")
 	barTrack.Name = "BarTrack"
@@ -173,20 +173,21 @@ function DamageMeter.new(parent: Frame): DamageMeterHud
 	parent.Size = UDim2.fromOffset(WIDTH, collapsedHeight())
 	parent.ZIndex = 12
 	parent.ClipsDescendants = true
-	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_DAMAGE_METER)
+	UITheme.applyPanelLook(parent, nil, UITheme.FIELD_PANEL)
+	UITheme.applySurfaceDepth(parent)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.BackgroundTransparency = 1
 	title.Position = UDim2.fromOffset(PAD, HEADER_TOP)
 	title.Size = UDim2.new(1, -PAD * 2, 0, TITLE_H)
-	title.Text = "Damage"
-	title.TextSize = 16
+	title.Text = "DAMAGE REPORT"
+	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Center
 	title.ZIndex = 13
 	title.Parent = parent
-	UITheme.applyOutlinedTitle(title)
-	title.TextSize = 16
+	UITheme.applyOutlinedTitle(title, UITheme.FIELD_ACCENT)
+	title.TextSize = 14
 
 	local tabY = HEADER_TOP + TITLE_H + TITLE_TAB_GAP
 
@@ -199,6 +200,7 @@ function DamageMeter.new(parent: Frame): DamageMeterHud
 	brainrotTab.ZIndex = 13
 	brainrotTab.Parent = parent
 	UITheme.applyButtonLook(brainrotTab, UITheme.CARD_SELECTED_BG)
+	UITheme.applySurfaceDepth(brainrotTab)
 	UITheme.applyOutlinedTitle(brainrotTab)
 	brainrotTab.TextSize = 13
 
@@ -211,7 +213,8 @@ function DamageMeter.new(parent: Frame): DamageMeterHud
 	monsterTab.TextSize = 13
 	monsterTab.ZIndex = 13
 	monsterTab.Parent = parent
-	UITheme.applyButtonLook(monsterTab, UITheme.BUTTON_BG)
+	UITheme.applyButtonLook(monsterTab, UITheme.FIELD_INSET)
+	UITheme.applySurfaceDepth(monsterTab)
 	UITheme.applyOutlinedTitle(monsterTab)
 	monsterTab.TextSize = 13
 
@@ -247,14 +250,14 @@ function DamageMeter.new(parent: Frame): DamageMeterHud
 	emptyLabel.Name = "Empty"
 	emptyLabel.BackgroundTransparency = 1
 	emptyLabel.Position = UDim2.fromOffset(PAD, headerHeight())
-	emptyLabel.Size = UDim2.new(1, -PAD * 2, 0, 28)
-	emptyLabel.Text = "No damage yet"
-	emptyLabel.TextSize = 16
+	emptyLabel.Size = UDim2.new(1, -PAD * 2, 0, 24)
+	emptyLabel.Text = "Damage will appear here"
+	emptyLabel.TextSize = 14
 	emptyLabel.ZIndex = 14
 	emptyLabel.Visible = false
 	emptyLabel.Parent = parent
 	UITheme.applyOutlinedTitle(emptyLabel, UITheme.TITLE)
-	emptyLabel.TextSize = 16
+	emptyLabel.TextSize = 14
 
 	local rows: { Row } = {}
 	for i = 1, top do
@@ -319,9 +322,9 @@ function DamageMeter.setTab(self: DamageMeterHud, tab: string)
 	self.tab = if tab == "monsters" then "monsters" else "brainrots"
 	if self.tab == "brainrots" then
 		UITheme.applyButtonLook(self.brainrotTab, UITheme.CARD_SELECTED_BG)
-		UITheme.applyButtonLook(self.monsterTab, UITheme.BUTTON_BG)
+		UITheme.applyButtonLook(self.monsterTab, UITheme.FIELD_INSET)
 	else
-		UITheme.applyButtonLook(self.brainrotTab, UITheme.BUTTON_BG)
+		UITheme.applyButtonLook(self.brainrotTab, UITheme.FIELD_INSET)
 		UITheme.applyButtonLook(self.monsterTab, UITheme.CARD_SELECTED_BG)
 	end
 	self:refresh()
@@ -374,7 +377,7 @@ function DamageMeter.refresh(self: DamageMeterHud)
 			continue
 		end
 		row.frame.Visible = true
-		row.nameLabel.Text = displayName(self.tab, entry.id)
+		row.nameLabel.Text = string.format("%d.  %s", i, displayName(self.tab, entry.id))
 		row.damageLabel.Text = formatDamage(entry.damage)
 		row.barFill.BackgroundColor3 = fillColor
 		local alpha = 0

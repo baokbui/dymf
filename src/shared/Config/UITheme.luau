@@ -8,8 +8,7 @@
 local UITheme = {}
 
 -- Fills (saturated sticker colors — avoid flat white)
--- PANEL_BG / CHIP_BG stay light blue: the Day/Start Day panel's look is the
--- reference "house style" every other panel's stroke/corner geometry matches.
+-- Blue remains the default for generic panels and chips.
 UITheme.PANEL_BG = Color3.fromRGB(90, 175, 255)
 UITheme.PANEL_BG_ALT = Color3.fromRGB(70, 155, 240)
 UITheme.CHIP_BG = Color3.fromRGB(90, 175, 255)
@@ -31,7 +30,10 @@ UITheme.CHIP_BG_MAGNET = Color3.fromRGB(235, 75, 85) -- magnet red
 UITheme.PANEL_BG_QUESTS = Color3.fromRGB(255, 145, 125) -- coral; distinct from teal Upgrades
 UITheme.PANEL_BG_ACHIEVEMENTS = Color3.fromRGB(185, 150, 245) -- lavender
 UITheme.PANEL_BG_INVENTORY = Color3.fromRGB(110, 220, 150) -- leafy green
-UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(255, 165, 80) -- orange
+UITheme.PANEL_BG_SETTINGS = Color3.fromRGB(34, 39, 55)
+UITheme.SETTINGS_ROW = Color3.fromRGB(45, 51, 69)
+UITheme.SETTINGS_TILE = Color3.fromRGB(63, 71, 94)
+UITheme.SETTINGS_ACCENT = Color3.fromRGB(255, 177, 93)
 UITheme.PANEL_BG_REWARD = Color3.fromRGB(255, 205, 70) -- gold
 UITheme.PANEL_BG_UNLOCK = Color3.fromRGB(200, 130, 255) -- purple
 UITheme.PANEL_BG_STORE = Color3.fromRGB(50, 195, 175) -- teal
@@ -39,7 +41,35 @@ UITheme.PANEL_BG_INDEX = Color3.fromRGB(95, 110, 185) -- indigo catalog
 UITheme.PANEL_BG_MONSTER_INTRO = Color3.fromRGB(255, 140, 90) -- fiery orange
 UITheme.PANEL_BG_MECHANIC_INTRO = Color3.fromRGB(130, 145, 110) -- mossy stone
 UITheme.PANEL_BG_GAME_OVER = Color3.fromRGB(45, 28, 40) -- dark defeat card
-UITheme.PANEL_BG_DAMAGE_METER = Color3.fromRGB(70, 150, 255) -- right-rail damage board
+
+-- Feature-specific surfaces and accents.
+UITheme.INVENTORY_PACKET = Color3.fromRGB(241, 249, 211)
+UITheme.INVENTORY_INSET = Color3.fromRGB(196, 229, 183)
+UITheme.INVENTORY_INK = Color3.fromRGB(35, 85, 58)
+UITheme.INDEX_DISCOVERED = Color3.fromRGB(235, 235, 255)
+UITheme.INDEX_UNKNOWN = Color3.fromRGB(188, 193, 227)
+UITheme.INDEX_INSET = Color3.fromRGB(124, 132, 192)
+UITheme.QUEST_PAPER = Color3.fromRGB(255, 238, 214)
+UITheme.QUEST_INK = Color3.fromRGB(122, 58, 47)
+UITheme.ACHIEVEMENT_PAPER = Color3.fromRGB(248, 240, 255)
+UITheme.ACHIEVEMENT_INK = Color3.fromRGB(84, 55, 131)
+UITheme.PANEL_BG_STATISTICS = Color3.fromRGB(147, 213, 232)
+UITheme.STATISTICS_INK = Color3.fromRGB(27, 81, 104)
+UITheme.STATISTICS_CARD = Color3.fromRGB(230, 248, 255)
+
+-- Field HUD surfaces, paired with bright action and status colors.
+UITheme.FIELD_PLANTING = Color3.fromRGB(37, 72, 56)
+UITheme.FIELD_DAY = Color3.fromRGB(34, 69, 99)
+UITheme.FIELD_PANEL = Color3.fromRGB(30, 44, 53)
+UITheme.FIELD_INSET = Color3.fromRGB(49, 67, 78)
+UITheme.FIELD_TEXT = Color3.fromRGB(214, 229, 235)
+UITheme.FIELD_ACCENT = Color3.fromRGB(150, 234, 165)
+UITheme.UPGRADE_PANEL = Color3.fromRGB(22, 33, 46)
+UITheme.UPGRADE_SPEED = Color3.fromRGB(108, 220, 255)
+UITheme.UPGRADE_MAGNET = Color3.fromRGB(255, 141, 152)
+UITheme.SPEED_ICON = "rbxassetid://82103513055414"
+UITheme.MAGNET_ICON = "rbxassetid://73519143112132"
+UITheme.COIN_PILL = Color3.fromRGB(57, 44, 29)
 
 -- Accents
 UITheme.OUTLINE = Color3.fromRGB(15, 15, 20)
@@ -62,9 +92,8 @@ UITheme.CANCEL = Color3.fromRGB(230, 70, 70)
 UITheme.TOAST_BG = Color3.fromRGB(255, 150, 150)
 UITheme.TOAST_TEXT = Color3.fromRGB(90, 20, 20)
 
--- Viewport readability: baseline laptop size, capped desktop enlargement.
+-- Viewport readability reference for proportional desktop enlargement.
 UITheme.DESKTOP_REFERENCE = Vector2.new(1536, 864)
-UITheme.DESKTOP_MAX_SCALE = 1.5
 
 -- Geometry
 UITheme.CORNER_PANEL = 14
@@ -145,6 +174,14 @@ function UITheme.applyBodyText(label: TextLabel | TextButton, color: Color3?)
 	label.TextColor3 = color or UITheme.BODY
 	label.TextStrokeTransparency = 1
 	label.Font = Enum.Font.Gotham
+end
+
+-- A neutral gradient keeps the existing feature and state colors intact.
+function UITheme.applySurfaceDepth(gui: GuiObject)
+	local gradient = Instance.new("UIGradient")
+	gradient.Name, gradient.Rotation = "SurfaceDepth", 90
+	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.78, 0.81, 0.88))
+	gradient.Parent = gui
 end
 
 table.freeze(UITheme)

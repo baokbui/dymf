@@ -9,6 +9,7 @@
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UITheme = require(ReplicatedStorage:WaitForChild("Shared").Config.UITheme)
+local PanelPattern = require(script.Parent.Parent.Parent.Utilities.PanelPattern)
 local AudioController = require(script.Parent.Parent.AudioController)
 
 local RewardPopup = {}
@@ -50,6 +51,20 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 	parent.ZIndex = 20
 	parent.ClipsDescendants = false
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_REWARD)
+	UITheme.applySurfaceDepth(parent)
+	PanelPattern.mount(parent, "Diagonal", UITheme.TITLE, 0.24, 7)
+	for _, side in { -1, 1 } do
+		for index = 1, 3 do
+			local spark = Instance.new("Frame")
+			spark.Name = "VictorySpark"
+			spark.AnchorPoint = Vector2.new(0.5, 0.5)
+			spark.Position = UDim2.new(0.5, side * (80 + index * 15), 0, if index == 2 then 23 else 35)
+			spark.Size = UDim2.fromOffset(if index == 2 then 11 else 6, if index == 2 then 11 else 6)
+			spark.BackgroundColor3, spark.BorderSizePixel = UITheme.TITLE, 0
+			spark.Rotation = 45
+			spark.Parent = parent
+		end
+	end
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -92,10 +107,10 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 
 	local totalLine = Instance.new("TextLabel")
 	totalLine.Name = "TotalBrains"
-	totalLine.BackgroundTransparency = 1
+	UITheme.applyButtonLook(totalLine, Color3.fromRGB(255, 245, 190), 12)
 	totalLine.AnchorPoint = Vector2.new(0.5, 0.5)
 	totalLine.Position = UDim2.new(0.5, 0, 0, 142)
-	totalLine.Size = UDim2.new(1, -24, 0, 48)
+	totalLine.Size = UDim2.new(1, -76, 0, 48)
 	totalLine.TextSize = 26
 	totalLine.TextWrapped = true
 	totalLine.Visible = false
@@ -116,6 +131,7 @@ function RewardPopup.new(parent: Frame): RewardPopupHud
 	continueButton.Active = false
 	continueButton.Parent = parent
 	UITheme.applyButtonLook(continueButton, UITheme.SUCCESS)
+	UITheme.applySurfaceDepth(continueButton)
 	UITheme.applyOutlinedTitle(continueButton)
 	continueButton.TextSize = 18
 

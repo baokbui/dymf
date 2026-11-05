@@ -6,7 +6,7 @@ return function(sources: any, modules: any): string
 	local function copy(v) if type(v)~="table" then return v end local out={} for k,x in v do out[k]=copy(x) end return out end
 	local config,time,saveConfig=modules.RetentionConfig,modules.RetentionTime,modules.SaveConfig
 	local rules,Store,login=modules.DailyQuests,modules.SessionStore,modules.LoginRewards
-	local achievements=modules.Achievements
+	local achievements,spin=modules.Achievements,modules.DailySpin
 	local grant=modules.RewardGrant
 	local now=20000*86400
 	local player={UserId=101,Name="IsolatedQuestPlayer",Parent=true}
@@ -34,12 +34,12 @@ return function(sources: any, modules: any): string
 	  if profile then profile.brains+=amount;profile.statistics.brainsEarned=(profile.statistics.brainsEarned or 0)+amount end
 	 end,
 	 applyDurableReward=function(_,reward) if reward.kind~="Ticket" then grant.apply(profile,reward) end end,
-	 reset=noop,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
+	 reset=function() profile.brains=0; profile.statistics={}; profile.upgrades={} end,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
 	}
 	local ret={
 	 hydrate=function(_,s) retention=rules.sanitize(s);rules.ensure(retention,now,highest);login.ensure(retention,now,highest);rules.ensure(retention,now,highest,true) end,
 	 getSaveSlice=function() return rules.sanitize(retention) end,
-	 markCommitted=function(_,day,id,kind,committed) if kind=="Login" then login.markCommitted(retention,committed) elseif kind=="Achievement" then achievements.markCommitted(retention,id) elseif kind~="Ticket" then rules.markCommitted(retention,day,id,kind=="WeeklyQuest") end; if committed then retention.brainrotTickets=committed.brainrotTickets end end,
+	 markCommitted=function(_,day,id,kind,committed) if kind=="Login" then login.markCommitted(retention,committed) elseif kind=="Achievement" then achievements.markCommitted(retention,id) elseif kind=="Challenge" then retention.challengeClaimDay=committed.challengeClaimDay elseif kind=="Spin" then retention.spin=committed.spin elseif kind~="Ticket" then rules.markCommitted(retention,day,id,kind=="WeeklyQuest") end; if committed then retention.brainrotTickets=committed.brainrotTickets end end,
 	 cleanup=function() retention=nil end
 	}
 	local handlers={}
@@ -59,14 +59,14 @@ return function(sources: any, modules: any): string
 	function fakeGame:BindToClose() end
 	local fakeTask={wait=noop,defer=noop,spawn=noop}
 	local modules={
-	 RewardGrant=grant,StoreService={canPlayerUseShop=function()return nearStore end},SessionStore=Store,DailyQuests=rules,LoginRewards=login,Achievements=achievements,RetentionService=ret,ProgressService=progress,
+	 RewardGrant=grant,StoreService={canPlayerUseShop=function()return nearStore end},SessionStore=Store,DailyQuests=rules,DailySpin=spin,LoginRewards=login,Achievements=achievements,RetentionService=ret,ProgressService=progress,
 	 LevelService=level,PlotService={getPlotModel=function()return nil end},
-	 BrainrotService={},CoinService={applyDayPurse=noop,applyDevPurse=noop},
-	 SaveConfig=saveConfig,RetentionTime=time,
+	 BrainrotService={clearPlantCooldowns=noop},CoinService={applyDayPurse=noop,applyDevPurse=noop,resetBalance=noop},
+	 SaveConfig=saveConfig,RetentionTime=time,RetentionConfig=config,
 	 Logger={new=function()return {warn=noop,info=noop} end},
 	 Remotes={getEvent=function()return {OnServerEvent={Connect=noop}} end}
 	}
-	local constants=table.clone(realRequire(shared.Constants));constants.SAVE_VERSION=11
+	local constants=table.clone(realRequire(shared.Constants));constants.SAVE_VERSION=13
 	modules.Constants=constants
 	local f=assert(loadstring(sources.Save))
 	setfenv(f,setmetatable({
@@ -90,7 +90,7 @@ return function(sources: any, modules: any): string
 	assert(ok and reward==3 and nestedBusy=="Busy",tostring(reason))
 	assert(profile.brains==93 and backend.record.brains==93,"queued balance overwritten")
 	assert(backend.record.retention.dailyQuests.quests[1].claimed,"queued claim flag lost")
-	assert(backend.record.version==11,"migration")
+	assert(backend.record.version==13,"migration")
 	assert(not Save.claimDailyQuest(player,20000,"CollectCoins"),"duplicate payout")
 
 	local beforeLogin=profile.brains
@@ -177,12 +177,66 @@ return function(sources: any, modules: any): string
 	rules.record(retention,"CoinsCollected",1500,true)
 	assert(Save.claimRetentionReward(player,"WeeklyQuest",time.weekKey(now),"CollectCoins"),"weekly durable claim")
 	assert(backend.record.retention.weeklyQuests.quests[1].claimed,"weekly claim flag missing")
+	local challengeDay=time.dayKey(now)
+	local beforeChallenge=profile.brains
+	assert(select(2,Save.claimRetentionReward(player,"Challenge",challengeDay-1,"ForestRush"))=="Expired")
+	backend.hook=function() Save.saveNow(player,"queued_challenge_clear") end
+	local won,_,payout=Save.claimRetentionReward(player,"Challenge",challengeDay,"ForestRush")
+	assert(won and payout==12 and backend.record.brains==beforeChallenge+12,"challenge payout")
+	assert(retention.challengeClaimDay==challengeDay and backend.record.retention.challengeClaimDay==challengeDay,"challenge receipt")
+	assert(select(2,Save.claimRetentionReward(player,"Challenge",challengeDay,"ForestRush"))=="AlreadyClaimed")
 	handlers.remove(player)
-	backend.record.version=12
+	player.Parent=true;handlers.add(player)
+	assert(select(2,Save.claimRetentionReward(player,"Challenge",challengeDay,"ForestRush"))=="AlreadyClaimed","challenge replay after reconnect")
+	now+=86400
+	assert(Save.claimRetentionReward(player,"Challenge",time.dayKey(now),"ForestRush"),"challenge next UTC day")
+
+	local beforeMilestone=profile.brains
+	assert(select(2,Save.claimRetentionReward(player,"Achievement",0,"ReachDay35"))=="NotReady")
+	local reached,_,milestoneBrains=Save.claimRetentionReward(player,"Achievement",0,"ReachDay30")
+	assert(reached and milestoneBrains==10 and backend.record.brains==beforeMilestone+10,"campaign milestone payout")
+	assert(backend.record.retention.achievements.ReachDay30.claimed,"campaign claim was not durable")
+	assert(select(2,Save.claimRetentionReward(player,"Achievement",0,"ReachDay30"))=="AlreadyClaimed")
+
+	local spinDay=time.dayKey(now)
+	local beforeSpin=backend.record.brains
+	assert(select(2,Save.claimRetentionReward(player,"Spin",spinDay-1,"DailySpin"))=="Expired")
+	local beforeHighest=highest
+	highest=2
+	assert(select(2,Save.claimRetentionReward(player,"Spin",spinDay,"DailySpin"))=="NotReady")
+	highest=beforeHighest
+	local spinBusy
+	backend.hook=function()
+		Save.saveNow(player,"leave_during_spin")
+		spinBusy=select(2,Save.claimRetentionReward(player,"Spin",spinDay,"DailySpin"))
+		profile=nil;player.Parent=nil
+	end
+	local spun,_,spinBrains=Save.claimRetentionReward(player,"Spin",spinDay,"DailySpin")
+	local savedSpin=backend.record.retention.spin
+	assert(spun and spinBusy=="Busy" and savedSpin.dayKey==spinDay and savedSpin.brains==spinBrains)
+	assert(backend.record.brains==beforeSpin+spinBrains,"spin disconnect lost payout")
+	handlers.remove(player)
+	player.Parent=true;handlers.add(player)
+	assert(retention.spin.rewardId==savedSpin.rewardId and retention.spin.brains==spinBrains)
+	assert(select(2,Save.claimRetentionReward(player,"Spin",spinDay,"DailySpin"))=="AlreadyClaimed")
+	now+=86400
+	assert(Save.claimRetentionReward(player,"Spin",time.dayKey(now),"DailySpin"),"spin next UTC day")
+
+	local spinReceipt=retention.spin
+	local challengeReceipt=retention.challengeClaimDay
+	Save.resetProgress(player)
+	assert(current==1 and highest==1 and backend.record.brains==0,"Reset Progress did not reset campaign")
+	assert(backend.record.retention.spin.dayKey==spinReceipt.dayKey
+		and backend.record.retention.spin.rewardId==spinReceipt.rewardId
+		and backend.record.retention.challengeClaimDay==challengeReceipt,"Reset Progress reopened a daily reward")
+	assert(not backend.record.retention.achievements.ReachDay30.claimed,"Reset Progress retained permanent quest claims")
+
+	handlers.remove(player)
+	backend.record.version=14
 	player.Parent=true
 	handlers.add(player)
-	assert(player.kicked and backend.record.version==12,"newer schema overwritten")
-	return "PASS: full SaveService in-memory tests: quest regression, v7/v8/v9/v10→v11, durable first-time/weekly/ticket/achievement flags and balances, concurrent purchase/save merge, duplicate claims, reconnect and intro save, disconnect during login claim, lease release, newer schema refusal. No real player data accessed."
+	assert(player.kicked and backend.record.version==14,"newer schema overwritten")
+	return "PASS: full SaveService in-memory tests: quest regression, v7/v8/v9/v10→v13, durable first-time/weekly/ticket/achievement/challenge/spin flags and balances, concurrent purchase/save merge, duplicate claims, reconnect and intro save, disconnect during login claim, lease release, newer schema refusal. No real player data accessed."
 
 end
 

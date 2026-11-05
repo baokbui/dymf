@@ -152,7 +152,7 @@ function Index.new(parent: Frame): IndexPanel
 	title.Position = UDim2.fromOffset(16, 12)
 	title.TextSize = 22
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Index"
+	title.Text = "Discovery Index"
 	title.Parent = parent
 	UITheme.applyOutlinedTitle(title)
 
@@ -308,22 +308,34 @@ local function mountCell(
 )
 	local cell = Instance.new("Frame")
 	cell.Name = "Cell" .. order
-	cell.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
 	cell.BorderSizePixel = 0
 	cell.LayoutOrder = order
 	cell.ZIndex = 31
 	cell.Parent = parent
-	UITheme.applyCardLook(cell)
+	UITheme.applyButtonLook(cell, if seen then UITheme.INDEX_DISCOVERED else UITheme.INDEX_UNKNOWN)
+	UITheme.applySurfaceDepth(cell)
 
 	local holder = Instance.new("Frame")
 	holder.Name = "Portrait"
 	holder.AnchorPoint = Vector2.new(0.5, 0)
 	holder.Position = UDim2.new(0.5, 0, 0, 8)
 	holder.Size = UDim2.fromOffset(PREVIEW_SIZE, PREVIEW_SIZE)
-	holder.BackgroundTransparency = 1
+	holder.BackgroundColor3 = UITheme.INDEX_INSET
+	holder.BorderSizePixel = 0
+	UITheme.styleCorner(holder, 9)
 	holder.ClipsDescendants = true
 	holder.ZIndex = 32
 	holder.Parent = cell
+
+	-- Faint specimen guides sit behind the portrait.
+	for lineIndex = 1, 3 do
+		local guide = Instance.new("Frame")
+		guide.Name = "SpecimenGuide"
+		guide.Position, guide.Size = UDim2.new(0, 5, lineIndex / 4, 0), UDim2.new(1, -10, 0, 1)
+		guide.BackgroundColor3, guide.BackgroundTransparency = UITheme.TITLE, 0.7
+		guide.BorderSizePixel, guide.ZIndex = 0, 32
+		guide.Parent = holder
+	end
 
 	local preview = mountPreview(holder)
 	if preview:IsA("GuiObject") then
@@ -343,6 +355,15 @@ local function mountCell(
 		mark.TextSize = 42
 	end
 
+	local number = Instance.new("TextLabel")
+	number.Name = "CatalogNumber"
+	number.Position, number.Size = UDim2.fromOffset(5, 5), UDim2.fromOffset(30, 17)
+	number.Text, number.TextSize, number.ZIndex = string.format("%02d", order), 10, 34
+	UITheme.applyButtonLook(number, UITheme.PANEL_BG_INDEX, 6)
+	UITheme.applyStroke(number, 1)
+	UITheme.applyOutlinedTitle(number)
+	number.Parent = cell
+
 	local caption = Instance.new("TextLabel")
 	caption.Name = "Name"
 	caption.BackgroundTransparency = 1
@@ -354,7 +375,8 @@ local function mountCell(
 	caption.TextWrapped = true
 	caption.ZIndex = 32
 	caption.Parent = cell
-	UITheme.applyOutlinedTitle(caption)
+	UITheme.applyBodyText(caption)
+	caption.Font = Enum.Font.GothamBold
 	caption.TextSize = 12
 end
 

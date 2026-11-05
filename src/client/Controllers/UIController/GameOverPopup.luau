@@ -12,6 +12,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local UITheme = require(Shared.Config.UITheme)
+local UISizing = require(script.Parent.Parent.Parent.Utilities.UISizing)
 
 local AudioController = require(script.Parent.Parent.AudioController)
 
@@ -72,6 +73,7 @@ function GameOverPopup.new(parent: Frame): GameOverPopupHud
 	card.BackgroundTransparency = 1
 	card.ZIndex = 51
 	card.Parent = parent
+	UISizing.scaleContent(card, parent)
 	UITheme.applyPanelLook(card, nil, UITheme.PANEL_BG_GAME_OVER)
 	card.BackgroundTransparency = 1
 
@@ -132,6 +134,7 @@ function GameOverPopup.new(parent: Frame): GameOverPopupHud
 	clockRoot.Visible = false
 	clockRoot.ZIndex = 55
 	clockRoot.Parent = parent
+	UISizing.scaleContent(clockRoot, parent)
 	UITheme.styleCorner(clockRoot, 70)
 	local clockStroke = UITheme.applyStroke(clockRoot, 4, Color3.fromRGB(40, 50, 70))
 	clockStroke.Transparency = 1

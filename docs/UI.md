@@ -36,7 +36,7 @@ StarterGui/
         ProgressionStore (Frame) ✅ M18
         Menu         (shared feature window (selected sections only))
         MenuEntry    (bottom-left Menu/X HUD button)
-        MenuDrawer   (animated horizontal strip of seven icon/name buttons)
+        MenuDrawer   (animated horizontal strip of six icon/name buttons)
         FirstTimeRewards (standalone temporary reward window)
         FirstTimeRewardsEntry (gift HUD button above Menu until completion)
 ```
@@ -55,10 +55,9 @@ open independently at the owned stall.
 All HUD panels share a **cartoon thick-outline** look from
 `ReplicatedStorage.Shared.Config.UITheme` (also `Config.UI`):
 
-- Solid panel / chip fills — same rounded-corner + thick black `UIStroke`
-  geometry everywhere, but each HUD piece gets its own saturated "candy" color
-  so the screen doesn't read as one wall of blue: Day/Start Day panel and Shop
-  dock stay cool blue (the reference look), Coins / Brains / Speed are bare
+- Panels and chips use rounded corners and thick black `UIStroke` borders.
+  The Day panel uses slate blue, the planting dock uses forest green, and the
+  damage report uses charcoal with bright action and status accents. Coins / Brains / Speed are bare
   glyphs + amount (no plate or chip), Hearts are bare glyphs (no chip), Inventory /
   Index / Upgrades / Settings retain their panel styles inside Menu; the HUD
   has one bare Menu icon + name. Magnet is red,
@@ -94,12 +93,12 @@ hardcode a second palette in new UI.
 
 ## Panels
 
-- **Coins** ✅ M3 — mid-left glyph + amount (no plate/chip); floating ±N on collect/spend.
+- **Coins** ✅ M3 — compact glyph + amount below the hearts (no plate/chip); floating ±N on collect/spend.
 - **Brains** ✅ M13 — glyph + amount under Coins on the left edge; from
   `ProfileUpdated` / `RequestState` (`profile.brains`).
 - **Speed** ✅ M18 — glyph + WalkSpeed under Brains on the left edge.
-- **Hearts** ✅ M13 — five house hearts at top-left (no chip).
-  Left-edge HUD order: Hearts (top) → gap → Coins / Brains / Speed (mid-left) →
+- **Hearts** ✅ M13 — five house hearts at top-left. When a heart is lost, its red glyph splits and fades over the empty slot.
+  Left-edge HUD order: Hearts (top) → compact Coins / Brains / Speed row →
   gap → one Menu button at bottom-left (icon above name; no plate). Menu
   contains all eight navigation sections. **Magnet** is a smaller square
   at **bottom-center**. Day / Start Day stays bottom-right. **Damage meter** sits
@@ -128,13 +127,16 @@ hardcode a second palette in new UI.
 - **Plant toasts** ✅ — stacked messages just under Shop when a plant fails
   (not enough coins, occupied tile, day not started, still recharging, …). Newest stays under the
   shop; older ones slide up and fade.
-- **LevelUI** ✅ M8 — bottom-right Start **Day**, progress, big-wave banner
+- **LevelUI** ✅ M8 — bottom-right Start **Day**, authored day name during Preparation, progress, and big-wave banner. Hover over a clipped day name to slide it into view.
   (player copy uses "Day"; remotes stay `StartLevel` / `LevelStateChanged`).
   After Start Day, red bold **“Day starting in 3”** sits above the panel and
   counts down to 0, then hides when the day goes Active.
 - **Settings** ✅ M13 — the Settings section of Menu opens the
-  modal. Mute,
-  music/SFX volume, Brainrot SFX toggle, **VFX** (**High** / **Low** / **Off**), and **Other plots** (**On** / **Off**). The VFX hint reads: “High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots. Weaker PCs should use Low or Off.” Other plots: “Off hides Brainrot effects on other players' plots. Your plot stays the same. Turn this off for better performance if you need it.”
+  modal. The shared Menu places page titles near the top edge and keeps a separate Back row for narrow detail views.
+  Settings groups labeled control rows under Audio, Graphics, and Danger Zone.
+  Music and Sound Effects use separate 0–100% sliders with live readouts.
+  Mute, Brainrot Sounds, and Other Plots use on/off switches. Effects Quality
+  cycles High, Low, and Off. Audio changes apply locally as the controls move.
   Behind that: High is full combat effects and a dense aura; Low thins the aura and freezes shine; Off clears aura flames (outline stays) and swaps shop, inventory, and index portraits to color swatches. Inspect portraits stay 3D. **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`).
@@ -316,29 +318,28 @@ SFX. Initial state comes from UIController via cached UIEvents; updates use
 RetentionUpdated. The Menu dismissal layer is transparent, so opening it
 does not darken the game. A standalone First-time Rewards window displays seven
 one-time mixed-reward slots, today's claim state and a next-reward preview. The panel
-scales to the viewport and never auto-opens during combat. Challenge and
-spinner UI remain planned. Achievements shows
-five permanent milestones in a padded scrolling list and one server-selected
+scales to the viewport and never auto-opens during combat. Forest Rush opens
+from the Day panel and Daily Spinner has its own HUD button. Achievements shows
+ten permanent milestones in a padded scrolling list and one server-selected
 next goal above it. Completed rewards use the same Claim/Claimed feedback.
 The goal can open an owned Brainrot's existing inventory details or dismiss
 the window for campaign play; it never purchases or starts a day automatically.
-The Menu entry and relevant section show pending-reward badges. The restored
-visual style and all server-backed behavior remain unchanged.
+The Menu entry and relevant section show pending-reward badges.
 
 ## Unified Menu navigation
 
 `Client.Utilities.MenuRouter` owns the single window, HUD entry, seven sections,
 page visibility, badges and responsive fitting. `UIController.MenuPages` adapts
 the existing Inventory/Index/ProgressionStore/Settings APIs; QuestController
-registers Quests and Achievements. First-time Rewards has a separate HUD entry
+registers Quests and Achievements. All three Quests tabs keep the title and tabs fixed while the list scrolls. Campaign milestones have titles inspired by their destination days. First-time Rewards has a separate HUD entry
 and window, outside the Menu. Opening a section closes the previous one and its details.
 
-The HUD Menu button morphs from three bars into an X and slides out seven bare
+The HUD Menu button morphs from three bars into an X and slides out six bare
 icon/name buttons to its right. There is no large blue launcher or 3 × 3 grid.
 `MenuDrawer` animates reveal/retraction over 0.24 seconds; repeated toggles cancel
 previous tweens safely. The compact strip uses desktop scaling and horizontal
-scrolling if the screen cannot fit all seven icons. The existing four textures
-and quest/achievement/statistics illustrations are reused. Selecting an icon opens or switches its feature while the strip stays open. There is no top-left Menu button in feature windows. X/close resets the HUD button to its Menu appearance.
+scrolling if the screen cannot fit all six icons. Five destinations use image
+assets, and Statistics uses a native illustration. Selecting an icon opens or switches its feature while the strip stays open. There is no top-left Menu button in feature windows. X/close resets the HUD button to its Menu appearance.
 The strip does not add a full-screen blocker during normal gameplay.
 
 Selected features use one panel surface: the host takes the feature's color
@@ -397,8 +398,8 @@ the claim button is hidden after today's reward is collected. Steps 2/6 are Spee
 levels, step 4 a Magnet level (maxed upgrades pay 10 brains), and step 7 a
 free Brainrot ticket. The finite track ends with Completed, hides its timer,
 and never transitions to a recurring weekly login reward. Quests is the Menu
-tile for Daily Quests / Weekly Quests; Monday UTC reset is shown on the weekly
-tab. Physical store stats expose a separate Use ticket button when tickets
+tile for Daily Quests, Weekly Quests, and Campaign milestones. The weekly tab
+shows its Monday UTC reset. Physical store stats expose a separate Use ticket button when tickets
 are available, preserving the ordinary paid purchase option.
 
 ## Temporary First-time Rewards HUD entry
@@ -421,17 +422,24 @@ panels. Claim feedback stays in the panel that requested the claim.
 ## Desktop readability and responsive scaling
 
 `Client.Utilities.UISizing` scales top-level HUD/widgets from a 1536 × 864
-reference, up to 1.5× on larger displays. Scale is the smaller viewport ratio,
-never an automatic enlargement on phones. Large widgets are bounded to the
+reference. Larger viewports continue scaling proportionally on the limiting
+axis (2.5× at 4K, 5× at 8K). Below 760 × 600, the smaller
+width or height ratio reduces the HUD scale to a minimum of 0.55×.
+Large widgets are bounded to the
 available viewport; anchors stay at their intended screen edges and authored
 offsets scale with the widget, preserving currency/entry spacing. Changes use
 size/parent events, not frame polling. Windows are fitted independently of their
 full-screen dismissal layers. Menu layout converts physical pixels back to
 logical units, so pages are not scaled twice when hosted.
 
-The planting bar now uses 84 × 110 cards with larger portraits, 12px baseline
+The planting bar now uses 80 × 102 cards with compact portraits, up to 12px
 names, and clearer cost/count text. Desktop scaling enlarges these further.
-The damage board uses a 270px baseline width, larger tabs and 44px ranking rows.
+A Planting Loadout heading, inset shovel rail, and coin-price badges separate the controls. The card strip scrolls horizontally when the loadout exceeds the available
+width. The shovel and cancel stay outside the scroller. Hearts and the damage
+board move below the planting bar when their horizontal bounds intersect.
+The magnet shifts left if it would overlap Start Day. When the bottom row
+leaves too little room for Menu icons, the drawer opens above that row.
+The damage board uses a 240px baseline width, separate tabs, and numbered rankings. The 320px-wide day panel pairs a prominent Start Day button with a labeled wave progress bar during combat. The physical Brainrot Shop shows brains prices in its list.
 Menu, inspectors, shop panels, reward popups, HUD icons and amounts all use the
 shared sizing path. The Menu hamburger uses native UI bars to avoid missing-font
 glyphs. None of these changes affect combat or VFX quality.
@@ -443,7 +451,7 @@ Empty feedback and the hidden claim button reserve no bottom space. These
 values include the header, card strip and even outer margins.
 
 `tests/UISizing.spec.luau` passes 17 isolated assertions covering baseline,
-1080p, 2260 × 1163, 1440p and capped 4K scaling, edge bounds, repeated setup,
+1080p, 2260 × 1163, 1440p, 4K, and 8K scaling, edge bounds, repeated setup,
 wide-widget fitting and nested-page scaling. The Menu fixture passes 109 checks,
 including compact reward height. Actual device visual/battle QA remains open.
 
@@ -453,7 +461,7 @@ Shop and PlacementController reuse `Client.Utilities.ShovelIcon` with texture
 `123683019299968` (catalog asset `129146573433376`). The passive ImageLabel uses
 Fit scaling with no background; the procedural handle/grip/blade are removed.
 The passive ShovelCursor is marked `ScreenSpaceUI` before parenting. UISizing
-excludes such objects from automatic scale/position transforms. Raw mouse/touch
+excludes such objects from automatic position transforms. The cursor artwork scales with the viewport. Raw mouse/touch
 screen coordinates subtract the GUI inset once before positioning the cursor;
 the initial mouse location uses the same path as subsequent movements.
 
@@ -462,7 +470,7 @@ verifies it matches PlotUtil's local Brainrot. It falls back to an occupied tile
 The existing Active-day gate and server removal validation remain authoritative.
 Cancelling restores the normal mouse icon. `tests/Shovel.spec.luau` passes ten
 isolated checks for geometry, pointer position, own/foreign/empty targets and
-cancellation; the sizing fixture verifies that the cursor is not scaled.
+cancellation; the sizing fixture verifies that the cursor keeps its screen coordinates while its artwork scales.
 
 ## Right-side quest tracker
 
@@ -473,7 +481,7 @@ the single heading is clickable: Daily Quests becomes Weekly Quests on click,
 then switches back on the next click; there is no View Quests or claim shortcut. The Menu Quests tile still
 opens the full claim view, and its badge includes the all-three bonus.
 
-The tracker sits directly above Start Day with a 12px logical gap. It moves up to reserve countdown/wave-warning space only while those messages are visible. The heading includes a cycle icon; clicking anywhere on that heading switches Daily/Weekly. The tracker uses HUD absolute bounds and desktop scaling, with no polling.
+The tracker sits directly below Damage with a 16px logical gap and follows it as it expands or collapses. Its height fits above Start Day and leaves room for countdown and wave warnings. The heading includes a cycle icon; clicking anywhere on that heading switches Daily/Weekly. The tracker uses HUD absolute bounds and desktop scaling, with no polling.
 Damage expansion/day-panel height changes refit the available gap. A shorter gap
 scrolls the objectives; a very short gap shows the heading only. If less than
 80 logical pixels remain, the tracker hides instead of overlapping other HUD;
@@ -499,12 +507,11 @@ fixture verifies one tracker heading button and completion/refresh behavior.
 
 ## Compact layout and scroll review
 
-Desktop scaling is moderated to 1.25× at 1920 × 1080 and capped at 1.5×; font
-sizes stay intact while planting cards use slightly tighter 84 × 110 geometry.
+Desktop scaling is 1.25× at 1920 × 1080 and continues increasing with viewport size. Widgets fit within the available bounds.
 The tracker has 34px objective rows with 5px gaps and one centered heading with cycle texture 86604833779310 to indicate switching.
 Menu icon captions remain white after selection, with no name highlighting.
 The drawer fits before the magnet button, reducing its icon scale slightly if
-that fits all seven without shrinking below their readable baseline; genuine
+that fits all six without shrinking below their readable baseline; genuine
 horizontal overflow still scrolls.
 
 `ScrollPolicy` monitors all MainUI scrolling frames (including later-created
@@ -560,3 +567,33 @@ so its vertical scrollbar stays inside the list rather than beside a border.
 Additional isolated checks: `HudLayout.spec.luau` passes 15 assertions across
 1366x768, 1920x1080 and 2560x1440, including right-side details and planting-bar
 resizes. A narrower 1000px fixture verifies Damage shifts below a wide shop bar.
+
+### Feature-specific finishes
+
+Inventory uses green seed packets and a live equipped count. Its Items tab
+shows owned Brainrot Selection Tickets and their quantities from retention
+state. Players redeem tickets at their physical Brainrot Shop. The Discovery
+Index uses numbered lavender catalog cards with faint portrait guides.
+Quests use warm objective cards, Achievements use violet milestone bars, and
+Statistics groups totals into Campaign, Collection, and Upgrades on a blue
+ledger. Victory and First-time Rewards use warm gold surfaces.
+
+Settings uses a subtle checker backdrop. Claimable achievements appear first in the milestone list. The planting dock and Victory panel use diagonal bands behind
+their content. The other Menu pages retain their individual finishes.
+
+### Daily Challenge
+
+The Day panel offers Forest Rush from Preparation after Day 10 is unlocked
+and the lawn is ready. It shows the first-clear reward and challenge rules.
+The same HUD displays challenge hearts, countdown and wave progress. The Day
+panel displays the result and a free retry after restoring the campaign.
+
+### Free Spin
+
+The Daily Spinner HUD icon opens a standalone panel with odds and a reveal
+reel. Its timer shows Ready or counts down to the next UTC reset. The spinner
+sits above First-time Rewards, which has its own readiness timer. The reel lands on the outcome already recorded by the server. A spent
+spin shows the result and the next reset instead of offering another spin.
+
+Settings opens from a shortcut beside the Roblox top-bar controls. It uses
+the same Menu window as the six drawer destinations.

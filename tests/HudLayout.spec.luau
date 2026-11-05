@@ -16,7 +16,9 @@ return function(Layout: any, Sizing: any): number
 		end
 		local shop = widget("Shop", Vector2.new(750, 140), UDim2.new(0.5, 0, 0, 0), Vector2.new(0.5, 0))
 		local damage = widget("DamageMeter", Vector2.new(270, 72), UDim2.new(1, -16, 0.16, 0), Vector2.new(1, 0))
-		widget("LevelUI", Vector2.new(360, 80), UDim2.new(1, -16, 1, -16), Vector2.one)
+		local day = widget("LevelUI", Vector2.new(360, 80), UDim2.new(1, -16, 1, -16), Vector2.one)
+		local magnet = widget("MagnetEntry", Vector2.new(68, 68), UDim2.new(0.5, 0, 1, -16), Vector2.new(0.5, 1))
+		local hearts = widget("Hearts", Vector2.new(224, 38), UDim2.fromOffset(16, 16), Vector2.zero)
 		widget("Coins", Vector2.new(160, 64), UDim2.new(0, 16, 0.4, 0), Vector2.zero)
 		widget("MenuEntry", Vector2.new(96, 94), UDim2.new(0, 16, 1, -16), Vector2.new(0, 1))
 		local panel = widget("Inspect", Vector2.new(500, 620), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
@@ -39,11 +41,19 @@ return function(Layout: any, Sizing: any): number
 		end
 		host.Size = UDim2.fromOffset(1000, 768); task.wait(0.1)
 		check(damage.AbsolutePosition.Y >= shop.AbsolutePosition.Y + shop.AbsoluteSize.Y + 11, "Damage overlaps wide planting bar")
-		local before = panel.AbsolutePosition.Y
+		local before = Layout.bounds(host)
 		shop.Size = UDim2.fromOffset(750, 220); task.wait(0.1)
 		local origin = Layout.bounds(host)
 		check(panel.AbsolutePosition.Y - host.AbsolutePosition.Y >= origin.Y - 1, "shop resize leaves panel overlap")
-		check(panel.AbsolutePosition.Y ~= before, "window ignores changed shop bounds")
+		check(origin.Y > before.Y, "window reservation ignores changed shop bounds")
+		for _, size in { Vector2.new(390, 844), Vector2.new(844, 390), Vector2.new(768, 1024) } do
+			host.Size = UDim2.fromOffset(size.X, size.Y)
+			task.wait(0.1)
+			local heartsClear = hearts.AbsolutePosition.X + hearts.AbsoluteSize.X <= shop.AbsolutePosition.X - 11
+				or hearts.AbsolutePosition.Y >= shop.AbsolutePosition.Y + shop.AbsoluteSize.Y + 11
+			check(heartsClear, "hearts overlap wide planting bar")
+			check(magnet.AbsolutePosition.X + magnet.AbsoluteSize.X <= day.AbsolutePosition.X - 11, "Magnet overlaps Start Day")
+		end
 		return checks
 	end, debug.traceback)
 	screen:Destroy()

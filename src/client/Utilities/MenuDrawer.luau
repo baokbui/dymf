@@ -37,13 +37,21 @@ function MenuDrawer.new(main: ScreenGui, entry: TextButton, sections: Frame, bar
 		local start = entry.AbsolutePosition - main.AbsolutePosition
 		local x = start.X + entry.AbsoluteSize.X + 12 * factor
 		local right = main.AbsoluteSize.X - 16 * factor
-		if magnet and main.AbsoluteSize.X >= 900 then right = math.min(right, magnet.AbsolutePosition.X - main.AbsolutePosition.X - 12 * factor) end
+		local y = start.Y + entry.AbsoluteSize.Y
+		if magnet and magnet.Visible then
+			local beforeMagnet = magnet.AbsolutePosition.X - main.AbsolutePosition.X - 12 * factor
+			if beforeMagnet - x >= 220 * factor then
+				right = math.min(right, beforeMagnet)
+			else
+				y = start.Y - 8 * factor
+			end
+		end
 		local available = math.max(0, right - x)
-		local iconScale = math.min(factor, math.max(1, available / sections.Size.X.Offset))
+		local iconScale = math.min(factor, math.max(factor * 0.85, available / sections.Size.X.Offset))
 		height = 94 * iconScale
 		width = math.min(sections.Size.X.Offset * iconScale, available)
 		zoom.Scale = iconScale
-		root.Position, root.Size = UDim2.fromOffset(x, start.Y + entry.AbsoluteSize.Y - height), UDim2.fromOffset(if opened then width else 0, height)
+		root.Position, root.Size = UDim2.fromOffset(x, y - height), UDim2.fromOffset(if opened then width else 0, height)
 		sections.Position = UDim2.new()
 		viewport.CanvasSize = UDim2.fromOffset(sections.Size.X.Offset * iconScale, height)
 		root.Visible = opened

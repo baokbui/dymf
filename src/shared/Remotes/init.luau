@@ -36,6 +36,7 @@ local EVENT_NAMES = {
 	"CoinsUpdated",
 	-- Levels (Milestone 8)
 	"StartLevel",
+	"StartDailyChallenge",
 	"LevelStateChanged",
 	"SelectLevel",
 	"RewindDay", -- Defeat → Preparation on the failed day (Game Over rewind)

@@ -5,6 +5,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local UITheme = require(Shared.Config.UITheme)
@@ -15,12 +16,13 @@ Hearts.__index = Hearts
 local HEART_SIZE = 44
 local HEART_GAP = 6
 local HEART_TEXT_SIZE = 48
+local BREAK_TWEEN = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 export type HeartsHud = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
 		icons: { TextLabel },
-		health: number,
+		health: number?,
 		maxHealth: number,
 	},
 	Hearts
@@ -68,23 +70,70 @@ function Hearts.new(parent: Frame): HeartsHud
 	return setmetatable({
 		frame = parent,
 		icons = icons,
-		health = maxHealth,
 		maxHealth = maxHealth,
 	}, Hearts)
 end
 
+local function playBreak(icon: TextLabel)
+	local effect = Instance.new("Frame")
+	effect.Name = "HeartBreak"
+	effect.BackgroundTransparency = 1
+	effect.Size = UDim2.fromScale(1, 1)
+	effect.ZIndex = icon.ZIndex + 1
+
+	-- Clip two copies at the midpoint so the pieces match the exact HUD glyph.
+	for _, direction in { -1, 1 } do
+		local side = if direction < 0 then 0 else 0.5
+		local half = Instance.new("Frame")
+		half.BackgroundTransparency = 1
+		half.Size = UDim2.fromScale(0.5, 1)
+		half.Position = UDim2.fromScale(side, 0)
+		half.ClipsDescendants = true
+		half.ZIndex = effect.ZIndex
+		half.Parent = effect
+
+		local piece = icon:Clone()
+		piece.AnchorPoint = Vector2.zero
+		piece.Position = UDim2.fromScale(if direction < 0 then 0 else -1, 0)
+		piece.Size = UDim2.fromScale(2, 1)
+		piece.ZIndex = effect.ZIndex
+		piece.Parent = half
+
+		TweenService:Create(half, BREAK_TWEEN, {
+			Position = UDim2.new(side, direction * 13, 0, if direction < 0 then 7 else 12),
+		}):Play()
+		TweenService:Create(piece, BREAK_TWEEN, {
+			TextTransparency = 1,
+			TextStrokeTransparency = 1,
+		}):Play()
+	end
+	effect.Parent = icon
+	task.delay(BREAK_TWEEN.Time, function()
+		if effect.Parent then effect:Destroy() end
+	end)
+end
+
 function Hearts.setHealth(self: HeartsHud, health: number, maxHealth: number?)
-	self.health = math.max(0, math.floor(health))
+	local previous = self.health
+	local previousMax = self.maxHealth
+	local current = math.max(0, math.floor(health))
+	self.health = current
 	if type(maxHealth) == "number" then
 		self.maxHealth = math.max(1, math.floor(maxHealth))
 	end
 	for index, icon in self.icons do
-		if index <= self.health then
+		icon.Visible = index <= self.maxHealth
+		if index <= current then
+			local effect = icon:FindFirstChild("HeartBreak")
+			if effect then effect:Destroy() end
 			icon.Text = "♥"
 			icon.TextColor3 = UITheme.HEART_FILLED
 			icon.TextTransparency = 0
 			icon.TextStrokeTransparency = 0
 		else
+			if previous and index <= previous and icon.Visible and self.maxHealth == previousMax then
+				playBreak(icon)
+			end
 			icon.Text = "♡"
 			icon.TextColor3 = UITheme.HEART_EMPTY
 			icon.TextTransparency = 0.1

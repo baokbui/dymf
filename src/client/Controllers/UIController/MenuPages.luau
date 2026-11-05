@@ -1,12 +1,15 @@
 --!strict
 -- Adapt existing feature panels to the shared Menu without moving their logic.
+local UITheme = require(game:GetService("ReplicatedStorage").Shared.Config.UITheme)
 local Menu = require(script.Parent.Parent.Parent.Utilities.MenuRouter)
 local FirstTimeRewards = require(script.Parent.Parent.QuestController.FirstTimeRewards)
+local DailySpinHud = require(script.Parent.Parent.QuestController.DailySpinHud)
 local MenuPages = {}
 
 function MenuPages.register(main: ScreenGui, panels: any, refreshSettings: () -> ())
 	Menu.configure(main, function()
 		FirstTimeRewards.close()
+		DailySpinHud.close()
 		panels.field:hide()
 		panels.monster:hide()
 		-- A physical Brainrot-shop dialog must close before opening any Menu page.
@@ -25,6 +28,8 @@ function MenuPages.register(main: ScreenGui, panels: any, refreshSettings: () ->
 		close = function() panels.index:setOpen(false) end,
 	})
 	Menu.register("Upgrades", panels.store.frame, {
+		fill = UITheme.UPGRADE_PANEL,
+		height = 318,
 		selfScrolling = true,
 		open = function() panels.store:open(panels.upgradeKind) end,
 		close = function() panels.store:close() end,

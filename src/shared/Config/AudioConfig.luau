@@ -35,6 +35,7 @@ local AudioConfig = {
 
 	-- Preload on join so combat SFX aren't delayed by first asset download.
 	PRELOAD_SFX = {
+		"FirstTimeRewardStamp",
 		"MeleeBat",
 		"ThrowKnifeHit",
 		"PineappleHit",
@@ -142,6 +143,11 @@ local AudioConfig = {
 			SoundId = "rbxasset://sounds/switch.wav",
 			Volume = 0.55,
 			PlaybackSpeed = 1.15,
+		},
+
+		FirstTimeRewardStamp = {
+			SoundId = "rbxassetid://521293072",
+			Volume = 0.75,
 		},
 
 		-- Economy / placement

@@ -366,3 +366,8 @@ Day results and rejoin clear the marker. Hidden Day is not a numbered clear.
 Completed achievement progress survives defeat; Brainrot XP retains its existing
 rollback rules. These hooks never advance days or change combat/rewards/purses.
 See `RETENTION.md` for permanent reward and catch-up rules.
+
+Forest Rush is a separate Daily Challenge run on the owned plot. Its temporary
+lawn, purse, and hearts do not change the campaign checkpoint or pending Hidden
+Day. Challenge combat gives no campaign XP or objective credit. The first UTC
+clear reward uses the durable retention transaction. See `RETENTION.md`.

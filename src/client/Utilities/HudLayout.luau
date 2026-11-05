@@ -1,13 +1,13 @@
 --!strict
 -- Physical bounds shared by windows, leaving the planting bar and HUD rails clear.
 local HudLayout = {}
-local LEFT = { "Coins", "Brains", "Speed", "Hearts", "FirstTimeRewardsEntry" }
+local LEFT = { "Coins", "Brains", "Speed", "Hearts", "FirstTimeRewardsEntry", "DailySpinEntry" }
 local RIGHT = { "DamageMeter", "LevelUI", "QuestTracker" }
 local WATCH = { "Shop", "MenuEntry", "MagnetEntry", "MenuDrawer" }
 for _, name in LEFT do table.insert(WATCH, name) end
 for _, name in RIGHT do table.insert(WATCH, name) end
 
-function HudLayout.bounds(main: ScreenGui): (Vector2, Vector2)
+function HudLayout.bounds(main: GuiBase2d): (Vector2, Vector2)
 	local screen, origin = main.AbsoluteSize, main.AbsolutePosition
 	local left, top, right, bottom = 12, 12, screen.X - 12, screen.Y - 12
 	local function visible(name: string): GuiObject?
@@ -34,10 +34,10 @@ function HudLayout.bounds(main: ScreenGui): (Vector2, Vector2)
 	return Vector2.new(left, top), Vector2.new(math.max(1, right - left), math.max(1, bottom - top))
 end
 
-function HudLayout.watch(main: ScreenGui, owner: Instance, refresh: () -> ())
+function HudLayout.watch(main: GuiBase2d, owner: Instance, refresh: () -> (), names: { string }?)
 	local connections: { RBXScriptConnection } = {}
 	local function bind(gui: Instance)
-		if not gui:IsA("GuiObject") or not table.find(WATCH, gui.Name) then return end
+		if not gui:IsA("GuiObject") or not table.find(names or WATCH, gui.Name) then return end
 		for _, property in { "AbsolutePosition", "AbsoluteSize", "Visible" } do
 			table.insert(connections, gui:GetPropertyChangedSignal(property):Connect(refresh))
 		end

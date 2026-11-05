@@ -12,6 +12,8 @@ local UITheme = require(Shared.Config.UITheme)
 local Remotes = require(Shared.Remotes)
 local VfxLoad = require(Shared.Utilities.VfxLoad)
 
+local Controls = require(script.Parent.SettingsControls)
+local BrainAmount = require(script.Parent.Parent.Parent.Utilities.BrainAmount)
 local AudioController = require(script.Parent.Parent.AudioController)
 
 local Settings = {}
@@ -43,7 +45,7 @@ function Settings.new(parent: Frame): SettingsPanel
 	parent.Visible = false
 	parent.AnchorPoint = Vector2.new(0.5, 0.5)
 	parent.Position = UDim2.fromScale(0.5, 0.5)
-	parent.Size = UDim2.fromOffset(440, 560)
+	parent.Size = UDim2.fromOffset(480, 560)
 	parent.ZIndex = 25
 	UITheme.applyPanelLook(parent, nil, UITheme.PANEL_BG_SETTINGS)
 
@@ -53,9 +55,9 @@ function Settings.new(parent: Frame): SettingsPanel
 	title.Position = UDim2.fromOffset(16, 12)
 	title.TextSize = 22
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Settings"
+	title.Text = "SETTINGS"
 	title.Parent = parent
-	UITheme.applyOutlinedTitle(title)
+	UITheme.applyOutlinedTitle(title, UITheme.SETTINGS_ACCENT)
 
 	local close = Instance.new("TextButton")
 	close.AnchorPoint = Vector2.new(1, 0)
@@ -73,6 +75,8 @@ function Settings.new(parent: Frame): SettingsPanel
 	body.Position = UDim2.fromOffset(16, 56)
 	body.Size = UDim2.new(1, -32, 1, -68)
 	body.BorderSizePixel = 0
+	body.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+	body.ScrollBarImageColor3 = UITheme.SETTINGS_ACCENT
 	body.ScrollBarThickness = 8
 	body.ScrollingDirection = Enum.ScrollingDirection.Y
 	body.CanvasSize = UDim2.fromOffset(0, 0)
@@ -115,147 +119,60 @@ function Settings.new(parent: Frame): SettingsPanel
 		header.LayoutOrder = 0
 		header.TextSize = 15
 		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.Text = label
+		header.Text = string.upper(label)
 		header.Parent = frame
-		UITheme.applyOutlinedTitle(header, if label == "Danger Zone" then UITheme.DANGER else UITheme.ACCENT)
+		UITheme.applyOutlinedTitle(header, if label == "Danger Zone" then UITheme.DANGER else UITheme.SETTINGS_ACCENT)
 		header.TextSize = 15
 		return frame
 	end
 
-	-- Compact 2x2 grid instead of four stacked full-width rows — same four
-	-- toggles, half the vertical footprint.
 	local audioSection = section("Audio", 1)
-	local audioGrid = Instance.new("Frame")
-	audioGrid.Name = "AudioGrid"
-	audioGrid.BackgroundTransparency = 1
-	audioGrid.Size = UDim2.new(1, 0, 0, 82)
-	audioGrid.LayoutOrder = 1
-	audioGrid.Parent = audioSection
+	local music = Controls.row(audioSection, "Music", "Music", "♫", 1)
+	Controls.slider(music, body, AudioController.setMusicVolumeScale)
+	local sfx = Controls.row(audioSection, "SoundEffects", "Sound Effects", "🔊", 2)
+	Controls.slider(sfx, body, AudioController.setSfxVolumeScale)
+	local mute = Controls.row(audioSection, "Mute", "Mute All", "×", 3)
+	Controls.switch(mute, "Toggle", false, function(enabled)
+		AudioController.play("UiClick")
+		AudioController.setMuted(enabled)
+	end)
+	local brainrot = Controls.row(audioSection, "BrainrotSfx", "Brainrot Sounds", "", 4, BrainAmount.IMAGE)
+	Controls.switch(brainrot, "Toggle", true, function(enabled)
+		AudioController.play("UiClick")
+		AudioController.setBrainrotSfxEnabled(enabled)
+	end)
 
-	local audioGridLayout = Instance.new("UIGridLayout")
-	audioGridLayout.CellSize = UDim2.new(0.5, -6, 0, 36)
-	audioGridLayout.CellPadding = UDim2.fromOffset(6, 10)
-	audioGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	audioGridLayout.Parent = audioGrid
-
-	local muteButton = makeButton(audioGrid, "Mute: Off", UITheme.BUTTON_BG)
-	muteButton.LayoutOrder = 1
-	local musicButton = makeButton(audioGrid, "Music: High", UITheme.BUTTON_BG)
-	musicButton.LayoutOrder = 2
-	local sfxButton = makeButton(audioGrid, "SFX: High", UITheme.BUTTON_BG)
-	sfxButton.LayoutOrder = 3
-	local brainrotSfxButton = makeButton(audioGrid, "Brainrot SFX: On", UITheme.BUTTON_BG)
-	brainrotSfxButton.LayoutOrder = 4
-	for _, button in { muteButton, musicButton, sfxButton, brainrotSfxButton } do
-		button.TextSize = 13
+	local function hint(parent: Frame, value: string, order: number, height: number)
+		local label = Controls.text(parent, value, 14)
+		label.Size, label.LayoutOrder = UDim2.new(1, 0, 0, height), order
+		label.TextWrapped = true
+		UITheme.applyBodyText(label, UITheme.TITLE)
 	end
-
-	local muted = false
-	local musicLevel = 2
-	local sfxLevel = 2
-	local brainrotSfx = true
-
-	local function applyAudio()
-		AudioController.setMuted(muted)
-		AudioController.setMusicVolumeScale(if musicLevel == 0 then 0 elseif musicLevel == 1 then 0.45 else 1)
-		AudioController.setSfxVolumeScale(if sfxLevel == 0 then 0 elseif sfxLevel == 1 then 0.45 else 1)
-		AudioController.setBrainrotSfxEnabled(brainrotSfx)
-		muteButton.Text = if muted then "Mute: On" else "Mute: Off"
-		musicButton.Text = "Music: " .. (if musicLevel == 0 then "Off" elseif musicLevel == 1 then "Low" else "High")
-		sfxButton.Text = "SFX: " .. (if sfxLevel == 0 then "Off" elseif sfxLevel == 1 then "Low" else "High")
-		brainrotSfxButton.Text = if brainrotSfx then "Brainrot SFX: On" else "Brainrot SFX: Off"
-		for _, button in { muteButton, musicButton, sfxButton, brainrotSfxButton } do
-			button.TextSize = 13
-		end
-	end
-
-	muteButton.Activated:Connect(function()
-		AudioController.play("UiClick")
-		muted = not muted
-		applyAudio()
-	end)
-	musicButton.Activated:Connect(function()
-		AudioController.play("UiClick")
-		musicLevel = (musicLevel + 1) % 3
-		applyAudio()
-	end)
-	sfxButton.Activated:Connect(function()
-		AudioController.play("UiClick")
-		sfxLevel = (sfxLevel + 1) % 3
-		applyAudio()
-	end)
-	brainrotSfxButton.Activated:Connect(function()
-		AudioController.play("UiClick")
-		brainrotSfx = not brainrotSfx
-		applyAudio()
-	end)
 
 	local graphicsSection = section("Graphics", 2)
-	local qualityButton = makeButton(graphicsSection, "VFX: High", UITheme.BUTTON_BG)
-	qualityButton.LayoutOrder = 1
-	qualityButton.TextSize = 13
-	local qualityHint = Instance.new("TextLabel")
-	qualityHint.BackgroundTransparency = 1
-	qualityHint.Size = UDim2.new(1, 0, 0, 60)
-	qualityHint.LayoutOrder = 2
-	qualityHint.TextSize = 13
-	qualityHint.TextXAlignment = Enum.TextXAlignment.Left
-	qualityHint.TextYAlignment = Enum.TextYAlignment.Top
-	qualityHint.TextWrapped = true
-	qualityHint.Text = "High shows all effects. Low shows fewer. Off turns effects off, but keeps the colored outline on your Brainrots. Weaker PCs should use Low or Off."
-	qualityHint.Parent = graphicsSection
-	UITheme.applyOutlinedTitle(qualityHint, UITheme.TITLE)
-	qualityHint.TextSize = 13
-
-	local otherPlotsButton = makeButton(graphicsSection, "Other plots: On", UITheme.BUTTON_BG)
-	otherPlotsButton.LayoutOrder = 3
-	otherPlotsButton.TextSize = 13
-	local otherPlotsHint = Instance.new("TextLabel")
-	otherPlotsHint.BackgroundTransparency = 1
-	otherPlotsHint.Size = UDim2.new(1, 0, 0, 44)
-	otherPlotsHint.LayoutOrder = 4
-	otherPlotsHint.TextSize = 13
-	otherPlotsHint.TextXAlignment = Enum.TextXAlignment.Left
-	otherPlotsHint.TextYAlignment = Enum.TextYAlignment.Top
-	otherPlotsHint.TextWrapped = true
-	otherPlotsHint.Text = "Off hides Brainrot effects on other players' plots. Your plot stays the same. Turn this off for better performance if you need it."
-	otherPlotsHint.Parent = graphicsSection
-	UITheme.applyOutlinedTitle(otherPlotsHint, UITheme.TITLE)
-	otherPlotsHint.TextSize = 13
-
-	local function applyGraphics()
-		qualityButton.Text = "VFX: " .. VfxLoad.label()
-		qualityButton.TextSize = 13
-		otherPlotsButton.Text = if VfxLoad.showsOtherPlots() then "Other plots: On" else "Other plots: Off"
-		otherPlotsButton.TextSize = 13
-	end
+	local effects = Controls.row(graphicsSection, "Effects", "Effects Quality", "✦", 1)
+	local qualityButton = makeButton(effects, VfxLoad.label(), UITheme.SETTINGS_TILE)
+	qualityButton.AnchorPoint, qualityButton.Position = Vector2.new(1, 0.5), UDim2.new(1, -12, 0.5, 0)
+	qualityButton.Size = UDim2.fromOffset(98, 34)
+	UITheme.applySurfaceDepth(qualityButton)
 	qualityButton.Activated:Connect(function()
 		AudioController.play("UiClick")
 		VfxLoad.cycle()
-		applyGraphics()
+		qualityButton.Text = VfxLoad.label()
 	end)
-	otherPlotsButton.Activated:Connect(function()
+	hint(graphicsSection, "High shows all effects. Low reduces them. Off keeps the colored outline on your Brainrots.", 2, 42)
+	local otherPlots = Controls.row(graphicsSection, "OtherPlots", "Other Plots", "▦", 3)
+	Controls.switch(otherPlots, "Toggle", VfxLoad.showsOtherPlots(), function(enabled)
 		AudioController.play("UiClick")
-		VfxLoad.setShowOtherPlots(not VfxLoad.showsOtherPlots())
-		applyGraphics()
+		VfxLoad.setShowOtherPlots(enabled)
 	end)
-	applyGraphics()
+	hint(graphicsSection, "Turn off effects from other players’ Brainrots to improve performance.", 4, 42)
 
 	local dangerSection = section("Danger Zone", 4)
-	local dangerHint = Instance.new("TextLabel")
-	dangerHint.BackgroundTransparency = 1
-	dangerHint.Size = UDim2.new(1, 0, 0, 36)
-	dangerHint.TextSize = 14
-	dangerHint.TextXAlignment = Enum.TextXAlignment.Left
-	dangerHint.TextYAlignment = Enum.TextYAlignment.Top
-	dangerHint.TextWrapped = true
-	dangerHint.Text = "Back to Day 1, with an empty lawn and 125 coins. You'll be asked twice."
-	dangerHint.LayoutOrder = 1
-	dangerHint.Parent = dangerSection
-	UITheme.applyOutlinedTitle(dangerHint, UITheme.TITLE)
-	dangerHint.TextSize = 14
+	hint(dangerSection, "Back to Day 1, with an empty lawn and 125 coins. You’ll be asked twice.", 1, 42)
 
 	local resetButton = makeButton(dangerSection, "Reset Progress", UITheme.DANGER)
+	UITheme.applySurfaceDepth(resetButton)
 	resetButton.LayoutOrder = 2
 
 	local self = setmetatable({
@@ -289,7 +206,6 @@ function Settings.new(parent: Frame): SettingsPanel
 		self:setOpen(false)
 	end)
 
-	applyAudio()
 	return self
 end
 

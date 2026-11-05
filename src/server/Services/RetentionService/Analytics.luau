@@ -3,7 +3,7 @@ local AnalyticsService = game:GetService("AnalyticsService")
 local RunService = game:GetService("RunService")
 local Config = require(game:GetService("ReplicatedStorage").Shared.Config.RetentionConfig)
 local Analytics = {}
-local allowed = { Assigned = true, Completed = true, Claimed = true, Rejected = true }
+local allowed = { Assigned = true, Attempted = true, Retried = true, Failed = true, Completed = true, Claimed = true, Rejected = true }
 
 function Analytics.log(player: Player, action: string, value: number?, reason: string?, kind: string?, id: string?)
 	if RunService:IsStudio() or not allowed[action] then return end
@@ -18,7 +18,7 @@ function Analytics.log(player: Player, action: string, value: number?, reason: s
 	end
 	task.defer(function()
 		pcall(function()
-			local prefix = if kind == "Login" then "BvmLoginRewards" elseif kind == "Achievement" then "BvmAchievements" elseif kind == "WeeklyQuest" then "BvmWeeklyQuests" else "BvmDailyQuests"
+			local prefix = if kind == "Spin" then "BvmDailySpin" elseif kind == "Challenge" then "BvmDailyChallenge" elseif kind == "Login" then "BvmLoginRewards" elseif kind == "Achievement" then "BvmAchievements" elseif kind == "WeeklyQuest" then "BvmWeeklyQuests" else "BvmDailyQuests"
 			AnalyticsService:LogCustomEvent(player, prefix .. action .. suffix, value or 1)
 		end)
 	end)

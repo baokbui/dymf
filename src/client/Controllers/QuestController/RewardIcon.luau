@@ -4,8 +4,8 @@ local Theme = require(game:GetService("ReplicatedStorage").Shared.Config.UITheme
 local RewardIcon = {}
 local images = {
 	Brains = "rbxassetid://12691330734",
-	WalkSpeed = "rbxassetid://82103513055414",
-	Magnet = "rbxassetid://73519143112132",
+	WalkSpeed = Theme.SPEED_ICON,
+	Magnet = Theme.MAGNET_ICON,
 }
 
 function RewardIcon.new(parent: Frame): ImageLabel

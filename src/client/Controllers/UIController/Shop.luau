@@ -17,6 +17,7 @@ local Evolutions = require(Shared.Evolutions)
 local BrainrotConfig = require(Shared.Config.BrainrotConfig)
 local EvolutionConfig = require(Shared.Config.EvolutionConfig)
 local UITheme = require(Shared.Config.UITheme)
+local PanelPattern = require(script.Parent.Parent.Parent.Utilities.PanelPattern)
 local Types = require(Shared.Types)
 
 local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPreview)
@@ -25,29 +26,29 @@ local PlotUtil = require(script.Parent.Parent.Parent.Utilities.PlotUtil)
 local PlantCost = require(Shared.Utilities.PlantCost)
 
 local ShovelIcon = require(script.Parent.Parent.Parent.Utilities.ShovelIcon)
+local UISizing = require(script.Parent.Parent.Parent.Utilities.UISizing)
 local Shop = {}
 Shop.__index = Shop
 
-local CARD_WIDTH = 84
-local CARD_HEIGHT = 110
-local CARD_PADDING = 10
-local PANEL_PADDING_X = 12
-local PANEL_PADDING_Y = 8
-local SWATCH_SIZE = 48
+local CARD_WIDTH = 80
+local CARD_HEIGHT = 102
+local CARD_PADDING = 7
+local PANEL_PADDING_X = 9
+local PANEL_PADDING_Y = 6
+local SWATCH_SIZE = 40
 local CARD_STROKE = 2
-local PANEL_HEIGHT = CARD_HEIGHT + PANEL_PADDING_Y * 2
+local HEADER_HEIGHT = 17
+local PANEL_HEIGHT = HEADER_HEIGHT + CARD_HEIGHT + PANEL_PADDING_Y * 2
 local PANEL_CORNER_RADIUS = UITheme.CORNER_PANEL
 local NAME_TEXT_SIZE = 12
 local NAME_MAX_WIDTH = CARD_WIDTH - 8
-local NAME_HEIGHT = 25
-local NAME_HEIGHT_CAPPED = 25
-local COUNT_HEIGHT = 14
-local COUNT_TEXT_SIZE = 13
+local NAME_HEIGHT = 24
+local COUNT_HEIGHT = 12
+local COUNT_TEXT_SIZE = 11
 
-local TOOL_COLUMN_WIDTH = 52
-local TOOL_GAP = 6
+local TOOL_COLUMN_WIDTH = 44
 local CANCEL_SIZE = 56
-local TOOL_BUTTON_HEIGHT = math.floor((CARD_HEIGHT - TOOL_GAP) / 2)
+local TOOL_BUTTON_HEIGHT = 44
 
 type Card = {
 	button: TextButton,
@@ -69,7 +70,8 @@ export type ShopCallbacks = {
 export type Shop = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
-		list: Frame,
+		list: ScrollingFrame,
+		resizePanel: (number?) -> (),
 		cards: { Card },
 		balance: number,
 		selectedId: string?,
@@ -157,14 +159,19 @@ local function shopDisplayName(name: string): string
 	return name
 end
 
-local function resizePanel(frame: Frame, cardCount: number)
-	local cardsWidth = math.max(0, cardCount * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING)
-	local panelWidth = PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth
-	frame.Size = UDim2.fromOffset(math.max(panelWidth, 160), PANEL_HEIGHT)
-end
-
 function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
+	local screen = frame.Parent :: GuiBase2d
+	local cardCount = 0
+	local function resizePanel(count: number?)
+		if count then cardCount = count end
+		local cardsWidth = math.max(0, cardCount * (CARD_WIDTH + CARD_PADDING) - CARD_PADDING)
+		local desiredWidth = math.max(160, PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING + cardsWidth)
+		local available = screen.AbsoluteSize.X / UISizing.desktop(screen.AbsoluteSize)
+		local gutter = PANEL_PADDING_X + CANCEL_SIZE
+		frame.Size = UDim2.fromOffset(math.min(desiredWidth, math.max(160, available - 2 * gutter)), PANEL_HEIGHT)
+	end
 	local self = setmetatable({
+		resizePanel = resizePanel,
 		frame = frame,
 		cards = {},
 		balance = 0,
@@ -180,7 +187,9 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	frame.Position = UDim2.new(0.5, 0, 0, 0)
 	frame.BackgroundTransparency = 1
 	frame.ClipsDescendants = false
-	resizePanel(frame, 0)
+	resizePanel(nil)
+	local resizeConnection = screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() resizePanel(nil) end)
+	frame.Destroying:Once(function() resizeConnection:Disconnect() end)
 
 	local bg = Instance.new("Frame")
 	bg.Name = "Background"
@@ -189,14 +198,35 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	bg.Size = UDim2.new(1, 0, 1, PANEL_CORNER_RADIUS)
 	bg.BorderSizePixel = 0
 	bg.Parent = frame
-	UITheme.applyPanelLook(bg, PANEL_CORNER_RADIUS)
+	UITheme.applyPanelLook(bg, PANEL_CORNER_RADIUS, UITheme.FIELD_PLANTING)
+	UITheme.applySurfaceDepth(bg)
+	PanelPattern.mount(bg, "Diagonal", UITheme.FIELD_ACCENT, 0.13, 6)
+
+	local heading = Instance.new("TextLabel")
+	heading.Name = "LoadoutTitle"
+	heading.BackgroundTransparency = 1
+	heading.Position, heading.Size = UDim2.fromOffset(PANEL_PADDING_X, 2), UDim2.new(1, -2 * PANEL_PADDING_X, 0, HEADER_HEIGHT)
+	heading.Text, heading.TextSize = "PLANTING LOADOUT", 12
+	heading.TextXAlignment = Enum.TextXAlignment.Left
+	UITheme.applyOutlinedTitle(heading, UITheme.FIELD_ACCENT)
+	heading.Parent = frame
 
 	local tools = Instance.new("Frame")
 	tools.Name = "Tools"
-	tools.BackgroundTransparency = 1
-	tools.Position = UDim2.fromOffset(PANEL_PADDING_X, PANEL_PADDING_Y)
-	tools.Size = UDim2.fromOffset(TOOL_COLUMN_WIDTH, CARD_HEIGHT)
+	tools.BackgroundColor3 = UITheme.FIELD_INSET
+	tools.BorderSizePixel = 0
+	UITheme.styleCorner(tools, UITheme.CORNER_CARD)
+	tools.Position = UDim2.fromOffset(PANEL_PADDING_X, HEADER_HEIGHT + PANEL_PADDING_Y)
+	tools.Size = UDim2.fromOffset(TOOL_COLUMN_WIDTH, TOOL_BUTTON_HEIGHT + 20)
 	tools.Parent = frame
+
+	local toolLabel = Instance.new("TextLabel")
+	toolLabel.Name = "ToolLabel"
+	toolLabel.BackgroundTransparency = 1
+	toolLabel.Position, toolLabel.Size = UDim2.fromOffset(0, TOOL_BUTTON_HEIGHT + 2), UDim2.new(1, 0, 0, 16)
+	toolLabel.Text, toolLabel.TextSize = "Shovel", 11
+	UITheme.applyOutlinedTitle(toolLabel, UITheme.FIELD_TEXT)
+	toolLabel.Parent = tools
 
 	local shovelButton = self:buildShovelButton(tools)
 	self.shovelButton = shovelButton
@@ -205,13 +235,23 @@ function Shop.new(frame: Frame, callbacks: ShopCallbacks): Shop
 	local cancelButton = self:buildCancelButton(frame)
 	self.cancelButton = cancelButton
 
-	local list = Instance.new("Frame")
+	local list = Instance.new("ScrollingFrame")
+	list.BorderSizePixel = 0
+	list.ScrollingDirection = Enum.ScrollingDirection.X
+	list.AutomaticCanvasSize = Enum.AutomaticSize.X
+	list.CanvasSize = UDim2.new()
+	list.ScrollBarThickness = 4
 	list.Name = "List"
 	list.BackgroundTransparency = 1
-	list.Position = UDim2.fromOffset(PANEL_PADDING_X + TOOL_COLUMN_WIDTH + CARD_PADDING, PANEL_PADDING_Y)
-	list.Size = UDim2.new(1, -(PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING), 1, -PANEL_PADDING_Y * 2)
+	list.Position = UDim2.fromOffset(PANEL_PADDING_X + TOOL_COLUMN_WIDTH + CARD_PADDING - CARD_STROKE, HEADER_HEIGHT)
+	list.Size = UDim2.new(1, -(PANEL_PADDING_X * 2 + TOOL_COLUMN_WIDTH + CARD_PADDING) + 2 * CARD_STROKE, 1, -HEADER_HEIGHT)
 	list.Parent = frame
 	self.list = list
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, CARD_STROKE)
+	padding.PaddingRight = UDim.new(0, CARD_STROKE)
+	padding.Parent = list
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
@@ -247,7 +287,7 @@ function Shop.buildCancelButton(self: Shop, parent: Instance): TextButton
 	button.Name = "Cancel"
 	button.AutoButtonColor = true
 	button.AnchorPoint = Vector2.new(1, 0)
-	button.Position = UDim2.new(0, -PANEL_PADDING_X, 0, PANEL_PADDING_Y + (CARD_HEIGHT - CANCEL_SIZE) / 2)
+	button.Position = UDim2.new(0, -PANEL_PADDING_X, 0, HEADER_HEIGHT + PANEL_PADDING_Y + (CARD_HEIGHT - CANCEL_SIZE) / 2)
 	button.Size = UDim2.fromOffset(CANCEL_SIZE, CANCEL_SIZE)
 	button.TextSize = 28
 	button.Text = "X"
@@ -320,7 +360,6 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 
 	local cap = definition.maxOnPlot
 	local hasCap = type(cap) == "number" and cap > 0
-	local nameHeight = if hasCap then NAME_HEIGHT_CAPPED else NAME_HEIGHT
 	local nameTop = 4 + SWATCH_SIZE
 
 	local nameLabel = Instance.new("TextLabel")
@@ -328,7 +367,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.AnchorPoint = Vector2.new(0.5, 0)
 	nameLabel.Position = UDim2.new(0.5, 0, 0, nameTop)
-	nameLabel.Size = UDim2.new(1, -6, 0, nameHeight)
+	nameLabel.Size = UDim2.new(1, -6, 0, NAME_HEIGHT)
 	nameLabel.TextSize = NAME_TEXT_SIZE
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -338,8 +377,10 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 	nameLabel.Parent = button
 	passthrough(nameLabel)
 	UITheme.applyOutlinedTitle(nameLabel, UITheme.TITLE)
-	nameLabel.TextSize = NAME_TEXT_SIZE
-	nameLabel.TextWrapped = true
+	local nameSize = Instance.new("UITextSizeConstraint")
+	nameSize.MinTextSize, nameSize.MaxTextSize = 8, NAME_TEXT_SIZE
+	nameSize.Parent = nameLabel
+	nameLabel.TextScaled = true
 
 	local countLabel: TextLabel? = nil
 	if hasCap and type(cap) == "number" then
@@ -347,7 +388,7 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 		count.Name = "PlotCount"
 		count.BackgroundTransparency = 1
 		count.AnchorPoint = Vector2.new(0.5, 0)
-		count.Position = UDim2.new(0.5, 0, 0, nameTop + nameHeight)
+		count.Position = UDim2.new(0.5, 0, 0, nameTop + NAME_HEIGHT)
 		count.Size = UDim2.new(1, -6, 0, COUNT_HEIGHT)
 		count.TextSize = COUNT_TEXT_SIZE
 		count.TextXAlignment = Enum.TextXAlignment.Center
@@ -362,18 +403,20 @@ function Shop.buildCard(self: Shop, parent: Instance, order: number, definition:
 
 	local costLabel = Instance.new("TextLabel")
 	costLabel.Name = "Cost"
-	costLabel.BackgroundTransparency = 1
+	costLabel.BackgroundColor3 = UITheme.COIN_PILL
+	costLabel.BorderSizePixel = 0
+	UITheme.styleCorner(costLabel, 7)
 	costLabel.AnchorPoint = Vector2.new(0.5, 1)
-	costLabel.Position = UDim2.new(0.5, 0, 1, if hasCap then 0 else -5)
-	costLabel.Size = UDim2.new(1, -6, 0, 18)
-	costLabel.TextSize = 15
+	costLabel.Position = UDim2.new(0.5, 0, 1, -4)
+	costLabel.Size = UDim2.new(1, -10, 0, 17)
+	costLabel.TextSize = 12
 	costLabel.TextXAlignment = Enum.TextXAlignment.Center
-	costLabel.Text = tostring(definition.cost)
+	costLabel.Text = string.format("%d coins", definition.cost)
 	costLabel.Parent = button
 	passthrough(costLabel)
 	UITheme.applyOutlinedTitle(costLabel, UITheme.GOLD_TEXT)
 	costLabel.Font = Enum.Font.GothamBold
-	costLabel.TextSize = 15
+	costLabel.TextSize = 12
 
 	local cooldownCover = Instance.new("Frame")
 	cooldownCover.Name = "CooldownCover"
@@ -441,8 +484,8 @@ function Shop.refresh(self: Shop)
 		else
 			UITheme.applyOutlinedTitle(card.costLabel, UITheme.DANGER)
 		end
-		card.costLabel.TextSize = 15
-		card.costLabel.Text = tostring(plantCost)
+		card.costLabel.TextSize = 12
+		card.costLabel.Text = string.format("%d coins", plantCost)
 		local countLabel = card.countLabel
 		local cap = card.definition.maxOnPlot
 		if countLabel and type(cap) == "number" and cap > 0 then
@@ -520,7 +563,7 @@ function Shop.setEquipped(self: Shop, ids: { string })
 	for index, definition in definitions do
 		self:buildCard(self.list, index, definition)
 	end
-	resizePanel(self.frame, #definitions)
+	self.resizePanel(#definitions)
 
 	if self.selectedId then
 		local stillThere = false

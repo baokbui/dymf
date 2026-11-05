@@ -194,9 +194,10 @@ Daily quests grant 6/12/18 brains per UTC day; weekly quests grant 13/26/39
 per Monday-based week. The finite first-time catalog grants 12 base brains,
 two Speed levels, one Magnet level, and one free store Brainrot ticket. Maxed
 upgrade claims substitute 10 brains. There is no recurring weekly login payout.
-Permanent achievements add 28 fixed brains once. Challenge/spinner remain
-planned. Review weekly income and upgrade/ticket value in live cohorts before
-claiming balance or retention success; see `RETENTION.md`.
+Permanent achievements add 75 brains and Campaign milestones add 95. Forest
+Rush and the free spin contribute to recurring income after their respective
+unlocks. See the configured budget in `ECONOMY.md`. Live completion rates and
+spend patterns remain unmeasured.
 
 | What | Where |
 | ---- | ----- |

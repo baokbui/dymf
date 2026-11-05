@@ -1,6 +1,5 @@
 --!strict
--- Milestone 20 contracts. Quests, login rewards and achievements use schema v11.
--- Challenge and spinner fields are reserved for later steps.
+-- Milestone 20 contracts. Save schema v13 stores the Daily Challenge receipt and Daily Spin outcome.
 export type QuestProgress = {
 	id: string,
 	target: number,
@@ -31,7 +30,7 @@ export type DailyReward = {
 	dayKey: number,
 	brains: number,
 	claimed: boolean,
-	rewardId: string?, -- selected spin outcome or challenge catalog id
+	rewardId: string?, -- selected spin outcome
 }
 
 export type AchievementProgress = { progress: number, claimed: boolean }
@@ -43,7 +42,7 @@ export type RetentionSave = {
 	brainrotTickets: number?,
 	login: LoginTrack?,
 	achievements: { [string]: AchievementProgress },
-	challenge: DailyReward?,
+	challengeClaimDay: number?,
 	spin: DailyReward?, -- outcome selected/persisted by server with grant
 }
 

@@ -34,6 +34,10 @@ local Logger = require(Shared.Utilities.Logger)
 local WeatherUtil = require(Shared.Utilities.WeatherUtil)
 
 local LevelRun = require(script.LevelRun)
+local ChallengeRun = require(script.ChallengeRun)
+local ChallengeConfig = require(Shared.Config.DailyChallengeConfig)
+local RetentionConfig = require(Shared.Config.RetentionConfig)
+local RetentionTime = require(Shared.Utilities.RetentionTime)
 local BrainrotService = require(script.Parent.BrainrotService)
 local CoinService = require(script.Parent.CoinService)
 local EnemyService = require(script.Parent.EnemyService)
@@ -63,6 +67,10 @@ type PlayerState = {
 	-- "pending" after Day 40 is cleared, "active" while the Hidden Day runs.
 	hiddenDay: string?,
 	hiddenBrains: number,
+	challenge: ChallengeRun.Run?,
+	challengeResult: string?,
+	challengeAttemptDay: number?,
+	lawnRestored: boolean?,
 }
 
 local states: { [number]: PlayerState } = {}
@@ -76,22 +84,29 @@ end
 
 local function buildPayloadForPlayer(player: Player): { [string]: any }
 	local state = states[player.UserId]
-	if not state then
-		return {}
+	if not state or not ProgressService.isHydrated(player) then
+		return { loading = true }
 	end
 
-	local hiddenShown = state.hiddenDay == "pending" or state.hiddenDay == "active"
-	local definition = if hiddenShown then Levels.getHidden() else getDefinition(state.currentLevel)
+	local challenge = state.challenge
+	local challengeActive = challenge ~= nil and not challenge.settling
+	local hiddenShown = not challengeActive and (state.hiddenDay == "pending" or state.hiddenDay == "active")
+	local definition = if challengeActive then ChallengeConfig.ENCOUNTER elseif hiddenShown then Levels.getHidden() else getDefinition(state.currentLevel)
 	local levelName = if definition then definition.name else "Unknown"
 	local payload: { [string]: any } = {
 		phase = state.phase,
 		levelNumber = state.currentLevel,
 		levelName = levelName,
 		highestUnlockedLevel = state.highestUnlockedLevel,
-		playerHealth = state.playerHealth,
-		maxPlayerHealth = ProgressConfig.MAX_PLAYER_HEALTH,
+		playerHealth = if challenge and not challenge.settling then challenge.health else state.playerHealth,
+		maxPlayerHealth = if challengeActive then ChallengeConfig.HEARTS else ProgressConfig.MAX_PLAYER_HEALTH,
+		challengeActive = challengeActive,
+		challengeAvailable = state.phase == PHASE.Preparation and challenge == nil
+			and state.lawnRestored == true and state.highestUnlockedLevel >= RetentionConfig.CHALLENGE_MINIMUM_DAY,
+		challengeReward = RetentionConfig.brainsFor(RetentionConfig.CHALLENGE_BRAINS, state.highestUnlockedLevel),
+		challengeResult = state.challengeResult,
 		bigWaveWarning = state.bigWaveWarning,
-		canStart = state.phase == PHASE.Preparation,
+		canStart = state.phase == PHASE.Preparation and challenge == nil,
 		progress = 0,
 		weather = if definition then definition.weather else nil,
 		hiddenDay = hiddenShown,
@@ -400,6 +415,52 @@ local function onContinueVictory(player: Player)
 	log:info(string.format("%s continued after day victory", player.Name))
 end
 
+local function finishChallenge(player: Player, state: PlayerState, cleared: boolean)
+	local run = state.challenge
+	if not run or run.settling then return end
+	local plot = PlotService.getPlotModel(player)
+	if not plot then return end
+	run.settling = true
+	state.activeRun = nil
+	clearTransientCombat(player)
+	ChallengeRun.restore(player, plot, run)
+	local analytics = require(script.Parent.RetentionService.Analytics)
+	analytics.log(player, if cleared then "Completed" else "Failed", nil, nil, "Challenge")
+	state.challengeResult = if cleared then "Challenge cleared · saving reward…" else "Challenge lost · retry for free"
+	setPhase(player, state, PHASE.Preparation)
+	if not cleared then
+		state.challenge = nil
+		broadcast(player)
+		return
+	end
+
+	-- UpdateAsync may yield. Other plots keep ticking while this run settles.
+	local day = RetentionTime.dayKey(os.time())
+	task.spawn(function()
+		local save = require(script.Parent.SaveService)
+		while player.Parent and state.challenge == run do
+			local ok, reason, reward = save.claimRetentionReward(player, "Challenge", day, ChallengeConfig.ENCOUNTER.id)
+			if state.challenge ~= run or not player.Parent then return end
+			if reason == "Busy" then
+				task.wait(0.2)
+				continue
+			end
+			state.challenge = nil
+			if ok then
+				state.challengeResult = string.format("Challenge cleared · +%d brains", reward or 0)
+				analytics.log(player, "Claimed", reward, nil, "Challenge")
+			elseif reason == "AlreadyClaimed" then
+				state.challengeResult = "Challenge cleared · today's reward earned"
+			else
+				state.challengeResult = "Reward unavailable · retry for free"
+				analytics.log(player, "Rejected", nil, reason, "Challenge")
+			end
+			broadcast(player)
+			return
+		end
+	end)
+end
+
 local function tickActivePlayer(player: Player, state: PlayerState)
 	local run = state.activeRun
 	if not run or state.phase ~= PHASE.Active then
@@ -441,6 +502,10 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 					plotModel.Name,
 					row
 				))
+				if state.challenge then
+					finishChallenge(player, state, false)
+					return
+				end
 			end
 		end
 	end
@@ -448,7 +513,9 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 	if run:isDoneSpawning() then
 		GraveService.notifyWavesComplete(plotModel)
 		if EnemyService.countOnPlot(plotModel) == 0 and not GraveService.hasPending(plotModel) then
-			if state.hiddenDay == "active" then
+			if state.challenge then
+				finishChallenge(player, state, true)
+			elseif state.hiddenDay == "active" then
 				finishHidden(player, state, true)
 			else
 				onVictory(player, state)
@@ -464,8 +531,7 @@ end
 local function beginCountdown(player: Player, state: PlayerState)
 	state.activeRun = nil
 	state.countdownEnd = os.clock() + LevelConfig.COUNTDOWN_TIME
-	local MagnetService = require(script.Parent.MagnetService)
-	MagnetService.resumeCooldown(player)
+	if not state.challenge then require(script.Parent.MagnetService).resumeCooldown(player) end
 	setPhase(player, state, PHASE.Countdown)
 end
 
@@ -479,12 +545,13 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 
 	state.countdownEnd = 0
 	state.activeRun = LevelRun.new(definition)
-	local MagnetService = require(script.Parent.MagnetService)
-	MagnetService.resumeCooldown(player)
+	if not state.challenge then require(script.Parent.MagnetService).resumeCooldown(player) end
 	local DamageMeterService = require(script.Parent.DamageMeterService)
 	DamageMeterService.reset(player)
 	setPhase(player, state, PHASE.Active)
-	require(script.Parent.RetentionService).beginRun(player, if state.hiddenDay == "active" then "Hidden" else "Campaign")
+	if not state.challenge then
+		require(script.Parent.RetentionService).beginRun(player, if state.hiddenDay == "active" then "Hidden" else "Campaign")
+	end
 
 	-- Fresh seed-packet recharges each Start Day (PvZ-style).
 	BrainrotService.clearPlantCooldowns(player)
@@ -524,7 +591,7 @@ local function tickCountdown(player: Player, state: PlayerState)
 		return
 	end
 
-	local definition = if state.hiddenDay == "active" then Levels.getHidden() else getDefinition(state.currentLevel)
+	local definition = if state.challenge then ChallengeConfig.ENCOUNTER elseif state.hiddenDay == "active" then Levels.getHidden() else getDefinition(state.currentLevel)
 	if not definition then
 		beginPreparation(player, state)
 		return
@@ -535,11 +602,11 @@ end
 
 local function onStartLevel(player: Player)
 	local state = states[player.UserId]
-	if not state then
+	if not state or not ProgressService.isHydrated(player) then
 		return
 	end
 	-- Defeat uses RewindDay → Preparation; StartLevel only from prep.
-	if state.phase ~= PHASE.Preparation then
+	if state.phase ~= PHASE.Preparation or state.challenge then
 		return
 	end
 
@@ -548,6 +615,7 @@ local function onStartLevel(player: Player)
 		return
 	end
 
+	state.challengeResult = nil
 	-- Brief 3…0 overlay, then Active so players plant while monsters march in.
 	if state.hiddenDay == "pending" then
 		beginHiddenDay(player, state)
@@ -559,6 +627,22 @@ local function onStartLevel(player: Player)
 	else
 		beginActiveRun(player, state, definition)
 	end
+end
+
+local function onStartChallenge(player: Player)
+	local state = states[player.UserId]
+	local plot = PlotService.getPlotModel(player)
+	if not state or not plot or not state.lawnRestored or state.challenge or state.phase ~= PHASE.Preparation then return end
+	if state.highestUnlockedLevel < RetentionConfig.CHALLENGE_MINIMUM_DAY or not ProgressService.isHydrated(player) then return end
+	if require(script.Parent.SaveService).isProgressionLocked(player) then return end
+	clearTransientCombat(player)
+	state.challenge = ChallengeRun.begin(player, plot)
+	state.challengeResult = nil
+	local day = RetentionTime.dayKey(os.time())
+	require(script.Parent.RetentionService.Analytics).log(player,
+		if state.challengeAttemptDay == day then "Retried" else "Attempted", nil, nil, "Challenge")
+	state.challengeAttemptDay = day
+	beginCountdown(player, state)
 end
 
 local function onHouseBreach(plotModel: Model, _row: number)
@@ -573,6 +657,13 @@ local function onHouseBreach(plotModel: Model, _row: number)
 		return
 	end
 
+	local challenge = state.challenge
+	if challenge then
+		challenge.health = math.max(0, challenge.health - 1)
+		broadcast(player)
+		if challenge.health == 0 then finishChallenge(player, state, false) end
+		return
+	end
 	state.playerHealth = math.max(0, state.playerHealth - 1)
 	require(script.Parent.RetentionService).recordEvent(player, "HouseBreached", 1,
 		if state.hiddenDay == "active" then "Hidden" else "Campaign")
@@ -588,11 +679,11 @@ end
 
 local function onSelectLevel(player: Player, rawLevel: unknown)
 	local state = states[player.UserId]
-	if not state then
+	if not state or not ProgressService.isHydrated(player) then
 		return
 	end
 	-- Day Select from Preparation only (Defeat must Rewind first).
-	if state.phase ~= PHASE.Preparation then
+	if state.phase ~= PHASE.Preparation or state.challenge then
 		return
 	end
 	if type(rawLevel) ~= "number" then
@@ -627,6 +718,8 @@ local function onSelectLevel(player: Player, rawLevel: unknown)
 end
 
 local function initPlayer(player: Player)
+	-- SaveService may hydrate an existing Studio player before LevelService.start().
+	if states[player.UserId] then return end
 	states[player.UserId] = {
 		currentLevel = 1,
 		highestUnlockedLevel = 1,
@@ -664,16 +757,19 @@ function LevelService.getWeather(player: Player): string?
 	if not state then
 		return nil
 	end
+	if state.challenge and not state.challenge.settling then return ChallengeConfig.ENCOUNTER.weather end
 	local hiddenShown = state.hiddenDay == "pending" or state.hiddenDay == "active"
 	local definition = if hiddenShown then Levels.getHidden() else getDefinition(state.currentLevel)
 	return if definition then definition.weather else nil
 end
 
--- After lawn restore on join — strip fog-column plants if the current day is NightFog.
+-- Called after the committed lawn is restored on join. Challenge entry waits for this handoff.
 function LevelService.applyWeatherRulesForPlayer(player: Player)
 	local state = states[player.UserId]
 	if state then
 		applyWeatherRules(player, state)
+		state.lawnRestored = true
+		broadcast(player)
 	end
 end
 
@@ -682,7 +778,12 @@ function LevelService.getCurrentDayForUser(userId: number): number
 	if not state then
 		return 1
 	end
-	return state.currentLevel
+	return if state.challenge and not state.challenge.settling then ChallengeConfig.ENCOUNTER.number else state.currentLevel
+end
+
+function LevelService.isChallengeActiveForUser(userId: number): boolean
+	local state = states[userId]
+	return state ~= nil and state.challenge ~= nil and not state.challenge.settling
 end
 
 function LevelService.isHiddenDayActiveForUser(userId: number): boolean
@@ -710,6 +811,7 @@ function LevelService.applySaveProgress(
 	playerHealth: number,
 	hiddenDayPending: boolean?
 )
+	initPlayer(player)
 	local state = states[player.UserId]
 	if not state then
 		return
@@ -719,6 +821,8 @@ function LevelService.applySaveProgress(
 	local sanitizedCurrent = math.clamp(math.floor(currentLevel), 1, math.max(1, maxLevel))
 	local sanitizedHighest = math.clamp(math.floor(highestUnlockedLevel), sanitizedCurrent, math.max(1, maxLevel))
 
+	state.challenge = nil
+	state.challengeResult = nil
 	state.currentLevel = sanitizedCurrent
 	state.highestUnlockedLevel = sanitizedHighest
 	state.playerHealth = math.clamp(math.floor(playerHealth), 1, ProgressConfig.MAX_PLAYER_HEALTH)
@@ -808,6 +912,7 @@ function LevelService.init()
 	Remotes.getEvent("StartLevel").OnServerEvent:Connect(function(player: Player)
 		onStartLevel(player)
 	end)
+	Remotes.getEvent("StartDailyChallenge").OnServerEvent:Connect(onStartChallenge)
 	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(onSelectLevel)
 	Remotes.getEvent("RewindDay").OnServerEvent:Connect(onRewindDay)
 	Remotes.getEvent("ContinueVictory").OnServerEvent:Connect(onContinueVictory)

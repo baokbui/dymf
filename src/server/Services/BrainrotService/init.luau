@@ -631,7 +631,9 @@ local function onPlaceBrainrot(player: Player, brainrotId: unknown, rawPosition:
 
 	releaseCap()
 	local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
-	ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
+	if not LevelService.isChallengeActiveForUser(player.UserId) then
+		ProgressService.incrementStat(player, ProgressConfig.STAT_BRAINROTS_PLACED)
+	end
 	startPlantCooldown(player, definition)
 end
 

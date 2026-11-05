@@ -100,7 +100,7 @@ Services (current):
 - StoreService
 - GraveService
 - RetentionService (daily/weekly quests, first-time rewards, achievements, next goal;
-  challenges/spinner planned)
+  Daily Challenge first-clear rewards and free daily spins)
 
 HouseService is planned for Milestone 21 (boss trophies + brains income); it is
 not an existing service. PlotService currently builds the house shell.
@@ -175,8 +175,8 @@ Examples:
 Studio-only playtest cheats live in `DevConfig`. `isActive()` = ENABLED and
 Studio only (never live). Overrides run after save hydration on join;
 `FORCE_DAY` is clamped to `Levels.count()`. Verify Rojo sync and restart the
-playtest after editing config. Cheats are currently enabled for local testing;
-do not silently change a developer's settings. Disable them before release and
+playtest after editing config. Check DevConfig for the current settings.
+Do not silently change a developer's settings. Disable them before release and
 remember that Studio progression overrides can be saved to the real DataStore.
 
 ---
@@ -277,7 +277,11 @@ Lawn / purse (see `LEVELS.md`):
 - **Rejoin** — restore the committed lawn (not mid-day plants). Player presses
   Start Day again.
 
-No other service advances days.
+No other service advances days. Daily Challenge reuses the owned plot and wave
+scheduler with temporary lawn, purse, and heart state. It cannot advance or
+commit campaign progress. SaveService atomically writes the UTC first-clear
+receipt and brains. Schema v13 also stores the server-selected daily spin
+outcome and its reward atomically.
 
 After Day 40 victory, Hidden Day is pending at Night (no fog/graves). Continue
 returns to Preparation; only Start Day begins it. It has 35 Goblins, 4 Elites,
@@ -314,7 +318,7 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 # Save System
 
 Only SaveService (including its SessionStore adapter) communicates with DataStore.
-V11 retention claims atomically save rewards (brains, upgrades, tickets) and claim
+Retention claims atomically save rewards (brains, upgrades, tickets) and claim
 flags/counts before UI success. Ticket redemption saves the unlock and spend together.
 All writes use owner, revision, and operation-id checks. Never bypass that writer
 or claim by addBrains + ordinary saveNow. Unavailable loads must not become
@@ -322,8 +326,9 @@ writable defaults; uncertain writes fail closed.
 First-time rewards advance once per distinct server UTC claim date and stop
 permanently after seven claims. Missed dates never reset/skip steps. Weekly
 quests reset Monday at 00:00 UTC; recurring weekly login rewards are removed.
-Permanent achievements do not expire at midnight. Ownership/claimed-Epic catch-up
-uses verified profile fields; boss/perfect history requires new server events.
+Permanent achievements and Campaign quests do not expire. Ownership, claimed
+evolutions, statistics, and highest unlocked day use verified server fields.
+Boss and perfect defense history requires new server events.
 Perfect defense means a numbered-day clear with no breaches during that attempt,
 not ending at full hearts. Attempt markers and next-goal hints are not persisted.
 
@@ -343,7 +348,8 @@ Persist:
   `introducedMechanics`)
 - `retention` (v8 quest assignment/progress/reward/claim flags; v9 welcome/weekly
   counts, claim date, current offer; v10 permanent achievement progress/claims;
-  v11 weekly quests, finite mixed first-time rewards and free Brainrot tickets);
+  v11 weekly quests, finite mixed first-time rewards and free Brainrot tickets;
+  v12 Daily Challenge receipts; v13 Daily Spin outcomes);
   real quest/achievement progress survives defeat while
   Brainrot XP still rolls back
 - `hiddenDayPending` (introduced in v7); unfinished Hidden Day kill earnings
@@ -379,9 +385,10 @@ Use versioned save data for future compatibility.
 # UI
 
 Inventory, Index, Upgrades, Settings, Statistics, Quests and Achievements
-share one Menu via `Client.Utilities.MenuRouter`. Reuse existing feature panels
-and register sections instead of recreating those HUD entries. First-time Rewards
-is a separate temporary HUD entry/window, hidden only after server-confirmed
+share one Menu window via `Client.Utilities.MenuRouter`. Settings opens from
+the top bar, and the other six sections open from the HUD drawer. Reuse existing feature panels
+and register sections instead of recreating those HUD entries. Daily Spinner and First-time Rewards use separate HUD entries and windows.
+First-time Rewards is hidden only after server-confirmed
 completion of all seven rewards. The physical
 Brainrot shop keeps its owned-stall access and range checks.
 

@@ -4,7 +4,7 @@ return function(sources: any, dependencies: any): string
 	local realRequire = require
 	local config, time = dependencies.RetentionConfig, dependencies.RetentionTime
 	local rules, login = dependencies.DailyQuests, dependencies.LoginRewards
-	local achievements = dependencies.Achievements
+	local achievements, spin = dependencies.Achievements, dependencies.DailySpin
 	local now=20000*86400
 	local active=false
 	local handler
@@ -27,13 +27,15 @@ return function(sources: any, dependencies: any): string
 	 claimRetentionReward=function(_,kind,day,id)
 	  local snapshot=ret.getSaveSlice(player)
 	  local rule=if kind=="Login" then login elseif kind=="Achievement" then achievements else rules
-	  local amount,reason=rule.claim(snapshot,day,id,now,kind=="WeeklyQuest")
+	  local amount,reason
+	  if kind=="Spin" then amount,reason=spin.claim(snapshot,day,now,30)
+	  else amount,reason=rule.claim(snapshot,day,id,now,kind=="WeeklyQuest") end
 	  if amount then claimed+=amount;ret.markCommitted(player,day,id,kind,snapshot) end
 	  return amount~=nil,reason,amount
 	 end
 	}
 	local modules={
-	 RetentionConfig=config,RetentionTime=time,DailyQuests=rules,LoginRewards=login,Achievements=achievements,NextGoal=dependencies.NextGoal,Remotes=remote,
+	 RetentionConfig=config,RetentionTime=time,DailyQuests=rules,DailySpin=spin,LoginRewards=login,Achievements=achievements,NextGoal=dependencies.NextGoal,Remotes=remote,
 	 Analytics={log=function(_,action)table.insert(analytics,action) end,goal=function(_,action,kind)table.insert(analytics,action..":"..kind)end},
 	 ProgressService={getClientState=function()return {unlocks={"BallerinaCappucina","TungTungSahur","ChimpanziniBananini"},evolutions={}}end},
 	 LevelService={getSaveProgress=function()return 30,30,5 end,isLevelActive=function()return active end},
@@ -130,6 +132,28 @@ return function(sources: any, dependencies: any): string
 	now+=1
 	handler(player,{kind="Ticket",dayKey=0,id="GiraffaCeleste"})
 	assert(lastResult().reason=="InvalidRequest","retention remote bypassed store ticket path")
+	local day=time.dayKey(now)
+	for _,request in {
+		false,
+		{kind="Spin",id="DailySpin",dayKey=0/0},
+		{kind="Spin",id="DailySpin",dayKey=math.huge},
+		{kind="Spin",id="DailySpin",dayKey=day+0.5},
+		{kind="Spin",id="Large",dayKey=day},
+		{kind="Challenge",id="ForestRush",dayKey=day},
+	} do
+		now+=1;handler(player,request)
+		assert(lastResult().reason=="InvalidRequest" and not ret.getSaveSlice(player).spin,"invalid request credited")
+	end
+	now+=1
+	handler(player,{kind="Spin",id="DailySpin",dayKey=day,amount=100000,rewardId="Large"})
+	local receipt=ret.getSaveSlice(player).spin
+	assert(lastResult().success and receipt and receipt.brains<=15,"client chose spin payout")
+	handler(player,{kind="Spin",id="DailySpin",dayKey=day})
+	assert(lastResult().reason=="RateLimited" and lastResult().kind=="Spin","spin spam was not identified")
+	now+=1
+	handler(player,{kind="Spin",id="DailySpin",dayKey=day})
+	assert(lastResult().reason=="AlreadyClaimed","same-day spin paid again")
+
 	for _,fn in deferred do fn() end
 	assert(saves>0,"assignment/completion not scheduled for save")
 	ret.cleanup(player)

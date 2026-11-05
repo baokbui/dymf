@@ -1,7 +1,6 @@
 # Milestone 20 retention
 
-**Steps 0–4 implemented, with first-time mixed rewards and weekly quests.**
-Challenges and spinner remain planned. Follow `ROADMAP.md` one step at a time.
+**Steps 0–6 implemented. Step 7 release verification is in progress.** See `ROADMAP.md` for the remaining checks.
 
 ## Authority and modules
 
@@ -35,7 +34,7 @@ A weekly key is that Monday's UTC day key. Replay clears count as campaign clear
   The selected/replayed day cannot change the band. Targets and exact rewards
   are snapshotted on assignment and cannot reroll by reconnecting.
 - Real Campaign/Hidden pickup and kill credit survives defeat. Only numbered
-  Campaign clears credit clear objectives. Challenge is excluded until designed.
+  Campaign clears credit clear objectives. Daily Challenge does not credit quests or achievements.
 - Progress updates are server events, never client submissions. Claims require
   the matching active period and objective completion. Each reward pays once.
   Daily and weekly progress/claim flags are independent.
@@ -43,8 +42,47 @@ A weekly key is that Monday's UTC day key. Replay clears count as campaign clear
 Weekly quests replace recurring weekly login rewards; there is no weekly login
 payout. Maximum quest income is 6/12/18 daily plus 13/26/39 weekly brains.
 The weekly component averages about 1.86/3.71/5.57 brains per day if fully completed.
-There is no balance cap. Five permanent achievements add 28 brains once.
-Challenge (base 4) and spinner (base expected 1.7) are planned, not active income.
+There is no balance cap. Ten permanent achievements add 75 brains once. Campaign quests add up to 95 brains across the 10 milestones.
+Forest Rush pays 8 or 12 brains per UTC day based on the highest unlocked day. The free spin adds an expected 1.7 base brains per eligible day before reward-band scaling.
+
+## Campaign quests and achievements
+
+**Quests → Campaign** tracks the highest campaign day unlocked, including for
+existing saves. Days 5 through 50, in five-day increments, each unlock a
+one-time claim worth 5 to 14 brains. The rewards use the permanent claim
+ledger and do not expire. Replaying or selecting a day cannot advance the
+highest unlocked day or repeat a claim.
+
+Achievements also track first Legendary and God evolutions, 100 and 500
+monster defeats, and 100 Brainrot placements. Existing saved statistics and
+verified owned evolution tiers count toward those milestones. Daily Challenge
+play is excluded from those statistics.
+
+## Daily Challenge
+
+**Forest Rush** unlocks at Day 10. Enter from the Day panel during campaign
+Preparation after your plot is ready. It uses a temporary empty lawn on the
+owned plot, 350 coins, three hearts, Day 10 enemy scaling, and no magnet.
+The normal equipped roster and upgrades apply. Challenge planting, coin
+pickups and kills do not advance campaign statistics, XP, quests or
+achievements. There is no leftover-coin conversion.
+
+Clear or defeat restores the campaign lawn, purse, hearts, and pending Hidden
+Day. Leaving drops the temporary run. Rejoin restores the regular campaign
+checkpoint. The first clear pays automatically for the server UTC date at
+completion. Retries are free. Save schema v12 writes the UTC receipt and
+brains together. Reset Progress preserves the receipt so it cannot reopen
+the same payout. A failed or expired save never reports reward success.
+Analytics records attempts, retries, clears, losses, and reward outcomes.
+
+## Free daily spin
+
+The **Daily Spinner** HUD button unlocks after clearing Day 2 and resets at 00:00 UTC.
+The base pool awards 1 brain at 60%, 2 brains at 30%, or 5 brains at 10%.
+The normal highest-unlocked-day multiplier scales amounts. The panel shows
+current payouts and odds. The server chooses the result and commits the receipt
+and brains together before the client reveal. Rejoining shows the committed
+result for that date. Reset Progress preserves the daily receipt.
 
 ## First-time rewards
 
@@ -92,16 +130,17 @@ No client chooses a price or sets the ticket count.
 
 ## Durability and concurrency
 
-Save schema **11**, retention internal version **4**, stores daily and weekly
-assignments/progress/claims, finite login state, permanent achievements, tickets.
+Save schema **13**, retention internal version **4**, stores daily and weekly
+quests, first-time rewards, permanent achievements and Campaign claims, tickets,
+Daily Challenge receipts, and Daily Spin outcomes.
 Only SaveService communicates with DataStore via SessionStore owner/revision/
 operation-id guards and a session lease (180 seconds; autosave every 60 seconds).
 Unavailable loads never become writable defaults; uncertain writes fail closed.
 
-`claimRetentionReward` supports Quest, WeeklyQuest, Login, Achievement and the
-internal Ticket purchase path. It commits the claim plus reward in one guarded
-record. Remotes expose only the first four claim kinds; Ticket is reached through
-validated shop purchase intent. A free upgrade/fallback, ticket grant or ticket
+`claimRetentionReward` accepts Quest, WeeklyQuest, Login, Achievement, and Spin
+from validated client intents. Campaign quests use the Achievement claim kind.
+The server uses internal Challenge and Ticket kinds for encounter clears and
+shop redemption. Each claim and its reward commit in one guarded record. A free upgrade/fallback, ticket grant or ticket
 spend cannot be saved separately from its associated claim/unlock.
 
 Store purchases return a saving/busy error while a player save transaction is
@@ -110,13 +149,14 @@ snapshots merge committed reward deltas and flags while preserving unrelated
 progress. Daily claims revalidate their date in the write callback; weekly claims
 revalidate their week and can cross ordinary midnight. Achievements/ticket spends
 have no calendar expiry. Reconnect never replays a completed grant. Reset Progress
-clears retention, ticket balances, unlocks and upgrades with the rest of the save.
+clears retention claims, ticket balances, unlocks, and upgrades while preserving
+the Daily Challenge and Daily Spin receipts.
 
 ## Achievements and goals
 
-Permanent milestones: FirstBoss (5), FirstEpic (5), FirstPerfectDefense (3),
-OwnFiveBrainrots (5), OwnTenBrainrots (10), fixed brains independent of bands.
-Owned types and claimed Epic catch-up use verified profile fields. Boss/perfect
+The original five achievements award 28 brains. Legendary and God evolutions,
+100 and 500 monster defeats, and 100 placements add another 47. All use fixed
+rewards. Ownership, evolution, and statistics catch-up use verified profile fields. Boss/perfect
 history needs new server events, never intro flags or fabricated old statistics.
 A perfect defense is a numbered-day clear with zero breaches during that attempt;
 ending at full hearts alone is insufficient. Attempt breach flags are not saved.
@@ -141,7 +181,7 @@ claim. Collected cards keep their icon/amount under a red Claimed stamp.
 The default footer is empty; only claim feedback appears there.
 
 `RequestState.retention` / `RetentionUpdated` supply daily data plus `weekly`,
-`weeklyResetAt`, `login`, `brainrotTickets`, achievements and nextGoal. Claim
+`weeklyResetAt`, `login`, `brainrotTickets`, achievements, campaign milestones, and nextGoal. Claim
 intent contains `kind`, period `dayKey`, and bounded `id`. Server validates type,
 finite integer period, catalog, completion, date and request throttle (0.5s).
 Pushes coalesce at 0.35s. `RetentionClaimResult.reward` describes non-brain grants;
@@ -160,7 +200,16 @@ isolation/performance, cloud fault tests and live analytics remain Step 7 work.
 Studio DevConfig cheats are unchanged; do not test economy balance on boosted
 profiles or claim a retention lift before real D1/D7/D30 cohorts exist.
 
-Latest isolated verification: 45 first-time/weekly/ticket pure assertions,
-32 quest/storage checks, 32 achievement checks, 207 Menu/standalone reward checks, and full
-SaveService/RetentionService in-memory integration fixtures pass. These are
-not real cloud-storage or four-player gameplay tests.
+Step 7 isolated Studio verification passes 47 achievement and milestone
+assertions, 45 first-time/weekly/ticket assertions, 32 quest/storage assertions,
+58 sizing/layout/scroll assertions, 209 Menu checks, and 10 shovel checks.
+The SaveService, RetentionService, and Daily Challenge integration fixtures
+also pass. Coverage includes startup-order hydration, reset preserving the two
+daily receipts, malformed claim arguments, spin spam, same-day repeats,
+simultaneous writer requests, and reconnect after a committed outcome.
+The configured economy review is in ECONOMY.md.
+
+Release checks still require a full battle on a populated plot, four concurrent
+players, real-device touch and desktop spinner input, real DataStore fault and
+restart verification, and analytics ingestion in a published test environment.
+Review D1/D7/D30 cohorts after enough live data accumulates.

@@ -1362,7 +1362,7 @@ function CombatService.notifyMonsterDeath(
 		column = column,
 	})
 	local player = Players:GetPlayerByUserId(ownerUserId)
-	if player then
+	if player and not require(script.Parent.LevelService).isChallengeActiveForUser(ownerUserId) then
 		local ProgressService = require(script.Parent.ProgressService)
 		local ProgressConfig = require(ReplicatedStorage.Shared.Config.ProgressConfig)
 		ProgressService.grantKillXp(player, lastHitBrainrotId, isBoss)

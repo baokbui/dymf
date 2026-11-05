@@ -78,7 +78,7 @@ window, using the restored UI style. Its 32 pure rule assertions and isolated
 save/service/UI checks cover ownership/Epic catch-up, new boss/perfect events,
 duplicate claims, failure/rejoin, midnight and concurrent saves. Schema v10
 preserves existing quest/login claims. Full battle/device/multiplayer and cloud
-fault testing remain pending. Challenges and spinner are not implemented.
+fault testing remain pending. Steps 5 and 6 added Forest Rush and the free daily spin in save schemas v12 and v13.
 
 - There are **13 Brainrots**, **14 monsters**, and **nine** complete evolution
   tracks in the registries. Blueberrinni, Girafa, Patapim, and Bombardino have
@@ -100,7 +100,7 @@ fault testing remain pending. Challenges and spinner are not implemented.
 - The house shell, owner sign, and authored pedestal locations exist.
   HouseService, trophy collection, and passive house brains income are planned
   (M21). Daily/weekly quests, first-time rewards and achievements/next goal are implemented
-  (M20); challenges and spinner remain planned. Day Select has a
+  (M20), along with Campaign quests, Forest Rush, and the free daily spin. Day Select has a
   server remote but no shipped player-facing UI.
 
 ## Health, damage, and feedback ownership

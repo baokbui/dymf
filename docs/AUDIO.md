@@ -64,6 +64,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `BigWave` | First frame of big-wave warning |
 | `Victory` / `Defeat` | Level phase change |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
+| `FirstTimeRewardStamp` | Server confirms a First-time Rewards claim |
 | `PurchaseKaching` | Store purchase succeeded (cash register) |
 | `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent |
@@ -148,11 +149,11 @@ the client watcher is non-blocking so death/hit SFX stay in sync.
 
 Daily/weekly quest, first-time reward, ticket purchase and achievement claims reuse `PurchaseKaching` after a durable success and
 `PurchaseError` for a rejected claim. Opening the panel uses `UiClick`.
-QuestController routes these through AudioController and existing settings.
+QuestController routes these through AudioController and existing settings. The Daily Spinner uses UiClick on open and on spin intent. Its reveal reel and Forest Rush results have no dedicated sound cue.
 
 - Playback is client-only; never trust the client for rewards or combat.
 - Prefer `AudioController.play` over ad-hoc `Instance.new("Sound")`.
 - Plot gameplay SFX are **owner-only** (see Plot-local SFX above) so spectating
   other plots does not flood the server with shared noise.
 - Tuning lives in `AudioConfig` — never hardcode asset ids in controllers.
-- Mute API: `AudioController.setMuted` / volume scales / Brainrot SFX toggle (Settings UI, M13).
+- Settings applies mute and Brainrot SFX through `AudioController`. Music and Sound Effects sliders map 0–100% to the existing 0–1 group volume scales.

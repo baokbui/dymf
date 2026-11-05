@@ -7,7 +7,7 @@
 	persisted (Day 1 purse / later days = 0). Mid-day placements are session-
 	only until the day is won. Monsters and other combat transients are not saved.
 
-	Schema v11: first-time mixed rewards, weekly quests and atomic Brainrot tickets.
+	Schema v13: durable Daily Challenge and Daily Spin receipts.
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -20,6 +20,7 @@ local Constants = require(Shared.Constants)
 local EconomyConfig = require(Shared.Config.EconomyConfig)
 local LevelConfig = require(Shared.Config.LevelConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local RetentionConfig = require(Shared.Config.RetentionConfig)
 local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
 
@@ -37,6 +38,7 @@ local log = Logger.new(SaveService.Name)
 local store = DataStoreService:GetDataStore(Constants.SAVE_DATASTORE_NAME)
 local SaveConfig = require(Shared.Config.SaveConfig)
 local RetentionTime = require(Shared.Utilities.RetentionTime)
+local DailySpin = require(script.Parent.RetentionService.DailySpin)
 local DailyQuests = require(script.Parent.RetentionService.DailyQuests)
 local LoginRewards = require(script.Parent.RetentionService.LoginRewards)
 local Achievements = require(script.Parent.RetentionService.Achievements)
@@ -494,13 +496,14 @@ function SaveService.isProgressionLocked(player: Player): boolean
 end
 
 function SaveService.claimRetentionReward(player: Player, kind: string, day: number, id: string): (boolean, string?, number?, any?)
-	if kind ~= "Quest" and kind ~= "WeeklyQuest" and kind ~= "Login" and kind ~= "Achievement" and kind ~= "Ticket" then return false, "InvalidRequest", nil end
+	if kind ~= "Quest" and kind ~= "WeeklyQuest" and kind ~= "Login" and kind ~= "Achievement" and kind ~= "Ticket" and kind ~= "Challenge" and kind ~= "Spin" then return false, "InvalidRequest", nil end
 	local userId = player.UserId
 	if saveInFlight[userId] then return false, "Busy", nil end
 	if leaving[userId] or not storage:isWritable(userId) then return false, "SaveUnavailable", nil end
 	saveInFlight[userId] = true
 	local snapshot = collectSnapshot(player)
 	snapshot.retention = DailyQuests.sanitize(snapshot.retention)
+	if kind == "Achievement" then Achievements.syncCampaign(snapshot.retention, snapshot.highestLevel) end
 	local claim = if kind == "Login" then LoginRewards.claim elseif kind == "Achievement" then Achievements.claim else DailyQuests.claim
 	local reward, reason, grant
 	if kind == "Ticket" then
@@ -509,6 +512,19 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 			return false, "InvalidRequest", nil
 		end
 		reward, reason, grant = RewardGrant.redeem(snapshot, id)
+	elseif kind == "Spin" then
+		reward, reason = DailySpin.claim(snapshot.retention, day, os.time(), snapshot.highestLevel)
+	elseif kind == "Challenge" then
+		if day ~= RetentionTime.dayKey(os.time()) then
+			reason = "Expired"
+		elseif (snapshot.retention.challengeClaimDay or -1) >= day then
+			reason = "AlreadyClaimed"
+		elseif snapshot.highestLevel < RetentionConfig.CHALLENGE_MINIMUM_DAY then
+			reason = "InvalidRequest"
+		else
+			snapshot.retention.challengeClaimDay = day
+			reward = RetentionConfig.brainsFor(RetentionConfig.CHALLENGE_BRAINS, snapshot.highestLevel)
+		end
 	else reward, reason, grant = claim(snapshot.retention, day, id, os.time(), kind == "WeeklyQuest") end
 	if not reward then
 		saveInFlight[userId] = nil
@@ -538,6 +554,8 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 			queued.retention.brainrotTickets = snapshot.retention.brainrotTickets
 			if kind == "Login" then LoginRewards.markCommitted(queued.retention, snapshot.retention)
 			elseif kind == "Achievement" then Achievements.markCommitted(queued.retention, id)
+			elseif kind == "Challenge" then queued.retention.challengeClaimDay = day
+			elseif kind == "Spin" then queued.retention.spin = snapshot.retention.spin
 			elseif kind ~= "Ticket" then DailyQuests.markCommitted(queued.retention, day, id, kind == "WeeklyQuest") end
 		else
 			latestSnapshots[userId] = snapshot
@@ -603,6 +621,12 @@ function SaveService.resetProgress(player: Player)
 	-- Full wipe: Day 1, empty lawn checkpoint, starter coins (125), default
 	-- unlocks/loadout/stats. Requires two client confirmations before this fires.
 	local defaults = defaultSaveData()
+	local retention = require(script.Parent.RetentionService)
+	local prior = retention.getSaveSlice(player)
+	local resetRetention = DailyQuests.sanitize(nil)
+	resetRetention.challengeClaimDay = if prior then prior.challengeClaimDay else nil
+	resetRetention.spin = if prior then prior.spin else nil
+	defaults.retention = resetRetention
 	loadedProfiles[player.UserId] = defaults
 	latestSnapshots[player.UserId] = defaults
 	committedBrainrots[player.UserId] = {}
@@ -612,7 +636,7 @@ function SaveService.resetProgress(player: Player)
 	ProgressService.applyDevEvolutions(player)
 	ProgressService.applyDevBrains(player)
 	LevelService.applySaveProgress(player, 1, 1, LevelConfig.STARTING_PLAYER_HEALTH)
-	require(script.Parent.RetentionService).hydrate(player, nil)
+	retention.hydrate(player, defaults.retention)
 	CoinService.resetBalance(player)
 
 	local plotModel = PlotService.getPlotModel(player)

@@ -90,7 +90,10 @@ Each player plot contains:
 
 `Workspace.EnemyPaths` holds the east-column enemy lanes (`EnemyLane1` … `EnemyLane4`).
 `Workspace.Maps.DarkForest` fills that east column with a dense, non-colliding
-dark forest (clear strip near the plots for entry). Monsters spawn deeper in
+layered green forest (clear strip near the plots for entry). Seeded oak and
+cypress clusters, small-to-tall trees, shrubs, and boulders soften
+the woodland edge. The shared grass stays visible; overlapping canopies cast
+the forest shade instead of a dark ground overlay. All scenery is static and non-queryable. Monsters spawn deeper in
 the trees and walk west into player plots — that approach is setup time.
 
 Players may **walk between plots to spectate**. They cannot plant, shovel, or
@@ -365,17 +368,16 @@ Reset deletes:
 - Unlocks
 - Upgrades
 - Statistics
-- Saved Progress
 
 Player returns to Day 1.
 
 Reset requires two confirmations in Settings. It also clears brains, XP,
 claimed evolutions, intro flags, pending Hidden Day state, quests, login rewards
-and achievements.
+and achievements. Daily Challenge and Daily Spin receipts survive the reset.
 
 ---
 
-# Daily Quests (Milestone 20, Step 2) ✅
+# Retention features (Milestone 20) ✅ Implemented
 
 Players can open Daily Quests from the bottom-left Menu. Collect 150 coins,
 defeat 15 monsters, and clear one numbered campaign day; finishing all three
@@ -386,9 +388,12 @@ The Quests section also has a Weekly Quests tab: 1,500 coins, 150 monsters,
 and seven numbered clears, resetting Monday at 00:00 UTC. First-time Rewards
 ends after seven claims on distinct UTC dates, offering brains, Speed/Magnet
 levels and a free store Brainrot ticket on step seven. No recurring weekly
-login reward follows. The Achievements section adds five permanent milestones and a next-goal hint for campaign
-unlocks or Brainrot evolutions. Milestones grant 28 brains total, once per profile.
-Challenges and spinner remain planned. See `RETENTION.md`.
+login reward follows. The Campaign tab offers ten one-time milestone claims
+from Day 5 through Day 50. The Achievements section tracks ten permanent
+objectives and shows a next-goal hint for campaign unlocks or evolutions.
+Forest Rush unlocks at Day 10 and offers a first-clear reward each UTC day.
+The Daily Spinner offers one free spin per UTC day after clearing Day 2.
+Release verification remains open in Step 7. See `RETENTION.md`.
 
 ---
 

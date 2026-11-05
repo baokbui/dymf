@@ -1,10 +1,11 @@
 --!strict
--- Presentation only: seven bare icon/name destinations in a compact horizontal drawer.
+-- Presentation only: bare icon/name destinations in a compact horizontal drawer.
 local Theme = require(game:GetService("ReplicatedStorage").Shared.Config.UITheme)
 local MenuTiles = {}
 local images = {
 	Inventory = "rbxassetid://18224282235", Index = "rbxassetid://110444066627259",
-	Upgrades = "rbxassetid://90725732857650", Settings = "rbxassetid://18801194936",
+	Upgrades = "rbxassetid://90725732857650",
+	Achievements = "rbxassetid://9722127533", Quests = "rbxassetid://7088599984",
 }
 
 local function shape(parent: Instance, color: Color3, x: number, y: number, w: number, h: number): Frame
@@ -17,39 +18,21 @@ local function shape(parent: Instance, color: Color3, x: number, y: number, w: n
 end
 
 function MenuTiles.illustrate(parent: Instance, name: string)
-	local ink, white, gold = Theme.OUTLINE, Theme.TITLE, Theme.GOLD
-	if name == "Quests" then
-		local paper = shape(parent, white, 0.2, 0.12, 0.6, 0.8)
-		Theme.applyStroke(paper, 3)
-		shape(parent, gold, 0.35, 0.06, 0.3, 0.16)
-		for row = 0, 2 do
-			shape(parent, Theme.SUCCESS_DARK, 0.28, 0.33 + row * 0.18, 0.1, 0.09)
-			shape(parent, ink, 0.45, 0.35 + row * 0.18, 0.27, 0.04)
-		end
-	elseif name == "First-time Rewards" then
-		local box = shape(parent, Theme.DANGER, 0.15, 0.38, 0.7, 0.52)
-		Theme.applyStroke(box, 3)
-		shape(parent, gold, 0.43, 0.36, 0.14, 0.54)
-		local lid = shape(parent, Theme.DANGER, 0.1, 0.28, 0.8, 0.15)
-		Theme.applyStroke(lid, 3)
-		shape(parent, gold, 0.43, 0.28, 0.14, 0.15)
-		local left = shape(parent, gold, 0.26, 0.07, 0.22, 0.2)
-		local right = shape(parent, gold, 0.52, 0.07, 0.22, 0.2)
-		left.Rotation, right.Rotation = -25, 25
+	local artwork = if name == "Daily Spinner" then "rbxassetid://12893831040"
+		elseif name == "First-time Rewards" then "rbxassetid://17368068524" else nil
+	if artwork then
+		local icon = Instance.new("ImageLabel")
+		icon.Name = if name == "Daily Spinner" then "SpinnerArtwork" else "GiftArtwork"
+		icon.Image = artwork
+		icon.BackgroundTransparency = 1
+		icon.ScaleType = Enum.ScaleType.Fit
+		icon.Size = UDim2.fromScale(1, 1)
+		icon.Parent = parent
 	elseif name == "Statistics" then
 		for index, height in { 0.35, 0.55, 0.8 } do
 			local bar = shape(parent, Theme.SUCCESS, 0.12 + (index - 1) * 0.27, 0.9 - height, 0.2, height)
 			Theme.applyStroke(bar, 3)
 		end
-	else
-		local handles = shape(parent, gold, 0.08, 0.18, 0.84, 0.36)
-		Theme.applyStroke(handles, 3)
-		shape(parent, Theme.PANEL_BG_UNLOCK, 0.18, 0.24, 0.64, 0.19)
-		local cup = shape(parent, gold, 0.25, 0.1, 0.5, 0.51)
-		Theme.applyStroke(cup, 3)
-		shape(parent, gold, 0.44, 0.6, 0.12, 0.2)
-		local base = shape(parent, gold, 0.23, 0.8, 0.54, 0.12)
-		Theme.applyStroke(base, 3)
 	end
 end
 

@@ -4,7 +4,7 @@ local Theme = require(game:GetService("ReplicatedStorage").Shared.Config.UITheme
 local Time = require(game:GetService("ReplicatedStorage").Shared.Utilities.RetentionTime)
 local Utilities = script.Parent.Parent.Parent.Utilities
 local Menu = require(Utilities.MenuRouter)
-local Tiles = require(Utilities.MenuTiles)
+local RewardHudEntry = require(script.Parent.RewardHudEntry)
 local OutsideDismiss = require(Utilities.OutsideDismiss)
 local UISizing = require(Utilities.UISizing)
 local HudLayout = require(Utilities.HudLayout)
@@ -42,7 +42,8 @@ function FirstTimeRewards.new(main: ScreenGui, claim: (any) -> ()): any
 	window.Name, window.Active = "Window", true
 	window.AnchorPoint, window.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
 	window.Size, window.ZIndex, window.Parent = UDim2.fromOffset(940, 280), 25, layer
-	Theme.applyPanelLook(window, nil, Theme.PANEL_BG_INVENTORY)
+	Theme.applyPanelLook(window, nil, Theme.PANEL_BG_REWARD)
+	Theme.applySurfaceDepth(window)
 	OutsideDismiss.mount(layer, window, FirstTimeRewards.close)
 	text(window, "First-time Rewards", 26, UDim2.fromOffset(12, 15), UDim2.new(1, -64, 0, 34))
 	local close = Instance.new("TextButton")
@@ -57,18 +58,8 @@ function FirstTimeRewards.new(main: ScreenGui, claim: (any) -> ()): any
 	local login = LoginPanel.build(window, claim)
 	login.frame.Position, login.frame.Visible = UDim2.fromOffset(16, 90), true
 	local feedback = text(window, "", 16, UDim2.new(0, 16, 1, -57), UDim2.new(1, -32, 0, 40))
-	local entry = Instance.new("TextButton")
-	entry.Name, entry.Text, entry.BackgroundTransparency = "FirstTimeRewardsEntry", "", 1
-	entry.BorderSizePixel, entry.Visible, entry.ZIndex = 0, false, 15
-	entry.AnchorPoint, entry.Position = Vector2.new(0, 1), UDim2.new(0, 16, 1, -122)
-	entry.Size, entry.Parent = UDim2.fromOffset(96, 104), main
-	local gift = Instance.new("Frame")
-	gift.Name, gift.BackgroundTransparency = "Icon", 1
-	gift.Position, gift.Size, gift.Parent = UDim2.fromOffset(16, 0), UDim2.fromOffset(64, 64), entry
-	Tiles.illustrate(gift, "First-time Rewards")
-	local caption = text(entry, "First-time\nRewards", 14, UDim2.fromOffset(0, 66), UDim2.fromOffset(96, 38))
-	caption.TextWrapped = true
-	local badge = text(entry, "!", 15, UDim2.fromOffset(70, 0), UDim2.fromOffset(22, 22))
+	local entry, timer = RewardHudEntry.new(main, "FirstTimeRewardsEntry", "First-time Rewards")
+	local badge = text(entry, "!", 15, UDim2.fromOffset(64, 0), UDim2.fromOffset(22, 22))
 	badge.Name, badge.BackgroundTransparency, badge.BackgroundColor3 = "Available", 0, Theme.DANGER
 	Theme.styleCorner(badge, 11)
 	entry.Activated:Connect(function()
@@ -97,7 +88,9 @@ function FirstTimeRewards.new(main: ScreenGui, claim: (any) -> ()): any
 	login.frame.ClaimLoginReward:GetPropertyChangedSignal("Visible"):Connect(resize)
 	HudLayout.watch(main, window, resize)
 	resize()
+	local rewardState: any
 	local function refresh(state: any, waiting: boolean)
+		rewardState = state
 		entry.Visible = state ~= nil and state.finished ~= true
 		badge.Visible = entry.Visible and state.ready == true
 		login.refresh(state, waiting)
@@ -105,6 +98,9 @@ function FirstTimeRewards.new(main: ScreenGui, claim: (any) -> ()): any
 		if not entry.Visible then FirstTimeRewards.close() end
 	end
 	local function tick(resetAt: number?)
+		if entry.Visible then
+			timer.Text = if rewardState and rewardState.ready then "Ready" else RewardHudEntry.countdown(resetAt)
+		end
 		if not layer.Visible then return end
 		clock.Text = if resetAt then "Next reward in " .. Time.formatCountdown(math.max(0, resetAt - workspace:GetServerTimeNow())) .. " UTC" else "Loading rewards..."
 	end

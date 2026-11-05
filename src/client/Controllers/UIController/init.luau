@@ -50,6 +50,7 @@ local Menu = require(script.Parent.Parent.Utilities.MenuRouter)
 local UISizing = require(script.Parent.Parent.Utilities.UISizing)
 local ScrollPolicy = require(script.Parent.Parent.Utilities.ScrollPolicy)
 local FirstTimeRewards = require(script.Parent.QuestController.FirstTimeRewards)
+local DailySpinHud = require(script.Parent.QuestController.DailySpinHud)
 local PlacementController = require(script.Parent.PlacementController)
 local AudioController = require(script.Parent.AudioController)
 local InputController = require(script.Parent.InputController)
@@ -413,6 +414,7 @@ end
 
 local function openProgressionShop(shopKind: string, anchor: Vector3?)
 	FirstTimeRewards.close()
+	DailySpinHud.close()
 	if not progressionStore then
 		return
 	end
@@ -459,7 +461,7 @@ local function applyLevelState(state: { [string]: any }?)
 	if type(state) ~= "table" then
 		return
 	end
-	if state.phase == Constants.PHASE.Victory or state.phase == Constants.PHASE.Defeat then Menu.close(); FirstTimeRewards.close() end
+	if state.phase == Constants.PHASE.Victory or state.phase == Constants.PHASE.Defeat then Menu.close(); FirstTimeRewards.close(); DailySpinHud.close() end
 
 	if heartsHud and type(state.playerHealth) == "number" then
 		local maxHealth = if type(state.maxPlayerHealth) == "number"
@@ -659,6 +661,7 @@ function UIController.start()
 		end
 		Menu.close()
 		FirstTimeRewards.close()
+		DailySpinHud.close()
 		if inventoryPanel then
 			inventoryPanel:setOpen(false)
 		end

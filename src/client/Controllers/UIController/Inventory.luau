@@ -22,6 +22,7 @@ local BrainrotPreview = require(script.Parent.Parent.Parent.Utilities.BrainrotPr
 local AudioController = require(script.Parent.Parent.AudioController)
 local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
 local BrainrotInspect = require(script.Parent.BrainrotInspect)
+local InventoryItems = require(script.Parent.InventoryItems)
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -58,6 +59,11 @@ export type InventoryPanel = typeof(setmetatable(
 		loadoutLocked: boolean,
 		packets: { [string]: Packet },
 		hint: TextLabel,
+		loadoutCount: TextLabel,
+		title: TextLabel,
+		itemsList: ScrollingFrame,
+		loadoutTab: TextButton,
+		itemsTab: TextButton,
 		inspect: BrainrotInspect.InspectCard,
 		selectedId: string?,
 		brainrotXp: { [string]: number },
@@ -114,6 +120,7 @@ end
 
 local function stylePacket(packet: Packet, equipped: boolean, locked: boolean, selected: boolean)
 	UITheme.applyCardLook(packet.button, equipped or selected)
+	packet.button.BackgroundColor3 = if equipped then UITheme.INVENTORY_INSET else UITheme.INVENTORY_PACKET
 	if selected then
 		packet.button.BackgroundTransparency = 0
 	elseif locked then
@@ -154,9 +161,18 @@ function Inventory.new(parent: Frame): InventoryPanel
 	title.Position = UDim2.fromOffset(16, 12)
 	title.TextSize = 22
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Brainrots"
+	title.Text = "Brainrot Loadout"
 	title.Parent = parent
 	UITheme.applyOutlinedTitle(title)
+
+	local loadoutCount = Instance.new("TextLabel")
+	loadoutCount.Name = "LoadoutCount"
+	loadoutCount.Position, loadoutCount.Size = UDim2.new(1, -177, 0, 14), UDim2.fromOffset(118, 28)
+	loadoutCount.Text = string.format("0 / %d EQUIPPED", ProgressConfig.MAX_EQUIPPED)
+	loadoutCount.TextSize = 12
+	UITheme.applyButtonLook(loadoutCount, UITheme.INVENTORY_INK, 8)
+	UITheme.applyOutlinedTitle(loadoutCount)
+	loadoutCount.Parent = parent
 
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
@@ -173,7 +189,7 @@ function Inventory.new(parent: Frame): InventoryPanel
 	hint.Name = "Hint"
 	hint.BackgroundTransparency = 1
 	hint.Size = UDim2.new(1, -32, 0, 18)
-	hint.Position = UDim2.fromOffset(16, 48)
+	hint.Position = UDim2.fromOffset(16, 82)
 	hint.TextSize = 13
 	hint.TextXAlignment = Enum.TextXAlignment.Left
 	hint.Text = string.format("Pick up to %d for your shop. Tap one for details.", ProgressConfig.MAX_EQUIPPED)
@@ -183,8 +199,8 @@ function Inventory.new(parent: Frame): InventoryPanel
 	local list = Instance.new("ScrollingFrame")
 	list.Name = "List"
 	list.BackgroundTransparency = 1
-	list.Position = UDim2.fromOffset(12, 74)
-	list.Size = UDim2.new(1, -24, 1, -86)
+	list.Position = UDim2.fromOffset(12, 106)
+	list.Size = UDim2.new(1, -24, 1, -118)
 	list.CanvasSize = UDim2.new(0, 0, 0, 0)
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.ScrollBarThickness = SCROLLBAR
@@ -205,6 +221,21 @@ function Inventory.new(parent: Frame): InventoryPanel
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	layout.Parent = list
 
+	local function tab(name: string, x: number): TextButton
+		local button = Instance.new("TextButton")
+		button.Name, button.Text, button.TextSize = name .. "Tab", name, 14
+		button.Position, button.Size = UDim2.fromOffset(x, 47), UDim2.fromOffset(108, 29)
+		UITheme.applyButtonLook(button, UITheme.INVENTORY_INSET, 8)
+		UITheme.applyOutlinedTitle(button)
+		button.Parent = parent
+		return button
+	end
+	local loadoutTab, itemsTab = tab("Loadout", 16), tab("Items", 132)
+	local itemsList, updateItems = InventoryItems.new(parent)
+	local connection = UIEvents.retentionUpdated:Connect(updateItems)
+	parent.Destroying:Once(function() connection:Disconnect() end)
+	updateItems(UIEvents.getRetentionState())
+
 	local inspect = BrainrotInspect.new(parent)
 	inspect:dockInventory(STATS_GAP)
 
@@ -216,6 +247,11 @@ function Inventory.new(parent: Frame): InventoryPanel
 		loadoutLocked = false,
 		packets = {},
 		hint = hint,
+		loadoutCount = loadoutCount,
+		title = title,
+		itemsList = itemsList,
+		loadoutTab = loadoutTab,
+		itemsTab = itemsTab,
 		inspect = inspect,
 		selectedId = nil,
 		brainrotXp = {},
@@ -232,6 +268,16 @@ function Inventory.new(parent: Frame): InventoryPanel
 			stylePacket(packet, isEquipped(self.equipped, id), self.loadoutLocked, false)
 		end
 	end
+
+	loadoutTab.Activated:Connect(function()
+		AudioController.play("UiClick")
+		self:showItems(false)
+	end)
+	itemsTab.Activated:Connect(function()
+		AudioController.play("UiClick")
+		self:showItems(true)
+	end)
+	self:showItems(false)
 
 	close.Activated:Connect(function()
 		AudioController.play("UiClick")
@@ -271,7 +317,19 @@ function Inventory.syncEquipButton(self: InventoryPanel)
 	})
 end
 
+function Inventory.showItems(self: InventoryPanel, show: boolean)
+	if show and not self.itemsList.Visible then self:hideStats() end
+	self.itemsList.Visible = show
+	self.list.Visible = not show
+	self.hint.Visible = not show
+	self.loadoutCount.Visible = not show
+	self.title.Text = if show then "Inventory Items" else "Brainrot Loadout"
+	UITheme.applyButtonLook(self.itemsTab, if show then UITheme.INVENTORY_INK else UITheme.INVENTORY_INSET, 8)
+	UITheme.applyButtonLook(self.loadoutTab, if show then UITheme.INVENTORY_INSET else UITheme.INVENTORY_INK, 8)
+end
+
 function Inventory.showStats(self: InventoryPanel, definition: Types.BrainrotDefinition)
+	if self.itemsList.Visible then self:showItems(false) end
 	self.selectedId = definition.id
 	layoutInventory(self, true)
 	local equipped = isEquipped(self.equipped, definition.id)
@@ -333,12 +391,14 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 	button.ClipsDescendants = false
 	button.Parent = self.list
 
+	UITheme.applySurfaceDepth(button)
+
 	local window = Instance.new("Frame")
 	window.Name = "Window"
 	window.AnchorPoint = Vector2.new(0.5, 0)
 	window.Position = UDim2.new(0.5, 0, 0, 10)
 	window.Size = UDim2.fromOffset(PREVIEW_SIZE, PREVIEW_SIZE)
-	window.BackgroundColor3 = Color3.fromRGB(235, 245, 255)
+	window.BackgroundColor3 = UITheme.INVENTORY_INSET
 	window.BackgroundTransparency = 0.15
 	window.BorderSizePixel = 0
 	window.Parent = button
@@ -378,7 +438,8 @@ function Inventory.buildPacket(self: InventoryPanel, order: number, definition: 
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Center
 	nameLabel.Text = definition.name
 	nameLabel.Parent = namePlate
-	UITheme.applyOutlinedTitle(nameLabel)
+	UITheme.applyBodyText(nameLabel, UITheme.INVENTORY_INK)
+	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.TextSize = 12
 
 	local sizeConstraint = Instance.new("UITextSizeConstraint")
@@ -489,6 +550,7 @@ function Inventory.applyProfile(self: InventoryPanel, profile: { [string]: any }
 	local equippedChanged = not sameStringList(self.equipped, nextEquipped)
 	self.unlocks = nextUnlocks
 	self.equipped = nextEquipped
+	self.loadoutCount.Text = string.format("%d / %d EQUIPPED", #nextEquipped, ProgressConfig.MAX_EQUIPPED)
 	self.brainrotXp = xp
 	self.evolutions = evolutions
 

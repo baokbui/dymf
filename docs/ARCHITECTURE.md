@@ -103,7 +103,7 @@ ServerScriptService/Server/            (init.server.luau = bootstrap)
         SaveService/
         StoreService/     (Brainrot stall + shop ownership — M18)
         ProgressService/  (brains, unlocks, loadout, upgrades, statistics)
-        RetentionService/ (DailyQuests, LoginRewards, Achievements, NextGoal, analytics; M20)
+        RetentionService/ (DailyQuests, LoginRewards, Achievements, DailySpin, NextGoal, analytics; M20)
 
 StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
     Controllers/
@@ -470,7 +470,7 @@ Full details in `UI.md`. Summary:
   (`grantUnlockForLevel`, called from `LevelService.onVictory`) — see
   `BRAINROTS.md`.
 - **Hearts HUD** — 5 house hearts at top-left (no chip); LevelService −1 per breach, defeat at 0.
-- **Settings** — Menu section; mute, volume steps, Brainrot SFX toggle,
+- **Settings** — Menu section; mute, volume sliders, Brainrot SFX toggle,
   VFX choice (High / Low / Off), double-confirm Reset Progress. Statistics has its own Menu section. Level Select deferred to a later UI.
 - **Inventory** — Menu section; click a packet
   for a shared inspect card on the right (portrait + HP / level / XP bar,
@@ -479,8 +479,8 @@ Full details in `UI.md`. Summary:
   plot opens `MonsterInspect` (portrait, live HP, stats, ability — no
   evolutions).
 - **Reward popup** — victory shows brains earned (store purchases → M18). The Hidden Day after Day 40 uses the same popup for a clear or a loss.
-- Current save schema is **v11** (`SAVE_SYSTEM.md`): progression, XP, claimed
-  evolutions, intro lists, and optional `hiddenDayPending`. Coins are a legacy
+- Current save schema is **v13** (`SAVE_SYSTEM.md`): progression, XP, claimed
+  evolutions, intro lists, retention state, and optional `hiddenDayPending`. Coins are a legacy
   placeholder, not a persisted gameplay balance.
 
 ### Milestone 18 — Progression Store ✅
@@ -514,7 +514,7 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   data-driven ability ids.
 - **XP (live):** last-hit species for normal kills (`BubbleTrap`, `BubbleBarrage`, `MeleeBat`,
   and `TileTrap` skip last-hit XP; configured hit jobs grant separately); boss XP split per living plant on the lawn;
-  persisted as `brainrotXp` (introduced v5; current save schema v11). Inspect UI shows level / XP. XP from a
+  persisted as `brainrotXp` (introduced v5; current save schema v13). Inspect UI shows level / XP. XP from a
   failed or unfinished day rewinds to the Start Day snapshot.
 - **Epic stats + Legendary extras + Mythic / Immortal passives + aura (live):** claimed Epic overlays `stats`
   onto the registry definition (interval / HP / damage / plant cooldown).
@@ -570,20 +570,21 @@ endless scaling-wave loop. Full details in `LEVELS.md`. Shared modules added:
 
 `Config.Retention` / `RetentionConfig` define immutable quest and mixed first-time reward
 catalogs and progression bands. `Utilities.RetentionTime` provides pure UTC
-date/countdown helpers; `Types.Retention` defines quest/login save contracts
-and reserved types for later retention tracks.
+date/countdown helpers; `Types.Retention` defines quest, reward, achievement,
+challenge receipt, and spin save contracts.
 RetentionService owns daily/weekly quests and finite first-time offers, pure DailyQuests/LoginRewards rules,
 and analytics. Achievements tracks permanent milestones and NextGoal selects
 one actionable hint from the existing authoritative profile/registries.
-QuestController registers Quests (daily/weekly tabs) and Achievements in the
+QuestController registers Quests (daily/weekly/Campaign tabs) and Achievements in the
 shared Menu. QuestTracker adds a right-side daily/weekly progress panel between
 Damage and the day UI; QuestPresentation supplies shared display rows. FirstTimeRewards hosts LoginRewardsPanel in a standalone temporary
 HUD window, hiding its gift entry after authoritative completion. OutsideDismiss
 shares outside-only click regions between that window and Menu. RewardGrant prepares durable upgrade/ticket
 snapshot mutations; the physical shop also accepts a saved free-ticket intent. MenuPages
-adapts existing feature panels without duplicating their logic. Save schema v11 and SaveService.SessionStore
-provide session/revision-guarded writes and durable claims distinct from saveNow.
-Other reward tracks remain planned; see `RETENTION.md`.
+adapts existing feature panels. Save schema v13 and SaveService.SessionStore
+provide session/revision-guarded writes and durable claims. DailySpin selects
+the server outcome inside the save transaction, and DailySpinHud reveals it
+from a standalone HUD entry. See `RETENTION.md`.
 
 ## Conventions
 
@@ -616,3 +617,23 @@ UIController starts ScrollPolicy once for current/future MainUI scrollers.
 It controls chrome/gutters, not gameplay or claim state. Menu pages own their
 internal scrolling and the host scrolls only actual overflow. The quest tracker
 uses one Daily/Weekly toggle, retaining period-specific completion animation.
+
+### Daily Challenge
+
+LevelService reuses the per-plot wave scheduler and tracks Forest Rush through
+a temporary ChallengeRun context. Campaign day, hearts, pending Hidden Day
+and the committed lawn remain the source of save snapshots. Challenge payout
+uses SaveService's existing serialized retention writer. Combat and coin
+events exclude the temporary run from campaign progression credit.
+
+### Woodland scenery
+
+`PlotService.ForestBuilder` builds the static east-column forest once;
+`ForestDecor` supplies oak/cypress silhouettes and edge rocks/shrubs. Cosmetic
+spacing, seed, palette and clearings are configured in `PlotConfig`. A local
+Random instance makes placement reproducible without touching gameplay RNG.
+All scenery is anchored, non-colliding, non-touching and non-queryable.
+`DarkForest.ForestFloor` is an invisible bounds marker for DesertVisuals.
+The shared grass receives canopy shadows; no dark floor or moss overlay covers it.
+Trees vary from sapling to tall canopy sizes at denser, staggered spacing. Every
+forest detail stays under that folder so desert weather can hide it locally.

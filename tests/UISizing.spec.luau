@@ -5,9 +5,11 @@ return function(Sizing: any): number
 	local function check(value: any, message: string) checks += 1; assert(value, message) end
 	check(Sizing.desktop(Vector2.new(1366, 768)) == 1, "baseline scale")
 	check(Sizing.desktop(Vector2.new(1920, 1080)) >= 1.2 and Sizing.desktop(Vector2.new(1920, 1080)) <= 1.3, "1080p text remains small")
-	check(Sizing.desktop(Vector2.new(2560, 1440)) == 1.5, "1440p cap")
-	check(Sizing.desktop(Vector2.new(3840, 2160)) == 1.5, "4K cap")
-	check(Sizing.desktop(Vector2.new(390, 844)) == 1, "mobile forced enlargement")
+	check(math.abs(Sizing.desktop(Vector2.new(2560, 1440)) - 5 / 3) < 0.001, "1440p scale")
+	check(Sizing.desktop(Vector2.new(3840, 2160)) == 2.5, "4K scale")
+	check(Sizing.desktop(Vector2.new(7680, 4320)) == 5, "8K scale")
+	check(Sizing.desktop(Vector2.new(5120, 1440)) == Sizing.desktop(Vector2.new(2560, 1440)), "ultrawide scale ignores height")
+	check(Sizing.desktop(Vector2.new(390, 844)) < 1, "portrait HUD did not shrink")
 	local screen = Instance.new("ScreenGui")
 	screen.Parent = game:GetService("CoreGui")
 	local ok, result = xpcall(function()
@@ -18,7 +20,7 @@ return function(Sizing: any): number
 		hud.AnchorPoint, hud.Position = Vector2.new(1, 1), UDim2.new(1, -16, 1, -16)
 		hud.Parent = host
 		Sizing.start(host)
-		for _, viewport in { Vector2.new(1366, 768), Vector2.new(1920, 1080), Vector2.new(2260, 1163), Vector2.new(2560, 1440) } do
+		for _, viewport in { Vector2.new(390, 844), Vector2.new(844, 390), Vector2.new(768, 1024), Vector2.new(1366, 768), Vector2.new(1920, 1080), Vector2.new(2260, 1163), Vector2.new(2560, 1440), Vector2.new(3840, 2160), Vector2.new(7680, 4320) } do
 			host.Size = UDim2.fromOffset(viewport.X, viewport.Y)
 			task.wait(0.1)
 			check(math.abs(hud.DesktopScale.Scale - Sizing.desktop(viewport)) < 0.001, "viewport scaling")
@@ -30,6 +32,9 @@ return function(Sizing: any): number
 		cursor:SetAttribute("ScreenSpaceUI", true)
 		cursor.Parent = host; task.wait(0.1)
 		check(not cursor:FindFirstChild("DesktopScale") and cursor.Position == UDim2.fromOffset(800, 500), "screen cursor auto-scaled")
+		Sizing.scaleContent(cursor, host)
+		check(cursor:FindFirstChildOfClass("UIScale").Scale == 5 and cursor.Position == UDim2.fromOffset(800, 500),
+			"cursor visual scale changed pointer coordinates")
 		local expected = hud.Position
 		Sizing.start(host); task.wait(0.1)
 		check(hud.Position == expected, "scale applied twice")

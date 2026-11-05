@@ -6,6 +6,7 @@ local Time = require(Shared.Utilities.RetentionTime)
 local Types = require(Shared.Types.Retention)
 local LoginRewards = require(script.Parent.LoginRewards)
 local Achievements = require(script.Parent.Achievements)
+local DailySpin = require(script.Parent.DailySpin)
 local DailyQuests = {}
 
 local function integer(value: any, fallback: number): number
@@ -45,6 +46,9 @@ end
 
 function DailyQuests.sanitize(raw: any): Types.RetentionSave
 	local result: Types.RetentionSave = { version = Config.VERSION, achievements = {} }
+	local challengeDay = integer(if type(raw) == "table" then raw.challengeClaimDay else nil, -1)
+	result.challengeClaimDay = if challengeDay >= 0 then challengeDay else nil
+	result.spin = DailySpin.sanitize(if type(raw) == "table" then raw.spin else nil)
 	result.achievements = Achievements.sanitize(if type(raw) == "table" then raw.achievements else nil)
 	result.login = LoginRewards.sanitize(if type(raw) == "table" then raw.login else nil)
 	result.brainrotTickets = integer(if type(raw) == "table" then raw.brainrotTickets else nil, 0)

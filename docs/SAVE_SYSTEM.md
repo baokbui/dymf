@@ -27,6 +27,8 @@ Saved (player-owned progression):
 - Welcome/weekly counts, last claim date, and snapshotted current login offer (v9)
 - Permanent achievement progress and claimed flags (v10)
 - Weekly quest progress/claims, finite first-time rewards and Brainrot tickets (v11)
+- Daily Challenge first-clear UTC receipt (v12), preserved by Reset Progress
+- Daily Spin UTC receipt and selected outcome (v13), preserved by Reset Progress
 - Future progression systems (collected bosses, …)
 
 Not saved (transient / runtime):
@@ -115,10 +117,10 @@ Relevant constants (`Shared.Constants`):
   revision guards. Studio cloud errors can still appear; API access must be
   enabled for real saves. Exhausted or uncertain writes end the unsafe session;
   failed loads do not substitute writable defaults. See the retention section.
-- Coordinate restore: day/hearts via `LevelService`, unlocks/stats/XP via
-  `ProgressService` (**hydrated synchronously on join** so autosave cannot wipe
-  defaults over real statistics), purse via `CoinService.applyDayPurse`, lawn via
-  `BrainrotService.restorePlacements` (committed list only, after plot assign).
+- LevelService restores the day and hearts even if SaveService hydrates a player
+  before LevelService starts. ProgressService hydrates unlocks, statistics, and
+  XP synchronously. CoinService applies the day purse, and BrainrotService
+  restores the committed lawn after plot assignment.
 - Statistics and Brainrot XP are live-pushed on kill (`ProfileUpdated`); time played includes
   the current session in client payloads and is committed on save/leave.
 
@@ -196,7 +198,7 @@ clear the pending state.
 
 ## Retention foundation (Milestone 20)
 
-Schema v11 persists daily/weekly quests, finite first-time rewards, tickets and achievements under `retention`.
+Schema v13 persists daily/weekly quests, finite first-time rewards, tickets, achievements, and the Daily Challenge and Daily Spin receipts under `retention`. Challenge attempts and temporary lawns are never saved.
 Ordinary `saveNow` queues snapshots; `claimRetentionReward` durably saves
 the claim flag/date together with its brains/statistic, permanent upgrade or
 ticket grant. Ticket redemption commits ticket consumption with the store unlock
@@ -206,7 +208,8 @@ delegates to this writer for API compatibility. Quest credit survives
 failed days; Brainrot XP rollback is unchanged.
 Achievement progress/claims survive day resets and defeat. A claim does not
 expire at midnight. Next-goal hints and current-attempt breach markers are
-runtime-only. Confirmed Reset Progress clears all retention tracks.
+runtime-only. Confirmed Reset Progress clears progression and retention
+claims while preserving the Daily Challenge and Daily Spin receipts.
 
 SessionStore acquires/renews a 180s session lease via UpdateAsync. All writes
 check owner/revision and use operation ids to reconcile lost responses. Autosave
@@ -227,6 +230,7 @@ registry count, applies on join, and clears Hidden Day. See `IMPLEMENTATION_NOTE
 
 A confirmed Reset (via Settings **Danger Zone** → red **Reset Progress**,
 **two confirmations**, then `ResetProgress` remote — see `UI.md` /
-`NETWORKING.md`) deletes all saved progress and returns the player to day 1
+`NETWORKING.md`) resets the profile and returns the player to Day 1
 with starter coins (125), full hearts, default unlocks/loadout, empty lawn, and
-empty statistics. Never erase save data unless Reset is explicitly confirmed.
+empty statistics. Daily Challenge and Daily Spin receipts survive the reset.
+Never erase save data unless Reset is explicitly confirmed.

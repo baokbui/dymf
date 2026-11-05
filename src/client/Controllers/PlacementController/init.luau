@@ -34,6 +34,7 @@ local AudioController = require(script.Parent.AudioController)
 local PlotUtil = require(script.Parent.Parent.Utilities.PlotUtil)
 
 local ShovelIcon = require(script.Parent.Parent.Utilities.ShovelIcon)
+local UISizing = require(script.Parent.Parent.Utilities.UISizing)
 local PlacementController = {}
 PlacementController.Name = "PlacementController"
 
@@ -270,7 +271,9 @@ local function ensureShovelCursor(): Frame
 	cursor.ZIndex = 1000
 	-- Never steal clicks from Shop cancel / other HUD.
 	cursor.Active = false
-	cursor.Parent = playerGui:WaitForChild("MainUI")
+	local main = playerGui:WaitForChild("MainUI") :: ScreenGui
+	cursor.Parent = main
+	UISizing.scaleContent(cursor, main)
 
 	ShovelIcon.mount(cursor)
 

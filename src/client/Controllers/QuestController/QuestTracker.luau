@@ -36,6 +36,18 @@ function QuestTracker.new(main: ScreenGui): any
 	local tracks = { { period = nil, seen = {} }, { period = nil, seen = {} } }
 	local heading: TextButton? = nil
 	local rows = {}
+	local empty = text(frame, "Empty", 13)
+	empty.Position, empty.Size = UDim2.fromOffset(8, 46), UDim2.new(1, -16, 0, 24)
+	empty.Visible = false
+	local function updateEmpty()
+		empty.Visible = false
+		if not payload.ready then return end
+		for _, row in rows do
+			if row.frame.Visible then return end
+		end
+		empty.Text = if weekly then "No quests for the week" else "No quests for today"
+		empty.Visible = true
+	end
 	local list = Instance.new("ScrollingFrame")
 	list.Name, list.BackgroundTransparency, list.BorderSizePixel = "Objectives", 1, 0
 	list.Position, list.Size = UDim2.fromOffset(8, 46), UDim2.new(1, -16, 1, -58)
@@ -83,6 +95,7 @@ function QuestTracker.new(main: ScreenGui): any
 			if state ~= Enum.PlaybackState.Completed or row.key ~= key then return end
 			row.frame.Visible = false
 			stopAnimation(row)
+			updateEmpty()
 		end)
 		for _, tween in row.tweens do tween:Play() end
 	end
@@ -116,6 +129,7 @@ function QuestTracker.new(main: ScreenGui): any
 			end
 		end
 		if heading then heading.Text = if weekly then "Weekly Quests" else "Daily Quests" end
+		updateEmpty()
 	end
 	heading = Instance.new("TextButton")
 	heading.Name, heading.Text, heading.TextSize = "QuestToggle", "Daily Quests", 14
@@ -142,7 +156,7 @@ function QuestTracker.new(main: ScreenGui): any
 		list.Visible = height >= 150
 		zoom.Scale = factor
 		frame.Size = UDim2.fromOffset(WIDTH, height)
-		frame.Position = UDim2.fromOffset(main.AbsoluteSize.X - 16 * factor, bottom - height * factor)
+		frame.Position = UDim2.fromOffset(main.AbsoluteSize.X - 16 * factor, top)
 	end
 	main:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
 	for _, neighbor in { damage, day } do

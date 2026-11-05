@@ -24,9 +24,38 @@ From `GAME_DESIGN.md`:
   Victory keeps plants; coin purse does not carry between days.
   The **Hidden Day** after Day 40 pays kill brains (Goblin 1, Goblin Elite 10,
   Goblin King 25) on that same reward screen, then Day 41's purse applies.
-- Future achievements / events
+- Progression rewards are listed separately below.
 
 ---
+
+## Milestone 20 brains budget
+
+The table assumes all available quest rewards are claimed, weekly rewards are
+averaged over seven days, and the player takes the free spin and clears Forest
+Rush whenever eligible. It excludes campaign victory rewards, leftover coins,
+and one-time rewards.
+
+| Highest unlocked day | Daily quests | Weekly average | Challenge | Expected spin | Total per UTC day |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1–4 | 6 | 1.86 | 0 | 0 | 7.86 |
+| 5–9 | 6 | 1.86 | 0 | 1.70 | 9.56 |
+| 10–29 | 12 | 3.71 | 8 | 3.40 | 27.11 |
+| 30–50 | 18 | 5.57 | 12 | 5.10 | 40.67 |
+
+Campaign milestones add up to 95 brains and achievements up to 75 once per
+progression reset. First-time Rewards includes 12 base brains, three upgrade grants,
+and one ticket. Maxed upgrade grants can instead pay their configured fallback.
+
+The five Brainrot Shop unlocks cost 50–80 each and 325 combined before the
+ticket. Magnet costs 325 to max from rank 1, Speed costs 2,901 from rank 0,
+and one full evolution chain costs 775 brains. A late-band player completing
+every recurring objective earns roughly one shop unlock every two days from
+retention income alone. A full evolution chain costs about 19 days of that
+expected income before campaign rewards and XP gates. Campaign victories add
+one brain per cleared day number, so late-game affordability depends strongly
+on campaign play as well. Step 7 reviewed the catalog without changing tuning.
+Live completion rates, spends, and time to first purchase remain unmeasured.
+
 
 ## Configuration ✅
 
@@ -122,18 +151,6 @@ call `dropRandomCoinForOwner` with the unit’s world position so coins spit out
 onto a random tile.
 
 ---
-
-## Retention reward budget (Milestone 20 foundation)
-
-Milestone 20 tuning lives in `RetentionConfig`. Daily quests pay 6/12/18 brains
-per UTC day; weekly quests pay 13/26/39 per Monday-based week. First-time rewards
-are finite: 2/4/6 base brains on steps 1/3/5, Speed levels on 2/6, a Magnet level
-on 4, and a free Brainrot-store ticket on 7. Brain grants use the assigned
-progression band; a maxed upgrade substitutes 10 brains. No recurring weekly
-login payout remains. Permanent achievements add 28 fixed brains once.
-Tickets unlock one eligible unowned store unit without spending brains; grant,
-spend and unlock are guarded SaveService transactions. Retention does not grant
-match coins, cap balances or change coin conversion. See `RETENTION.md`.
 
 ## Persistence (see `SAVE_SYSTEM.md`)
 

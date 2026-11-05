@@ -26,7 +26,8 @@ return function(Achievements: any, Quests: any, Goal: any, Brainrots: any, Evolu
 	for _, definition in Brainrots.getAll() do
 		if not definition.hidden then table.insert(all, definition.id) end
 	end
-	Achievements.catchUp(state, { unlocks = all, evolutions = { TungTungSahur = { "Epic" } } })
+	Achievements.catchUp(state, { unlocks = all, evolutions = { TungTungSahur = { "Epic", "Legendary", "God" } },
+		statistics = { monstersDefeated = 500, brainrotsPlaced = 100 } })
 	check(state.achievements.FirstEpic.progress == 1, "claimed Epic catch-up")
 	check(state.achievements.OwnFiveBrainrots.progress == 5 and state.achievements.OwnTenBrainrots.progress == 10, "ownership objectives capped")
 	Achievements.record(state, "PerfectDefense")
@@ -36,7 +37,14 @@ return function(Achievements: any, Quests: any, Goal: any, Brainrots: any, Evolu
 		total += Achievements.claim(state, 0, row.id, 0)
 		check(Achievements.claim(state, 999, row.id, 999) == nil, "permanent duplicate")
 	end
-	check(total == 28, "achievement budget")
+	check(total == 75, "achievement budget")
+	Achievements.syncCampaign(state, 9)
+	check(#Achievements.clientState(state, true) == 10, "campaign milestones missing")
+	check(Achievements.claim(state, 0, "ReachDay10", 0) == nil, "locked milestone paid")
+	check(Achievements.claim(state, 0, "ReachDay5", 0) == 5, "reached milestone missing")
+	check(Achievements.claim(state, 999, "ReachDay5", 999) == nil, "milestone paid twice")
+	Achievements.syncCampaign(state, 50)
+	check(Achievements.claim(state, 0, "ReachDay50", 0) == 14, "last milestone missing")
 	state = Quests.sanitize(state)
 	Quests.ensure(state, 99999 * 86400, 50)
 	check(state.achievements.FirstBoss.claimed and state.achievements.FirstEpic.claimed, "rollover lost permanent claims")

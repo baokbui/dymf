@@ -15,7 +15,7 @@ local SpeedHud = {}
 SpeedHud.__index = SpeedHud
 
 -- Image asset 95328996745955; ImageLabel uses the texture id.
-local SPEED_ICON_TEXTURE_ID = "rbxassetid://82103513055414"
+local SPEED_ICON_TEXTURE_ID = UITheme.SPEED_ICON
 
 export type SpeedHud = typeof(setmetatable(
 	{} :: {
@@ -48,8 +48,8 @@ end
 function SpeedHud.new(frame: Frame): SpeedHud
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.new(0, 16, 0.42, 72)
-	frame.Size = UDim2.fromOffset(180, 64)
+	frame.Position = UDim2.fromOffset(16, 68)
+	frame.Size = UDim2.fromOffset(78, 32)
 	frame.BackgroundTransparency = 1
 	frame.BorderSizePixel = 0
 	frame.ClipsDescendants = false
@@ -59,7 +59,7 @@ function SpeedHud.new(frame: Frame): SpeedHud
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.Position = UDim2.new(0, 0, 0.5, 0)
-	icon.Size = UDim2.fromOffset(64, 64)
+	icon.Size = UDim2.fromOffset(32, 32)
 	icon.Image = SPEED_ICON_TEXTURE_ID
 	icon.ScaleType = Enum.ScaleType.Fit
 	icon.Parent = frame
@@ -67,15 +67,20 @@ function SpeedHud.new(frame: Frame): SpeedHud
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
 	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, 72, 0.5, 0)
-	label.Size = UDim2.new(1, -72, 1, 0)
+	label.Position = UDim2.new(0, 36, 0.5, 0)
+	label.Size = UDim2.new(1, -36, 1, 0)
 	label.BackgroundTransparency = 1
-	label.TextSize = 30
+	label.TextSize = 19
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = tostring(PlayerConfig.WALK_SPEED)
 	label.Parent = frame
 	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
-	label.TextSize = 30
+	label.TextSize = 19
+
+	local textLimit = Instance.new("UITextSizeConstraint")
+	textLimit.MaxTextSize = 19
+	textLimit.Parent = label
+	label.TextScaled = true
 
 	return setmetatable({
 		frame = frame,

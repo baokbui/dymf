@@ -37,8 +37,11 @@ Weekly quests share the Quests menu with daily quests and reset Mondays at
 levels, and a free Brainrot-store ticket on Day 7. Claim once per real-world UTC
 date; missed dates preserve progress. Its button disappears after all seven
 rewards are collected. There is no repeating weekly login reward.
-Permanent achievements reward boss defeats, evolutions, perfect defenses and
-collecting Brainrots. A next-goal hint points toward campaign unlocks or evolutions.
+Quests also offers one-time Campaign milestones every five days through Day 50.
+Achievements cover bosses, perfect defenses, evolutions, collection, kills, and
+placements. Forest Rush unlocks at Day 10, and the Daily Spinner unlocks at
+Day 5. Both offer a daily UTC reward. Milestone 20 features are implemented and
+release verification is still in progress.
 
 ## Tech stack
 

@@ -14,7 +14,7 @@ CoinCounter.__index = CoinCounter
 
 local FLOAT_DURATION = 0.85
 local FLOAT_OFFSET_Y = -40
-local DELTA_TEXT_SIZE = 32
+local DELTA_TEXT_SIZE = 20
 
 export type CoinCounter = typeof(setmetatable(
 	{} :: {
@@ -32,8 +32,8 @@ function CoinCounter.new(frame: Frame): CoinCounter
 
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.new(0, 16, 0.42, -72)
-	frame.Size = UDim2.fromOffset(180, 64)
+	frame.Position = UDim2.fromOffset(16, 68)
+	frame.Size = UDim2.fromOffset(78, 32)
 	frame.BackgroundTransparency = 1
 	frame.BorderSizePixel = 0
 	frame.ClipsDescendants = false
@@ -43,7 +43,7 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.Position = UDim2.new(0, 0, 0.5, 0)
-	icon.Size = UDim2.fromOffset(64, 64)
+	icon.Size = UDim2.fromOffset(32, 32)
 	icon.Image = "rbxassetid://15993201893"
 	icon.ScaleType = Enum.ScaleType.Fit
 	icon.Parent = frame
@@ -51,17 +51,22 @@ function CoinCounter.new(frame: Frame): CoinCounter
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
 	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, 72, 0.5, 0)
-	label.Size = UDim2.new(1, -72, 1, 0)
+	label.Position = UDim2.new(0, 36, 0.5, 0)
+	label.Size = UDim2.new(1, -36, 1, 0)
 	label.BackgroundTransparency = 1
-	label.TextSize = 30
+	label.TextSize = 19
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
 	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
-	label.TextSize = 30
+	label.TextSize = 19
 
 	self.amountLabel = label
+	local textLimit = Instance.new("UITextSizeConstraint")
+	textLimit.MaxTextSize = 19
+	textLimit.Parent = label
+	label.TextScaled = true
+
 	return self
 end
 
@@ -83,7 +88,7 @@ function CoinCounter.showDelta(self: CoinCounter, delta: number)
 	popup.TextXAlignment = Enum.TextXAlignment.Center
 	popup.AnchorPoint = Vector2.new(0.5, 0)
 	popup.Position = UDim2.new(0.5, 0, 1, 6)
-	popup.Size = UDim2.fromOffset(120, 40)
+	popup.Size = UDim2.fromOffset(78, 28)
 	popup.ZIndex = self.frame.ZIndex + 1
 
 	if delta > 0 then

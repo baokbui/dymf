@@ -99,15 +99,20 @@ return function(): number
 		check(tracker.AbsolutePosition.Y >= gui.DamageMeter.AbsolutePosition.Y + gui.DamageMeter.AbsoluteSize.Y, "tracker overlaps Damage")
 		check(tracker.AbsolutePosition.Y + tracker.AbsoluteSize.Y < gui.LevelUI.AbsolutePosition.Y, "tracker overlaps day panel")
 		local factor = fresh(client.Utilities.UISizing).desktop(gui.AbsoluteSize)
-		check(math.abs(tracker.AbsolutePosition.Y + tracker.AbsoluteSize.Y - (gui.LevelUI.AbsolutePosition.Y - 12 * factor)) < 2, "quests not directly above Start Day")
+		local function trackerFollowsDamage(): boolean
+			local damageBottom = gui.DamageMeter.AbsolutePosition.Y + gui.DamageMeter.AbsoluteSize.Y
+			return math.abs(tracker.AbsolutePosition.Y - (damageBottom + 16 * factor)) < 2
+		end
+		check(trackerFollowsDamage(), "quests not directly below Damage")
 		gui.LevelUI.StartCountdown.Visible = true; task.wait()
 		check(disjoint(tracker, gui.LevelUI.StartCountdown), "countdown overlaps tracker")
 		gui.LevelUI.StartCountdown.Visible = false
 		local damageSize = gui.DamageMeter.Size
 		gui.DamageMeter.Size = UDim2.fromOffset(damageSize.X.Offset, 300); task.wait()
-		check(tracker.Visible and tracker.AbsolutePosition.Y >= gui.DamageMeter.AbsolutePosition.Y + gui.DamageMeter.AbsoluteSize.Y, "expanded damage overlaps quests")
+		check(tracker.Visible and trackerFollowsDamage(), "quests do not follow expanded Damage")
 		check(tracker.AbsolutePosition.Y + tracker.AbsoluteSize.Y < gui.LevelUI.AbsolutePosition.Y, "expanded damage pushes quests into day panel")
 		gui.DamageMeter.Size = damageSize; task.wait()
+		check(trackerFollowsDamage(), "quests do not follow collapsed Damage")
 		local window = gui.Menu.Window
 		check(not window:FindFirstChild("Home"), "top-left Menu button remains")
 		check(gui.MenuDrawer.ZIndex > gui.Menu.ZIndex and gui.MenuEntry.ZIndex > gui.Menu.ZIndex, "outside dismissal blocks navigation")
@@ -135,9 +140,10 @@ return function(): number
 		check(not sections.Inventory:FindFirstChildOfClass("UIStroke") and sections.Inventory.BackgroundTransparency == 1, "large tile panels remain")
 		check(sections.Inventory.Icon.Image == "rbxassetid://18224282235"
 			and sections.Index.Icon.Image == "rbxassetid://110444066627259"
-			and sections.Upgrades.Icon.Image == "rbxassetid://90725732857650"
-			and sections.Settings.Icon.Image == "rbxassetid://18801194936", "existing icons changed")
-		for _, name in { "Inventory", "Index", "Upgrades", "Settings", "Quests", "Achievements", "Statistics" } do
+			and sections.Upgrades.Icon.Image == "rbxassetid://90725732857650", "existing icons changed")
+		local topbar = gui.Parent:FindFirstChild("BvmTopbar")
+		check(not sections:FindFirstChild("Settings") and topbar and topbar.Settings.Icon.Image == "rbxassetid://7059346373", "Settings shortcut missing")
+		for _, name in { "Inventory", "Index", "Upgrades", "Quests", "Achievements", "Statistics" } do
 			menu.open(name); task.wait(0.05)
 			check(sections[name].Caption.TextColor3 == fresh(shared.Config.UITheme).TITLE, "menu label highlighted: " .. name)
 			check(gui.Menu.Visible and sections[name].Active and drawer:GetAttribute("Open") and window.Content.Visible, "missing section " .. name)
@@ -162,12 +168,15 @@ return function(): number
 		menu.open("Quests"); task.wait()
 		check(window.Content.AbsoluteCanvasSize.Y <= window.Content.AbsoluteSize.Y + 3, "fitting quests have artificial canvas overflow")
 		check(window.Content.ScrollBarThickness == 0, "fitting quests show scrollbar")
+		check(not window:FindFirstChild("HeaderAccent") and window.Content.Position.Y.Offset == 8, "Menu divider still reserves header space")
 		local questTitle = pages.DailyQuests.Title
 		check(math.abs(questTitle.AbsolutePosition.X + questTitle.AbsoluteSize.X / 2 - (window.AbsolutePosition.X + window.AbsoluteSize.X / 2)) < 2, "Quests title off center")
 		check(window.BackgroundColor3 == fresh(shared.Config.UITheme).PANEL_BG_QUESTS, "quest background")
 		window.Size = UDim2.fromOffset(window.Size.X.Offset, 300); task.wait()
-		check(window.Content.AbsoluteCanvasSize.Y > window.Content.AbsoluteSize.Y, "small quest window lost real overflow")
-		check(window.Content.ScrollingEnabled and window.Content.ScrollBarThickness > 0, "needed quest scrollbar missing")
+		check(not window.Content.ScrollingEnabled and window.Content.ScrollBarThickness == 0, "small quest window uses outer scrolling")
+		local objectives = pages.DailyQuests.ObjectiveList
+		check(objectives.AbsoluteCanvasSize.Y > objectives.AbsoluteWindowSize.Y and objectives.ScrollingEnabled,
+			"small quest window lost list overflow")
 		menu.open("Quests"); task.wait()
 		check(not gui.FirstTimeRewards.Visible, "Menu failed to dismiss standalone rewards")
 		menu.open("Settings"); task.wait(0.1)
@@ -175,7 +184,9 @@ return function(): number
 			if label:IsA("TextLabel") and label.TextWrapped then check(label.TextFits, "settings description clipped") end
 		end
 		menu.open("Statistics"); task.wait(0.1)
-		check(pages.Statistics.Totals.ScrollBarThickness == 0, "statistics require an unnecessary scrollbar")
+		local totals = pages.Statistics.Totals
+		local totalsOverflow = totals.AbsoluteCanvasSize.Y > totals.AbsoluteSize.Y + 3
+		check((totals.ScrollBarThickness > 0) == totalsOverflow, "statistics scrollbar does not match overflow")
 		check(pages.DailyQuests.QuestTabs["Daily Quests"].Visible and pages.DailyQuests.QuestTabs["Weekly Quests"].Visible, "weekly tabs missing")
 		check(sections["Quests"].Available.Visible and sections.Achievements.Available.Visible, "reward badges")
 		check(gui.Menu.Dismiss.BackgroundTransparency == 1, "menu adds background shading")
@@ -213,7 +224,8 @@ return function(): number
 		check(window.Size.X.Offset <= pages.Inventory.Size.X.Offset + 64, "host has excessive empty width")
 		fresh(client.UIEvents).fireInspectOwnedBrainrot("TungTungSahur"); task.wait(0.1)
 		local inventory = pages.Inventory
-		check(inventory.Visible and inventory.BrainrotInspect.Visible, "goal-to-inventory details")
+		local openedDetail = inventory:FindFirstChild("BrainrotInspect") or pages:FindFirstChild("BrainrotInspect")
+		check(inventory.Visible and openedDetail and openedDetail.Visible, "goal-to-inventory details")
 		window.Size = UDim2.fromOffset(366, 700); task.wait(0.1)
 		local detail = pages:FindFirstChild("BrainrotInspect")
 		check(detail and detail.Visible and window.Back.Visible, "narrow inspection page")

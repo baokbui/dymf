@@ -50,7 +50,7 @@ Remotes module. That is the only required step.
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
 | `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day (`REWIND_COINS`) |
 | `ContinueVictory`  | client → server | ✅     | Reward Continue → Preparation (next day) |
-| `ResetProgress`    | client → server | ✅ M13 | Confirmed reset of all save data         |
+| `ResetProgress`    | client → server | ✅ M13 | Reset campaign and profile, preserving daily challenge/spin receipts         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats, Brainrot XP, claimed evolutions, introduced Brainrots / Monsters (Index). Support-job XP (`grantBrainrotXp`) is coalesced (`ProgressConfig.XP_BROADCAST_INTERVAL`) so coin / soak ticks do not remount Inventory ViewportFrames. Kills / purchases still push immediately. |
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
 | `OpenProgressionStore` | server → client | ✅ M18 | Owner talks to own Tung mascot → open Brainrot overlay (`shopKind`, mascot `Vector3`) |
@@ -60,8 +60,8 @@ Remotes module. That is the only required step.
 | `EvolveBrainrot`   | client → server | ✅ M19 | Claim an evolution (`brainrotId`, `rarity`); server checks level, previous tier, brains |
 | `ActivateMagnet`   | client → server | ✅ | Press **1** / HUD chip; server checks Active day, plot, cooldown (rejects while paused) |
 | `MagnetStateChanged` | server → client | ✅ | `{ level, activeUntil, readyAt, pausedRemaining }` (`GetServerTimeNow`; remaining seconds frozen between days) |
-| `RetentionUpdated` | server → client | ✅ M20 | Quest/login state and UTC resetAt |
-| `ClaimRetentionReward` | client → server | ✅ M20 | Claim server-validated quest/bonus or login offer |
+| `RetentionUpdated` | server → client | ✅ M20 | Quest, reward, milestone, and spinner state with UTC reset times |
+| `ClaimRetentionReward` | client → server | ✅ M20 | Claim a server-validated retention reward |
 | `RetentionClaimResult` | server → client | ✅ M20 | Durable result or bounded failure reason |
 | `ViewRetentionGoal` | client → server | ✅ M20 | Current goal id; validated/rate-limited engagement only |
 | `DamageMeterUpdated` | server → client | ✅ | `{ brainrots, monsters }` ranked `{ id, damage }` lists (plot owner; coalesced) |
@@ -191,14 +191,14 @@ popups queue after Continue. Join / Preparation payloads may include
 
 ## Validation rules (server authority)
 
-M20 boundary is active. RequestState.retention and RetentionUpdated carry
-ready/dayKey/resetAt/quests/bonusBrains/bonusClaimed/login/achievements/nextGoal. Login state includes
-track/step/dayKey/brains/ready/claimed/rewards and next-track/reward preview.
-Achievement rows include id/name/description/progress/target/brains/claimed.
-NextGoal contains an id, bounded kind, title/description and applicable unit/tier
-or campaign target. ClaimRetentionReward accepts
-`{ kind = "Quest" | "Login" | "Achievement", dayKey, id }`
-(bonus id DailyComplete; login id Welcome/Weekly; known achievement id). Finite integer dates,
+`RequestState.retention` and `RetentionUpdated` include daily and weekly quest
+tracks, first-time rewards, achievements, Campaign milestones, ticket count,
+spin state, and the next goal. Achievement and Campaign rows include
+id/name/description/progress/target/brains/claimed. `ClaimRetentionReward` accepts
+`{ kind = "Quest" | "WeeklyQuest" | "Login" | "Achievement" | "Spin", dayKey, id }`.
+Use `DailyComplete` for a quest bonus, `Welcome` for first-time rewards, a known
+permanent objective ID for achievements or Campaign, and `DailySpin` for a spin.
+Finite integer dates,
 bounded ids, server completion/claim flags, ownership, and a 0.5s throttle are
 validated. No client progress/amount/outcome is accepted. RetentionClaimResult
 announces success only after the durable reward/brains write. One login claim
@@ -236,3 +236,19 @@ First-time Rewards track, never `Weekly`. `RetentionUpdated` adds `weekly`,
 Brainrots at the owner's physical shop can use a ticket. SaveService validates
 and atomically consumes it with the unlock. Retention claim remotes cannot
 request the internal Ticket transaction kind. See `RETENTION.md`.
+
+### Daily Challenge
+
+`StartDailyChallenge` is a parameterless client intent. The server checks
+Preparation, plot and save readiness, and Day 10 eligibility. Challenge
+entry, active state, hearts, and result are published through
+`LevelStateChanged` and the level slice of `RequestState`. Only the server can
+settle a clear through the durable reward writer.
+
+### Free Daily Spin
+
+The client sends `ClaimRetentionReward` with `kind = "Spin"`,
+`id = "DailySpin"`, and the displayed UTC day key. The server validates the
+date and unlock, selects the weighted outcome, and commits it with the
+reward. `RetentionUpdated` and `RequestState` expose the odds and current
+day's committed result through `retention.spin`.

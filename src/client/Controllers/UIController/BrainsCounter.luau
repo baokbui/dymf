@@ -15,9 +15,9 @@ BrainsCounter.__index = BrainsCounter
 local BRAIN_ICON_ASSET_ID = "rbxassetid://12691330734"
 local FLOAT_DURATION = 0.85
 local FLOAT_OFFSET_Y = -40
-local DELTA_TEXT_SIZE = 32
+local DELTA_TEXT_SIZE = 20
 
-local ICON_SIZE = 64
+local ICON_SIZE = 32
 
 export type BrainsCounter = typeof(setmetatable(
 	{} :: {
@@ -30,8 +30,8 @@ export type BrainsCounter = typeof(setmetatable(
 function BrainsCounter.new(frame: Frame): BrainsCounter
 	frame.Visible = true
 	frame.AnchorPoint = Vector2.new(0, 0)
-	frame.Position = UDim2.new(0, 16, 0.42, 0)
-	frame.Size = UDim2.fromOffset(180, ICON_SIZE)
+	frame.Position = UDim2.fromOffset(16, 68)
+	frame.Size = UDim2.fromOffset(78, ICON_SIZE)
 	frame.BackgroundTransparency = 1
 	frame.BorderSizePixel = 0
 	frame.ClipsDescendants = false
@@ -49,15 +49,20 @@ function BrainsCounter.new(frame: Frame): BrainsCounter
 	local label = Instance.new("TextLabel")
 	label.Name = "Amount"
 	label.AnchorPoint = Vector2.new(0, 0.5)
-	label.Position = UDim2.new(0, ICON_SIZE + 6, 0.5, 0)
-	label.Size = UDim2.new(1, -(ICON_SIZE + 6), 1, 0)
+	label.Position = UDim2.new(0, ICON_SIZE + 4, 0.5, 0)
+	label.Size = UDim2.new(1, -(ICON_SIZE + 4), 1, 0)
 	label.BackgroundTransparency = 1
-	label.TextSize = 30
+	label.TextSize = 19
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = "0"
 	label.Parent = frame
 	UITheme.applyOutlinedTitle(label, UITheme.TITLE)
-	label.TextSize = 30
+	label.TextSize = 19
+
+	local textLimit = Instance.new("UITextSizeConstraint")
+	textLimit.MaxTextSize = 19
+	textLimit.Parent = label
+	label.TextScaled = true
 
 	return setmetatable({
 		frame = frame,
@@ -81,7 +86,7 @@ function BrainsCounter.showDelta(self: BrainsCounter, delta: number)
 	popup.TextXAlignment = Enum.TextXAlignment.Center
 	popup.AnchorPoint = Vector2.new(0.5, 0)
 	popup.Position = UDim2.new(0.5, 0, 1, 6)
-	popup.Size = UDim2.fromOffset(120, 40)
+	popup.Size = UDim2.fromOffset(78, 28)
 	popup.ZIndex = self.frame.ZIndex + 1
 
 	if delta > 0 then
