@@ -9,6 +9,8 @@
 local HouseConfig = {
 	-- Child name under ReplicatedStorage.Assets.Houses (Studio / Toolbox insert).
 	MODEL_ID = "Cottage",
+	FARM_MODEL_ID = "Farm1911880871", -- Roblox asset 1911880871
+	FARM_ORIENTATION_DEGREES = Vector3.new(0, 90, 0),
 
 	-- Door / front should face the lawn (+X). Many Toolbox houses face the
 	-- opposite way of LookVector, so default yaw is 180°.
@@ -54,8 +56,8 @@ local HouseConfig = {
 	PEDESTAL_COLOR = Color3.fromRGB(64, 58, 72),
 	PEDESTAL_TOP_COLOR = Color3.fromRGB(110, 100, 88),
 
-	EMPTY_SIGN_TEXT = "Empty Base",
-	OWNER_SIGN_FORMAT = "%s's Base", -- %s = player DisplayName
+	EMPTY_SIGN_TEXT = "Empty Farm",
+	OWNER_SIGN_FORMAT = "%s's Farm", -- %s = player DisplayName
 }
 
 table.freeze(HouseConfig)

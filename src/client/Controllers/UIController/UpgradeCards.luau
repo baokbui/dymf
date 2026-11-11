@@ -27,11 +27,17 @@ local function identity(parent: GuiObject, name: string, isMagnet: boolean, leve
 	local tile = surface(parent, "IconTile", Theme.FIELD_INSET)
 	tile.Position, tile.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(58, 58)
 	Theme.applyStroke(tile, 2, accent)
-	local icon = Instance.new("ImageLabel")
-	icon.Name, icon.Image = "Icon", if isMagnet then Theme.MAGNET_ICON else Theme.SPEED_ICON
-	icon.BackgroundTransparency, icon.ScaleType = 1, Enum.ScaleType.Fit
-	icon.Position, icon.Size = UDim2.fromOffset(7, 7), UDim2.fromOffset(44, 44)
-	icon.Parent = tile
+	if name == "Farm Capacity" then
+		local glyph = text(tile, "Icon", "🌾", 30, Theme.TITLE, true)
+		glyph.Size = UDim2.fromScale(1, 1)
+		glyph.TextXAlignment = Enum.TextXAlignment.Center
+	else
+		local icon = Instance.new("ImageLabel")
+		icon.Name, icon.Image = "Icon", if isMagnet then Theme.MAGNET_ICON else Theme.SPEED_ICON
+		icon.BackgroundTransparency, icon.ScaleType = 1, Enum.ScaleType.Fit
+		icon.Position, icon.Size = UDim2.fromOffset(7, 7), UDim2.fromOffset(44, 44)
+		icon.Parent = tile
+	end
 
 	local heading = text(parent, "UpgradeName", name, 21, Theme.TITLE, true)
 	heading.Position, heading.Size = UDim2.fromOffset(84, 12), UDim2.new(1, -96, 0, 26)
@@ -56,7 +62,7 @@ function UpgradeCards.card(parent: Instance, id: string, name: string, isMagnet:
 	Theme.applySurfaceDepth(button)
 	identity(button, name, isMagnet, level, maximum)
 
-	local summary = text(button, "Benefit", if isMagnet then "Pull in nearby coins" else "Move faster on your plot", 13, Theme.FIELD_TEXT, false)
+	local summary = text(button, "Benefit", if id == "FarmCapacity" then "House more monsters" elseif isMagnet then "Pull in nearby coins" else "Move faster on your plot", 13, Theme.FIELD_TEXT, false)
 	summary.Position, summary.Size = UDim2.fromOffset(12, 78), UDim2.new(1, -155, 0, 24)
 	local badge = surface(button, "PriceBadge", Theme.FIELD_INSET)
 	badge.AnchorPoint, badge.Position = Vector2.new(1, 0), UDim2.new(1, -12, 0, 77)

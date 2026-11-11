@@ -3,6 +3,9 @@
 local Theme = require(game:GetService("ReplicatedStorage").Shared.Config.UITheme)
 local RewardIcon = require(script.Parent.Parent.QuestController.RewardIcon)
 
+local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
+local ShardInventory = require(script.Parent.ShardInventory)
+local MonsterCollection = require(script.Parent.MonsterCollection)
 local InventoryItems = {}
 local catalog = {
 	{
@@ -77,9 +80,15 @@ function InventoryItems.new(parent: Frame): (ScrollingFrame, (any) -> ())
 		rows[order] = { card = card, count = count }
 	end
 
-	return list, function(payload: any)
+	local updateShards = ShardInventory.new(list)
+	local updateMonsters = MonsterCollection.new(list)
+	local retention: any = nil
+	local function refresh(payload: any)
+		retention = payload
 		local ready = type(payload) == "table" and payload.ready ~= false
-		local hasItems = false
+		local profile = UIEvents.getProfileState()
+		local hasMonsters = updateMonsters(profile)
+		local hasItems = updateShards(profile) or hasMonsters
 		for order, definition in catalog do
 			local raw = if ready then payload[definition.countKey] else nil
 			local quantity = if type(raw) == "number" and raw > 0 and raw < math.huge then math.floor(raw) else 0
@@ -91,6 +100,9 @@ function InventoryItems.new(parent: Frame): (ScrollingFrame, (any) -> ())
 		empty.Visible = not hasItems
 		empty.Text = if ready then "No items yet" else "Loading items…"
 	end
+	local connection = UIEvents.profileUpdated:Connect(function() refresh(retention) end)
+	list.Destroying:Once(function() connection:Disconnect() end)
+	return list, refresh
 end
 
 return InventoryItems

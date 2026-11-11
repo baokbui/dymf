@@ -2,6 +2,7 @@
 -- Pure mutation of a SaveService-owned transaction snapshot, never a live balance.
 local Config = require(game:GetService("ReplicatedStorage").Shared.Config.ProgressConfig)
 local Brainrots = require(game:GetService("ReplicatedStorage").Shared.Brainrots)
+local Fusion = require(game:GetService("ReplicatedStorage").Shared.Utilities.MonsterFusion)
 local RewardGrant = {}
 local function append(list: { string }, id: string)
 	if not table.find(list, id) then table.insert(list, id) end
@@ -27,6 +28,8 @@ function RewardGrant.apply(snapshot: any, grant: any)
 		snapshot.upgrades[grant.upgradeId] = math.max(snapshot.upgrades[grant.upgradeId] or 0, grant.level)
 	elseif grant.kind == "Ticket" then
 		snapshot.retention.brainrotTickets = (snapshot.retention.brainrotTickets or 0) + grant.amount
+	elseif grant.kind == "FarmMonster" or grant.kind == "FarmFusion" or grant.kind == "FarmReceipt" then
+		Fusion.apply(snapshot, grant)
 	elseif grant.kind == "Brainrot" then
 		append(snapshot.unlocks, grant.brainrotId)
 		if #snapshot.equipped < Config.MAX_EQUIPPED then append(snapshot.equipped, grant.brainrotId) end

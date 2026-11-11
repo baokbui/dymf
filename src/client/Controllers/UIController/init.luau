@@ -165,6 +165,7 @@ local function setBalance(amount: number)
 end
 
 local function applyProfile(profile: { [string]: any }?)
+	UIEvents.fireProfileState(profile)
 	if type(profile) ~= "table" then
 		return
 	end
@@ -482,7 +483,9 @@ local function applyLevelState(state: { [string]: any }?)
 			rewardPopup:show(
 				reward.clearedLevel,
 				reward.brains,
-				if type(reward.leftoverBrains) == "number" then reward.leftoverBrains else 0
+				if type(reward.leftoverBrains) == "number" then reward.leftoverBrains else 0,
+				reward.stars,
+				reward.monsterShards
 			)
 			introHoldForReward = true
 			if type(reward.unlockedBrainrotId) == "string" then

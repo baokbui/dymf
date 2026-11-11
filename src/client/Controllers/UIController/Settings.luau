@@ -15,6 +15,7 @@ local VfxLoad = require(Shared.Utilities.VfxLoad)
 local Controls = require(script.Parent.SettingsControls)
 local BrainAmount = require(script.Parent.Parent.Parent.Utilities.BrainAmount)
 local AudioController = require(script.Parent.Parent.AudioController)
+local FarmController = require(script.Parent.Parent.FarmController)
 
 local Settings = {}
 Settings.__index = Settings
@@ -167,6 +168,13 @@ function Settings.new(parent: Frame): SettingsPanel
 		VfxLoad.setShowOtherPlots(enabled)
 	end)
 	hint(graphicsSection, "Turn off effects from other players’ Brainrots to improve performance.", 4, 42)
+
+	local farmMonsters = Controls.row(graphicsSection, "HideOtherFarmMonsters", "Hide Other Farm Monsters", "▦", 5)
+	Controls.switch(farmMonsters, "Toggle", FarmController.hidesOtherFarms(), function(enabled)
+		AudioController.play("UiClick")
+		FarmController.setHideOtherFarms(enabled)
+	end)
+	hint(graphicsSection, "Hide other players’ farm monsters and nameplates to reduce rendering load.", 6, 42)
 
 	local dangerSection = section("Danger Zone", 4)
 	hint(dangerSection, "Back to Day 1 with 125 coins. First-time rewards stay claimed; their upgrades and unused tickets stay yours. Brains and purchased upgrades reset.", 1, 70)

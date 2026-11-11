@@ -1,7 +1,7 @@
 --!strict
 --[[
 	BrainrotAnimation
-	Plays idle / attack / hit AnimationTracks on authored Brainrot models that
+	Plays combat AnimationTracks and resolves ids for viewer-local idle on models that
 	keep an AnimationController (or Humanoid) + Animator. IDs come from model
 	children (IdleAnimation / AttackAnimation / HitAnimation), the
 	BrainrotDefinition, or AnimSaves KeyframeSequences registered via
@@ -171,12 +171,9 @@ function BrainrotAnimation.bind(model: Model, definition: Types.BrainrotDefiniti
 		return
 	end
 
-	local idle = loadTrack(
-		animator,
-		resolveIdleId(model, definition),
-		true,
-		Enum.AnimationPriority.Idle
-	)
+	-- Cosmetic idle playback is local so each viewer can apply graphics quality.
+	model:SetAttribute("IdleAnimationId", resolveIdleId(model, definition))
+	local idle: AnimationTrack? = nil
 	local attack = loadTrack(
 		animator,
 		resolveAttackId(model, definition),

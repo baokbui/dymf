@@ -99,6 +99,14 @@ local ProgressConfig = {
 			walkSpeedBonusPerLevel = 1,
 		},
 		{
+			id = "FarmCapacity",
+			name = "Farm Capacity",
+			description = "Add room for one more roaming monster. Each resident earns brains while you play.",
+			defaultLevel = 5,
+			maxLevel = 10,
+			brainsCosts = { 30, 55, 85, 125, 175 },
+		},
+		{
 			id = "Magnet",
 			name = "Magnet",
 			description = "Press 1 to pull coins from tiles around you for 5 seconds. Higher levels shorten the cooldown and pull coins from farther away.",

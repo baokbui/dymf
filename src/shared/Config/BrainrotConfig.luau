@@ -29,6 +29,13 @@ local BrainrotConfig = {
 	-- Server behavior tick rate (seconds). Cooldowns count down on this step.
 	BEHAVIOR_TICK = 0.1,
 
+	IDLE_PERIOD = 2.8,
+	IDLE_SWAY_DEGREES = 3.5,
+	IDLE_ARM_DEGREES = 7,
+	IDLE_BOB_STUDS = 0.15,
+	IDLE_MAX_DISTANCE = 180,
+	IDLE_ACTION_PAUSE = 0.8,
+
 	-- Visual attack pulse (server tween, replicated on the model body).
 	ATTACK_PULSE_SCALE = 1.18,
 	ATTACK_PULSE_DURATION = 0.12,

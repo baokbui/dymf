@@ -30,6 +30,8 @@ local LevelService = require(script.Parent.LevelService)
 local PlotService = require(script.Parent.PlotService)
 local ProgressService = require(script.Parent.ProgressService)
 
+local Fusion = require(Shared.Utilities.MonsterFusion)
+local Farm = require(Shared.Utilities.FarmProgression)
 local SaveService = {}
 SaveService.Name = "SaveService"
 
@@ -119,6 +121,11 @@ local function defaultSaveData(): Types.SaveData
 		statistics = {},
 		brainrotXp = {},
 		evolutions = {},
+		monsterShards = {},
+		dayStars = {},
+		farmMonsters = {},
+		farmReceipts = {},
+		collectedMonsters = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 		introducedMechanics = {},
@@ -218,6 +225,18 @@ local function migrateAndSanitize(raw: unknown): Types.SaveData
 		save.evolutions = deepCopyEvolutions(evolutions)
 	end
 
+	save.monsterShards = Farm.sanitizeMap(payload.monsterShards)
+	save.dayStars = Farm.sanitizeMap(payload.dayStars, true)
+	local collectedMonsters = payload.collectedMonsters
+	if type(collectedMonsters) == "table" then
+		save.collectedMonsters = {}
+		for _, value in collectedMonsters do
+			if type(value) == "string" then table.insert(save.collectedMonsters :: { string }, value) end
+		end
+	end
+
+	save.farmMonsters = Fusion.sanitize(payload.farmMonsters, save.collectedMonsters)
+	save.farmReceipts = Fusion.receipts(payload.farmReceipts)
 	local introducedMonsters = payload.introducedMonsters
 	if type(introducedMonsters) == "table" then
 		save.introducedMonsters = {}
@@ -317,6 +336,12 @@ local function collectSnapshot(player: Player): Types.SaveData
 			then progress.evolutions
 			elseif fallback then deepCopyEvolutions(fallback.evolutions)
 			else {},
+		monsterShards = if progress then progress.monsterShards elseif fallback then Farm.sanitizeMap(fallback.monsterShards) else {},
+		dayStars = if progress then progress.dayStars elseif fallback then Farm.sanitizeMap(fallback.dayStars, true) else {},
+		farmMonsters = if progress then Fusion.sanitize(progress.farmMonsters, progress.collectedMonsters) elseif fallback then Fusion.sanitize(fallback.farmMonsters, fallback.collectedMonsters) else {},
+		farmReceipts = if progress then Fusion.receipts(progress.farmReceipts) elseif fallback then Fusion.receipts(fallback.farmReceipts) else {},
+		collectedMonsters = if progress then progress.collectedMonsters
+			elseif fallback then deepCopyStringList(fallback.collectedMonsters or {}) else {},
 		introducedMonsters = if progress
 			then progress.introducedMonsters
 			elseif fallback and fallback.introducedMonsters
@@ -407,6 +432,11 @@ local function hydrateProgression(player: Player, saveData: Types.SaveData)
 		statistics = saveData.statistics,
 		brainrotXp = saveData.brainrotXp,
 		evolutions = saveData.evolutions,
+		monsterShards = saveData.monsterShards,
+		dayStars = saveData.dayStars,
+		farmMonsters = saveData.farmMonsters,
+		farmReceipts = saveData.farmReceipts,
+		collectedMonsters = saveData.collectedMonsters,
 		introducedMonsters = saveData.introducedMonsters,
 		introducedBrainrots = saveData.introducedBrainrots,
 		introducedMechanics = saveData.introducedMechanics,
@@ -501,8 +531,9 @@ function SaveService.isProgressionLocked(player: Player): boolean
 	return saveInFlight[player.UserId] == true or leaving[player.UserId] == true or not storage:isWritable(player.UserId)
 end
 
-function SaveService.claimRetentionReward(player: Player, kind: string, day: number, id: string): (boolean, string?, number?, any?)
-	if kind ~= "Quest" and kind ~= "WeeklyQuest" and kind ~= "Login" and kind ~= "Achievement" and kind ~= "Ticket" and kind ~= "Challenge" and kind ~= "Spin" then return false, "InvalidRequest", nil end
+function SaveService.claimRetentionReward(player: Player, kind: string, day: number, id: string, fusionIds: any?, operationId: string?): (boolean, string?, number?, any?)
+	local isFarm = kind == "Monster" or kind == "MonsterFusion"
+	if not isFarm and kind ~= "Quest" and kind ~= "WeeklyQuest" and kind ~= "Login" and kind ~= "Achievement" and kind ~= "Ticket" and kind ~= "Challenge" and kind ~= "Spin" then return false, "InvalidRequest", nil end
 	local userId = player.UserId
 	if saveInFlight[userId] then return false, "Busy", nil end
 	if leaving[userId] or not storage:isWritable(userId) then return false, "SaveUnavailable", nil end
@@ -513,7 +544,11 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 	if kind == "Achievement" then Achievements.syncCampaign(snapshot.retention, snapshot.highestLevel) end
 	local claim = if kind == "Login" then LoginRewards.claim elseif kind == "Achievement" then Achievements.claim else DailyQuests.claim
 	local reward, reason, grant
-	if kind == "Ticket" then
+	if kind == "Monster" then
+		reward, reason, grant = Farm.combine(snapshot, id, Random.new(), HttpService:GenerateGUID(false), operationId)
+	elseif kind == "MonsterFusion" then
+		reward, reason, grant = Farm.fuse(snapshot, fusionIds, Random.new(), HttpService:GenerateGUID(false), operationId or HttpService:GenerateGUID(false))
+	elseif kind == "Ticket" then
 		if not require(script.Parent.StoreService).canPlayerUseShop(player, require(Shared.Config.StoreConfig).SHOP_BRAINROTS) then
 			saveInFlight[userId] = nil
 			return false, "InvalidRequest", nil
@@ -544,7 +579,7 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 	local stat = ProgressConfig.STAT_BRAINS_EARNED
 	snapshot.statistics[stat] = (snapshot.statistics[stat] or 0) + reward
 	local ok, failure = saveToStore(userId, snapshot, function()
-		return kind == "Achievement" or kind == "Ticket" or (if kind == "WeeklyQuest" then RetentionTime.weekKey(os.time()) else RetentionTime.dayKey(os.time())) == day
+		return isFarm or kind == "Achievement" or kind == "Ticket" or (if kind == "WeeklyQuest" then RetentionTime.weekKey(os.time()) else RetentionTime.dayKey(os.time())) == day
 	end)
 	if ok then
 		-- Merge with live actions/leave snapshot captured while UpdateAsync yielded.
@@ -552,7 +587,9 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 			ProgressService.addBrains(player, reward)
 			if grant then ProgressService.applyDurableReward(player, grant) end
 		end
-		require(script.Parent.RetentionService).markCommitted(player, day, id, kind, snapshot.retention)
+		if not isFarm then
+			require(script.Parent.RetentionService).markCommitted(player, day, id, kind, snapshot.retention)
+		end
 		local queued = latestSnapshots[userId]
 		if needsResave[userId] and queued then
 			queued.brains += reward
@@ -564,7 +601,7 @@ function SaveService.claimRetentionReward(player: Player, kind: string, day: num
 			elseif kind == "Achievement" then Achievements.markCommitted(queued.retention, id)
 			elseif kind == "Challenge" then queued.retention.challengeClaimDay = day
 			elseif kind == "Spin" then queued.retention.spin = snapshot.retention.spin
-			elseif kind ~= "Ticket" then DailyQuests.markCommitted(queued.retention, day, id, kind == "WeeklyQuest") end
+			elseif kind ~= "Ticket" and not isFarm then DailyQuests.markCommitted(queued.retention, day, id, kind == "WeeklyQuest") end
 		else
 			latestSnapshots[userId] = snapshot
 		end

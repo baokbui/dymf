@@ -582,7 +582,8 @@ Quests use warm objective cards, Achievements use violet milestone bars, and
 Statistics groups totals into Campaign, Collection, and Upgrades on a blue
 ledger. Victory and First-time Rewards use warm gold surfaces.
 
-Settings uses a subtle checker backdrop. Claimable achievements appear first in the milestone list. The planting dock and Victory panel use diagonal bands behind
+Settings uses a subtle checker backdrop. Claimable achievements and all three
+quest tracks (daily, weekly, Campaign) appear first in their respective lists. The planting dock and Victory panel use diagonal bands behind
 their content. The other Menu pages retain their individual finishes.
 
 ### Daily Challenge
@@ -608,5 +609,36 @@ Reset Progress keeps first-time reward claim history, the upgrade levels it
 granted and unused tickets. Completed first-time rewards remain hidden.
 First-time brains are not paid again; purchased upgrades reset.
 
-Settings opens from a shortcut beside the Roblox top-bar controls. It uses
-the same Menu window as the six drawer destinations.
+Settings opens from a shortcut beside the Roblox top-bar controls using icon
+`7059346373`. It uses the same Menu window as the six drawer destinations.
+Achievements uses `9722127533`, Quests `7088599984`, the spinner texture
+`12893831040`, and First-time Rewards gift artwork `17368068524`.
+
+### Farm shard and star UI (M21B)
+
+The Day tab includes a Star goals button with the current day requirements.
+The victory popup shows earned stars and species-specific shard quantities.
+Inventory → Items displays shard counts, combine thresholds and random-size
+level range, with a Combine button whenever enough shards are owned.
+Repeated species are allowed; individual monster cards show their income. Farm labels
+display species-specific brains/second. See FARM_PROGRESSION.md.
+
+Shard request/result messages are RemoteEvents. Their bootstrap registration is
+covered by RemoteRegistration.spec so shard inventory initialization can finish
+and UISizing can position the counters and reward entries.
+
+Effects Quality High enables planted Brainrot idle clips/procedural sway,
+except registry entries marked `noIdle` (short-lived one-shot units).
+Low and Off stop idle playback immediately and restore cosmetic poses.
+
+Farm nameplates show size, name, level and income in four lines. Items includes
+individual farm monster cards, selectable inputs, fusion odds and a Fuse action.
+Shard cards can combine further copies of owned species. Result messages show
+the generated tier and level.
+
+Settings → Graphics includes Hide Other Farm Monsters, off by default.
+FarmController locally hides other plots’ resident geometry, shadows, decals,
+effects and labels, restores their original visual properties when toggled off,
+and follows new residents and plot ownership changes. This is a session-local
+rendering option; server roaming, income and replication continue. Own-farm
+monsters remain visible.

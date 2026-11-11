@@ -6,7 +6,7 @@ march in from a dark forest to the east.
 
 ## The game
 
-You get an isolated plot: a **5×9** lawn, a cottage behind it, and a matching
+You get an isolated plot: a **5×9** lawn, a monster farm behind it, and a matching
 enemy lane in the trees. Press **Start Day**, wait out a short 3…0 countdown,
 then plant while the first monsters are still walking in from the forest.
 
@@ -40,8 +40,13 @@ rewards are collected. There is no repeating weekly login reward.
 Quests also offers one-time Campaign milestones every five days through Day 50.
 Achievements cover bosses, perfect defenses, evolutions, collection, kills, and
 placements. Forest Rush unlocks at Day 10, and the Daily Spinner unlocks at
-Day 5. Both offer a daily UTC reward. Milestone 20 features are implemented and
+after clearing Day 2. Both offer a daily UTC reward. Milestone 20 features are implemented and
 release verification is still in progress.
+
+Campaign clears also earn 1–3 stars and regional monster shards. Combine shards
+into individual farm monsters, then fuse 3–5 of one species to roll a new size.
+Tiny through Titanic residents roam and earn online brains; farm capacity
+upgrades increase active slots from five to ten. Offline income remains planned.
 
 ## Tech stack
 
@@ -76,7 +81,7 @@ Studio sync via `$ignoreUnknownInstances`.
 | --- | -------- |
 | [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) | What the game is |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Codebase structure and conventions |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones (M0–19 delivered; M20 in progress; M21–25 planned) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones (M0–19 delivered; M20/M21 release QA pending; M22–25 planned) |
 | [`docs/LEVELS.md`](docs/LEVELS.md) | Campaign days, victory / defeat / rewind |
 | [`docs/BRAINROTS.md`](docs/BRAINROTS.md) / [`docs/MONSTERS.md`](docs/MONSTERS.md) | Unit registries |
 | [`docs/STORE.md`](docs/STORE.md) | Per-plot shops and brains spends |
@@ -84,3 +89,4 @@ Studio sync via `$ignoreUnknownInstances`.
 | [`AGENTS.md`](AGENTS.md) | Canonical project engineering rules |
 | [`docs/IMPLEMENTATION_NOTES.md`](docs/IMPLEMENTATION_NOTES.md) | Current caveats and audit scope |
 | [`docs/RETENTION.md`](docs/RETENTION.md) | M20 daily quests, budgets, and durable claim rules |
+| [`docs/HOUSE.md`](docs/HOUSE.md) / [`docs/FARM_PROGRESSION.md`](docs/FARM_PROGRESSION.md) | Farm residents/income, stars, shards, size tiers, and fusion |

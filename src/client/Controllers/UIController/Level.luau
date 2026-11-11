@@ -18,6 +18,7 @@ local UITheme = require(Shared.Config.UITheme)
 
 local AudioController = require(script.Parent.Parent.AudioController)
 
+local DayGoals = require(script.Parent.DayGoals)
 local Level = {}
 Level.__index = Level
 
@@ -270,6 +271,7 @@ local function phaseMessage(phase: string): string
 end
 
 function Level.applyState(self: LevelPanel, state: { [string]: any })
+	DayGoals.apply(self.frame, state)
 	local levelNumber = state.levelNumber
 	if state.challengeActive == true then
 		self.levelLabel.Text = ChallengeConfig.ENCOUNTER.name

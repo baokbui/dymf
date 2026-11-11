@@ -12,6 +12,7 @@ local UITheme = require(ReplicatedStorage:WaitForChild("Shared").Config.UITheme)
 local PanelPattern = require(script.Parent.Parent.Parent.Utilities.PanelPattern)
 local AudioController = require(script.Parent.Parent.AudioController)
 
+local Monsters = require(ReplicatedStorage.Shared.Monsters)
 local RewardPopup = {}
 RewardPopup.__index = RewardPopup
 
@@ -206,19 +207,31 @@ local function present(self: RewardPopupHud)
 	end
 end
 
-function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains: number, leftoverBrains: number?)
+function RewardPopup.show(self: RewardPopupHud, clearedLevel: number, dayBrains: number, leftoverBrains: number?, stars: number?, shards: { [string]: number }?)
 	local leftover = leftoverBrains or 0
 	local total = dayBrains + leftover
-	self.title.Text = string.format("Day %d Cleared!", clearedLevel)
+	self.title.Text = string.format("Day %d  %s", clearedLevel, string.rep("★", stars or 1) .. string.rep("☆", 3 - (stars or 1)))
 	self.dayLine.Text = string.format("Day reward: %d Brains", dayBrains)
 	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)
+	local drops = {}
+	for id, amount in shards or {} do
+		local definition = Monsters.get(id)
+		table.insert(drops, string.format("%s ×%d", if definition then definition.name else id, amount))
+	end
+	table.sort(drops)
 	self.totalLine.Text = string.format("Total: %d Brains", total)
+	if #drops > 0 then self.totalLine.Text ..= "\nShards: " .. table.concat(drops, ", ") end
+	self.totalLine.TextWrapped = true
+	self.totalLine.TextSize = 13
+	self.totalLine.Size = UDim2.new(1, -24, 0, 64)
 	present(self)
 end
 
 function RewardPopup.showHidden(self: RewardPopupHud, dayBrains: number, leftoverBrains: number?)
 	local leftover = leftoverBrains or 0
 	local total = dayBrains + leftover
+	self.totalLine.Size = UDim2.new(1, -76, 0, 48)
+	self.totalLine.TextSize = 26
 	self.title.Text = "Hidden Day"
 	self.dayLine.Text = string.format("Brains earned: %d Brains", dayBrains)
 	self.leftoverLine.Text = string.format("Leftover coins: %d Brains", leftover)

@@ -34,7 +34,7 @@ return function(sources: any, modules: any): string
 	  if profile then profile.brains+=amount;profile.statistics.brainsEarned=(profile.statistics.brainsEarned or 0)+amount end
 	 end,
 	 applyDurableReward=function(_,reward) if reward.kind~="Ticket" then grant.apply(profile,reward) end end,
-	 reset=function(_,upgrades) profile.brains=0; profile.statistics={}; profile.upgrades=copy(upgrades or {}) end,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
+	 reset=function(_,upgrades) profile.brains=0; profile.statistics={}; profile.upgrades=copy(upgrades or {}); profile.farmMonsters={}; profile.farmReceipts={}; profile.monsterShards={}; profile.dayStars={}; profile.collectedMonsters={} end,applyDevRoster=noop,applyDevEvolutions=noop,applyDevBrains=noop
 	}
 	local ret={
 	 hydrate=function(_,s) retention=rules.sanitize(s);rules.ensure(retention,now,highest);login.ensure(retention,now,highest);rules.ensure(retention,now,highest,true) end,
@@ -59,14 +59,14 @@ return function(sources: any, modules: any): string
 	function fakeGame:BindToClose() end
 	local fakeTask={wait=noop,defer=noop,spawn=noop}
 	local modules={
-	 RewardGrant=grant,StoreService={canPlayerUseShop=function()return nearStore end},SessionStore=Store,DailyQuests=rules,DailySpin=spin,LoginRewards=login,Achievements=achievements,RetentionService=ret,ProgressService=progress,
+	 FarmProgression=modules.FarmProgression,MonsterFusion=modules.MonsterFusion,RewardGrant=grant,StoreService={canPlayerUseShop=function()return nearStore end},SessionStore=Store,DailyQuests=rules,DailySpin=spin,LoginRewards=login,Achievements=achievements,RetentionService=ret,ProgressService=progress,
 	 LevelService=level,PlotService={getPlotModel=function()return nil end},
 	 BrainrotService={clearPlantCooldowns=noop},CoinService={applyDayPurse=noop,applyDevPurse=noop,resetBalance=noop},
 	 SaveConfig=saveConfig,RetentionTime=time,RetentionConfig=config,
 	 Logger={new=function()return {warn=noop,info=noop} end},
 	 Remotes={getEvent=function()return {OnServerEvent={Connect=noop}} end}
 	}
-	local constants=table.clone(realRequire(shared.Constants));constants.SAVE_VERSION=13
+	local constants=table.clone(realRequire(shared.Constants));constants.SAVE_VERSION=16
 	modules.Constants=constants
 	local f=assert(loadstring(sources.Save))
 	setfenv(f,setmetatable({
@@ -90,7 +90,7 @@ return function(sources: any, modules: any): string
 	assert(ok and reward==3 and nestedBusy=="Busy",tostring(reason))
 	assert(profile.brains==93 and backend.record.brains==93,"queued balance overwritten")
 	assert(backend.record.retention.dailyQuests.quests[1].claimed,"queued claim flag lost")
-	assert(backend.record.version==13,"migration")
+	assert(backend.record.version==16,"migration")
 	assert(not Save.claimDailyQuest(player,20000,"CollectCoins"),"duplicate payout")
 
 	local beforeLogin=profile.brains
@@ -198,6 +198,60 @@ return function(sources: any, modules: any): string
 	assert(backend.record.retention.achievements.ReachDay30.claimed,"campaign claim was not durable")
 	assert(select(2,Save.claimRetentionReward(player,"Achievement",0,"ReachDay30"))=="AlreadyClaimed")
 
+	-- Species-specific combining is a durable spend+unlock transaction.
+	profile.monsterShards = { Zombie = 15 }
+	profile.dayStars = { Level1 = 3 }
+	profile.collectedMonsters = {}
+	profile.farmMonsters, profile.farmReceipts = {}, {}
+	local combined = Save.claimRetentionReward(player, "Monster", 0, "Zombie", nil, "combine-zombie-1")
+	assert(combined and backend.record.monsterShards.Zombie == 0, "combine did not spend shards")
+	assert(table.find(backend.record.collectedMonsters, "Zombie"), "combine unlock was not durable")
+	assert(profile.monsterShards.Zombie == 0 and table.find(profile.collectedMonsters, "Zombie"), "combine live state mismatch")
+	assert(backend.record.dayStars.Level1 == 3, "star record lost in transaction")
+	assert(Save.claimRetentionReward(player, "Monster", 0, "Zombie", nil, "combine-zombie-1"), "combine retry failed")
+	assert(#profile.farmMonsters == 1 and #backend.record.farmMonsters == 1 and profile.monsterShards.Zombie == 0, "combine retry duplicated the result")
+	profile.monsterShards.Goblin = 19
+	assert(select(2, Save.claimRetentionReward(player, "Monster", 0, "Goblin")) == "NotReady", "incomplete shard collection combined")
+	profile.monsterShards.Goblin = 20
+	local nestedCombine
+	backend.hook = function()
+		profile.monsterShards.Goblin += 5
+		Save.saveNow(player, "shards_during_combine")
+		nestedCombine = select(2, Save.claimRetentionReward(player, "Monster", 0, "Goblin"))
+	end
+	assert(Save.claimRetentionReward(player, "Monster", 0, "Goblin"))
+	assert(nestedCombine == "Busy", "concurrent combine was accepted")
+	assert(profile.monsterShards.Goblin == 5 and backend.record.monsterShards.Goblin == 5, "concurrent shard gain lost or double spent")
+	assert(table.find(backend.record.collectedMonsters, "Goblin"), "queued snapshot lost monster unlock")
+	-- Repeated species are independent instances. Fusion spends exact selected ids.
+	local beforeCount = #profile.farmMonsters
+	profile.monsterShards.Zombie = 45
+	local ids = {}
+	for index = 1, 3 do
+		local made, _, _, result = Save.claimRetentionReward(player, "Monster", 0, "Zombie", nil, "zombie-copy-" .. index)
+		assert(made and result.monster.uid)
+		table.insert(ids, result.monster.uid)
+	end
+	assert(#profile.farmMonsters == beforeCount + 3, "duplicate species were collapsed")
+	backend.hook = function()
+		profile.monsterShards.Goblin += 2
+		Save.saveNow(player, "gain_during_fusion")
+	end
+	local fused, _, _, result = Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", ids, "fusion-operation-1")
+	assert(fused and result.monster.monsterId == "Zombie", "fusion changed species")
+	assert(#profile.farmMonsters == beforeCount + 1 and #backend.record.farmMonsters == beforeCount + 1, "fusion spend/result mismatch")
+	for _, monster in profile.farmMonsters do assert(not table.find(ids, monster.uid), "fusion input survived") end
+	assert(profile.monsterShards.Goblin == backend.record.monsterShards.Goblin, "concurrent fusion snapshot lost shards")
+	assert(Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", ids, "fusion-operation-1"), "fusion retry failed after inputs consumed")
+	assert(#profile.farmMonsters == beforeCount + 1, "fusion retry duplicated output")
+	assert(select(2, Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", { ids[1], ids[1], ids[1] }, "invalid-fusion-1")) == "NotReady")
+	local savedMonsterCount = #profile.farmMonsters
+	handlers.remove(player)
+	player.Parent = true
+	handlers.add(player)
+	assert(#profile.farmMonsters == savedMonsterCount, "rejoin lost individual monsters")
+	assert(Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", ids, "fusion-operation-1"), "saved fusion receipt was lost on rejoin")
+	assert(#profile.farmMonsters == savedMonsterCount, "rejoin retry duplicated fusion output")
 	local spinDay=time.dayKey(now)
 	local beforeSpin=backend.record.brains
 	assert(select(2,Save.claimRetentionReward(player,"Spin",spinDay-1,"DailySpin"))=="Expired")
@@ -259,11 +313,11 @@ return function(sources: any, modules: any): string
 	player.Parent=true;handlers.add(player)
 	assert(current==2 and highest==2,"rejoin lost the saved day after shutdown")
 	handlers.remove(player)
-	backend.record.version=14
+	backend.record.version=17
 	player.Parent=true
 	handlers.add(player)
-	assert(player.kicked and backend.record.version==14,"newer schema overwritten")
-	return "PASS: full SaveService in-memory tests: quest regression, v7/v8/v9/v10→v13, durable first-time/weekly/ticket/achievement/challenge/spin flags and balances, concurrent purchase/save merge, duplicate claims, reconnect and intro save, disconnect during login claim, lease release, newer schema refusal. No real player data accessed."
+	assert(player.kicked and backend.record.version==17,"newer schema overwritten")
+	return "PASS: full SaveService in-memory tests: quest regression, v7/v8/v9/v10→v16, instance combining, fusion, retry receipts and stars, durable first-time/weekly/ticket/achievement/challenge/spin flags and balances, concurrent purchase/save merge, duplicate claims, reconnect and intro save, disconnect during login claim, lease release, newer schema refusal. No real player data accessed."
 
 end
 

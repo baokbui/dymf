@@ -18,6 +18,17 @@ local coinDeltaBindable = Instance.new("BindableEvent")
 local pendingSpendBindable = Instance.new("BindableEvent")
 local plantFailedBindable = Instance.new("BindableEvent")
 local fieldInspectBindable = Instance.new("BindableEvent")
+local profileBindable = Instance.new("BindableEvent")
+local profileState: any = nil
+UIEvents.profileUpdated = profileBindable.Event
+function UIEvents.fireProfileState(state: any)
+	profileState = state
+	profileBindable:Fire(state)
+end
+function UIEvents.getProfileState(): any
+	return profileState
+end
+
 local retentionBindable = Instance.new("BindableEvent")
 local retentionState: any = nil
 

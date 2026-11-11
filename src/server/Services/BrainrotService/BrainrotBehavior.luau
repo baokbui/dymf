@@ -183,6 +183,9 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			placement.frozenUntil = os.clock() + duration
 		end,
 		pulseAttack = function(speed: number?)
+			local length = BrainrotAnimation.getAttackLength(placement.model) or BrainrotConfig.IDLE_ACTION_PAUSE
+			local rate = if type(speed) == "number" and speed > 0 then speed else 1
+			placement.model:SetAttribute("IdleBusyUntil", workspace:GetServerTimeNow() + math.max(BrainrotConfig.IDLE_ACTION_PAUSE, length / rate))
 			-- Authored swing clips replace the old ScaleTo attack pulse.
 			if placement.definition.animated then
 				BrainrotAnimation.playAttack(placement.model, speed)
@@ -194,6 +197,8 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			return BrainrotAnimation.getAttackLength(placement.model)
 		end,
 		playAbility = function(abilityId: string)
+			local length = BrainrotAnimation.getAbilityLength(placement.model, abilityId) or BrainrotConfig.IDLE_ACTION_PAUSE
+			placement.model:SetAttribute("IdleBusyUntil", workspace:GetServerTimeNow() + math.max(BrainrotConfig.IDLE_ACTION_PAUSE, length))
 			BrainrotAnimation.playAbility(placement.model, abilityId)
 		end,
 		getAbilityLength = function(abilityId: string)

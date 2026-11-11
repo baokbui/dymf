@@ -82,8 +82,8 @@ Each player plot contains:
 
 - Grid (5 × 9 tiles — see Grid System)
 - Spawn point (player respawns here, facing the enemy)
-- **House** ✅ — cottage in the house strip (−X); Toolbox model from
-  `Assets.Houses` when present (see `HOUSE.md`); boss pedestals for Milestone 21
+- **Monster Sanctuary** ✅ — open fenced habitat in the house strip (−X).
+  Players combine species-specific shards into miniature monsters that roam and earn online brains (see `HOUSE.md`).
 - House anchor (legacy marker on the plot base)
 - Coin spawner marker (passive drop origin)
 - Permanent side gardens with pebble walks, flower beds, low shrubs, benches,
@@ -139,7 +139,8 @@ Coins are earned by:
 - Coin-producing Brainrots (e.g. Ballerina Cappucina — 25 coins every 18s, max 10 on a plot) ✅
 - Day purse: Day 1 opens with `STARTING_COINS` (125); later days start at 0; Rewind grants `REWIND_COINS` (200) ✅
 
-Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`) plus a
+Brains are earned on victory (day number × `BRAINS_PER_LEVEL_NUMBER`,
+increased by the attempt's 1–3 star rating) plus a
 stingy leftover-coin conversion at day end — see `ECONOMY.md`. Spend them at
 the HUD **Upgrades** shop, the Brainrot stall beside your house, or on evolution
 claims — see `STORE.md` / `EVOLUTIONS.md`. Speed and Magnet ranks persist in
@@ -177,8 +178,10 @@ Brr Brr Patapim, Orangutini Ananassini, La Vacca Saturno Saturnita, Blueberrinni
 Octopusini, and Boneca Ambalabu. See `BRAINROTS.md` for unlocks and roles.
 Nine have authored Epic→GOD tracks; the other four have no evolution rows yet.
 
-Authored idle/attack clips play on the server through `BrainrotAnimation`;
-non-animated units retain a ScaleTo pulse fallback. Ability SFX play locally via
+Authored attack/hit clips play on the server through `BrainrotAnimation`.
+Cosmetic idle clips and procedural sway play locally on High quality;
+short-lived units marked `noIdle` skip both forms of idle motion.
+Non-animated units retain a ScaleTo pulse fallback. Ability SFX play locally via
 `BrainrotAction` and `AudioController` / `AudioConfig` (M12/M17 ✅).
 
 ---
@@ -322,6 +325,7 @@ Saved:
 - Intro flags and optional Hidden Day pending flag
 - Daily/weekly quests, first-time reward counts/dates/offers, tickets and claims
 - Permanent achievement progress and claimed rewards
+- Farm instances and operation receipts, shard balances, best day stars and species history
 - Future progression systems
 
 Not Saved:
@@ -373,8 +377,10 @@ Reset deletes:
 Player returns to Day 1.
 
 Reset requires two confirmations in Settings. It also clears brains, XP,
-claimed evolutions, intro flags, pending Hidden Day state, quests, login rewards
-and achievements. Daily Challenge and Daily Spin receipts survive the reset.
+claimed evolutions, intro flags, pending Hidden Day state, quests, achievements,
+and farm monsters/shards/star records/receipts. First-time reward history,
+its earned Speed/Magnet levels, unused tickets, and Daily Challenge/Daily Spin
+receipts survive. Purchased upgrade levels reset.
 
 ---
 
@@ -421,4 +427,4 @@ animations, weather, graves (M10–17)
 Speed upgrades
 
 **Phase 5** — Brainrot leveling + evolutions (M19 ✅); retention (M20 🛠 in progress) and
-house boss collection (M21 🔜).
+Monster Sanctuary (M21 core implemented, live QA pending).

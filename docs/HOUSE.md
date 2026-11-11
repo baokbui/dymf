@@ -1,92 +1,56 @@
-# BVM Houses
+# Monster Sanctuary (Milestone 21)
 
-Each player plot has a **walkable cottage** in the `HOUSE_ZONE` (west of the
-lawn, behind the spawn). The shell ships with **authored** interior pedestals
-in the Cottage asset; boss collection and passive brains income are
-**Milestone 21**.
+Status: 🛠 Core online collection and income implemented. Offline income,
+player-selected residents, cosmetic skins and additional habitat upgrades remain planned.
+Farm capacity upgrades and size tiers/fusion are implemented.
 
-Status legend: ✅ implemented · 🔜 planned (with milestone)
+## Habitat
 
----
+`HouseBuilder` retains its existing API and `PlotN.House` location, building an
+open sanctuary through `SanctuaryBuilder`. It occupies the original house slot,
+using asset **1911880871**, stored as Assets.Houses.Farm1911880871, scaled
+to the house footprint with its entrance facing the lawn. The farm retains its
+large owner-name sign outside the fence. Monsters roam inside the fitted enclosure bounds
+and stand on the imported grass surface. If the template is unavailable, the
+procedural farm provides a fallback. Authored templates are stored in Studio
+and must be saved with the place. The physical Brainrot shop
+continues to attach beside it using the same house bounds. The Cottage asset
+and old procedural cottage modules are retained but are no longer selected.
+All habitat scenery and residents are anchored, non-colliding and non-queryable.
 
-## Layout ✅
+## Collection and income
 
-Within a lane (see `PlotConfig`):
+Milestone 21B adds species-specific monster shards and 1–3 star campaign
+rewards. Players combine shards in Inventory → Items to form a farm monster.
+Existing owned species persist. The farm shows the most recently created
+individual monsters up to purchased capacity, from five slots to ten. Farm Capacity costs
+30, 55, 85, 125 and 175 brains for successive additional slots.
 
-```
-[ MARGIN | HOUSE (cottage) | yard + spawn | PLAY_AREA (grid) | MARGIN ]
-                              → facing +X toward enemies
-```
+HouseService supplies roaming cosmetic residents and accrues the sum of their
+species rate × size-tier income multiplier. Each nameplate shows Size,
+Monster name, Level, then Brains/second, while the outside sign shows only the owner’s farm name. Stronger
+species earn faster. Whole brains persist normally. Partial income is
+session-only and accrual pauses during save/progression locks.
 
-- Built by `PlotService` house modules from `Shared.Config.HouseConfig`:
-  `HouseBuilder` (orchestrates), `ProceduralHouse`, `HouseSanitize`,
-  `HouseBossDisplay`, `HouseSlot`.
-- Parent: `PlotN.House`.
-- **Preferred visual:** Toolbox Model under `ReplicatedStorage.Assets.Houses`
-  named `HouseConfig.MODEL_ID` (default `Cottage`). Scaled to fit DEPTH×WIDTH,
-  door facing +X (tune `MODEL_ORIENTATION_DEGREES` if needed). Collision kept.
-  On clone: strips Toolbox **Lock Base** UI/pads; the **Empty Base** sign is
-  rewritten to `{DisplayName}'s Base` when the plot is assigned.
-- **Owner sign** ✅ — TextLabel/TextButton under a `Sign` ancestor (e.g.
-  `Second Floor → Sign`) or with Empty Base / `'s Base` text; rewritten to
-  `{DisplayName}'s Base` on plot assign.
-- **Fallback:** procedural cottage if the asset is missing (dev-safe).
-- `HouseAnchor` attachment remains on the plot base for legacy markers.
-- Interior: authored pedestals live in the Cottage asset. Runtime only adds an
-  empty `CollectedBosses` folder for future trophy models (M21) — no spawned
-  `BossDisplay` cylinders.
+See docs/FARM_PROGRESSION.md for exact star goals, shard pools, combining rules,
+income rates and sky drops. Current schema v16 persists individual monsters,
+operation receipts, shard balances and best day stars. Reset Progress clears this farm progression.
 
-### Studio: insert from Toolbox
+## Validation
 
-1. Rojo-sync so `ReplicatedStorage.Assets.Houses` exists (`$ignoreUnknownInstances`).
-2. Insert a house Model from the Toolbox into that folder.
-3. Rename it to **`Cottage`** (or change `HouseConfig.MODEL_ID` to match).
-4. Set a `PrimaryPart`, strip Tools/Scripts if any.
-5. Prefer the doorway facing the mesh forward; default yaw is **180°**
-   (`MODEL_ORIENTATION_DEGREES`). If still wrong, try `0` or `±90`.
-6. Optional **`Sign`** under a `Second Floor` (or any) child Model —
-   owner label TextLabel(s) updated by `HouseSanitize`. Leftover **Tung Mascot**
-   meshes in the Cottage asset are stripped on clone.
+The isolated HouseService fixture covers resident reuse, species income,
+income timing, save locks, the resident cap, reset and cleanup. Studio edit-mode
+checks verified authored residents move and their movement resources clean up.
+Live save/rejoin, four-player performance and income balance playtesting remain
+open.
 
-Tune size / pedestal count in `HouseConfig` — never inline.
+Individual residents now use Tiny, Small, Medium, Big, Gigantic and Titanic
+tiers. Size determines level, visual scale and income multiplier. Inventory
+allows exact selection of 3–5 same-species instances for fusion. See
+FARM_PROGRESSION.md for weights, migration and transaction guarantees.
 
----
-
-## Future: Boss collection & brains (Milestone 21) 🔜
-
-Design target (not implemented yet):
-
-1. **Collect** — when the player **first defeats** a boss species (`isBoss` in
-   `Shared.Monsters`), the server unlocks that boss for the house collection
-   (once per species; persist in `SaveData.collectedBosses`).
-2. **Display** — `HouseService` places a scaled display model on the next free
-   `BossSlot_*` pedestal (`BossStand` attachment). Players can walk into the
-   house to see their trophies.
-3. **Income** — displayed bosses generate **brains** on a slow server tick
-   (rate from config per `monsterId`). Brains remain the progression currency
-   already used for the Brainrots Store (M18) and evolutions (M19).
-4. **Spend** — no new currency: brains buy unlocks / evolves as those
-   milestones define. House income is an additional brains source.
-
-### Authority
-
-- Server-only grants, placement, and income (`HouseService` + `ProgressService`).
-- Clients never invent collected bosses or brains totals.
-- Only `SaveService` persists `collectedBosses`.
-
-### Suggested config (when implementing)
-
-| Key | Meaning |
-| --- | ------- |
-| `brainsPerMinute` per boss id | Passive income while displayed |
-| `displayScale` | Trophy model scale on pedestal |
-| `maxSlots` | Already `HouseConfig.BOSS_SLOT_COUNT` |
-
----
-
-## Related
-
-- `docs/GAME_DESIGN.md` — battlefield / house zone
-- `docs/ECONOMY.md` — brains vs coins
-- `docs/ROADMAP.md` — Milestone 21
-- `docs/SAVE_SYSTEM.md` — persistence rules
+Players can hide other farms’ residents through Settings → Graphics.
+FarmController applies local visibility changes to the Residents folder models
+and restores their original appearance on toggle or ownership changes.
+This reduces local rendering work; it does not stop server roaming, income,
+or replication and does not change farm ownership.

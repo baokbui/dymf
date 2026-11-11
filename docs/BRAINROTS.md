@@ -63,6 +63,7 @@ From `Shared.Types.BrainrotDefinition`:
 | `modelYOffset`            | number?                | Extra studs up (+) / down (−) after feet-snap to tile top                                |
 | `previewFocusOffset`      | Vector3?               | Shop/inventory preview look-at nudge after visual center                                 |
 | `animated`                | boolean?               | Keep Motor6D + Animator; play idle/attack tracks                                         |
+| `noIdle`                  | boolean?               | Skip all local idle motion (authored clips and procedural fallback); action clips remain enabled |
 | `idleAnimationId`         | string?                | Idle loop asset; nil → IdleAnimation child / AnimSaves                                   |
 | `attackAnimationId`       | string?                | Action clip (swing / spit); nil → AttackAnimation child                                  |
 | `hitAnimationId`          | string?                | Flinch when damaged; nil → HitAnimation child                                            |
@@ -142,7 +143,9 @@ named idle/walk/stand (never attack/bat/swing).
 `definition.hitAnimationId`. Played on damage via `BrainrotAnimation.playHit`
 (e.g. Chimpanzini when chewed).
 
-**Playback:** server `BrainrotAnimation` (replicates). `pulseAttack` plays the
+**Playback:** combat tracks use server `BrainrotAnimation` (replicates).
+Cosmetic idle uses client `BrainrotController.IdleAnimation` on High quality
+unless `noIdle = true`. `pulseAttack` plays the
 swing for animated units and skips the old ScaleTo body pulse. Client
 `BrainrotController` still plays hit SFX; it also skips ScaleTo when
 `definition.animated`.
@@ -261,7 +264,7 @@ BrainrotBehavior (cooldown tick)
        ▼
 Abilities/<AbilityId>  ──►  CombatService (damage / status on monsters)
        │                 └──►  CoinService (coin drops)
-       └──►  BrainrotAnimation (server idle / attack tracks when animated)
+       └──►  BrainrotAnimation (server combat tracks; resolves local idle ids)
        └──►  BrainrotFeedback (ScaleTo pulse if not animated; hit flash on damage)
        └──►  BrainrotAction remote → client SFX (ScaleTo pulse only if not animated)
 ```
@@ -369,3 +372,21 @@ Boneca Last Laugh, Orangutini Pineapple Express, and La Vacca Black Hole are
 also implemented; see `EVOLUTIONS.md`.
 A separate mutation layer (replace or add an unrelated ability) is post-launch
 (Milestone 25), not part of this ladder.
+
+### High-quality idle motion
+
+BrainrotController.IdleAnimation runs cosmetic idle motion only with Settings
+Effects Quality set to High. Registry `noIdle = true` excludes Bombardino
+Crocodilo, Lirili Larila, Giraffa Celeste and La Vacca Saturno Saturnita
+from both authored idle clips and procedural fallback. Their server action
+animations remain enabled. Patapim and charge-based Boneca retain idle because
+they can wait between repeated uses. Authored idle ids are resolved by the server and
+replicated as IdleAnimationId, then played locally per viewer. Units without
+a usable idle clip receive gentle whole-body bob/sway plus Motor6D sway on
+unanchored limbs. Anchored rigs use the body motion too. Unloaded clips keep
+the fallback until their track has a nonzero length. Reduced
+tuning uses a 2.8-second cycle, 3.5° body sway, 7° arm sway and a 0.15-stud
+body bob.
+IdleBusyUntil and Action-priority tracks pause idle motion during attacks and
+abilities. Low/Off restores the resting pose and disconnects the idle frame
+loop. Distant units are culled. Combat animation tracks remain server-driven.

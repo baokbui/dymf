@@ -24,7 +24,7 @@ Blueberrinni, Girafa, Patapim, and Bombardino have no authored tiers yet.
 - One level + XP pool **per owned Brainrot id**, shared by every planted copy
   of that unit. Not per tile, not per match. Four Tung Tungs on the lawn share
   one meter.
-- Persist via `SaveService` (`SaveData.brainrotXp`, introduced in **v5**, current schema **v13**). Server owns
+- Persist via `SaveService` (`SaveData.brainrotXp`, introduced in **v5**, current schema **v16**). Server owns
   XP; the client never sets it. XP from a day is **committed on victory** only.
   Defeat / Rewind / leave mid-day restore the Start Day snapshot. **Epic** stat
   overrides and **Legendary** extras are applied at place / restore / claim

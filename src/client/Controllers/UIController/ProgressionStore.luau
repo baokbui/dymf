@@ -695,6 +695,9 @@ function ProgressionStore.showStats(self: ProgressionStoreHud, id: string)
 				{ label = "Cooldown", current = MagnetConfig.formatSeconds(MagnetConfig.cooldownFor(level)),
 					nextValue = if atMax then nil else MagnetConfig.formatSeconds(MagnetConfig.cooldownFor(nextLevel)) },
 			}
+		elseif id == "FarmCapacity" then
+			stats = { { label = "Resident slots", current = tostring(level),
+				nextValue = if atMax then nil else tostring(nextLevel) } }
 		else
 			local bonus = def.walkSpeedBonusPerLevel or 0
 			stats = { { label = "Walk speed", current = tostring(PlayerConfig.WALK_SPEED + level * bonus),

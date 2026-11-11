@@ -50,7 +50,7 @@ Remotes module. That is the only required step.
 | `SelectLevel`      | client → server | ✅ M13 | Replay a cleared level via Level Select  |
 | `RewindDay`        | client → server | ✅     | Game Over → Preparation on the failed day (`REWIND_COINS`) |
 | `ContinueVictory`  | client → server | ✅     | Reward Continue → Preparation (next day) |
-| `ResetProgress`    | client → server | ✅ M13 | Reset campaign and profile, preserving daily challenge/spin receipts         |
+| `ResetProgress`    | client → server | ✅ M13 | Reset campaign/profile, preserving first-time history/earned upgrades/tickets and daily receipts         |
 | `ProfileUpdated`   | server → client | ✅ M13 | Brains, unlocks, equipped loadout, stats, Brainrot XP, claimed evolutions, introduced Brainrots / Monsters (Index). Support-job XP (`grantBrainrotXp`) is coalesced (`ProgressConfig.XP_BROADCAST_INTERVAL`) so coin / soak ticks do not remount Inventory ViewportFrames. Kills / purchases still push immediately. |
 | `SetEquipped`      | client → server | ✅ M13 | Replace equipped loadout (validated; ignored while day is Active) |
 | `OpenProgressionStore` | server → client | ✅ M18 | Owner talks to own Tung mascot → open Brainrot overlay (`shopKind`, mascot `Vector3`) |
@@ -64,6 +64,11 @@ Remotes module. That is the only required step.
 | `ClaimRetentionReward` | client → server | ✅ M20 | Claim a server-validated retention reward |
 | `RetentionClaimResult` | server → client | ✅ M20 | Durable result or bounded failure reason |
 | `ViewRetentionGoal` | client → server | ✅ M20 | Current goal id; validated/rate-limited engagement only |
+| `StartDailyChallenge` | client → server | ✅ M20 | Start Forest Rush from eligible Preparation |
+| `CombineMonsterShards` | client → server | ✅ M21B | Species id + operation id; durable shard spend and individual output |
+| `MonsterCombineResult` | server → client | ✅ M21B | Committed combination output or rejection |
+| `FuseFarmMonsters` | client → server | ✅ M21B | 3–5 owned instance ids + operation id |
+| `MonsterFusionResult` | server → client | ✅ M21B | Committed fusion output or rejection |
 | `DamageMeterUpdated` | server → client | ✅ | `{ brainrots, monsters }` ranked `{ id, damage }` lists (plot owner; coalesced) |
 
 ### RemoteFunctions
@@ -252,3 +257,24 @@ The client sends `ClaimRetentionReward` with `kind = "Spin"`,
 date and unlock, selects the weighted outcome, and commits it with the
 reward. `RetentionUpdated` and `RequestState` expose the odds and current
 day's committed result through `retention.spin`.
+
+### Farm shards (M21B)
+
+`CombineMonsterShards(monsterId, operationId)` sends a monster registry id and
+a client-generated operation id (8–80 characters). FarmProgressionService
+validates the species and rate-limits requests to one per second per player
+(shared with fusion), then SaveService verifies shard quantity, receipt identity
+and session writability inside its serialized writer. Already-owned species
+can be combined again. MonsterCombineResult returns success/reason/monsterId,
+operation id and committed output monster after the transaction.
+ProfileUpdated includes monsterShards, dayStars and collectedMonsters.
+Numbered victory payloads include stars and monsterShards reward quantities.
+Sky pickups use server-created proximity prompts with owner/distance/attempt
+validation. See FARM_PROGRESSION.md.
+
+`FuseFarmMonsters(instanceUids, operationId)` carries 3–5 instance uid strings
+and an operation id.
+MonsterFusionResult and MonsterCombineResult return committed output monster
+records plus success/reason/operation. The server validates ownership, distinct
+ids, one species, count and rate limits before spending. ProfileUpdated adds
+farmMonsters. All four shard/fusion message types are RemoteEvents.

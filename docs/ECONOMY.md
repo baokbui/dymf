@@ -2,7 +2,7 @@
 
 The single **match** currency is **Coins**. **Brains** are a separate soft
 currency for progression unlocks (Milestone 13 grants; Milestone 18 store;
-Milestone 19 Brainrot leveling / evolution tiers; Milestone 21 house boss income).
+Milestone 19 Brainrot leveling / evolution tiers; Milestone 21 monster farm income).
 Only the server controls currency — clients send collection intent and display
 balances, never set them (`AGENTS.md`).
 
@@ -37,8 +37,8 @@ and one-time rewards.
 
 | Highest unlocked day | Daily quests | Weekly average | Challenge | Expected spin | Total per UTC day |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 1–4 | 6 | 1.86 | 0 | 0 | 7.86 |
-| 5–9 | 6 | 1.86 | 0 | 1.70 | 9.56 |
+| 1–2 | 6 | 1.86 | 0 | 0 | 7.86 |
+| 3–9 | 6 | 1.86 | 0 | 1.70 | 9.56 |
 | 10–29 | 12 | 3.71 | 8 | 3.40 | 27.11 |
 | 30–50 | 18 | 5.57 | 12 | 5.10 | 40.67 |
 
@@ -52,7 +52,8 @@ and one full evolution chain costs 775 brains. A late-band player completing
 every recurring objective earns roughly one shop unlock every two days from
 retention income alone. A full evolution chain costs about 19 days of that
 expected income before campaign rewards and XP gates. Campaign victories add
-one brain per cleared day number, so late-game affordability depends strongly
+a base of one brain per cleared day number, increased by the earned star
+rating (see FARM_PROGRESSION.md), so late-game affordability depends strongly
 on campaign play as well. Step 7 reviewed the catalog without changing tuning.
 Live completion rates, spends, and time to first purchase remain unmeasured.
 
@@ -157,3 +158,20 @@ onto a random tile.
 - The coin **balance** is **not** saved. Join / day end apply the day purse
   (Day 1 → `STARTING_COINS`; later days → 0). Rewind applies `REWIND_COINS`.
 - **Ground coins** (uncollected pickups) are **not** saved.
+
+## Farm income and shards (M21B)
+
+Farm income is species-specific and displayed as brains/second. Zombie earns
+1 brain per 1,800 seconds, Goblin Elite 1 per 180 seconds, and Pharaoh Mummy
+1 per 30 seconds. These initial rates await live balance QA. Earned whole
+brains use ordinary progression saves. Partial accrual is session-only.
+
+Numbered clear rewards scale with 1–3 stars and award 2/4/6 regional shards.
+Shards combine into individual farm monsters, including repeat copies of a species. Boss shards have low reward weights,
+and rare sky drops supply additional boss shards. See FARM_PROGRESSION.md for
+all rates, costs, odds and replay rules.
+
+Farm species rates are multiplied by monster size tier (Tiny 0.25× through
+Titanic 5×). Medium retains the baseline species rate. Shard combining rolls
+an individual, and fusion consumes 3–5 same-species instances for one random
+output. See FARM_PROGRESSION.md for exact odds and initial level/size tuning.

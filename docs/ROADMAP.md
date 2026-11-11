@@ -312,7 +312,7 @@ Persist player progress.
 - Equipped loadout
 - Upgrades
 - Statistics, Brainrot XP checkpoints, claimed evolution tiers, intro flags,
-  optional Hidden Day pending flag (introduced in v7; current schema v13)
+  optional Hidden Day pending flag (introduced in v7; current schema v16)
 
 
 
@@ -555,9 +555,10 @@ remain as missing-asset fallbacks.
 
 Add authored animations for Brainrots (and monsters where ready) on top of the
 M15–M16 model pipelines. **Combat outcomes stay server-authoritative.** Unit
-Animator tracks (idle / attack / walk) are driven on the **server** so Motor6D
-poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
-`BrainrotAnimation` ✅). Client still owns SFX, particles, and UI juice
+combat tracks and Monster walk tracks are driven on the **server** so Motor6D
+poses replicate to all clients (`BrainrotAnimation` / `MonsterAnimation` ✅).
+Brainrot cosmetic idle is client-local on High quality and skipped for
+`noIdle` definitions. Client also owns SFX, particles, and UI juice
 (`AGENTS.md` presentation layer).
 
 ## Add
@@ -567,8 +568,8 @@ poses replicate to all clients — same pattern as `MonsterAnimation` (Tung Tung
   `attackAnimationId`, `attackHitDelay` — no per-name branching) ✅
 - Server modules play clips when behavior fires (`BrainrotAnimation` /
   `MonsterAnimation`) — display-only relative to combat math ✅
-- Brainrot idle + attack for the launch seven; wall / one-shot units use idle
-  (and place/fly clips where applicable) ✅
+- Persistent Brainrots use High-only cosmetic idle; one-shot definitions marked
+  `noIdle` keep place/fly/action animations without idle playback ✅
 - Monster walk / attack / death when models support it ✅
   (procedural gait where Toolbox clips are permission-locked)
 
@@ -870,50 +871,51 @@ RetentionService and the durable retention writer implement the shared boundary:
 
 ---
 
-# Milestone 21 — Boss Collection House
+# Milestone 21 — Monster Sanctuary
 
-**Status: 🔜 Planned** (house shell ✅ now; collection / income later)
+**Status: 🛠 In progress — core online collection/income implemented**
 
-## Goal
+The house is an open habitat where collected miniature monsters roam. Campaign
+clears award regional shards. Players combine them into individual monsters.
+Five to ten recently created monsters, depending on purchased capacity, roam
+and generate online brains. Existing species-only collections migrate to
+Medium instances. Milestone 21B extends the core with size tiers and fusion.
 
-Turn the plot **house** into a boss trophy room: defeating a new boss unlocks
-it for display; displayed bosses generate **brains** used for the store (M18)
-and evolutions (M19).
+- [x] Replace the runtime cottage with an open fenced sanctuary.
+- [x] Persist unique collected species through SaveService (schema v14).
+- [x] Integrate regional shard rewards and preserve previously owned species.
+- [x] Roaming cosmetic residents with cleanup on ownership change/leave/reset.
+- [x] Server-owned online income and an outside owner-name sign.
+- [x] Isolated service fixture and edit-mode movement checks.
+- [ ] Live save/rejoin, reset and four-player QA.
+- [ ] Income balance playtesting.
 
-## Prerequisites
-
-- Plot houses + authored Cottage pedestals (`HouseBuilder` / `HouseConfig`) ✅
-  (runtime no longer spawns `BossDisplay` cylinders)
-- Brains currency + ProgressService ✅ (M13)
-- Boss monsters authored in levels (`isBoss`) ✅
-
-## Add
-
-- On **first defeat** of a boss species, unlock for the player's collection
-  (server-authoritative; persist `SaveData.collectedBosses`)
-- `HouseService` places a scaled display model on the next free pedestal
-- Passive **brains** income from displayed bosses (config rate per `monsterId`)
-- Optional UI: collection progress / brains-per-minute readout (display-only)
-
-## Architecture Notes
-
-- New **`HouseService`** owns display placement + income ticks; grants brains
-  through `ProgressService` (never invent balances on the client)
-- Only `SaveService` persists collected bosses
-- Pedestal markers live in the authored Cottage; `CollectedBosses` folder is
-  created at runtime for future trophies.
-- Full design: **`docs/HOUSE.md`**
-
-## Complete When
-
-- Defeating Goblin Elite (and later bosses) once unlocks a house trophy.
-- Trophy appears on a pedestal after rejoin (save/load).
-- Displayed bosses grant brains over time; spend path uses existing brains sinks.
-- Exploits (fake collect, double income) fail server validation.
+Offline income, selectable residents, cosmetic skins and additional habitat
+upgrades remain future extensions. Purchased resident capacity and size tiers
+are implemented. See `docs/HOUSE.md` for exact current rules and limits.
 
 ---
 
+# Milestone 21B — Day Stars and Monster Shards
 
+**Status: 🛠 Core implemented — live QA pending**
+
+- [x] Varied day star goals and persistent best ratings.
+- [x] Star-based brains and regional shard rewards.
+- [x] Common/boss/major-boss weighted reward pools.
+- [x] Rare boss and very rare major-boss falling shard pickups.
+- [x] Inventory combining with durable shard spend + species unlock.
+- [x] Species-specific farm income displayed in brains/second.
+- [x] Six monster size tiers, matching levels and income multipliers.
+- [x] Individual monster ownership, repeat combining and 3–5 input fusion.
+- [x] Durable fusion spend/result and recent-operation retry receipts.
+- [x] Isolated rules/service/save fixtures and UI instantiation checks.
+- [ ] Live campaign, sky pickup, combine/rejoin and multi-device QA.
+- [ ] Income/reward/drop tuning from real play.
+
+See docs/FARM_PROGRESSION.md for requirements, rates, odds and save contracts.
+
+---
 
 # Milestone 22 — Optimization
 
@@ -1006,7 +1008,8 @@ and evolutions (M19).
   or add an unrelated ability, independent of Brainrot level. Evolutions
   shipped in **Milestone 19**; mutations are post-launch.
 - Retention (7-day rewards, spinner, daily quests) → **Milestone 20**
-- Boss collection house (display defeated bosses → brains income) → **Milestone 21**
+- Monster farm (online roaming collection/income) → **Milestones 21/21B**;
+  offline income remains planned.
 - New Monsters
 - New Maps
 - Seasonal Events

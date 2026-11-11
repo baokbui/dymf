@@ -32,7 +32,8 @@ Then consult the system-specific docs relevant to the task:
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
 - docs/STORE.md — Progression Store catalogs, Magnet / Speed upgrades
-- docs/HOUSE.md — plot houses + boss collection (Milestone 21)
+- docs/HOUSE.md — monster farm residents, capacity, and online income (Milestone 21)
+- docs/FARM_PROGRESSION.md — day stars, regional shards, size tiers, and fusion (Milestone 21B)
 - docs/EVOLUTIONS.md — Brainrot leveling + Epic→God tiers (Milestone 19)
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
@@ -87,6 +88,8 @@ add one.
 Services (current):
 
 - PlotService
+- HouseService (monster farm residents and online passive brains)
+- FarmProgressionService (day stars, regional shards, rare sky drops and combining)
 - GridService
 - SaveService
 - LevelService
@@ -102,8 +105,8 @@ Services (current):
 - RetentionService (daily/weekly quests, first-time rewards, achievements, next goal;
   Daily Challenge first-clear rewards and free daily spins)
 
-HouseService is planned for Milestone 21 (boss trophies + brains income); it is
-not an existing service. PlotService currently builds the house shell.
+PlotService builds the open sanctuary in the existing house slot. HouseService
+owns cosmetic residents and online income. See docs/HOUSE.md for collection rules.
 
 Never create massive scripts.
 
@@ -125,7 +128,7 @@ The server owns:
 - Levels / days / hearts
 - Brainrot placement
 - Monster spawning
-- Plot houses (build, owner sign, future boss display)
+- Plot farms (build, owner sign, roaming residents, capacity and income)
 - Saving
 - Rewards / unlocks / loadout / statistics / Progression Store purchases
 - Magnet cooldown / pull
@@ -140,8 +143,13 @@ The client owns:
 - Sound Playback
 - Cosmetic ghosts / ViewportFrame previews
 
-Unit Animator tracks (Brainrot / Monster idle, attack, walk) are driven on the
-**server** so Motor6D poses replicate (`BrainrotAnimation` / `MonsterAnimation`).
+Combat Animator tracks and Monster walk tracks are driven on the **server**
+so Motor6D poses replicate (`BrainrotAnimation` / `MonsterAnimation`). Planted
+Brainrot cosmetic idle playback is client-local and enabled only in High
+graphics quality. Registry `noIdle = true` skips authored and procedural idle
+for short-lived units without disabling their server action animations.
+The server resolves authored idle ids and signals action
+pause windows.
 Combat math stays server-authoritative — never trust the client for damage or
 targeting.
 
@@ -165,7 +173,7 @@ Examples:
 - Player walk speed (`PlayerConfig.WALK_SPEED`) and store catalogs (`ProgressConfig`)
 - Progression shop kinds / Brainrot stall placement (`StoreConfig`)
 - Monster spawn column / forest march (`MonsterConfig`)
-- House footprint / Toolbox `MODEL_ID` (`HouseConfig`)
+- House/farm footprint and Toolbox assets (`HouseConfig.MODEL_ID` / `FARM_MODEL_ID`)
 - Magnet cooldown / pull range (`MagnetConfig`)
 - Weather, graves, VFX, audio
 - GOD ult percents in `Shared.Evolutions` `abilityParams` (e.g. Shadow Requiem
@@ -280,8 +288,8 @@ Lawn / purse (see `LEVELS.md`):
 No other service advances days. Daily Challenge reuses the owned plot and wave
 scheduler with temporary lawn, purse, and heart state. It cannot advance or
 commit campaign progress. SaveService atomically writes the UTC first-clear
-receipt and brains. Schema v13 also stores the server-selected daily spin
-outcome and its reward atomically.
+receipt and brains. Schema v16 retains the server-selected daily spin
+outcome and its reward atomically, and persists farm instances, shards, day stars and operation receipts.
 
 After Day 40 victory, Hidden Day is pending at Night (no fog/graves). Continue
 returns to Preparation; only Start Day begins it. It has 35 Goblins, 4 Elites,
@@ -297,10 +305,17 @@ campaign ends at Day 50; saved/forced days are clamped to the registry limit.
 Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 `PlotService` helpers (`HouseBuilder` + focused modules) from `HouseConfig`.
 
-- Prefer Toolbox model under `Assets.Houses`; procedural fallback if missing.
-- Owner sign shows `{DisplayName}'s Base` while the plot is assigned.
-- Boss pedestals ship empty; collection + brains income is **HouseService**
-  (Milestone 21).
+- Open sanctuary is built through `SanctuaryBuilder`; the Cottage asset is retained.
+- Owner sign shows `{DisplayName}'s Farm` while the plot is assigned.
+- Numbered campaign clears grant star-rated brains and regional monster shards.
+  Players combine species-specific shards into individual farm monsters through
+  a durable SaveService spend/unlock transaction. **HouseService** displays
+  the most recently created individual monsters up to purchased farm capacity as roaming miniatures and grants
+  online brains. SaveService v16 persists individual monsters, shards, best day stars and recent
+  farm-operation receipts. Combining permits duplicate species. Fusion consumes
+  3–5 exact owned ids of one species for one random-size output. Size tier
+  determines a fixed level, visual scale and a multiplier on the species income
+  rate; level is not a separate XP or income multiplier. Offline income is planned.
 - See `docs/HOUSE.md`.
 
 ---
@@ -309,7 +324,7 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 
 - **Coins** — match currency (placement, passive drops). `CoinService` only.
 - **Brains** — progression currency (day rewards, leftover-coin conversion at
-  day end, Progression Store spends, evolution claims, future house boss income).
+  day end, Progression Store spends, evolution claims, online monster farm income).
   `ProgressService` only for brains balances.
 - Clients never set balances.
 
@@ -357,7 +372,9 @@ Persist:
   Brainrot XP still rolls back
 - `hiddenDayPending` (introduced in v7); unfinished Hidden Day kill earnings
   and timers are not persisted
-- Future player-owned progression (collected bosses, …)
+- Collected sanctuary monster species (v14), monsterShards and dayStars (v15)
+- Individual farmMonsters and recent farmReceipts (v16)
+- Future player-owned progression
 
 Do NOT persist:
 
@@ -421,7 +438,9 @@ Heavy combat VFX (GOD ultimates: Shadow Requiem waves/pillar, Sahur slam,
 Jackpot burst, Abyssal Torrent, Last Laugh mushroom cloud, La Vacca black hole) go through `Shared.Utilities.VfxLoad`. Quality
 is a client Settings toggle (High = Full, Low = Reduced, Off = Minimal). The
 server always authors the full effect. Settings can hide Brainrot VFX on other
-players' plots. Damage, targeting, status, and animations are never throttled.
+players' plots. A separate session-local Hide Other Farm Monsters option hides
+other farms' resident visuals; server roaming, income and replication continue.
+Damage, targeting, status, and combat animations are never throttled.
 
 ---
 

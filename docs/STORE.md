@@ -10,14 +10,15 @@ Status: ✅ Milestone 18
 
 ## HUD
 
-The bottom-left Menu button opens one window with seven sections. Store-related sections:
+The bottom-left Menu button reveals six section shortcuts. Settings has its
+own top-bar shortcut; all seven sections share one Menu window. Store-related sections:
 
 | Button | Opens |
 | ------ | ----- |
 | Inventory | loadout |
 | **Index** | encountered Brainrots / Monsters catalog |
 | **Upgrades** | `UPGRADE_CATALOG` |
-| Settings | settings modal |
+| Settings (top bar) | settings section |
 
 Click Menu again, its X, or outside the window to close. Selecting another
 section replaces the current page. A field inspect card closes Menu.
@@ -73,6 +74,12 @@ reach 2 / 3 / 4 / 5: **30 / 55 / 90 / 150** brains. Press **1** (or the HUD
 chip) on an Active day. See `MagnetConfig`.
 
 ---
+
+**Farm Capacity** (`FarmCapacity`): starts at five roaming/income slots and caps
+at ten. Each purchase adds one slot for **30 / 55 / 85 / 125 / 175** brains.
+The upgrade does not limit owned monster inventory; the most recently created
+monsters fill the active slots. Capacity persists in `SaveData.upgrades` and
+returns to five on Reset Progress. See `HOUSE.md`.
 
 ## Architecture
 

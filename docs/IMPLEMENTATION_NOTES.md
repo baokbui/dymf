@@ -1,18 +1,51 @@
 # Current implementation notes
 
-Documentation audit: **2026-11-02**. These notes distinguish implemented
+Documentation audit: **2026-11-11** (current feature follow-up; original full
+registry/combat audit: 2026-11-02). These notes distinguish implemented
 behavior from design intent and unfinished work. They do not change gameplay.
 `AGENTS.md` is the canonical project rules file; `.cursorrules` points to it.
 
 ## Audit scope and limits
 
-All 18 existing documents in `docs/`, README, and both rules files were reviewed
+Original 2026-11-02 audit: all 18 then-existing documents in `docs/`, README, and both rules files were reviewed
 against the registries, configs, service paths, and client presentation modules.
 Normalized source checksums matched **all 174 Luau scripts** between the local
 `src/` tree and the connected Studio place, **Defend the Brainrots! [Beta]**
 (place 102816403053242). This verifies source sync, not asset completeness,
 animation permissions, visual correctness, or a multiplayer/performance playtest.
-No gameplay source or developer cheat settings were changed by this audit.
+No gameplay source or developer cheat settings were changed by that audit.
+
+## Current feature documentation audit — 2026-11-11
+
+Reviewed the current farm/progression/save and retention/UI/idle paths against
+all 21 docs, README and AGENTS.md, with targeted reads of the unchanged combat,
+weather, grid, monster and evolution references. Corrected stale cottage/boss
+plans, automatic farm backfill/unlocks, schema numbers, farm nameplates, repeated
+combining, fusion receipts, reset carryover, six-icon navigation and spin gating.
+The canonical current save version is 16; retention's internal version stays 4.
+The original v14/v15 sections remain migration history, not current restrictions.
+
+Read-only source fingerprints matched 233 of 234 local Luau scripts to the
+connected Edit place (102816403053242). The sole difference was Studio-authored
+Brainrot idle tuning (2.8s cycle, 3.5° sway, 7° arms, 0.15-stud bob). Those
+existing Studio values were copied into the repository without changing Studio
+or DevConfig; all 234 normalized source fingerprints then matched. The four
+`noIdle` exclusions remain Bombardino, Lirili, Giraffa and La Vacca. This audit
+changes descriptions and preserves existing authored tuning; it adds no gameplay.
+
+Day stars/shards use ordinary campaign saves; combines and fusions use the
+serialized durable writer and retain the latest 24 operation outcomes. Farm
+income accrues only for displayed residents, in nominal five-second updates,
+pauses while progression is locked, and loses its fractional remainder on rejoin.
+Hide Other Farm Monsters changes rendering only, not server work or replication.
+Size multiplies the species rate; its displayed level adds no further multiplier.
+
+Verification for this documentation pass: source/config cross-checks, Markdown
+link/consistency checks, and a Rojo build. Earlier fixture counts below are
+historical results, not newly rerun tests. Live real-DataStore restart/fault
+checks, complete campaign/sky-drop/fusion playthroughs, real-device layouts,
+four-player performance/isolation, and production analytics remain open. M20
+Step 7 and M21/M21B are not declared release-complete by this audit.
 
 ## Shutdown save overlap — corrected 2026-11-05
 
@@ -126,9 +159,12 @@ fault testing remain pending. Steps 5 and 6 added Forest Rush and the free daily
 - Queen Spider currently has no special `deathStyle` in her definition, so
   the runtime uses the default tip-over. A custom leg-collapse death is not
   currently implemented: MonsterDeath.play ignores its deathStyle argument.
-- The house shell, owner sign, and authored pedestal locations exist.
-  HouseService, trophy collection, and passive house brains income are planned
-  (M21). Daily/weekly quests, first-time rewards and achievements/next goal are implemented
+- The current house slot is an open monster farm built by SanctuaryBuilder.
+  HouseService supplies roaming individual residents and online income;
+  FarmProgressionService supplies star-rated clears, shards and sky drops.
+  Durable combining and fusion, capacity upgrades, size tiers and local
+  visibility controls are implemented (M21/M21B). Offline income remains
+  planned. Daily/weekly quests, first-time rewards and achievements/next goal are implemented
   (M20), along with Campaign quests, Forest Rush, and the free daily spin. Day Select has a
   server remote but no shipped player-facing UI.
 
@@ -156,7 +192,7 @@ not reduce server combat work, spawning, or animation replication.
 
 The shared Menu hosts Inventory, Index, Upgrades, Settings, Statistics, Quests and Achievements. First-time Rewards has its
 own temporary gift HUD entry/window that disappears on server-confirmed completion.
-The Menu uses a slide-out strip of seven bare icons. MenuRouter reuses existing panels, switches narrow detail
+The Menu uses a slide-out strip of six bare icons, with Settings on the top bar. MenuRouter reuses existing panels, switches narrow detail
 cards into the content area with Back, and scrolls long content instead of
 shrinking it to the screen height. The physical Brainrot shop remains separate.
 `tests/MenuIntegration.spec.luau` passes 207 mocked client checks, including
@@ -200,7 +236,7 @@ The tracker no longer has a View Quests link. Its single heading and cycle icon 
 newly completed objectives animate out locally. Completed rewards still require
 the full Menu claim flow. UI fixtures verify animation completion without replay.
 
-The large Menu grid is removed. Seven icons slide beside the HUD Menu/X toggle;
+The large Menu grid is removed. Six icons slide beside the HUD Menu/X toggle;
 feature panels still use the existing shared host. UI checks cover morph/reset,
 rapid toggles, navigation, standalone rewards and physical-store reuse.
 

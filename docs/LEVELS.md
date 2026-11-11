@@ -371,3 +371,11 @@ Forest Rush is a separate Daily Challenge run on the owned plot. Its temporary
 lawn, purse, and hearts do not change the campaign checkpoint or pending Hidden
 Day. Challenge combat gives no campaign XP or objective credit. The first UTC
 clear reward uses the durable retention transaction. See `RETENTION.md`.
+
+### Numbered-day star rewards (M21B)
+
+FarmProgressionService starts an attempt at Active, counts breaches and measures
+elapsed time. Numbered victory resolves 1–3 stars with varied day goals, grants
+star-based brains and regional shards, and records the best rating. Replays
+receive clear rewards. Daily Challenge and Hidden Day retain their existing
+rewards. See FARM_PROGRESSION.md for exact rules.

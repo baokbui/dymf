@@ -101,6 +101,7 @@ function BrainrotController.start()
 	Remotes.getEvent("BrainrotAction").OnClientEvent:Connect(onBrainrotAction)
 	require(script.Nameplate).start()
 	require(script.AuraQuality).start()
+	require(script.IdleAnimation).start()
 	log:info("started")
 end
 

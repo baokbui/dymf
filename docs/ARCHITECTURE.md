@@ -90,7 +90,9 @@ ReplicatedStorage/Shared/
 
 ServerScriptService/Server/            (init.server.luau = bootstrap)
     Services/
-        PlotService/      (init + Plot + PlotBuilder)
+        HouseService/     (online farm income + roaming Resident models)
+        FarmProgressionService/ (day-star attempts, regional shards, sky pickups, combine/fusion intents)
+        PlotService/      (init + Plot + PlotBuilder, HouseBuilder, SanctuaryBuilder)
             PlotDecor     (permanent side gardens, paths, benches and small trees)
         GridService/      (battlefield tile grid + occupancy)
         CoinService/      (init + GroundCoin)
@@ -114,7 +116,8 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         GridController/   (hover highlight + tile resolver on own plot)
         CameraController/
         InputController/  (primary intent + magnet 1)
-        BrainrotController/ (BrainrotAction SFX; ScaleTo pulse; world nameplates)
+        BrainrotController/ (BrainrotAction SFX; ScaleTo pulse; world nameplates; High-only IdleAnimation)
+        FarmController/   (session-local visibility for other farms' residents)
         CombatController/ (CombatVisual VFX + SFX — M11/M12)
         AudioController/  (weather + boss BGM, SFX via SfxPlayer — M12)
         StoreController/  (hide other players' store Talk prompts — M18)
@@ -125,9 +128,10 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         VfxUtil/          (ephemeral particles — M11)
         PlotUtil/         (local plot helpers — M11)
         TextShine.luau    (shared rarity-title gleam)
-        MenuRouter.luau  (single Menu window, tile launcher, page registry, badges and responsive hosting)
-        MenuTiles.luau   (seven compact icon/name buttons and lightweight illustrations)
-        MenuDrawer.luau  (HUD slide-out/retraction and Menu/X morph)
+        MenuRouter.luau  (single Menu window, page registry, badges and responsive hosting)
+        MenuTiles.luau   (shared icon/name artwork for the six drawer destinations and reward entries)
+        MenuDrawer.luau  (six HUD destinations, slide-out/retraction and Menu/X morph)
+        SettingsShortcut.luau (safe-inset top-bar Settings entry)
         BrainAmount.luau (inline number + brain texture for rewards/statistics)
         UISizing.luau    (event-driven desktop HUD scaling and screen bounds)
         HudLayout.luau   (shared window bounds reserving planting/navigation bands and HUD rails)
@@ -213,7 +217,7 @@ to call, e.g. `PlotService.getPlot(player)`.
 | --------------------------------------------- | --------------------------------- |
 | Coins, brains, store spends, damage, health, levels, spawning | UI, camera, input                 |
 | Brainrot placement, saving, rewards, unlocks / loadout        | SFX, particles, UI juice          |
-| Unit Animator tracks (idle / attack / walk)   | Placement ghost / shop previews   |
+| Combat Animator tracks and Monster walk    | High-only Brainrot cosmetic idle, placement ghost / shop previews |
 | Plot assignment & ownership                   |                                   |
 
 The client sends **intent**; the server **decides**. UI only displays state.
@@ -243,17 +247,18 @@ and shared Config/Constants/Types/Utilities/Remotes/registries.
 - **PlotBuilder** procedurally builds each player lane from `PlotConfig`: an
   invisible, non-colliding `Base` (region origin + placement raycast target), a
   `SpawnLocation` at the play area's left edge facing the enemy (+X),
-  `HouseAnchor` (−X) / `CoinSpawner` markers, a walkable **`House`** cottage
-  (`HouseBuilder` + `HouseConfig`; Toolbox model under `Assets.Houses` when
-  present, procedural fallback) with boss pedestals for Milestone 21, and
-  empty `Grid` / `Path` / `Decorations` folders. Lane layout left→right: house
-  zone (cottage + yard), play area (grid). Monsters stage in the matching
+  `HouseAnchor` (−X) / `CoinSpawner` markers, an open **`House`** monster farm
+  (`HouseBuilder` → `SanctuaryBuilder`, imported farm template under
+  `Assets.Houses` with a procedural farm fallback), and empty `Grid` / `Path` /
+  `Decorations` folders. Lane layout left→right: house zone (farm + yard),
+  play area (grid). Monsters stage in the matching
   east-column `EnemyLane` (`EnemySpawn` attachment at its west edge).
 - **ForestBuilder** fills the east column with `Workspace.Maps.DarkForest` —
-  dark grass floor + procedural trees (non-colliding). A clear strip near the
+  shared grass with dense layered trees casting shade (non-colliding). An
+  invisible ForestFloor marker supplies bounds. A clear strip near the
   plot boundary keeps monster entry / spawn readable. **Desert** days hide that
   forest on the local client and spawn pyramids instead (`WEATHER.md`).
-- See **`HOUSE.md`** for cottage layout and the planned boss-collection loop.
+- See **`HOUSE.md`** and **`FARM_PROGRESSION.md`** for the current farm loop.
 - Gameplay isolation is **server-validated**, not physical: plant / shovel /
   coin collect / Progression Store only succeed on the acting player's own plot
   (and own coins).
@@ -362,9 +367,11 @@ Full details in `BRAINROTS.md`. Summary:
   `onPlaced`; ticks claimed evolution extras even when `attackInterval <= 0`;
   routes combat through `CombatService`, coins through
   `CoinService.dropCoinForOwner`.
-- **`BrainrotAnimation`** — server idle/attack Animator tracks for
-  `definition.animated` units (replicates Motor6D poses; same idea as
-  `MonsterAnimation`).
+- **`BrainrotAnimation`** — server attack/hit/ability Animator tracks for
+  `definition.animated` units; resolves idle asset ids for local playback.
+- **`BrainrotController.IdleAnimation`** — High-only local idle clips and
+  procedural motion; skips definitions marked `noIdle`, leaving action clips
+  server-owned.
 - **`BrainrotFeedback`** — ScaleTo attack pulse (skipped when `animated`) +
   replicated hit flash on damage + rarity-tinted Super Saiyan aura.
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
@@ -494,8 +501,9 @@ Full details in `UI.md`. Summary:
   plot opens `MonsterInspect` (portrait, live HP, stats, ability — no
   evolutions).
 - **Reward popup** — victory shows brains earned (store purchases → M18). The Hidden Day after Day 40 uses the same popup for a clear or a loss.
-- Current save schema is **v13** (`SAVE_SYSTEM.md`): progression, XP, claimed
-  evolutions, intro lists, retention state, and optional `hiddenDayPending`. Coins are a legacy
+- Current save schema is **v16** (`SAVE_SYSTEM.md`): progression, XP, claimed
+  evolutions, intro lists, retention state, farm instances/receipts, shards,
+  best day stars, species history, and optional `hiddenDayPending`. Coins are a legacy
   placeholder, not a persisted gameplay balance.
 
 ### Milestone 18 — Progression Store ✅
@@ -529,7 +537,7 @@ Full details in `EVOLUTIONS.md` / `ROADMAP.md`. Summary:
   data-driven ability ids.
 - **XP (live):** last-hit species for normal kills (`BubbleTrap`, `BubbleBarrage`, `MeleeBat`,
   and `TileTrap` skip last-hit XP; configured hit jobs grant separately); boss XP split per living plant on the lawn;
-  persisted as `brainrotXp` (introduced v5; current save schema v13). Inspect UI shows level / XP. XP from a
+  persisted as `brainrotXp` (introduced v5; current save schema v16). Inspect UI shows level / XP. XP from a
   failed or unfinished day rewinds to the Start Day snapshot.
 - **Epic stats + Legendary extras + Mythic / Immortal passives + aura (live):** claimed Epic overlays `stats`
   onto the registry definition (interval / HP / damage / plant cooldown).
@@ -596,7 +604,7 @@ Damage and the day UI; QuestPresentation supplies shared display rows. FirstTime
 HUD window, hiding its gift entry after authoritative completion. OutsideDismiss
 shares outside-only click regions between that window and Menu. RewardGrant prepares durable upgrade/ticket
 snapshot mutations; the physical shop also accepts a saved free-ticket intent. MenuPages
-adapts existing feature panels. Save schema v13 and SaveService.SessionStore
+adapts existing feature panels. Current save schema v16 and SaveService.SessionStore
 provide session/revision-guarded writes and durable claims. DailySpin selects
 the server outcome inside the save transaction, and DailySpinHud reveals it
 from a standalone HUD entry. See `RETENTION.md`.
@@ -612,7 +620,7 @@ from a standalone HUD entry. See `RETENTION.md`.
 - Freeze config/constant tables with `table.freeze`.
 
 Desktop UI readability is centralized in `Client.Utilities.UISizing`, using
-UITheme reference-size/max-scale tokens. UIController binds current and future
+UITheme reference-size tokens and viewport/window bounds. UIController binds current and future
 MainUI children once. Full-screen overlays stay in screen coordinates, while
 Menu and FirstTimeRewards fit their own scaled windows. Reparented Menu pages
 use host scaling, avoiding compounded UIScales. See `UI.md` for geometry/tests.
@@ -623,7 +631,8 @@ not receive authored HUD offset scaling. See `UI.md` for removal regressions.
 
 Menu navigation now uses an animated horizontal HUD drawer, not a large grid
 launcher. MenuRouter retains its feature-panel registry/hosting; MenuDrawer
-manages the seven icons and Menu/X state, including resize/tween cancellation.
+manages the six drawer icons and Menu/X state, including resize/tween cancellation.
+Settings uses its own safe-inset top-bar shortcut into the same Menu host.
 Selecting a section leaves the drawer open; feature windows have no top-left
 Menu button. HudLayout keeps hosted and standalone windows within the reserved
 HUD rectangle, with event-driven updates shared by UISizing and the Menu host.
@@ -652,3 +661,26 @@ All scenery is anchored, non-colliding, non-touching and non-queryable.
 The shared grass receives canopy shadows; no dark floor or moss overlay covers it.
 Trees vary from sapling to tall canopy sizes at denser, staggered spacing. Every
 forest detail stays under that folder so desert weather can hide it locally.
+
+### Monster Sanctuary (M21 core)
+
+PlotService builds an open habitat in the house slot through SanctuaryBuilder.
+HouseService owns online income and cosmetic roaming residents up to the purchased farm capacity, supplied
+by its Resident module. Shard combining creates individual monsters through
+the durable save writer; campaign clears award shards rather than automatic
+ownership. The latest purchased-capacity count of instances roam and accrue
+species rate × size multiplier income. Schema v16 retains instances/receipts
+plus the earlier species history. Existing species-only saves migrate to Medium
+instances; there is no current campaign backfill. FarmController only controls
+local visibility. See HOUSE.md for income and migration limitations.
+
+### Farm stars and shards (M21B)
+
+FarmProgressionService owns attempt ratings, rare sky drops and combine/fusion requests.
+Shared.Utilities.FarmProgression supplies pure rules from FarmProgressionConfig.
+LevelService awards numbered-day stars/brains/shards. Schema v16 retains
+v15 shards/best stars and adds individual farmMonsters and bounded farmReceipts.
+SaveService atomically commits shard combining and 3–5 input fusion;
+MonsterFusionConfig/Utilities.MonsterFusion own size tiers, recipes and receipt
+validation. ShardInventory, MonsterCollection and DayGoals present the feature.
+See FARM_PROGRESSION.md.

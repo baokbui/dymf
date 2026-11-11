@@ -22,6 +22,10 @@ local WAIT_TIMEOUT = 10
 -- Declare every RemoteEvent name the game uses. Adding a name here is the only
 -- step needed to register a new event.
 local EVENT_NAMES = {
+	"FuseFarmMonsters",
+	"MonsterFusionResult",
+	"CombineMonsterShards",
+	"MonsterCombineResult",
 	"RetentionUpdated",
 	"ClaimRetentionReward",
 	"RetentionClaimResult",

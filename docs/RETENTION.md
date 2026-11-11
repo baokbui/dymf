@@ -17,11 +17,15 @@ balances, upgrades and unlocks. Clients do not choose rewards, dates or progress
 
 ## Daily and weekly quests
 
-The Menu's **Quests** tile opens **Daily Quests** / **Weekly Quests** tabs.
+The Menu's **Quests** entry opens **Daily Quests** / **Weekly Quests** /
+**Campaign** tabs. Titles and tabs stay fixed; only the objective list scrolls.
+All three tracks and Achievements put completed, unclaimed rewards first.
 A compact right-side tracker between Damage and Start Day also shows both
 tracks as text-only progress. A single clickable heading switches between Daily Quests and Weekly Quests.
 Completed objectives animate away from the tracker; rewards remain claimable
 from the full Menu quest view, and its badge includes completion bonuses.
+When no tracker rows remain, it shows “No quests for today” or
+“No quests for the week” for the selected track.
 Both contain three objectives and an all-three completion bonus, manually claimed.
 Daily quests reset at 00:00 UTC; weekly quests reset Monday at 00:00 UTC.
 A weekly key is that Monday's UTC day key. Replay clears count as campaign clears.
@@ -142,7 +146,7 @@ No client chooses a price or sets the ticket count.
 
 ## Durability and concurrency
 
-Save schema **13**, retention internal version **4**, stores daily and weekly
+Current save schema **16**, retention internal version **4**, stores daily and weekly
 quests, first-time rewards, permanent achievements and Campaign claims, tickets,
 Daily Challenge receipts, and Daily Spin outcomes.
 Only SaveService communicates with DataStore via SessionStore owner/revision/

@@ -67,7 +67,7 @@ Theme BGM follows **weather**, not day numbers (`WeatherUtil` + `LevelStateChang
 | `Defeat` | Defeat phase change |
 | `ClaimReward` | Server confirms a daily/weekly quest or achievement claim — `88761861442974` |
 | `CoinCollect` | Successful ground-coin pickup (not on spawn) |
-| `FirstTimeRewardStamp` | Server confirms a First-time Rewards claim |
+| `FirstTimeRewardStamp` | Server confirms a First-time Rewards claim — `521293072` |
 | `PurchaseKaching` | Store purchase succeeded (cash register) |
 | `PurchaseError` | Store purchase failed (not enough brains) — `132281440773764` |
 | `PlaceBrainrot` / `RemoveBrainrot` | Place / shovel remove intent; shovel uses `9114084044` |

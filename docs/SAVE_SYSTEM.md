@@ -18,7 +18,7 @@ Saved (player-owned progression):
 - **Planted Brainrots** (id, tile, remaining HP, remaining uses for `charges` plants like Boneca)
 - Unlocks
 - Equipped loadout
-- Upgrades (`WalkSpeed` ranks, **Magnet** 1–5)
+- Upgrades (`WalkSpeed` 0–20, **Magnet** 1–5, **FarmCapacity** 5–10)
 - Statistics
 - Intro popup flags and optional v7 `hiddenDayPending`
 - **Brainrot XP** (per registry id — shared species pool)
@@ -32,13 +32,14 @@ Saved (player-owned progression):
 - First-time upgrade provenance (`retention.login.upgradeRewards`, optional in v13).
   Reset Progress preserves first-time claims, their upgrade levels and unused
   tickets; first-time brains are not replayed and purchased levels reset.
-- Future progression systems (collected bosses, …)
+- `collectedMonsters` species history (v14), regional `monsterShards` and best `dayStars` (v15)
+- Individual `farmMonsters` and recent durable `farmReceipts` (v16)
 
 Not saved (transient / runtime):
 
 - **Coins** (Day 1 → `STARTING_COINS`; later days → 0 via `applyDayPurse` on
   join / day end; Rewind → `REWIND_COINS` — never persisted as a balance)
-- Active monsters & their positions
+- Active combat monsters & their positions; farm resident positions and fractional income
 - Active projectiles
 - Ground coins
 - Temporary combat effects
@@ -52,7 +53,7 @@ Not saved (transient / runtime):
 
 | Field          | Type                       |
 | -------------- | -------------------------- |
-| `version`      | number (`SAVE_VERSION` = 11)|
+| `version`      | number (`SAVE_VERSION` = 16)|
 | `currentLevel` | number                     |
 | `highestLevel` | number                     |
 | `coins`        | number (always written as `STARTING_COINS`; ignored on load) |
@@ -70,18 +71,22 @@ Not saved (transient / runtime):
 | `introducedMechanics` | `{ string }` (mechanic intro popups already shown, e.g. Grave) |
 | `hiddenDayPending` | boolean? (true after Day 40 is cleared until the Hidden Day ends) |
 | `retention` | Quest progress/claims, login counts/date/offer achievement flags, weekly quests and tickets (internal version 4) |
-| `collectedBosses` | `{ CollectedBoss }?` 🔜 M21 |
+| `collectedMonsters` | `{ string }` unique species history |
+| `monsterShards` | `{ [monsterId]: number }` quantities |
+| `dayStars` | `{ [levelId]: number }` best 1–3 rating |
+| `farmMonsters` | `{ { uid: string, monsterId: string, tier: string } }` individual ownership |
+| `farmReceipts` | Recent operation id/signature/output records (latest 24) |
 
 `PlantedBrainrot` = `{ instanceId, brainrotId, position: { row, column }, health, charges? }`.
 `charges` is only written for definitions with `charges` (Boneca headbutts left).
 Missing on older saves means full uses. A saved 0 is not restored. Immune charge
 plants save `health = 0`, so restore decides by `charges` instead of HP.
-`CollectedBoss` (planned) = `{ monsterId, slotIndex, collectedAtLevel? }` — see
-`HOUSE.md`.
+The legacy planned `collectedBosses` pedestal schema is not implemented.
+The current farm uses the individual inventory above; see `HOUSE.md`.
 
 Relevant constants (`Shared.Constants`):
 
-- `SAVE_VERSION = 11` — bump when the schema changes; migrate older payloads.
+- `SAVE_VERSION = 16` — bump when the schema changes; migrate older payloads.
   **v4 → v5:** add `brainrotXp` (empty map if missing).
   **v5 → v6:** add `evolutions` (empty map if missing).
   **v6 → v7:** add `introducedMechanics` (empty list if missing).
@@ -92,6 +97,11 @@ Relevant constants (`Shared.Constants`):
   **v10 → v11:** retain paid welcome steps/date; remove recurring weekly login
   state, add weekly quests and ticket count. Legacy completed welcome tracks
   receive one final ticket catch-up (see `RETENTION.md`).
+  **v11 → v12:** Daily Challenge UTC first-clear receipts.
+  **v12 → v13:** Daily Spin UTC receipt/outcome.
+  **v13 → v14:** unique collected monster species.
+  **v14 → v15:** regional shards and best day stars.
+  **v15 → v16:** individual farm monsters and recent operation receipts.
   Catch up owned types/claimed Epic from sanitized profile fields, not intro flags.
   Newer-than-supported schemas are refused, never downgraded.
 - `SAVE_DATASTORE_NAME = "BVZ_PlayerData_v1"` — owned solely by `SaveService`.
@@ -204,7 +214,7 @@ clear the pending state.
 
 ## Retention foundation (Milestone 20)
 
-Schema v13 persists daily/weekly quests, finite first-time rewards, tickets, achievements, and the Daily Challenge and Daily Spin receipts under `retention`. Challenge attempts and temporary lawns are never saved.
+Current schema v16 retains daily/weekly quests, finite first-time rewards, tickets, achievements, and the Daily Challenge and Daily Spin receipts under `retention`. Challenge attempts and temporary lawns are never saved.
 Ordinary `saveNow` queues snapshots; `claimRetentionReward` durably saves
 the claim flag/date together with its brains/statistic, permanent upgrade or
 ticket grant. Ticket redemption commits ticket consumption with the store unlock
@@ -215,7 +225,8 @@ failed days; Brainrot XP rollback is unchanged.
 Achievement progress/claims survive day resets and defeat. A claim does not
 expire at midnight. Next-goal hints and current-attempt breach markers are
 runtime-only. Confirmed Reset Progress clears progression and retention
-claims while preserving the Daily Challenge and Daily Spin receipts.
+claims while preserving first-time reward history, earned first-time upgrade
+levels, unused tickets, and Daily Challenge/Daily Spin receipts.
 
 SessionStore acquires/renews a 180s session lease via UpdateAsync. All writes
 check owner/revision and use operation ids to reconcile lost responses. Autosave
@@ -238,5 +249,37 @@ A confirmed Reset (via Settings **Danger Zone** → red **Reset Progress**,
 **two confirmations**, then `ResetProgress` remote — see `UI.md` /
 `NETWORKING.md`) resets the profile and returns the player to Day 1
 with starter coins (125), full hearts, default unlocks/loadout, empty lawn, and
-empty statistics. Daily Challenge and Daily Spin receipts survive the reset.
+empty statistics and farm progression. First-time reward history, its earned
+upgrade levels, unused tickets and Daily Challenge/Daily Spin receipts survive.
+Purchased upgrade levels reset (Farm Capacity returns to five).
 Never erase save data unless Reset is explicitly confirmed.
+
+### Schema v14 — Sanctuary collection
+
+`collectedMonsters` stores unique monster registry ids, sanitized by
+ProgressService on hydration. Missing fields load as an empty collection.
+The earlier campaign-frontier backfill was removed when shards replaced
+automatic campaign collection. Existing saved ownership is retained and
+migrates to Medium individuals in v16. Reset Progress clears farm ownership.
+Earned sanctuary brains use ordinary progression snapshots. Fractional online
+income and resident positions are not saved. See HOUSE.md.
+
+### Schema v15 — Monster shards and day stars
+
+monsterShards maps monster ids to integer quantities. dayStars maps Level ids to
+best ratings (1–3). Missing fields default empty. Collected species survive the
+migration. Reset Progress clears all three. Combining uses the serialized
+Monster transaction kind, committing shard spend and ownership together before
+success and merging concurrent gains into queued saves. Campaign grants and
+sky pickups use normal progression snapshots. See FARM_PROGRESSION.md.
+
+### Schema v16 — Individual farm monsters and fusion
+
+farmMonsters stores unique uid/monsterId/tier records. Missing instance arrays
+are migrated from collectedMonsters into stable Medium instances. Explicit
+empty arrays remain empty. farmReceipts retains the latest 24 operation ids,
+recipe signatures and output records. Shard combining permits repeated species.
+MonsterFusion transactions validate and consume 3–5 exact same-species owned
+ids, then save one random-tier output with the spend. Both farm transaction
+kinds use the existing session/revision writer, merge concurrent snapshots,
+and return committed receipt outcomes on retries. Reset clears these fields.

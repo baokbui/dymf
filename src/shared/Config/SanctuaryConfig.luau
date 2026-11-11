@@ -1,0 +1,10 @@
+--!strict
+return table.freeze({
+	UPDATE_INTERVAL = 5,
+	ROAM_SPEED = 3,
+	MIN_PAUSE = 2,
+	MAX_PAUSE = 6,
+	CREATURE_HEIGHT = 5,
+	CREATURE_FOOTPRINT = 5,
+	EDGE_INSET = 9,
+})

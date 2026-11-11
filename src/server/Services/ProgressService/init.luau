@@ -31,6 +31,8 @@ local DevConfig = require(Shared.Config.DevConfig)
 local Remotes = require(Shared.Remotes)
 local Logger = require(Shared.Utilities.Logger)
 
+local Fusion = require(Shared.Utilities.MonsterFusion)
+local Farm = require(Shared.Utilities.FarmProgression)
 local ProgressService = {}
 ProgressService.Name = "ProgressService"
 
@@ -44,6 +46,11 @@ type Profile = {
 	statistics: { [string]: number },
 	brainrotXp: { [string]: number },
 	evolutions: { [string]: { string } },
+	monsterShards: { [string]: number },
+	dayStars: { [string]: number },
+	farmMonsters: { Fusion.Monster },
+	farmReceipts: { any },
+	collectedMonsters: { string },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
 	introducedMechanics: { string },
@@ -267,6 +274,11 @@ local function ensureProfile(player: Player): Profile
 		statistics = {},
 		brainrotXp = {},
 		evolutions = {},
+		monsterShards = {},
+		dayStars = {},
+		farmMonsters = {},
+		farmReceipts = {},
+		collectedMonsters = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 		introducedMechanics = {},
@@ -295,6 +307,10 @@ local function buildPayload(profile: Profile): { [string]: any }
 		statistics = statsForClient(profile),
 		brainrotXp = copyXp(profile.brainrotXp),
 		evolutions = copyEvolutions(profile.evolutions),
+		monsterShards = copyStats(profile.monsterShards),
+		dayStars = copyStats(profile.dayStars),
+		farmMonsters = Fusion.sanitize(profile.farmMonsters),
+		collectedMonsters = copyList(profile.collectedMonsters),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
 	}
@@ -364,6 +380,11 @@ function ProgressService.getClientState(player: Player): { [string]: any }
 			statistics = {},
 			brainrotXp = {},
 			evolutions = {},
+			monsterShards = {},
+			dayStars = {},
+			farmMonsters = {},
+			farmReceipts = {},
+			collectedMonsters = {},
 			introducedMonsters = {},
 			introducedBrainrots = {},
 		}
@@ -379,6 +400,11 @@ function ProgressService.getSaveSlice(player: Player): {
 	statistics: { [string]: number },
 	brainrotXp: { [string]: number },
 	evolutions: { [string]: { string } },
+	monsterShards: { [string]: number },
+	dayStars: { [string]: number },
+	farmMonsters: { Fusion.Monster },
+	farmReceipts: { any },
+	collectedMonsters: { string },
 	introducedMonsters: { string },
 	introducedBrainrots: { string },
 	introducedMechanics: { string },
@@ -397,6 +423,11 @@ function ProgressService.getSaveSlice(player: Player): {
 		statistics = copyStats(profile.statistics),
 		brainrotXp = copyXp(dayStartXp[player.UserId] or profile.brainrotXp),
 		evolutions = copyEvolutions(profile.evolutions),
+		monsterShards = copyStats(profile.monsterShards),
+		dayStars = copyStats(profile.dayStars),
+		farmMonsters = Fusion.sanitize(profile.farmMonsters),
+		farmReceipts = Fusion.receipts(profile.farmReceipts),
+		collectedMonsters = copyList(profile.collectedMonsters),
 		introducedMonsters = copyList(profile.introducedMonsters),
 		introducedBrainrots = copyList(profile.introducedBrainrots),
 		introducedMechanics = copyList(profile.introducedMechanics),
@@ -411,11 +442,21 @@ function ProgressService.applySaveSlice(player: Player, slice: {
 	statistics: { [string]: number }?,
 	brainrotXp: { [string]: number }?,
 	evolutions: { [string]: { string } }?,
+	monsterShards: { [string]: number }?,
+	dayStars: { [string]: number }?,
+	farmMonsters: { Fusion.Monster }?,
+	farmReceipts: { any }?,
+	collectedMonsters: { string }?,
 	introducedMonsters: { string }?,
 	introducedBrainrots: { string }?,
 	introducedMechanics: { string }?,
 })
 	local profile = ensureProfile(player)
+	profile.collectedMonsters = sanitizeMonsterIdList(slice.collectedMonsters or {})
+	profile.farmMonsters = Fusion.sanitize(slice.farmMonsters, profile.collectedMonsters)
+	profile.farmReceipts = Fusion.receipts(slice.farmReceipts)
+	profile.monsterShards = Farm.sanitizeMap(slice.monsterShards)
+	profile.dayStars = Farm.sanitizeMap(slice.dayStars, true)
 	if type(slice.brains) == "number" then
 		profile.brains = math.max(0, math.floor(slice.brains))
 	end
@@ -474,6 +515,11 @@ function ProgressService.reset(player: Player, retainedUpgrades: { [string]: num
 		statistics = {},
 		brainrotXp = {},
 		evolutions = {},
+		monsterShards = {},
+		dayStars = {},
+		farmMonsters = {},
+		farmReceipts = {},
+		collectedMonsters = {},
 		introducedMonsters = {},
 		introducedBrainrots = {},
 		introducedMechanics = {},
@@ -629,6 +675,35 @@ function ProgressService.applyDevBrains(player: Player)
 	end
 	profile.brains = math.max(0, math.floor(DevConfig.BRAINS))
 	broadcast(player)
+end
+
+-- Sanctuary unlocks are part of the authoritative progression snapshot.
+function ProgressService.addMonsterShards(player: Player, shards: { [string]: number })
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then return end
+	for id, amount in Farm.sanitizeMap(shards) do
+		profile.monsterShards[id] = math.min(1000000, (profile.monsterShards[id] or 0) + amount)
+	end
+	broadcast(player)
+end
+
+function ProgressService.recordDayStars(player: Player, day: number, stars: number)
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then return end
+	local key = "Level" .. day
+	profile.dayStars[key] = math.max(profile.dayStars[key] or 0, stars)
+end
+
+function ProgressService.collectMonster(player: Player, monsterId: string)
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated or not Monsters.exists(monsterId) then return end
+	if listContains(profile.collectedMonsters, monsterId) then return end
+	table.insert(profile.collectedMonsters, monsterId)
+end
+
+function ProgressService.getCollectedMonsters(player: Player): { string }
+	local profile = profiles[player.UserId]
+	return if profile and profile.hydrated then copyList(profile.collectedMonsters) else {}
 end
 
 function ProgressService.addBrains(player: Player, amount: number)
@@ -834,6 +909,8 @@ function ProgressService.applyDurableReward(player: Player, grant: any)
 	if grant.kind == "Upgrade" then
 		profile.upgrades[grant.upgradeId] = math.max(profile.upgrades[grant.upgradeId] or 0, grant.level)
 		ProgressService.applyMovement(player)
+	elseif grant.kind == "FarmMonster" or grant.kind == "FarmFusion" or grant.kind == "FarmReceipt" then
+		Fusion.apply(profile, grant)
 	elseif grant.kind == "Brainrot" then
 		if not table.find(profile.unlocks, grant.brainrotId) then table.insert(profile.unlocks, grant.brainrotId) end
 		if #profile.equipped < ProgressConfig.MAX_EQUIPPED and not table.find(profile.equipped, grant.brainrotId) then table.insert(profile.equipped, grant.brainrotId) end

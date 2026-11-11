@@ -98,6 +98,7 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		levelNumber = state.currentLevel,
 		levelName = levelName,
 		highestUnlockedLevel = state.highestUnlockedLevel,
+		starGoals = if not challengeActive and not hiddenShown then require(Shared.Utilities.FarmProgression).goals(state.currentLevel) else nil,
 		playerHealth = if challenge and not challenge.settling then challenge.health else state.playerHealth,
 		maxPlayerHealth = if challengeActive then ChallengeConfig.HEARTS else ProgressConfig.MAX_PLAYER_HEALTH,
 		challengeActive = challengeActive,
@@ -294,9 +295,12 @@ local function onVictory(player: Player, state: PlayerState)
 	-- Keep planted Brainrots (and their HP); clear fight leftovers.
 	clearTransientCombat(player)
 
+	local stars, shards = require(script.Parent.FarmProgressionService).resolve(player, definition.number, state.playerHealth)
+	ProgressService.recordDayStars(player, definition.number, stars)
+	ProgressService.addMonsterShards(player, shards)
 	local clearedNumber = definition.number
 	local leftoverBrains = grantLeftoverCoinBrains(player)
-	local brainsEarned = ProgressService.brainsForLevel(clearedNumber)
+	local brainsEarned = require(Shared.Utilities.FarmProgression).brains(ProgressService.brainsForLevel(clearedNumber), stars)
 	local unlockedBrainrotId = ProgressService.grantUnlockForLevel(player, clearedNumber)
 	ProgressService.addBrains(player, brainsEarned)
 	ProgressService.incrementStat(player, ProgressConfig.STAT_LEVELS_CLEARED)
@@ -339,6 +343,8 @@ local function onVictory(player: Player, state: PlayerState)
 		hiddenDay = enteringHidden,
 		reward = {
 			clearedLevel = clearedNumber,
+			stars = stars,
+			monsterShards = shards,
 			brains = brainsEarned,
 			leftoverBrains = leftoverBrains,
 			unlockedBrainrotId = unlockedBrainrotId,
@@ -362,6 +368,7 @@ local function onVictory(player: Player, state: PlayerState)
 end
 
 local function onDefeat(player: Player, state: PlayerState)
+	require(script.Parent.FarmProgressionService).finish(player)
 	require(script.Parent.RetentionService).endRun(player)
 	local failedLevel = state.currentLevel
 	state.activeRun = nil
@@ -545,6 +552,9 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 
 	state.countdownEnd = 0
 	state.activeRun = LevelRun.new(definition)
+	if not state.challenge and state.hiddenDay ~= "active" then
+		require(script.Parent.FarmProgressionService).begin(player, definition.number)
+	end
 	if not state.challenge then require(script.Parent.MagnetService).resumeCooldown(player) end
 	local DamageMeterService = require(script.Parent.DamageMeterService)
 	DamageMeterService.reset(player)
@@ -664,6 +674,7 @@ local function onHouseBreach(plotModel: Model, _row: number)
 		if challenge.health == 0 then finishChallenge(player, state, false) end
 		return
 	end
+	require(script.Parent.FarmProgressionService).breach(player)
 	state.playerHealth = math.max(0, state.playerHealth - 1)
 	require(script.Parent.RetentionService).recordEvent(player, "HouseBreached", 1,
 		if state.hiddenDay == "active" then "Hidden" else "Campaign")

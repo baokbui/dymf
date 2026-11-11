@@ -38,6 +38,8 @@ export type BrainrotDefinition = {
 	coinGeneration: number?, -- coins per cycle for producers
 	abilityParams: { [string]: number }?, -- per-ability tuning (trap/freeze duration, …)
 	triggersOnPlace: boolean?, -- true = ability fires once on placement (e.g. line bomb)
+	-- Skip viewer idle clips and procedural sway/bob; keep server action clips.
+	noIdle: boolean?,
 	-- When true, monsters phase through and never deal chew damage (Lirili, Patapim).
 	ignoreMonsterChew: boolean?,
 	-- May plant on NightFog columns even before the row is cleared (Giraffa).
@@ -207,6 +209,11 @@ export type SaveData = {
 	-- is separate; claiming spends brains.
 	evolutions: { [string]: { string } }?,
 	-- Monster / boss intro popups already shown (ProgressConfig.MONSTER_INTRO_SCHEDULE).
+	monsterShards: { [string]: number }?,
+	dayStars: { [string]: number }?,
+	farmMonsters: { { uid: string, monsterId: string, tier: string } }?,
+	farmReceipts: { any }?,
+	collectedMonsters: { string }?,
 	introducedMonsters: { string }?,
 	-- Brainrot intro popups already shown (BRAINROT_INTRO_SCHEDULE + UNLOCK_SCHEDULE).
 	introducedBrainrots: { string }?,
