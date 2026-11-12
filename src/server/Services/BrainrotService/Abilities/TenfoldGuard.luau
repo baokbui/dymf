@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	Tenfold Guard (Tung Tung Immortal)
 	Every N attacks: shield shieldPercent of max HP for duration seconds.
@@ -39,7 +40,7 @@ function TenfoldGuard.tryAct(ctx, _callbacks)
 	ctx.buffs.tenfoldAt = ctx.buffs.attackCount
 	ctx.buffs.tenfoldShield = true
 	ctx.buffs.shieldStunImmune = true
-	ctx.buffs.shieldUntil = os.clock() + math.max(0, duration)
+	ctx.buffs.shieldUntil = BattleClock.now(ctx.plotModel) + math.max(0, duration)
 	ctx.buffs.shieldHp = math.max(0, maxHealth * shieldPercent / 100)
 	if type(params) == "table" and (params.orbitShield or 0) >= 1 then
 		ctx.model:SetAttribute("ShieldOrbit", true)

@@ -13,7 +13,7 @@ local HudLayout = require(script.Parent.HudLayout)
 local PanelPattern = require(script.Parent.PanelPattern)
 local MenuRouter = {}
 export type PageOptions = { open: () -> (), close: () -> (), detail: Frame?, back: (() -> ())?, gap: number?, selfScrolling: boolean?, fill: Color3?, height: number? }
-local sections = { "Inventory", "Index", "Upgrades", "Quests", "Achievements", "Statistics" }
+local sections = { "Inventory", "Fusion", "Index", "Upgrades", "Quests", "Achievements", "Statistics" }
 local pages: { [string]: any } = {}
 local buttons: { [string]: any } = {}
 local settingsShortcut: ImageButton?

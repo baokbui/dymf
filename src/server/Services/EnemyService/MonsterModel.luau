@@ -99,6 +99,7 @@ local function applyIdentity(
 	model:SetAttribute("InstanceId", instanceId)
 	model:SetAttribute("MonsterId", definition.id)
 	model:SetAttribute("PlotName", plotModel.Name)
+	model:SetAttribute("OwnerUserId", plotModel:GetAttribute("OwnerUserId"))
 	model:SetAttribute("Row", row)
 	model:SetAttribute("LaneSpan", laneSpanFor(definition))
 	model:SetAttribute("Health", definition.health)

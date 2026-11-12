@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MonsterBehavior
 	Grid-based movement and attack for all monsters. Driven every Heartbeat
@@ -117,10 +118,10 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			callbacks.spawnMinion(runtime.plotModel, monsterId, row)
 		end,
 		setInvulnerable = function(duration: number)
-			runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+			runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, BattleClock.now(runtime.plotModel) + duration)
 		end,
 		beginFall = function(duration: number)
-			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 			-- Last stand / tip pose owns the body — drop any active freeze.
 			runtime.frozenUntil = 0
 			runtime.freezeVisual = nil
@@ -130,10 +131,10 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
 		end,
 		holdDowned = function(duration: number)
-			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 		end,
 		beginRise = function(duration: number)
-			runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+			runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 			if runtime.preFallCFrame then
 				MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
 			end
@@ -143,7 +144,7 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			runtime.burrowDepth = math.max(1, depth)
 			runtime.burrowStartColumn = runtime.column
 			runtime.burrowEndColumn = endColumn
-			runtime.burrowingUntil = os.clock() + runtime.burrowDuration
+			runtime.burrowingUntil = BattleClock.now(runtime.plotModel) + runtime.burrowDuration
 			runtime.isAttacking = false
 			MonsterAnimation.setAttacking(runtime.model, false)
 			MonsterAnimation.setLocomotionPaused(runtime.model, true)
@@ -155,7 +156,7 @@ local function abilityCallbacks(runtime: MonsterRuntime, callbacks: BehaviorCall
 			return MonsterAnimation.getAbilityLength(runtime.model, abilityId)
 		end,
 		beginChannel = function(duration: number)
-			runtime.channelingUntil = math.max(runtime.channelingUntil, os.clock() + math.max(0.05, duration))
+			runtime.channelingUntil = math.max(runtime.channelingUntil, BattleClock.now(runtime.plotModel) + math.max(0.05, duration))
 			runtime.isAttacking = false
 		end,
 	}
@@ -319,7 +320,7 @@ local function beginJumpOver(runtime: MonsterRuntime, brainrotInstanceId: string
 	if runtime.jumpEndColumn >= runtime.jumpStartColumn then
 		runtime.jumpEndColumn = runtime.jumpStartColumn - landOffset
 	end
-	runtime.jumpingUntil = os.clock() + runtime.jumpDuration
+	runtime.jumpingUntil = BattleClock.now(runtime.plotModel) + runtime.jumpDuration
 
 	runtime.skippedBrainrots[brainrotInstanceId] = true
 	runtime.abilityState.jumped = true
@@ -423,7 +424,7 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 		if runtime.definition.spawnVfx == "Sandstorm" then
 			lead = MonsterConfig.SPAWN_SANDSTORM_LEAD
 		end
-		local now = os.clock()
+		local now = BattleClock.now(runtime.plotModel)
 		-- Hold locomotion until the rise callback. The extra second is only a
 		-- cap if the tween never finishes.
 		runtime.downedUntil = math.max(runtime.downedUntil, now + lead + duration + 1)
@@ -438,7 +439,7 @@ function MonsterBehavior.onSpawn(runtime: MonsterRuntime)
 			runtime.model:SetAttribute("SpawnSandstorm", true)
 		end
 		MonsterDeath.playRiseFromGround(runtime.model, duration, function()
-			runtime.downedUntil = os.clock()
+			runtime.downedUntil = BattleClock.now(runtime.plotModel)
 		end, lead)
 	end
 end
@@ -455,7 +456,6 @@ local function setAttacking(runtime: MonsterRuntime, attacking: boolean)
 end
 
 function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number, callbacks: BehaviorCallbacks)
-	local now = os.clock()
 
 	-- East → west so trailing (often faster) units update after leaders and can
 	-- overtake in the same tick without appearing stuck behind.
@@ -474,6 +474,8 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 	end)
 
 	for _, runtime in ordered do
+		if BattleClock.isPaused(runtime.plotModel) then continue end
+		local now = BattleClock.now(runtime.plotModel)
 		if runtime.health <= 0 then
 			continue
 		end
@@ -636,7 +638,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 						callbacks.shootBrainrot(runtime, targetId)
 					end
 					if hitDelay > 0 then
-						task.delay(hitDelay, fire)
+						BattleClock.delay(None, hitDelay, fire)
 					else
 						fire()
 					end
@@ -691,7 +693,7 @@ function MonsterBehavior.tick(runtimes: { [string]: MonsterRuntime }, dt: number
 					if hitDelay <= 0 then
 						applyHits()
 					else
-						task.delay(hitDelay, applyHits)
+						BattleClock.delay(None, hitDelay, applyHits)
 					end
 				end
 			else

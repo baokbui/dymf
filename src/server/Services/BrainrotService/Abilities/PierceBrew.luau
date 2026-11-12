@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	PierceBrew
 	For `duration` seconds, knives pierce the first monster and deal the
@@ -21,7 +22,7 @@ function PierceBrew.tryAct(ctx, callbacks)
 	end
 
 	local window = math.max(0.1, duration)
-	ctx.buffs.pierceUntil = os.clock() + window
+	ctx.buffs.pierceUntil = BattleClock.now(ctx.plotModel) + window
 	callbacks.lockExclusive(window)
 	return true
 end

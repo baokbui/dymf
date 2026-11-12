@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	TileTrap (Boneca Ambalabu)
 	Monsters walk through her tile (ignoreMonsterChew). When one is on her
@@ -158,7 +159,7 @@ function TileTrap.tryAct(ctx, callbacks): boolean
 	local instanceId = ctx.instanceId
 
 	callbacks.pulseAttack()
-	task.delay(hitDelay, function()
+	BattleClock.delay(ctx.plotModel, hitDelay, function()
 		if not model.Parent then
 			return
 		end

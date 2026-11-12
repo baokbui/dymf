@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	LobPineapple (Orangutini Ananassini)
 	Throws one pineapple down the row. Prefers the monster behind the front
@@ -106,18 +107,18 @@ function LobPineapple.tryAct(ctx, callbacks): boolean
 		if type(extraCooldown) ~= "number" or extraCooldown <= 0 then
 			return
 		end
-		if os.clock() < (nextExtraAt[instanceId] or 0) then
+		if BattleClock.now(ctx.plotModel) < (nextExtraAt[instanceId] or 0) then
 			return
 		end
 		-- Next monster behind the usual target. A short row reuses the furthest one.
 		local extraId = if #targets >= 3 then targets[3] else targets[#targets]
-		nextExtraAt[instanceId] = os.clock() + extraCooldown
+		nextExtraAt[instanceId] = BattleClock.now(ctx.plotModel) + extraCooldown
 		launchFruit(ctx, extraId, targets)
 	end
 
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
-		task.delay(hitDelay, function()
+		BattleClock.delay(ctx.plotModel, hitDelay, function()
 			if model.Parent then
 				launch()
 			end

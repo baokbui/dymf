@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	Primal Retaliation (Chimpanzini GOD)
 	For `duration` seconds, `reflectPercent` of incoming chew HP is dealt
@@ -23,7 +24,7 @@ function PrimalRetaliation.tryAct(ctx, callbacks)
 		percent = params.reflectPercent or percent
 	end
 
-	ctx.buffs.reflectUntil = os.clock() + math.max(0.1, duration)
+	ctx.buffs.reflectUntil = BattleClock.now(ctx.plotModel) + math.max(0.1, duration)
 	ctx.buffs.reflectPercent = math.max(0, percent)
 	BrainrotFeedback.setRetaliation(ctx.model, true)
 	callbacks.pulseAttack()

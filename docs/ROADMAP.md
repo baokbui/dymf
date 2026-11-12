@@ -877,7 +877,7 @@ RetentionService and the durable retention writer implement the shared boundary:
 
 The house is an open habitat where collected miniature monsters roam. Campaign
 clears award regional shards. Players combine them into individual monsters.
-Five to ten recently created monsters, depending on purchased capacity, roam
+Up to five to ten player-selected monsters, depending on purchased capacity, roam
 and generate online brains. Existing species-only collections migrate to
 Medium instances. Milestone 21B extends the core with size tiers and fusion.
 
@@ -890,8 +890,8 @@ Medium instances. Milestone 21B extends the core with size tiers and fusion.
 - [ ] Live save/rejoin, reset and four-player QA.
 - [ ] Income balance playtesting.
 
-Offline income, selectable residents, cosmetic skins and additional habitat
-upgrades remain future extensions. Purchased resident capacity and size tiers
+Offline income, cosmetic skins and additional habitat upgrades remain future
+extensions. Selectable residents, purchased resident capacity and size tiers
 are implemented. See `docs/HOUSE.md` for exact current rules and limits.
 
 ---
@@ -1021,3 +1021,18 @@ See docs/FARM_PROGRESSION.md for requirements, rates, odds and save contracts.
 Development continues indefinitely after release.
 
 ---
+
+## Day pause follow-up ✅
+
+Per-player pause/resume, projectile cancellation, three-second resume countdown
+and checkpoint restart on paused leave/rejoin are implemented. Isolated Studio
+lifecycle, clock, animation, server-intent and UI fixtures pass; populated
+multiplayer/device validation remains pending. See [DAY_PAUSE.md](DAY_PAUSE.md).
+
+## Farm Pets tab ✅
+
+Inventory now includes Loadout, Items and Pets. Players place/remove individual
+owned farm monsters, with capacity and income controlled by HouseService.
+Selection persists through ordinary equipment saves; combining/fusing creates
+stored pets. Isolated UI, service, rules and save/rejoin fixtures pass. Live
+multiplayer/device validation remains open. See HOUSE.md.

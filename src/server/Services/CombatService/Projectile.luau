@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	Projectile
 	Server-authoritative lane projectiles. Moves along a row (+X) until it
@@ -1476,6 +1477,7 @@ function Projectile.tick(
 	onSweep: SweepCallback?
 )
 	for id, projectile in active do
+		if BattleClock.isPaused(projectile.spec.ownerUserId) then continue end
 		local liveColumn = if projectile.spec.targetKind == "Grave"
 			or projectile.spec.targetKind == "LaneEnd"
 			or projectile.spec.targetKind == "Split"

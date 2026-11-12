@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	BrainrotService
 	Server-authoritative owner of Brainrot placement, instance lifecycle, and
@@ -103,7 +104,7 @@ local function pushPlantCooldowns(player: Player)
 		Remotes.getEvent("PlantCooldownsUpdated"):FireClient(player, {})
 		return
 	end
-	pruneExpiredCooldowns(map)
+	if not BattleClock.isPaused(player) then pruneExpiredCooldowns(map) end
 	local payload: { [string]: number } = {}
 	for id, readyAt in map do
 		payload[id] = readyAt
@@ -135,13 +136,19 @@ function BrainrotService.clearPlantCooldowns(player: Player)
 	pushPlantCooldowns(player)
 end
 
+function BrainrotService.resumeDayTimers(player: Player, duration: number)
+	local map = plantReadyAt[player.UserId]
+	if map then for id, readyAt in map do map[id] = readyAt + duration end end
+	pushPlantCooldowns(player)
+end
+
 -- brainrotId → readyAt server time (only entries still cooling down).
 function BrainrotService.getPlantCooldowns(player: Player): { [string]: number }
 	local map = plantReadyAt[player.UserId]
 	if not map then
 		return {}
 	end
-	pruneExpiredCooldowns(map)
+	if not BattleClock.isPaused(player) then pruneExpiredCooldowns(map) end
 	local payload: { [string]: number } = {}
 	for id, readyAt in map do
 		payload[id] = readyAt
@@ -361,7 +368,7 @@ local function applyBrainrotDamage(instanceId: string, hits: number, sourceMonst
 		return false
 	end
 
-	if placement.buffs.stoneUntil > os.clock() then
+	if placement.buffs.stoneUntil > BattleClock.now(placement.plotModel) then
 		return false
 	end
 
@@ -374,7 +381,7 @@ local function applyBrainrotDamage(instanceId: string, hits: number, sourceMonst
 			local speciesId = CombatService.getMonsterRegistryId(sourceMonsterId) or sourceMonsterId
 			local DamageMeterService = require(script.Parent.DamageMeterService)
 			DamageMeterService.recordMonster(placement.ownerUserId, speciesId, incomingHp)
-			if os.clock() < placement.buffs.reflectUntil and placement.buffs.reflectPercent > 0 then
+			if BattleClock.now(placement.plotModel) < placement.buffs.reflectUntil and placement.buffs.reflectPercent > 0 then
 				local reflected = math.max(1, math.floor(incomingHp * placement.buffs.reflectPercent / 100 + 0.5))
 				CombatService.damageMonster(sourceMonsterId, reflected, placement.brainrotId)
 				CombatService.notifyHitVisual(placement.ownerUserId, sourceMonsterId)
@@ -730,7 +737,7 @@ function BrainrotService.stealPlacement(instanceId: string, destination: Vector3
 			model:PivotTo(startPivot:Lerp(goal, value))
 		end
 	end)
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(placement.plotModel,
 		alpha,
 		TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ Value = 1 }
@@ -861,7 +868,7 @@ function BrainrotService.setPlantDiscount(plotModel: Model, percent: number, coo
 	if percent <= 0 then
 		return
 	end
-	local now = os.clock()
+	local now = BattleClock.now(plotModel)
 	local readyAt = plantDiscountReadyAt[plotModel]
 	if type(readyAt) == "number" and now < readyAt then
 		return
@@ -940,7 +947,7 @@ local function applyBrainrotStatus(
 	end
 
 	local CombatConfig = require(ReplicatedStorage.Shared.Config.CombatConfig)
-	local now = os.clock()
+	local now = BattleClock.now(placement.plotModel)
 	if placement.buffs.stoneUntil > now then
 		return
 	end
@@ -1021,8 +1028,8 @@ function BrainrotService.init()
 end
 
 function BrainrotService.start()
-	Remotes.getEvent("PlaceBrainrot").OnServerEvent:Connect(onPlaceBrainrot)
-	Remotes.getEvent("RemoveBrainrot").OnServerEvent:Connect(onRemoveBrainrot)
+	Remotes.getEvent("PlaceBrainrot").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onPlaceBrainrot(player, ...) end end)
+	Remotes.getEvent("RemoveBrainrot").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onRemoveBrainrot(player, ...) end end)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	BrainrotBehavior.start()
 

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	FreezeTime (Lirili Larila)
 	One-shot on place: play attack anim + cast SFX, Freeze 2 tiles ahead
@@ -68,7 +69,7 @@ function FreezeTime.onPlaced(ctx, callbacks)
 	-- Never despawn before the freeze actually applies.
 	local despawnAt = math.max(animLength, hitDelay + 0.05)
 
-	task.delay(hitDelay, function()
+	BattleClock.delay(ctx.plotModel, hitDelay, function()
 		if not plotModel.Parent or not plantModel.Parent then
 			return
 		end
@@ -161,12 +162,12 @@ function FreezeTime.onPlaced(ctx, callbacks)
 			)
 		end
 
-		task.delay(freezeDuration, function()
+		BattleClock.delay(ctx.plotModel, freezeDuration, function()
 			callbacks.playSound("FreezeTimeEnd")
 		end)
 	end)
 
-	task.delay(despawnAt, function()
+	BattleClock.delay(ctx.plotModel, despawnAt, function()
 		if not plantModel.Parent then
 			return
 		end

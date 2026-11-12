@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	BustGrave (Brr Brr Patapim)
 	Must be planted on a grave. One attack clip contains two smashes (1s
@@ -79,7 +80,7 @@ function BustGrave.tryAct(ctx, callbacks): boolean
 				remain = math.max(gap, length - elapsed)
 			end
 		end
-		task.delay(remain, function()
+		BattleClock.delay(ctx.plotModel, remain, function()
 			if plantModel.Parent then
 				callbacks.destroySelf()
 			end
@@ -107,7 +108,7 @@ function BustGrave.tryAct(ctx, callbacks): boolean
 		if at <= 0 then
 			smash(0)
 		else
-			task.delay(at, function()
+			BattleClock.delay(ctx.plotModel, at, function()
 				smash(at)
 			end)
 		end

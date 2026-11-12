@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	BrainrotBehavior
 	Runs the server-side behavior tick for every placed Brainrot. Resolves
@@ -69,7 +70,7 @@ local detachHandler: ((placement: RuntimePlacement) -> Model?)?
 -- `ctx.definition.damage`, so overriding it once here (via `__index` fallback
 -- to the real definition for every other field) applies everywhere for free.
 local function effectiveDefinition(placement: RuntimePlacement): Types.BrainrotDefinition
-	local now = os.clock()
+	local now = BattleClock.now(placement.plotModel)
 	local base = placement.definition
 	local damage = base.damage
 	local interval = base.attackInterval
@@ -151,7 +152,7 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			if chance > 0 and math.random() * 100 < chance then
 				spit(amount)
 			end
-			if os.clock() < placement.buffs.jackpotUntil then
+			if BattleClock.now(placement.plotModel) < placement.buffs.jackpotUntil then
 				local jackpotChance = placement.buffs.jackpotExtraChance
 				if jackpotChance > 0 and math.random() * 100 < jackpotChance then
 					spit(amount)
@@ -180,7 +181,7 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			return nil
 		end,
 		freezeSelf = function(duration: number)
-			placement.frozenUntil = os.clock() + duration
+			placement.frozenUntil = BattleClock.now(placement.plotModel) + duration
 		end,
 		pulseAttack = function(speed: number?)
 			local length = BrainrotAnimation.getAttackLength(placement.model) or BrainrotConfig.IDLE_ACTION_PAUSE
@@ -216,13 +217,13 @@ local function buildCallbacks(placement: RuntimePlacement): Abilities.AbilityCal
 			})
 		end,
 		lockExclusive = function(duration: number)
-			local untilTime = os.clock() + math.max(0, duration)
+			local untilTime = BattleClock.now(placement.plotModel) + math.max(0, duration)
 			if untilTime > placement.buffs.exclusiveUntil then
 				placement.buffs.exclusiveUntil = untilTime
 			end
 		end,
 		lockCore = function(duration: number)
-			local untilTime = os.clock() + math.max(0, duration)
+			local untilTime = BattleClock.now(placement.plotModel) + math.max(0, duration)
 			if untilTime > placement.buffs.coreLockUntil then
 				placement.buffs.coreLockUntil = untilTime
 			end
@@ -337,7 +338,7 @@ function BrainrotBehavior.hasCloserReadyAlly(instanceId: string, abilityId: stri
 		if other.position.column <= myColumn then
 			continue
 		end
-		if os.clock() < other.buffs.stoneUntil then
+		if BattleClock.now(other.plotModel) < other.buffs.stoneUntil then
 			continue
 		end
 		if (other.extraCooldowns[abilityId] or 0) > 0 then
@@ -359,7 +360,7 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		placement.brainrotId,
 		ProgressService.getClaimedEvolutions(player, placement.brainrotId)
 	)
-	local stoned = os.clock() < placement.buffs.stoneUntil
+	local stoned = BattleClock.now(placement.plotModel) < placement.buffs.stoneUntil
 	local overlayExtras: { Evolutions.ExtraAbility } = {}
 	local exclusiveExtras: { Evolutions.ExtraAbility } = {}
 	for _, extra in extras do
@@ -404,7 +405,7 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		runExtra(extra)
 	end
 
-	local exclusiveBusy = os.clock() < placement.buffs.exclusiveUntil
+	local exclusiveBusy = BattleClock.now(placement.plotModel) < placement.buffs.exclusiveUntil
 	local exclusiveStarted = false
 	-- God rows are last in claimedExtras; run them first so ultimates win the slot.
 	for index = #exclusiveExtras, 1, -1 do
@@ -418,8 +419,8 @@ local function tickExtras(placement: RuntimePlacement, dt: number)
 		end
 		if runExtra(exclusiveExtras[index]) then
 			exclusiveStarted = true
-			if placement.buffs.exclusiveUntil <= os.clock() then
-				placement.buffs.exclusiveUntil = os.clock() + 0.05
+			if placement.buffs.exclusiveUntil <= BattleClock.now(placement.plotModel) then
+				placement.buffs.exclusiveUntil = BattleClock.now(placement.plotModel) + 0.05
 			end
 		end
 	end
@@ -480,8 +481,9 @@ function BrainrotBehavior.noteLandedAttack(instanceId: string)
 end
 
 function BrainrotBehavior.tick(dt: number)
-	local now = os.clock()
 	for _, placement in active do
+		if BattleClock.isPaused(placement.plotModel) then continue end
+		local now = BattleClock.now(placement.plotModel)
 		if not isBehaviorAlive(placement) then
 			continue
 		end

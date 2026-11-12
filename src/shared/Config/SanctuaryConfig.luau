@@ -1,6 +1,7 @@
 --!strict
 return table.freeze({
 	UPDATE_INTERVAL = 5,
+	PET_REQUEST_INTERVAL = 0.25,
 	ROAM_SPEED = 3,
 	MIN_PAUSE = 2,
 	MAX_PAUSE = 6,

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	ProgressService
 	Owns brains, unlocks, equipped loadout, player upgrades, statistics,
@@ -701,6 +702,14 @@ function ProgressService.collectMonster(player: Player, monsterId: string)
 	table.insert(profile.collectedMonsters, monsterId)
 end
 
+-- Resident selection is ordinary equipment state; SaveService owns persistence.
+function ProgressService.setFarmPets(player: Player, monsters: { Fusion.Monster })
+	local profile = profiles[player.UserId]
+	if not profile or not profile.hydrated then return end
+	profile.farmMonsters = Fusion.sanitize(monsters)
+	broadcast(player)
+end
+
 function ProgressService.getCollectedMonsters(player: Player): { string }
 	local profile = profiles[player.UserId]
 	return if profile and profile.hydrated then copyList(profile.collectedMonsters) else {}
@@ -1209,9 +1218,9 @@ local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unkno
 end
 
 function ProgressService.init()
-	Remotes.getEvent("SetEquipped").OnServerEvent:Connect(onSetEquipped)
-	Remotes.getEvent("BuyStoreItem").OnServerEvent:Connect(onBuyStoreItem)
-	Remotes.getEvent("EvolveBrainrot").OnServerEvent:Connect(onEvolveBrainrot)
+	Remotes.getEvent("SetEquipped").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onSetEquipped(player, ...) end end)
+	Remotes.getEvent("BuyStoreItem").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onBuyStoreItem(player, ...) end end)
+	Remotes.getEvent("EvolveBrainrot").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onEvolveBrainrot(player, ...) end end)
 end
 
 function ProgressService.start()

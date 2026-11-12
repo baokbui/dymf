@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	RangedRampage
 	Melee plants throw a spinning bat down the lane instead of close-range hits.
@@ -13,7 +14,7 @@ function RangedRampage.tryAct(ctx, _callbacks)
 	if type(params) == "table" then
 		duration = params.duration or duration
 	end
-	ctx.buffs.rangedUntil = os.clock() + math.max(0.1, duration)
+	ctx.buffs.rangedUntil = BattleClock.now(ctx.plotModel) + math.max(0.1, duration)
 	return true
 end
 

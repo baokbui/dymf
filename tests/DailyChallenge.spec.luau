@@ -11,12 +11,13 @@ return function(sources: any): string
 	local lawn = { { brainrotId = "TungTungSahur", health = 100, position = { row = 1, column = 1 } } }
 	local originalLawn = lawn
 	local remotes, breach, loop = {}, nil, nil
+	local removePlayer
 	local function noop() end
 	local players = {
 		GetPlayers = function() return { player } end,
 		GetPlayerByUserId = function() return player end,
 		PlayerAdded = { Connect = noop },
-		PlayerRemoving = { Connect = noop },
+		PlayerRemoving = { Connect = function(_, callback) removePlayer = callback end },
 	}
 	local fakeGame = setmetatable({}, { __index = { GetService = function(_, service)
 		return if service == "Players" then players else game:GetService(service)
@@ -37,6 +38,7 @@ return function(sources: any): string
 			clearPlot = function() lawn = {} end,
 			restorePlacements = function(_, saved) lawn = saved end,
 			clearPlantCooldowns = noop,
+			resumeDayTimers = noop,
 		},
 		CoinService = {
 			getBalance = function() return balance end,
@@ -53,7 +55,9 @@ return function(sources: any): string
 		PlotService = { getPlotModel = function() return plot end },
 		ProgressService = { isHydrated = function() return true end },
 		CombatService = { clearPlot = noop },
-		MagnetService = { resumeCooldown = function() error("Challenge resumed campaign magnet") end },
+		MagnetService = { resumeDayTimers = noop, resumeCooldown = function() error("Challenge resumed campaign magnet") end },
+		PauseScene = { pause = noop, resume = noop },
+		LineBomb = { clearProjectiles = noop },
 		DamageMeterService = { reset = noop },
 		Analytics = { log = noop },
 		SaveService = {
@@ -81,6 +85,7 @@ return function(sources: any): string
 		return chunk()
 	end
 	local ok, result = xpcall(function()
+		if sources.Clock then mocks.BattleClock = loadModule(sources.Clock, shared.Utilities.BattleClock) end
 		mocks.LevelRun = loadModule(sources.Run, scriptRoot.LevelRun)
 		mocks.ChallengeRun = loadModule(sources.Challenge, scriptRoot.ChallengeRun)
 		local level = loadModule(sources.Level, scriptRoot)
@@ -90,8 +95,8 @@ return function(sources: any): string
 		local restoredDay, restoredHighest, restoredHearts = level.getSaveProgress(player)
 		assert(restoredDay == 4 and restoredHighest == 4 and restoredHearts == 3,
 			"LevelService.start overwrote a save hydrated before startup")
-		local function tick()
-			clock += 100
+		local function tick(seconds: number?)
+			clock += seconds or 100
 			local resumed, failure = coroutine.resume(loop)
 			assert(resumed, failure)
 		end
@@ -107,16 +112,53 @@ return function(sources: any): string
 		local day, highest, health = level.getSaveProgress(player)
 		assert(day == 9 and highest == 10 and health == 4 and level.isHiddenDayPending(player))
 		tick()
+		assert(level.getClientState(player).elapsedSeconds == 0, "active timer must start at zero")
+		local spawnedBefore = spawns
+		remotes.PauseDay(player)
+		assert(level.getClientState(player).phase == "Paused" and not level.isLevelActive(player))
+		assert(plot:GetAttribute("DayPaused") == true)
+		tick(20)
+		assert(spawns == spawnedBefore and level.getClientState(player).elapsedSeconds == 0, "Paused day advanced")
+		remotes.ResumeDay(player)
+		assert(level.getClientState(player).phase == "Resuming")
+		tick(2)
+		remotes.ResumeDay(player)
+		assert(level.getClientState(player).phase == "Resuming", "Resume countdown finished early")
+		tick(1)
+		assert(level.isLevelActive(player) and level.getClientState(player).elapsedSeconds == 0)
+		assert(plot:GetAttribute("DayPaused") == nil)
+
+		tick()
+		assert(level.getClientState(player).elapsedSeconds == 100, "active timer must follow server elapsed time")
 		for _ = 1, 3 do breach(plot, 3) end
 		assert(lawn == originalLawn and balance == 47 and payouts == 0)
 		assert(level.getClientState(player).challengeAvailable and level.getClientState(player).hiddenDay)
+		assert(level.getClientState(player).elapsedSeconds == nil, "completed timer leaked into Preparation")
 		remotes.StartDailyChallenge(player)
 		spawns = 0
 		for _ = 1, 20 do tick() end
 		assert(spawns == 12 and payouts == 1)
 		assert(lawn == originalLawn and balance == 47 and level.isHiddenDayPending(player))
 		assert(level.getClientState(player).challengeResult == "Challenge cleared · +8 brains")
-		return "Daily Challenge entry, isolation, loss, retry, all waves, clear, and restoration passed"
+		-- A paused numbered attempt serializes the pre-attempt hearts and reloads
+		-- the same selected day in Preparation, never its temporary pause/run.
+		mocks.MagnetService.resumeCooldown = noop
+		mocks.ProgressService.checkpointBrainrotXp = noop
+		mocks.FarmProgressionService = { begin = noop, breach = noop }
+		mocks.RetentionService = { beginRun = noop, recordEvent = noop }
+		level.applySaveProgress(player, 9, 10, 4, false)
+		level.applyWeatherRulesForPlayer(player)
+		remotes.StartLevel(player); tick()
+		breach(plot, 1)
+		remotes.PauseDay(player)
+		local savedDay, savedHighest, savedHearts = level.getSaveProgress(player)
+		assert(savedDay == 9 and savedHighest == 10 and savedHearts == 4, "Paused attempt leaked damaged hearts into saved restart")
+		removePlayer(player)
+		level.applySaveProgress(player, savedDay, savedHighest, savedHearts, false)
+		local rejoined = level.getClientState(player)
+		assert(rejoined.phase == "Preparation" and rejoined.levelNumber == 9 and not rejoined.dayPaused and rejoined.elapsedSeconds == nil,
+			"Paused leave/rejoin did not restart the selected day")
+		return "Daily Challenge entry, isolation, pause, three-second resume, paused leave/rejoin, loss, retry, all waves, clear, and restoration passed"
 	end, debug.traceback)
 	plot:Destroy()
 	assert(ok, result)

@@ -7,6 +7,9 @@ local ProgressConfig = require(Shared.Config.ProgressConfig)
 local capacityUpgrade = ProgressConfig.upgradeById("FarmCapacity")
 local HouseConfig = require(Shared.Config.HouseConfig)
 local Fusion = require(Shared.Utilities.MonsterFusion)
+local Residents = require(Shared.Utilities.FarmResidents)
+local Remotes = require(Shared.Remotes)
+local BattleClock = require(Shared.Utilities.BattleClock)
 local Farm = require(Shared.Utilities.FarmProgression)
 local Monsters = require(Shared.Monsters)
 local Progress = require(script.Parent.ProgressService)
@@ -23,7 +26,7 @@ local function clear(player: Player)
 	habitats[player] = nil
 end
 
-local function update(player: Player)
+local function update(player: Player, accrue: boolean?)
 	local plot = PlotService.getPlotModel(player)
 	if not plot or not Progress.isHydrated(player) then clear(player); return end
 	local house = plot:FindFirstChild("House")
@@ -34,10 +37,7 @@ local function update(player: Player)
 	if not snapshot then return end
 	local collection = Fusion.sanitize(snapshot.farmMonsters, Progress.getCollectedMonsters(player))
 	local capacity = ProgressConfig.upgradeLevel(capacityUpgrade, snapshot.upgrades.FarmCapacity)
-	local selected = {}
-	for index = math.max(1, #collection - capacity + 1), #collection do
-		table.insert(selected, collection[index])
-	end
+	local selected = Residents.selected(collection, capacity)
 	local identities = {}
 	for _, monster in selected do table.insert(identities, monster.uid) end
 	local signature = table.concat(identities, ",")
@@ -69,13 +69,40 @@ local function update(player: Player)
 	for _, monster in selected do rate += Farm.monsterRate(monster) end
 	house:SetAttribute("CollectedSpecies", #collection)
 	house:SetAttribute("ResidentCount", #selected)
-	if habitat.count == 0 then return end
+	if habitat.count == 0 or accrue == false then return end
 	habitat.seconds += Config.UPDATE_INTERVAL * rate
 	if habitat.seconds + 1e-9 >= 1 then
 		local periods = math.floor(habitat.seconds + 1e-9)
 		habitat.seconds = math.max(0, habitat.seconds - periods)
 		Progress.addBrains(player, periods)
 	end
+end
+
+local lastRequest: { [Player]: number } = {}
+
+function HouseService.init()
+	Remotes.getEvent("SetFarmPet").OnServerEvent:Connect(function(player: Player, uid: any, equipped: any)
+		local function reply(success: boolean, reason: string?)
+			Remotes.getEvent("FarmPetResult"):FireClient(player, { uid = uid, success = success, reason = reason })
+		end
+		if type(uid) ~= "string" or #uid > 80 or type(equipped) ~= "boolean" then return end
+		if BattleClock.isPaused(player) then reply(false, "DayPaused"); return end
+		local now = os.clock()
+		if now - (lastRequest[player] or -math.huge) < Config.PET_REQUEST_INTERVAL then reply(false, "Busy"); return end
+		lastRequest[player] = now
+		local Save = require(script.Parent.SaveService)
+		if not Progress.isHydrated(player) or Save.isProgressionLocked(player) then reply(false, "Busy"); return end
+		local snapshot = Progress.getSaveSlice(player)
+		if not snapshot then reply(false, "Busy"); return end
+		local capacity = ProgressConfig.upgradeLevel(capacityUpgrade, snapshot.upgrades.FarmCapacity)
+		local monsters, failure = Residents.toggle(Fusion.sanitize(snapshot.farmMonsters, snapshot.collectedMonsters), capacity, uid, equipped)
+		if not monsters then reply(false, failure); return end
+		Progress.setFarmPets(player, monsters)
+		update(player, false) -- A request must never award an extra income tick.
+		reply(true)
+		Save.saveNow(player, "farm-pets")
+	end)
+	Players.PlayerRemoving:Connect(function(player) lastRequest[player] = nil end)
 end
 
 function HouseService.start()

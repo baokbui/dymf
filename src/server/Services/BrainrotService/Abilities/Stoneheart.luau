@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	Stoneheart (Chimpanzini Immortal)
 	Once per plant: below healthPercent HP, stone / invulnerable for duration.
@@ -32,7 +33,7 @@ function Stoneheart.tryAct(ctx, _callbacks)
 	end
 
 	ctx.buffs.stoneTriggered = true
-	ctx.buffs.stoneUntil = os.clock() + math.max(0, duration)
+	ctx.buffs.stoneUntil = BattleClock.now(ctx.plotModel) + math.max(0, duration)
 	BrainrotFeedback.setStoned(ctx.model, true)
 	return true
 end

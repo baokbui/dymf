@@ -12,7 +12,7 @@ local Idle = {}
 type Joint = { motor: Motor6D, base: CFrame, written: CFrame?, arm: boolean }
 type State = {
 	model: Model, joints: { Joint }, phase: number, base: CFrame, written: CFrame?,
-	animator: Animator?, track: AnimationTrack?, attemptedId: string?, connections: { RBXScriptConnection },
+	animator: Animator?, track: AnimationTrack?, attemptedId: string?, connections: { RBXScriptConnection }, pausedAt: number?,
 }
 local states: { [Model]: State } = {}
 local connection: RBXScriptConnection? = nil
@@ -72,6 +72,16 @@ local function step()
 	local now = workspace:GetServerTimeNow()
 	for model, state in states do
 		if not model.Parent then continue end
+		if model:GetAttribute("DayPaused") == true then
+			state.pausedAt = state.pausedAt or now
+			if state.track then state.track:AdjustSpeed(0) end
+			continue
+		end
+		if state.pausedAt then
+			state.phase -= (now - state.pausedAt) * math.pi * 2 / Config.IDLE_PERIOD
+			state.pausedAt = nil
+			if state.track then state.track:AdjustSpeed(1) end
+		end
 		local pivot = model:GetPivot()
 		if (pivot.Position - camera.CFrame.Position).Magnitude > Config.IDLE_MAX_DISTANCE or busy(state, now) then
 			restore(state)

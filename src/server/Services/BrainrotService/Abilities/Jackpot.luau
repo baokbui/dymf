@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	Jackpot (Ballerina GOD)
 	For `duration` seconds, coin producers act `factor`× faster and each
@@ -27,7 +28,7 @@ function Jackpot.tryAct(ctx, callbacks)
 		extraChance = params.extraChance or extraChance
 	end
 
-	ctx.buffs.jackpotUntil = os.clock() + math.max(0.1, duration)
+	ctx.buffs.jackpotUntil = BattleClock.now(ctx.plotModel) + math.max(0.1, duration)
 	ctx.buffs.jackpotFactor = math.max(1, factor)
 	ctx.buffs.jackpotExtraChance = math.max(0, extraChance)
 

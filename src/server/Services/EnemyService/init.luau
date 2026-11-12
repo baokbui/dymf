@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	EnemyService
 	Owns monster spawning, grid movement, per-instance state, and death. All
@@ -444,7 +445,7 @@ function EnemyService.suspendLocomotion(instanceId: string, duration: number)
 	if not runtime or duration <= 0 then
 		return
 	end
-	runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+	runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 	MonsterAnimation.setLocomotionPaused(runtime.model, true)
 end
 
@@ -476,7 +477,7 @@ function EnemyService.setKillHandler(handler: (ownerUserId: number, monsterId: s
 end
 
 local function isCombatTarget(runtime: MonsterRuntime): boolean
-	return runtime.health > 0 and os.clock() >= runtime.invulnerableUntil
+	return runtime.health > 0 and BattleClock.now(runtime.plotModel) >= runtime.invulnerableUntil
 end
 
 local function occupiesRow(runtime: MonsterRuntime, row: number): boolean
@@ -625,14 +626,14 @@ function EnemyService.pullToRow(instanceId: string, row: number, column: number)
 	model:PivotTo(start)
 
 	EnemyService.suspendLocomotion(instanceId, PULL_SLIDE_SECONDS + 0.15)
-	local started = os.clock()
+	local started = BattleClock.now(runtime.plotModel)
 	local conn: RBXScriptConnection
 	conn = RunService.Heartbeat:Connect(function()
 		if not model.Parent or runtime.health <= 0 then
 			conn:Disconnect()
 			return
 		end
-		local alpha = math.clamp((os.clock() - started) / PULL_SLIDE_SECONDS, 0, 1)
+		local alpha = math.clamp((BattleClock.now(runtime.plotModel) - started) / PULL_SLIDE_SECONDS, 0, 1)
 		local lift = math.sin(alpha * math.pi) * 2.2
 		model:PivotTo(start:Lerp(goal, alpha) + Vector3.new(0, lift, 0))
 		if alpha >= 1 then
@@ -642,7 +643,7 @@ function EnemyService.pullToRow(instanceId: string, row: number, column: number)
 			runtime.column = tile
 			model:SetAttribute("Row", anchor)
 			MonsterModel.setColumn(model, tile)
-			if os.clock() >= runtime.downedUntil - 0.05 then
+			if BattleClock.now(runtime.plotModel) >= runtime.downedUntil - 0.05 then
 				EnemyService.resumeLocomotion(instanceId)
 			end
 		end
@@ -703,7 +704,7 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 	if not runtime or runtime.health <= 0 then
 		return false
 	end
-	if os.clock() < runtime.invulnerableUntil then
+	if BattleClock.now(runtime.plotModel) < runtime.invulnerableUntil then
 		return false
 	end
 
@@ -771,10 +772,10 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 		local rescueCallbacks: Abilities.AbilityCallbacks = {
 			spawnMinion = function() end,
 			setInvulnerable = function(duration: number)
-				runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, os.clock() + duration)
+				runtime.invulnerableUntil = math.max(runtime.invulnerableUntil, BattleClock.now(runtime.plotModel) + duration)
 			end,
 			beginFall = function(duration: number)
-				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 				runtime.frozenUntil = 0
 				runtime.freezeVisual = nil
 				MonsterFeedback.setFrozen(runtime.model, false)
@@ -783,10 +784,10 @@ function EnemyService.damageMonster(instanceId: string, damage: number, sourceBr
 				runtime.preFallCFrame = MonsterDeath.playDowned(runtime.model, duration)
 			end,
 			holdDowned = function(duration: number)
-				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 			end,
 			beginRise = function(duration: number)
-				runtime.downedUntil = math.max(runtime.downedUntil, os.clock() + duration)
+				runtime.downedUntil = math.max(runtime.downedUntil, BattleClock.now(runtime.plotModel) + duration)
 				if runtime.preFallCFrame then
 					MonsterDeath.riseUp(runtime.model, runtime.preFallCFrame, duration)
 				end
@@ -816,7 +817,7 @@ function EnemyService.consumeMonster(instanceId: string, sourceBrainrotId: strin
 	if not runtime or runtime.health <= 0 then
 		return false
 	end
-	if os.clock() < runtime.invulnerableUntil then
+	if BattleClock.now(runtime.plotModel) < runtime.invulnerableUntil then
 		return false
 	end
 	runtime.lastHitBrainrotId = sourceBrainrotId
@@ -851,7 +852,7 @@ function EnemyService.applyStatusToMonster(
 	end
 	-- Last-stand / downed bosses (e.g. Duke Vampire) ignore Freeze — the tip
 	-- pose owns the body until they rise.
-	if (kind == "Freeze" or kind == "Stun") and os.clock() < runtime.downedUntil then
+	if (kind == "Freeze" or kind == "Stun") and BattleClock.now(runtime.plotModel) < runtime.downedUntil then
 		return
 	end
 	if kind == "Knockback" and not GridUtil.isOnPlotColumn(runtime.column) then
@@ -872,7 +873,7 @@ function EnemyService.applyStatusToMonster(
 			MonsterFeedback.setBubbled(runtime.model, false)
 			MonsterFeedback.setFrozen(runtime.model, false)
 			local ownerUserId = runtime.plotModel:GetAttribute("OwnerUserId")
-			local remain = runtime.frozenUntil - os.clock()
+			local remain = runtime.frozenUntil - BattleClock.now(runtime.plotModel)
 			if type(ownerUserId) == "number" and remain > 0 then
 				CombatService.notifyDizzy(ownerUserId, instanceId, remain)
 			end
@@ -892,8 +893,9 @@ function EnemyService.applyStatusToMonster(
 end
 
 function EnemyService.tickMonsterStatuses(dt: number)
-	local now = os.clock()
 	for _, runtime in monsters do
+		if BattleClock.isPaused(runtime.plotModel) then continue end
+		local now = BattleClock.now(runtime.plotModel)
 		if runtime.health <= 0 then
 			continue
 		end

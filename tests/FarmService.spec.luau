@@ -3,8 +3,10 @@ return function(source: string, Farm: any, Config: any): string
 	local player = { UserId = 1001 }
 	local clock, drops, credits, cleanups, writes = 0, 0, 0, 0, 0
 	local callbacks = {}
+	local paused = false
 	local pickup
 	local dependencies = {
+		BattleClock = { now = function() return clock end, isPaused = function() return paused end },
 		FarmProgressionConfig = Config, FarmProgression = Farm,
 		Monsters = require(game.ReplicatedStorage.Shared.Monsters),
 		PlotService = { getPlotModel = function() return {} end },
@@ -59,6 +61,11 @@ return function(source: string, Farm: any, Config: any): string
 	for _, amount in shards do total += amount end
 	assert(total == Config.STAR_SHARD_ROLLS[2])
 	local handler = callbacks.CombineMonsterShards
+	paused = true
+	handler(player, "Zombie", "test-operation-paused")
+	callbacks.FuseFarmMonsters(player, { "a", "b", "c" }, "test-paused-fusion")
+	assert(writes == 0, "Paused requests reached the durable writer")
+	paused = false
 	handler(player, "NotAMonster", "test-operation-1")
 	assert(writes == 0)
 	handler(player, "Zombie", "test-operation-1")

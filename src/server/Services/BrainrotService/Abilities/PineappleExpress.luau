@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	PineappleExpress (Orangutini GOD)
 	Lobs one giant pineapple at the furthest monster in the row for
@@ -66,7 +67,7 @@ function PineappleExpress.tryAct(ctx, callbacks): boolean
 	callbacks.lockCore(clipLength or ctx.definition.attackInterval)
 	callbacks.pulseAttack()
 
-	task.delay(hitDelay, function()
+	BattleClock.delay(ctx.plotModel, hitDelay, function()
 		if not model.Parent then
 			return
 		end

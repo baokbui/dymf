@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	PharaohSteal
 	On cooldown, pick `stealLaneCount` random rows and remove one random
@@ -132,7 +133,7 @@ function PharaohSteal.onTick(ctx, state, dt: number, callbacks)
 	if hitDelay <= 0 then
 		apply()
 	else
-		task.delay(hitDelay, apply)
+		BattleClock.delay(ctx.plotModel, hitDelay, apply)
 	end
 end
 

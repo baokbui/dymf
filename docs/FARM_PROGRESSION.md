@@ -76,7 +76,10 @@ sign displays only the owner's farm name.
 | Goblin King | 20 | 60 seconds |
 | Pharaoh Mummy | 25 | 30 seconds |
 
-The farm displays the most recently created individual monsters up to purchased capacity.
+The farm displays player-selected individual monsters up to purchased capacity.
+Inventory → Pets places/removes owned instances. Removed pets remain in storage
+and earn no income. New combine/fusion outputs begin off-farm; old saves retain
+their previous resident selection until edited. See HOUSE.md.
 Income remains online-only. Fractional accrued brains reset with the session.
 Whole credited brains persist through ordinary progression saves.
 
@@ -150,8 +153,8 @@ level income multiplier. Size multiplies each species' baseline rather than
 replacing it: a Titanic Zombie earns 5/1800 ≈ 0.002778 brains/s, less than
 a Big Goblin Elite at 1.75/180 ≈ 0.009722 brains/s.
 
-Inventory → Items lists each individual monster with its tier, level and
-income. Players select 3–5 owned instances of one species, inspect the displayed
+The dedicated Fusion page lists each individual monster with its tier, level
+and income. Its drawer icon sits immediately after Inventory. Players select 3–5 owned instances of one species, inspect the displayed
 large-tier odds, and press Fuse. All selected inputs are consumed for one new
 individual of the same species.
 
@@ -182,3 +185,42 @@ concurrent gain/save merging and receipt retries after a simulated rejoin.
 MonsterCollection.spec also exercises the actual UI callbacks with isolated
 controls: exact 3–5 input selection, mixed-species exclusion, request operation
 ids, pending-save locking and committed-result refresh.
+
+## Shard artwork and pickups
+
+`Shared.Utilities.ShardModel` creates the collectible as an eight-face crystal
+(16 native wedge faces plus one invisible prompt root), with a soft point light
+and an occluded outline. Translucent facets enclose a static miniature of the
+matching monster when its authored model is available; the miniature has no
+Humanoid/animation controller or gameplay physics. Facets move together during the existing sky-fall tween.
+All parts are anchored, non-colliding, non-touchable and non-queryable. Pickup
+ownership, landing, distance, attempt and save-lock checks remain server-owned.
+The model, tween driver and movement connection are disposed on collection,
+expiry or attempt cleanup; collection is enabled only after landing.
+
+`ShardAppearance` supplies one palette to both the model and
+`Client.Utilities.ShardIcon`: all species have explicit thematic colors
+(green Zombie/Goblin, burgundy Vampire, bone Skeleton, amber desert units, etc.).
+The inventory icon combines native faceted UI art with a translucent, static
+monster head portrait, mounted only when a tile is first shown. No uploaded
+image or mesh is required. Missing model templates retain the crystal art.
+Boss icons have glow pulses and two sparkle accents; major bosses have four.
+World boss shards emit sparkles, and major bosses add a golden rune halo.
+`ShardController` reduces world particle rates to 40% on Low and zero on Off.
+Icon glow tweens run only when visible on High. Portraits follow the existing
+MonsterPreview quality policy (Off uses a swatch).
+`Shared.Config.ShardVisualConfig` owns cosmetic dimensions, colors and light
+settings. This artwork changes no shard quantities, reward weights or recipes.
+
+Items uses a wrapping grid of compact 76 × 76 logical-pixel shard tiles.
+Each tile shows a smaller shard icon, monster name and owned/needed count. Hover, keyboard/controller focus
+or a tap opens a shared short-description tooltip with owned/needed shards.
+Combine appears in that tooltip when enough shards are available; merely
+inspecting the tile never spends anything. Tooltips close on scrolling, resize
+or hiding the inventory.
+`tests/ShardVisuals.spec.luau` checks real facet geometry, model movement,
+world/icon color agreement, landing-gated prompts and idempotent cleanup.
+ShardTiles.spec checks names/icons, focus tooltips, live quantities, combine
+eligibility, visible quantity captions, responsive grid wrapping and empty inventory.
+ShardQuality.spec covers boss/major particle rates and watcher cleanup. Studio edit previews
+checked the tile grid and tooltip. Full touch/gameplay QA remains open.

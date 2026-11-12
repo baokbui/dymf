@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	LevelService
 	The ONLY system that advances campaign levels (PvZ-style). Owns preparation,
@@ -50,6 +51,7 @@ LevelService.Name = "LevelService"
 
 local log = Logger.new(LevelService.Name)
 
+local PauseScene = require(script.PauseScene)
 local PHASE = Constants.PHASE
 
 type PlayerState = {
@@ -59,6 +61,10 @@ type PlayerState = {
 	phase: string,
 	activeRun: LevelRun.LevelRun?,
 	countdownEnd: number,
+	activeStartedAt: number?,
+	pausedAt: number?,
+	resumeEnd: number?,
+	attemptStartHearts: number?,
 	bigWaveWarning: boolean,
 	-- One-shot: consumed into LevelStateChanged intro arrays on the next broadcast.
 	pendingMonsterIntroIds: { string }?,
@@ -113,11 +119,17 @@ local function buildPayloadForPlayer(player: Player): { [string]: any }
 		hiddenDay = hiddenShown,
 	}
 
+	if state.activeStartedAt and (state.phase == PHASE.Active or state.phase == PHASE.Paused or state.phase == PHASE.Resuming) then
+		payload.elapsedSeconds = math.max(0, math.floor(BattleClock.now(player) - state.activeStartedAt))
+	end
+
+	payload.dayPaused = BattleClock.isPaused(player)
+	if state.phase == PHASE.Resuming and state.resumeEnd then payload.resumeRemaining = math.max(0, state.resumeEnd - os.clock()) end
 	if state.phase == PHASE.Countdown then
 		payload.countdownRemaining = math.max(0, state.countdownEnd - os.clock())
 	end
 
-	if state.activeRun and state.phase == PHASE.Active then
+	if state.activeRun and (state.phase == PHASE.Active or state.phase == PHASE.Paused or state.phase == PHASE.Resuming) then
 		local plotModel = PlotService.getPlotModel(player)
 		if plotModel then
 			local alive = EnemyService.countOnPlot(plotModel)
@@ -151,8 +163,9 @@ local function broadcast(player: Player)
 end
 
 local function setPhase(player: Player, state: PlayerState, phase: string)
+	local resuming = state.phase == PHASE.Resuming and phase == PHASE.Active
 	state.phase = phase
-	state.bigWaveWarning = false
+	if not resuming and phase ~= PHASE.Paused and phase ~= PHASE.Resuming then state.bigWaveWarning = false end
 	broadcast(player)
 end
 
@@ -479,7 +492,7 @@ local function tickActivePlayer(player: Player, state: PlayerState)
 		return
 	end
 
-	local now = os.clock()
+	local now = BattleClock.now(player)
 	local step = run:advance(now)
 
 	if step.bigWaveWarning then
@@ -537,6 +550,8 @@ end
 -- Countdown overlay (COUNTDOWN_TIME) then Active.
 local function beginCountdown(player: Player, state: PlayerState)
 	state.activeRun = nil
+	state.activeStartedAt = nil
+	state.attemptStartHearts = state.playerHealth
 	state.countdownEnd = os.clock() + LevelConfig.COUNTDOWN_TIME
 	if not state.challenge then require(script.Parent.MagnetService).resumeCooldown(player) end
 	setPhase(player, state, PHASE.Countdown)
@@ -551,7 +566,8 @@ local function beginActiveRun(player: Player, state: PlayerState, definition)
 	end
 
 	state.countdownEnd = 0
-	state.activeRun = LevelRun.new(definition)
+	state.activeRun = LevelRun.new(definition, plotModel)
+	state.activeStartedAt = BattleClock.now(player)
 	if not state.challenge and state.hiddenDay ~= "active" then
 		require(script.Parent.FarmProgressionService).begin(player, definition.number)
 	end
@@ -755,6 +771,8 @@ local function cleanupPlayer(player: Player)
 	-- wave before state is wiped (LevelService starts before SaveService).
 	local userId = player.UserId
 	task.defer(function()
+		PauseScene.resume(player, 0)
+		BattleClock.clear(player)
 		states[userId] = nil
 	end)
 end
@@ -807,7 +825,8 @@ function LevelService.getSaveProgress(player: Player): (number, number, number)
 	if not state then
 		return 1, 1, ProgressConfig.MAX_PLAYER_HEALTH
 	end
-	return state.currentLevel, state.highestUnlockedLevel, state.playerHealth
+	return state.currentLevel, state.highestUnlockedLevel,
+		if BattleClock.isPaused(player) and not state.challenge then state.attemptStartHearts or state.playerHealth else state.playerHealth
 end
 
 function LevelService.isHiddenDayPending(player: Player): boolean
@@ -900,6 +919,42 @@ function LevelService.isLevelActive(player: Player): boolean
 	return state ~= nil and state.phase == PHASE.Active
 end
 
+local function onPauseDay(player: Player)
+	local state = states[player.UserId]
+	if not state or state.phase ~= PHASE.Active then return end
+	local Save = require(script.Parent.SaveService)
+	if Save.isProgressionLocked(player) then return end
+	local plot = PlotService.getPlotModel(player)
+	if not plot then return end
+	state.pausedAt = os.clock()
+	BattleClock.setPaused(player, true)
+	plot:SetAttribute("DayPaused", true)
+	require(script.Parent.CombatService).clearPlot(plot)
+	require(script.Parent.BrainrotService.Abilities.LineBomb).clearProjectiles(plot)
+	PauseScene.pause(player)
+	setPhase(player, state, PHASE.Paused)
+end
+
+local function onResumeDay(player: Player)
+	local state = states[player.UserId]
+	if not state or state.phase ~= PHASE.Paused then return end
+	state.resumeEnd = os.clock() + LevelConfig.PAUSE_RESUME_SECONDS
+	setPhase(player, state, PHASE.Resuming)
+end
+
+local function tickResume(player: Player, state: PlayerState)
+	if not state.resumeEnd or os.clock() < state.resumeEnd then broadcast(player); return end
+	local duration = os.clock() - (state.pausedAt or os.clock())
+	state.resumeEnd, state.pausedAt = nil, nil
+	BrainrotService.resumeDayTimers(player, duration)
+	require(script.Parent.MagnetService).resumeDayTimers(player, duration)
+	BattleClock.setPaused(player, false)
+	PauseScene.resume(player, duration)
+	local plot = PlotService.getPlotModel(player)
+	if plot then plot:SetAttribute("DayPaused", nil) end
+	setPhase(player, state, PHASE.Active)
+end
+
 function LevelService.init()
 	if (LevelService :: any)._remotesConnected then
 		return
@@ -920,13 +975,16 @@ function LevelService.init()
 		state.hiddenBrains += amount
 	end)
 
+	Remotes.getEvent("PauseDay").OnServerEvent:Connect(onPauseDay)
+	Remotes.getEvent("ResumeDay").OnServerEvent:Connect(onResumeDay)
 	Remotes.getEvent("StartLevel").OnServerEvent:Connect(function(player: Player)
+		if BattleClock.isPaused(player) then return end
 		onStartLevel(player)
 	end)
-	Remotes.getEvent("StartDailyChallenge").OnServerEvent:Connect(onStartChallenge)
-	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(onSelectLevel)
-	Remotes.getEvent("RewindDay").OnServerEvent:Connect(onRewindDay)
-	Remotes.getEvent("ContinueVictory").OnServerEvent:Connect(onContinueVictory)
+	Remotes.getEvent("StartDailyChallenge").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onStartChallenge(player, ...) end end)
+	Remotes.getEvent("SelectLevel").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onSelectLevel(player, ...) end end)
+	Remotes.getEvent("RewindDay").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onRewindDay(player, ...) end end)
+	Remotes.getEvent("ContinueVictory").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onContinueVictory(player, ...) end end)
 end
 
 function LevelService.start()
@@ -964,7 +1022,9 @@ function LevelService.start()
 					continue
 				end
 				tickCountdown(player, state)
-				if state.phase == PHASE.Countdown then
+				if state.phase == PHASE.Resuming then
+					tickResume(player, state)
+				elseif state.phase == PHASE.Countdown then
 					broadcast(player)
 				elseif state.phase == PHASE.Active then
 					tickActivePlayer(player, state)

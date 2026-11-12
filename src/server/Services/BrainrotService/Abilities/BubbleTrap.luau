@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	BubbleTrap
 	Tralalero — launches a bubble projectile at the first enemy in range.
@@ -37,13 +38,13 @@ function BubbleTrap.tryAct(ctx, callbacks)
 
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
-		task.delay(hitDelay, function()
+		BattleClock.delay(ctx.plotModel, hitDelay, function()
 			if not model.Parent then
 				return
 			end
 			-- A channel such as Abyssal Torrent locks the core attack for seconds.
 			-- A short swing lock (the shot's own windup) is already over by now.
-			if ctx.buffs.coreLockUntil - os.clock() > 0.5 then
+			if ctx.buffs.coreLockUntil - BattleClock.now(ctx.plotModel) > 0.5 then
 				return
 			end
 			launch()

@@ -4,7 +4,7 @@ local Shared = script.Parent.Parent
 local Config = require(Shared.Config.MonsterFusionConfig)
 local Species = require(Shared.Config.FarmProgressionConfig).MONSTERS
 local Fusion = {}
-export type Monster = { uid: string, monsterId: string, tier: string }
+export type Monster = { uid: string, monsterId: string, tier: string, onFarm: boolean? }
 
 function Fusion.tier(id: string): any?
 	for _, tier in Config.TIERS do if tier.id == id then return tier end end
@@ -26,7 +26,8 @@ function Fusion.sanitize(raw: any, legacy: { string }?): { Monster }
 		if type(monster) ~= "table" or type(monster.uid) ~= "string" or #monster.uid > 80
 			or #monster.uid == 0 or seen[monster.uid] or not Species[monster.monsterId] or not Fusion.tier(monster.tier) then continue end
 		seen[monster.uid] = true
-		table.insert(result, { uid = monster.uid, monsterId = monster.monsterId, tier = monster.tier })
+		table.insert(result, { uid = monster.uid, monsterId = monster.monsterId, tier = monster.tier,
+			onFarm = if type(monster.onFarm) == "boolean" then monster.onFarm else nil })
 	end
 	return result
 end
@@ -37,9 +38,9 @@ function Fusion.roll(species: string, weights: { number }, rng: Random, uid: str
 	local roll = rng:NextNumber(0, total)
 	for index, weight in weights do
 		roll -= weight
-		if roll <= 0 then return { uid = uid, monsterId = species, tier = Config.TIERS[index].id } end
+		if roll <= 0 then return { uid = uid, monsterId = species, tier = Config.TIERS[index].id, onFarm = false } end
 	end
-	return { uid = uid, monsterId = species, tier = Config.TIERS[#Config.TIERS].id }
+	return { uid = uid, monsterId = species, tier = Config.TIERS[#Config.TIERS].id, onFarm = false }
 end
 
 function Fusion.ingredients(monsters: { Monster }, ids: any): (string?, string?)

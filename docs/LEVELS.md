@@ -68,7 +68,9 @@ wipe — not mid-day placements on an unfinished day). Brainrots only attack /
 spit coins while the day is **`Active`**.
 
 Phases (see `Shared.Constants.PHASE`): `Preparation`, `Countdown` (3…0 Start
-Day overlay), `Active`, `Victory`, `Defeat`.
+Day overlay), `Active`, `Paused`, `Resuming`, `Victory`, `Defeat`.
+
+Pause/resume is per player; see [DAY_PAUSE.md](DAY_PAUSE.md).
 
 ---
 
@@ -379,3 +381,14 @@ elapsed time. Numbered victory resolves 1–3 stars with varied day goals, grant
 star-based brains and regional shards, and records the best rating. Replays
 receive clear rewards. Daily Challenge and Hidden Day retain their existing
 rewards. See FARM_PROGRESSION.md for exact rules.
+
+### Day panel elapsed time
+
+The start countdown is displayed inside the Day panel. When Active begins,
+LevelService records a session-only activeStartedAt using its server clock.
+LevelStateChanged/RequestState include integer elapsedSeconds during Active,
+Paused and Resuming; the client displays MM:SS, initially 00:00. Existing
+quarter-second state broadcasts keep it current. Every new campaign, Hidden Day
+or challenge attempt gets a fresh start. The timer freezes during pause and the
+resume countdown, and hides when the attempt ends. The timestamp is not saved.
+BattleClock also excludes paused duration from timed star goals and scheduling.

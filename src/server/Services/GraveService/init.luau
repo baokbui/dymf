@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	GraveService
 	Places graves on random fog tiles at day start. Occupies the tile (no
@@ -133,7 +134,7 @@ local function tweenPivot(
 			model:PivotTo(start:Lerp(goal, value))
 		end
 	end)
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(model,
 		alpha,
 		TweenInfo.new(duration, Enum.EasingStyle.Quad, easing),
 		{ Value = 1 }
@@ -161,7 +162,7 @@ local function playRiseFromTile(model: Model, restPivot: CFrame, delay: number, 
 	model:PivotTo(buried)
 	local riseTime = duration or GraveConfig.RISE_DURATION
 
-	task.delay(delay, function()
+	BattleClock.delay(model, delay, function()
 		if not model.Parent then
 			if onDone then
 				onDone()
@@ -209,7 +210,7 @@ local function emerge(runtime: GraveRuntime)
 			EnemyService.resumeLocomotion(instanceId)
 		end
 	end
-	runtime.nextSpawnAt = os.clock() + randomInterval(GraveConfig.RESPAWN_MIN, GraveConfig.RESPAWN_MAX)
+	runtime.nextSpawnAt = BattleClock.now(runtime.plotModel) + randomInterval(GraveConfig.RESPAWN_MIN, GraveConfig.RESPAWN_MAX)
 	log:info(string.format(
 		"emerged %s from grave r%d c%d",
 		monsterId,
@@ -268,7 +269,7 @@ local function collapseGrave(runtime: GraveRuntime)
 	local model = runtime.model
 	local MonsterDeath = require(script.Parent.EnemyService.MonsterDeath)
 	MonsterDeath.playFadeInPlace(model)
-	task.delay(MonsterDeath.totalLifetime(), function()
+	BattleClock.delay(runtime.plotModel, MonsterDeath.totalLifetime(), function()
 		destroyGraveModel(model)
 	end)
 end
@@ -448,7 +449,7 @@ function GraveService.spawnForDay(plotModel: Model, definition: Types.LevelDefin
 	shuffle(candidates)
 
 	local list: { GraveRuntime } = {}
-	local now = os.clock()
+	local now = BattleClock.now(plotModel)
 	local emergeMin = GraveConfig.EMERGE_MIN
 	local emergeMax = math.max(emergeMin, GraveConfig.EMERGE_MAX)
 
@@ -512,8 +513,9 @@ function GraveService.start()
 	task.spawn(function()
 		while true do
 			task.wait(GraveConfig.TICK)
-			local now = os.clock()
 			for plotModel, list in gravesByPlot do
+				if BattleClock.isPaused(plotModel) then continue end
+				local now = BattleClock.now(plotModel)
 				if spawningClosed[plotModel] then
 					continue
 				end

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	LineBomb (Bombardino Crocodilo)
 	On place: detach the plant and fly it house → enemy while dropping one
@@ -152,13 +153,15 @@ local function tweenPivot(
 		end
 		model:PivotTo(startPivot:Lerp(endPivot, alpha.Value))
 	end)
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(model,
 		alpha,
 		TweenInfo.new(duration, easing, direction),
 		{ Value = 1 }
 	)
+	local destroyed = model.Destroying:Connect(function() tween:Cancel() end)
 	tween:Play()
 	tween.Completed:Wait()
+	destroyed:Disconnect()
 	connection:Disconnect()
 	alpha:Destroy()
 	if model.Parent then
@@ -202,6 +205,7 @@ local function dropBombOnTile(ctx, column: number, muteExplosionSound: boolean)
 	local startPivot = CFrame.new(startPos) * orient
 	local landPivot = CFrame.new(landPos) * orient
 
+	bomb:SetAttribute("LineBombProjectile", true)
 	activeModels[bomb] = true
 	bomb.Parent = projectilesFolder(ctx.plotModel)
 	bomb:PivotTo(startPivot)
@@ -216,6 +220,7 @@ local function dropBombOnTile(ctx, column: number, muteExplosionSound: boolean)
 	)
 
 	activeModels[bomb] = nil
+	if not bomb.Parent then return end
 	if bomb.Parent then
 		bomb:Destroy()
 	end
@@ -288,7 +293,7 @@ local function runBombardment(ctx, plantModel: Model)
 			dropBombOnTile(ctx, column, column > 1)
 		end)
 		if column < columns then
-			task.wait(stagger)
+			if not BattleClock.wait(ctx.plotModel, stagger) then return end
 		end
 	end
 end
@@ -303,6 +308,15 @@ function LineBomb.onPlaced(ctx, callbacks)
 	task.spawn(function()
 		runBombardment(ctx, plantModel)
 	end)
+end
+
+function LineBomb.clearProjectiles(plotModel: Model)
+	for model in activeModels do
+		if model.Parent and model:IsDescendantOf(plotModel) and model:GetAttribute("LineBombProjectile") == true then
+			activeModels[model] = nil
+			model:Destroy()
+		end
+	end
 end
 
 function LineBomb.clearPlot(plotModel: Model)

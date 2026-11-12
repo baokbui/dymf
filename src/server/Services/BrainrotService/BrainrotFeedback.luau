@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	BrainrotFeedback
 	Lightweight server-side visual feedback for Brainrot actions (replicated on
@@ -94,12 +95,12 @@ function BrainrotFeedback.pulseAttack(model: Model)
 
 	model:ScaleTo(base * BrainrotConfig.ATTACK_PULSE_SCALE)
 	local half = BrainrotConfig.ATTACK_PULSE_DURATION / 2
-	task.delay(half, function()
+	BattleClock.delay(model, half, function()
 		if pulseTokens[model] ~= token or not model.Parent then
 			return
 		end
 		model:ScaleTo(base)
-		task.delay(half, function()
+		BattleClock.delay(model, half, function()
 			if pulseTokens[model] == token then
 				pulseTokens[model] = nil
 			end
@@ -142,7 +143,7 @@ function BrainrotFeedback.flashHit(model: Model, isFatal: boolean?)
 		local baseColor = bases[part]
 		if baseColor then
 			remaining += 1
-			local tween = TweenService:Create(
+			local tween = BattleClock.tween(model,
 				part,
 				TweenInfo.new(BrainrotConfig.HIT_FLASH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 				{ Color = baseColor }
@@ -647,7 +648,7 @@ local function attachOrbitProp(
 		motor.C0 = pose(spin.Value)
 	end)
 
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(model,
 		spin,
 		TweenInfo.new(period, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
 		{ Value = math.pi * 2 }

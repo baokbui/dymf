@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	CoinService
 	Sole authority over player currency. Holds each player's balance, grants
@@ -111,7 +112,7 @@ local function spawnGroundCoin(
 		CoinMotion.rainFromSky(part, landPosition)
 	end
 
-	task.delay(EconomyConfig.GROUND_COIN_LIFETIME, function()
+	BattleClock.delay(ownerUserId, EconomyConfig.GROUND_COIN_LIFETIME, function()
 		removeCoin(coinId)
 	end)
 end
@@ -387,7 +388,7 @@ function CoinService.start()
 		onPlayerAdded(player)
 	end
 
-	Remotes.getEvent("CollectCoin").OnServerEvent:Connect(onCollectCoin)
+	Remotes.getEvent("CollectCoin").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onCollectCoin(player, ...) end end)
 
 	task.spawn(function()
 		while true do

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotConfig = require(ReplicatedStorage.Shared.Config.BrainrotConfig)
@@ -81,7 +82,7 @@ function MeleeBat.tryAct(ctx, callbacks)
 	-- Friendly Brainrots never block — a bat behind Ballerina, Lirili, a wall,
 	-- etc. can still hit a monster chewing that unit on the next tile.
 	-- Ranged Rampage swaps that for a full-lane spinning bat for `rangedUntil`.
-	local ranged = os.clock() < ctx.buffs.rangedUntil
+	local ranged = BattleClock.now(ctx.plotModel) < ctx.buffs.rangedUntil
 	local rangeTiles = ctx.definition.rangeTiles
 	if ranged then
 		rangeTiles = BrainrotConfig.FULL_LINE_RANGE
@@ -139,7 +140,7 @@ function MeleeBat.tryAct(ctx, callbacks)
 	local column = ctx.position.column
 	local model = ctx.model
 
-	task.delay(hitDelay, function()
+	BattleClock.delay(ctx.plotModel, hitDelay, function()
 		if not model.Parent then
 			return
 		end

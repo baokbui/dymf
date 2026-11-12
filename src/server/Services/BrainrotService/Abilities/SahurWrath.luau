@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	SahurWrath (Tung Tung GOD)
 	Same Tung Bat as Ranged Rampage: grows vertically above the plant (wide
@@ -79,6 +80,7 @@ local function projectilesFolder(plotModel: Model): Folder
 end
 
 local function tweenAlpha(
+	plotModel: Model,
 	duration: number,
 	easing: Enum.EasingStyle,
 	direction: Enum.EasingDirection,
@@ -93,7 +95,7 @@ local function tweenAlpha(
 	local conn = value:GetPropertyChangedSignal("Value"):Connect(function()
 		apply(value.Value)
 	end)
-	local tween = TweenService:Create(value, TweenInfo.new(duration, easing, direction), { Value = 1 })
+	local tween = BattleClock.tween(plotModel, value, TweenInfo.new(duration, easing, direction), { Value = 1 })
 	tween:Play()
 	tween.Completed:Wait()
 	conn:Disconnect()
@@ -231,7 +233,7 @@ local function runSlam(ctx, callbacks, damage: number)
 	local rests = captureRest(bat, originHover)
 
 	callbacks.playSound("SahurWrath")
-	tweenAlpha(CombatConfig.WRATH_EXPAND_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function(alpha)
+	tweenAlpha(ctx.plotModel, CombatConfig.WRATH_EXPAND_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function(alpha)
 		if bat.Parent then
 			applyPose(
 				rests,
@@ -251,7 +253,7 @@ local function runSlam(ctx, callbacks, damage: number)
 	local dropTime = slamDuration(ctx)
 	callbacks.pulseAttack()
 	-- Quarter-circle chop: upright (+Y) → laid along the lane (+X), pivot at Tung.
-	tweenAlpha(dropTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function(alpha)
+	tweenAlpha(ctx.plotModel, dropTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function(alpha)
 		if bat.Parent then
 			local y = headY + (slamY - headY) * alpha
 			local origin = CFrame.new(originX, y, z) * CFrame.Angles(0, 0, -math.rad(90) * alpha)
@@ -314,7 +316,7 @@ local function runSlam(ctx, callbacks, damage: number)
 		end
 	end
 
-	task.wait(CombatConfig.WRATH_LINGER)
+	if not BattleClock.wait(ctx.plotModel, CombatConfig.WRATH_LINGER) then return end
 	if bat.Parent then
 		bat:Destroy()
 	end

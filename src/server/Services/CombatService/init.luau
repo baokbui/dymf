@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	CombatService
 	The ONLY system that modifies health. Owns damage, healing, death routing,
@@ -1391,11 +1392,11 @@ local function shotPiercesAll(impact: Projectile.ImpactSpec?): boolean
 	return impact ~= nil and impact.pierceAll == true
 end
 
-local function claimWaveHit(waveGroupId: string?, monsterId: string): boolean
+local function claimWaveHit(waveGroupId: string?, monsterId: string, ownerUserId: number): boolean
 	if type(waveGroupId) ~= "string" or waveGroupId == "" then
 		return true
 	end
-	local now = os.clock()
+	local now = BattleClock.now(ownerUserId)
 	local bucket = waveHits[waveGroupId]
 	if not bucket or now >= bucket.expires then
 		bucket = { hits = {}, expires = now + 8 }
@@ -1419,7 +1420,7 @@ local function detonateSwordWaveFinale(
 	if not (impact and impact.waveFinale == true) then
 		return
 	end
-	if not claimWaveHit(impact.waveGroupId, WAVE_FINALE_KEY) then
+	if not claimWaveHit(impact.waveGroupId, WAVE_FINALE_KEY, ownerUserId) then
 		return
 	end
 
@@ -1528,7 +1529,7 @@ local function onWaveSweep(
 			continue
 		end
 		local waveId = if impact then impact.waveGroupId else nil
-		if not claimWaveHit(waveId, monsterId) then
+		if not claimWaveHit(waveId, monsterId, ownerUserId) then
 			continue
 		end
 		local hitDamage = swordWaveHitDamage(damage, column, impact)
@@ -1633,7 +1634,7 @@ local function onProjectileImpact(
 
 	local alreadyHit = false
 	if impact and type(impact.waveGroupId) == "string" then
-		alreadyHit = not claimWaveHit(impact.waveGroupId, instanceId)
+		alreadyHit = not claimWaveHit(impact.waveGroupId, instanceId, ownerUserId)
 	end
 
 	local killed = false

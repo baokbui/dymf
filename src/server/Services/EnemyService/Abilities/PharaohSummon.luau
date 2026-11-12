@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	PharaohSummon
 	On cooldown, spawn a Small Mummy in every lawn row. Minion id is the
@@ -56,7 +57,7 @@ function PharaohSummon.onTick(ctx, state, dt: number, callbacks)
 	if hitDelay <= 0 then
 		spawn()
 	else
-		task.delay(hitDelay, spawn)
+		BattleClock.delay(ctx.plotModel, hitDelay, spawn)
 	end
 end
 

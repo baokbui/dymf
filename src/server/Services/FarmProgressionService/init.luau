@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Config = require(Shared.Config.FarmProgressionConfig)
@@ -20,8 +21,8 @@ end
 
 function Service.begin(player: Player, day: number)
 	Service.finish(player)
-	attempts[player] = { day = day, started = os.clock(), breaches = 0,
-		nextRoll = os.clock() + Config.SKY_ROLL_INTERVAL, drops = 0, cleanup = {} }
+	attempts[player] = { day = day, started = BattleClock.now(player), breaches = 0,
+		nextRoll = BattleClock.now(player) + Config.SKY_ROLL_INTERVAL, drops = 0, cleanup = {} }
 end
 
 function Service.breach(player: Player)
@@ -32,7 +33,7 @@ end
 function Service.resolve(player: Player, day: number, hearts: number): (number, { [string]: number })
 	local attempt = attempts[player]
 	if not attempt or attempt.day ~= day then return 1, {} end
-	local stars = Farm.stars(day, hearts, attempt.breaches, os.clock() - attempt.started)
+	local stars = Farm.stars(day, hearts, attempt.breaches, BattleClock.now(player) - attempt.started)
 	local shards = Farm.rewards(day, stars, rng)
 	Service.finish(player)
 	return stars, shards
@@ -73,18 +74,21 @@ function Service.start()
 		end
 	end
 	Remotes.getEvent("CombineMonsterShards").OnServerEvent:Connect(function(player, id, operation)
+		if BattleClock.isPaused(player) then return end
 		request(player, "Monster", id, nil, operation)
 	end)
 	Remotes.getEvent("FuseFarmMonsters").OnServerEvent:Connect(function(player, ids, operation)
+		if BattleClock.isPaused(player) then return end
 		request(player, "MonsterFusion", nil, ids, operation)
 	end)
 	task.spawn(function()
 		while true do
 			task.wait(1)
 			for player, attempt in attempts do
+				if BattleClock.isPaused(player) then continue end
 				if not require(script.Parent.LevelService).isLevelActive(player) then Service.finish(player); continue end
-				if os.clock() >= attempt.nextRoll and attempt.drops < Config.SKY_DROP_LIMIT then
-					attempt.nextRoll = os.clock() + Config.SKY_ROLL_INTERVAL
+				if BattleClock.now(player) >= attempt.nextRoll and attempt.drops < Config.SKY_DROP_LIMIT then
+					attempt.nextRoll = BattleClock.now(player) + Config.SKY_ROLL_INTERVAL
 					rollSky(player, attempt)
 				end
 			end

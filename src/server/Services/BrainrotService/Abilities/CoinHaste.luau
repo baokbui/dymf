@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	CoinHaste (Golden Waltz)
 	For `duration` seconds, coin producers act `factor`× faster.
@@ -15,7 +16,7 @@ function CoinHaste.tryAct(ctx, _callbacks)
 		duration = params.duration or duration
 		factor = params.factor or factor
 	end
-	ctx.buffs.coinHasteUntil = os.clock() + math.max(0.1, duration)
+	ctx.buffs.coinHasteUntil = BattleClock.now(ctx.plotModel) + math.max(0.1, duration)
 	ctx.buffs.coinHasteFactor = math.max(1, factor)
 	return true
 end

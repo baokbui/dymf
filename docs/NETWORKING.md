@@ -278,3 +278,25 @@ MonsterFusionResult and MonsterCombineResult return committed output monster
 records plus success/reason/operation. The server validates ownership, distinct
 ids, one species, count and rate limits before spending. ProfileUpdated adds
 farmMonsters. All four shard/fusion message types are RemoteEvents.
+
+Active level payloads also include elapsedSeconds, an integer computed from the
+server's current attempt start. Countdown payloads retain countdownRemaining.
+The Day panel swaps its internal countdown for an MM:SS elapsed display on
+Active; no new remote or client-reported timing is used.
+
+## Day pause ✅
+
+`PauseDay` accepts only an owned Active attempt with no progression write lock;
+`ResumeDay` accepts only Paused. Neither accepts client timing or combat state.
+LevelStateChanged/RequestState include `dayPaused`, frozen `elapsedSeconds` and,
+while Resuming, server-derived `resumeRemaining`. Modifying server handlers
+reject requests during both paused phases. See [DAY_PAUSE.md](DAY_PAUSE.md).
+
+## Farm pet equipment ✅
+
+`SetFarmPet(uid: string, equipped: boolean)` sends intent to HouseService.
+The server validates input types, hydration, ownership, purchased capacity,
+request interval, save lock and day pause state. `FarmPetResult` returns
+`{uid, success, reason?}`; ProfileUpdated carries authoritative `onFarm` flags.
+Success acknowledges session equipment state; ordinary SaveService saving is
+requested immediately, following the existing loadout-save durability model.

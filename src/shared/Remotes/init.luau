@@ -22,6 +22,8 @@ local WAIT_TIMEOUT = 10
 -- Declare every RemoteEvent name the game uses. Adding a name here is the only
 -- step needed to register a new event.
 local EVENT_NAMES = {
+	"SetFarmPet",
+	"FarmPetResult",
 	"FuseFarmMonsters",
 	"MonsterFusionResult",
 	"CombineMonsterShards",
@@ -40,6 +42,8 @@ local EVENT_NAMES = {
 	"CoinsUpdated",
 	-- Levels (Milestone 8)
 	"StartLevel",
+	"PauseDay",
+	"ResumeDay",
 	"StartDailyChallenge",
 	"LevelStateChanged",
 	"SelectLevel",

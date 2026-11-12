@@ -10,8 +10,8 @@ Status: ✅ Milestone 18
 
 ## HUD
 
-The bottom-left Menu button reveals six section shortcuts. Settings has its
-own top-bar shortcut; all seven sections share one Menu window. Store-related sections:
+The bottom-left Menu button reveals seven section shortcuts. Settings has its
+own top-bar shortcut; all eight sections share one Menu window. Store-related sections:
 
 | Button | Opens |
 | ------ | ----- |
@@ -77,8 +77,8 @@ chip) on an Active day. See `MagnetConfig`.
 
 **Farm Capacity** (`FarmCapacity`): starts at five roaming/income slots and caps
 at ten. Each purchase adds one slot for **30 / 55 / 85 / 125 / 175** brains.
-The upgrade does not limit owned monster inventory; the most recently created
-monsters fill the active slots. Capacity persists in `SaveData.upgrades` and
+The upgrade does not limit owned monster inventory; players choose which
+monsters fill the active slots in Inventory → Pets. Capacity persists in `SaveData.upgrades` and
 returns to five on Reset Progress. See `HOUSE.md`.
 
 ## Architecture

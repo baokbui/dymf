@@ -45,6 +45,10 @@ export type LevelPanel = typeof(setmetatable(
 		challengeLabel: TextLabel,
 		warningBanner: TextLabel,
 		startCountdownLabel: TextLabel,
+		elapsedLabel: TextLabel,
+		pauseButton: TextButton,
+		resumeOverlay: Frame,
+		resumeCount: TextLabel,
 	},
 	Level
 ))
@@ -60,16 +64,22 @@ function Level.new(parent: Frame): LevelPanel
 
 	local startCountdownLabel = Instance.new("TextLabel")
 	startCountdownLabel.Name = "StartCountdown"
-	startCountdownLabel.AnchorPoint = Vector2.new(1, 1)
-	startCountdownLabel.Position = UDim2.new(1, 0, 0, -8)
-	startCountdownLabel.Size = UDim2.fromOffset(PANEL_WIDTH, 40)
+	startCountdownLabel.AnchorPoint = Vector2.zero
+	startCountdownLabel.Position = UDim2.fromOffset(20, 36)
+	startCountdownLabel.Size = UDim2.fromOffset(PANEL_WIDTH - 32, 20)
 	startCountdownLabel.BackgroundTransparency = 1
-	startCountdownLabel.TextSize = 26
+	startCountdownLabel.TextSize = 14
+	startCountdownLabel.TextXAlignment = Enum.TextXAlignment.Left
 	startCountdownLabel.Text = "Day starting in 3"
 	startCountdownLabel.Visible = false
 	startCountdownLabel.Parent = parent
 	UITheme.applyOutlinedTitle(startCountdownLabel, UITheme.DANGER)
-	startCountdownLabel.TextSize = 26
+	startCountdownLabel.TextSize = 14
+
+	local elapsedLabel = startCountdownLabel:Clone()
+	elapsedLabel.Name, elapsedLabel.Text, elapsedLabel.Visible = "ElapsedTimer", "00:00", false
+	UITheme.applyOutlinedTitle(elapsedLabel, UITheme.FIELD_TEXT)
+	elapsedLabel.Parent = parent
 
 	local warningBanner = Instance.new("TextLabel")
 	warningBanner.Name = "BigWaveWarning"
@@ -205,6 +215,29 @@ function Level.new(parent: Frame): LevelPanel
 		Remotes.getEvent("StartLevel"):FireServer()
 	end)
 
+	local pauseButton = startButton:Clone()
+	pauseButton.Name, pauseButton.Text, pauseButton.Visible = "PauseButton", "Pause Day", false
+	pauseButton.Parent = parent
+	pauseButton.Activated:Connect(function()
+		if not pauseButton.Active then return end
+		Remotes.getEvent(if pauseButton:GetAttribute("Resume") then "ResumeDay" else "PauseDay"):FireServer()
+	end)
+	local resumeOverlay = Instance.new("Frame")
+	resumeOverlay.Name, resumeOverlay.Visible, resumeOverlay.Active = "ResumeCountdown", false, true
+	resumeOverlay.Size, resumeOverlay.ZIndex = UDim2.fromScale(1, 1), 100
+	resumeOverlay.BackgroundColor3, resumeOverlay.BackgroundTransparency = Color3.new(0, 0, 0), 0.45
+	resumeOverlay:SetAttribute("ScreenSpaceUI", true)
+	resumeOverlay.Parent = parent.Parent
+	local resumeCount = Instance.new("TextLabel")
+	resumeCount.Name, resumeCount.AnchorPoint, resumeCount.Position = "Count", Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
+	resumeCount.Size, resumeCount.BackgroundTransparency = UDim2.fromScale(0.6, 0.3), 1
+	resumeCount.TextScaled, resumeCount.ZIndex = true, 101
+	UITheme.applyOutlinedTitle(resumeCount)
+	resumeCount.Parent = resumeOverlay
+	local limit = Instance.new("UITextSizeConstraint")
+	limit.MaxTextSize, limit.Parent = 80, resumeCount
+	parent.Destroying:Once(function() resumeOverlay:Destroy() end)
+
 	local challengeRow = Instance.new("Frame")
 	challengeRow.Name = "DailyChallenge"
 	challengeRow.Position = UDim2.fromOffset(10, PANEL_HEIGHT_PREP - 4)
@@ -250,6 +283,10 @@ function Level.new(parent: Frame): LevelPanel
 		challengeButton = challengeButton,
 		warningBanner = warningBanner,
 		startCountdownLabel = startCountdownLabel,
+		elapsedLabel = elapsedLabel,
+		pauseButton = pauseButton,
+		resumeOverlay = resumeOverlay,
+		resumeCount = resumeCount,
 	}, Level)
 end
 
@@ -297,6 +334,15 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 			else string.format("Day starting in %d", startCountdownShown(countdown))
 	end
 
+	local battleShown = phase == PHASE.Active or phase == PHASE.Paused or phase == PHASE.Resuming
+	self.elapsedLabel.Visible = battleShown
+	self.phaseLabel.Visible = not countingDown and not battleShown
+	if battleShown then
+		local value = state.elapsedSeconds
+		local seconds = if type(value) == "number" and value == value and value < math.huge then math.max(0, math.floor(value)) else 0
+		self.elapsedLabel.Text = string.format("%02d:%02d", math.floor(seconds / 60), seconds % 60)
+	end
+
 	if phase == PHASE.Victory then
 		UITheme.applyOutlinedTitle(self.phaseLabel, UITheme.SUCCESS)
 		self.phaseLabel.Font = Enum.Font.GothamBold
@@ -319,8 +365,16 @@ function Level.applyState(self: LevelPanel, state: { [string]: any })
 	-- Defeat uses GameOverPopup Rewind; Start Day only in Preparation.
 	self.startButton.Visible = state.canStart == true and phase ~= PHASE.Defeat
 	self.warningBanner.Visible = state.bigWaveWarning == true
+	self.pauseButton.Visible = battleShown
+	self.pauseButton.Active = phase == PHASE.Active or phase == PHASE.Paused
+	self.pauseButton:SetAttribute("Resume", phase == PHASE.Paused)
+	self.pauseButton.Text = if phase == PHASE.Paused then "Resume Day" elseif phase == PHASE.Resuming then "Resuming…" else "Pause Day"
+	self.resumeOverlay.Visible = phase == PHASE.Resuming
+	if phase == PHASE.Resuming then
+		self.resumeCount.Text = tostring(math.clamp(math.ceil(state.resumeRemaining or LevelConfig.PAUSE_RESUME_SECONDS), 1, LevelConfig.PAUSE_RESUME_SECONDS))
+	end
 
-	local showProgress = phase == PHASE.Active
+	local showProgress = battleShown
 	local result = if type(state.challengeResult) == "string" then state.challengeResult else nil
 	local showChallenge = phase == PHASE.Preparation and (state.challengeAvailable == true or result ~= nil)
 	self.challengeRow.Visible = showChallenge

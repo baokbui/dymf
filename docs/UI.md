@@ -36,7 +36,7 @@ StarterGui/
         ProgressionStore (Frame) ✅ M18
         Menu         (shared feature window (selected sections only))
         MenuEntry    (bottom-left Menu/X HUD button)
-        MenuDrawer   (animated horizontal strip of six icon/name buttons)
+        MenuDrawer   (animated horizontal strip of seven icon/name buttons)
         FirstTimeRewards (standalone temporary reward window)
         FirstTimeRewardsEntry (gift HUD button above Menu until completion)
 ```
@@ -45,7 +45,7 @@ StarterGui/
 The Settings top-bar shortcut starts hidden until its safe-inset container
 matches `GuiService.TopbarInset`. Its size is capped at 48 pixels so transient
 full-viewport bounds during loading cannot produce an oversized button.
-MenuRouter hosts Inventory, Index, Upgrades, Settings, Quests, Achievements
+MenuRouter hosts Inventory, Fusion, Index, Upgrades, Settings, Quests, Achievements
 and Statistics in one window. Existing panel instances are reused;
 Inventory/Index/Settings/ProgressionStore move into its content host at runtime.
 The physical Brainrot store can detach the shared ProgressionStore view and
@@ -132,8 +132,11 @@ hardcode a second palette in new UI.
   shop; older ones slide up and fade.
 - **LevelUI** ✅ M8 — bottom-right Start **Day**, authored day name during Preparation, progress, and big-wave banner. Hover over a clipped day name to slide it into view.
   (player copy uses "Day"; remotes stay `StartLevel` / `LevelStateChanged`).
-  After Start Day, red bold **“Day starting in 3”** sits above the panel and
-  counts down to 0, then hides when the day goes Active.
+  After Start Day, **“Day starting in 3”** appears inside the Day panel below
+  its title and counts down to 0. On Active, an elapsed **MM:SS** timer replaces
+  it at **00:00**. The server supplies elapsedSeconds in existing level state
+  updates; no separate client timer loop is created. It resets each attempt
+  and hides outside Active (campaign, Hidden Day and Daily Challenge).
 - **Settings** ✅ M13 — the Settings section of Menu opens the
   modal. The shared Menu places page titles near the top edge and keeps a separate Back row for narrow detail views.
   Settings groups labeled control rows under Audio, Graphics, and Danger Zone.
@@ -332,18 +335,18 @@ The Menu entry and relevant section show pending-reward badges.
 
 ## Unified Menu navigation
 
-`Client.Utilities.MenuRouter` owns the single window, HUD entry, seven sections,
+`Client.Utilities.MenuRouter` owns the single window, HUD entry, eight sections,
 page visibility, badges and responsive fitting. `UIController.MenuPages` adapts
 the existing Inventory/Index/ProgressionStore/Settings APIs; QuestController
 registers Quests and Achievements. All three Quests tabs keep the title and tabs fixed while the list scrolls. Campaign milestones have titles inspired by their destination days. First-time Rewards has a separate HUD entry
 and window, outside the Menu. Opening a section closes the previous one and its details.
 
-The HUD Menu button morphs from three bars into an X and slides out six bare
+The HUD Menu button morphs from three bars into an X and slides out seven bare
 icon/name buttons to its right. There is no large blue launcher or 3 × 3 grid.
 `MenuDrawer` animates reveal/retraction over 0.24 seconds; repeated toggles cancel
 previous tweens safely. The compact strip uses desktop scaling and horizontal
-scrolling if the screen cannot fit all six icons. Five destinations use image
-assets, and Statistics uses a native illustration. Selecting an icon opens or switches its feature while the strip stays open. There is no top-left Menu button in feature windows. X/close resets the HUD button to its Menu appearance.
+scrolling if the screen cannot fit all seven icons. Five destinations use image
+assets, while Fusion and Statistics use native illustrations. Selecting an icon opens or switches its feature while the strip stays open. There is no top-left Menu button in feature windows. X/close resets the HUD button to its Menu appearance.
 The strip does not add a full-screen blocker during normal gameplay.
 
 Selected features use one panel surface: the host takes the feature's color
@@ -490,7 +493,7 @@ Damage expansion/day-panel height changes refit the available gap. A shorter gap
 scrolls the objectives; a very short gap shows the heading only. If less than
 80 logical pixels remain, the tracker hides instead of overlapping other HUD;
 full quests remain accessible from Menu. It reserves space above the day panel
-for countdown/wave messages. `tests/MenuIntegration.spec.luau` now passes 109
+for external big-wave messages (the start countdown is inside the panel). `tests/MenuIntegration.spec.luau` now passes 109
 checks, including tracker progress and collapsed/expanded Damage geometry.
 
 The compact quest tracker is text-only: panel/card/button fills, border strokes,
@@ -515,7 +518,7 @@ Desktop scaling is 1.25× at 1920 × 1080 and continues increasing with viewport
 The tracker has 34px objective rows with 5px gaps and one centered heading with cycle texture 86604833779310 to indicate switching.
 Menu icon captions remain white after selection, with no name highlighting.
 The drawer fits before the magnet button, reducing its icon scale slightly if
-that fits all six without shrinking below their readable baseline; genuine
+that fits all seven without shrinking below their readable baseline; genuine
 horizontal overflow still scrolls.
 
 `ScrollPolicy` monitors all MainUI scrolling frames (including later-created
@@ -610,7 +613,7 @@ granted and unused tickets. Completed first-time rewards remain hidden.
 First-time brains are not paid again; purchased upgrades reset.
 
 Settings opens from a shortcut beside the Roblox top-bar controls using icon
-`7059346373`. It uses the same Menu window as the six drawer destinations.
+`7059346373`. It uses the same Menu window as the seven drawer destinations.
 Achievements uses `9722127533`, Quests `7088599984`, the spinner texture
 `12893831040`, and First-time Rewards gift artwork `17368068524`.
 
@@ -618,8 +621,9 @@ Achievements uses `9722127533`, Quests `7088599984`, the spinner texture
 
 The Day tab includes a Star goals button with the current day requirements.
 The victory popup shows earned stars and species-specific shard quantities.
-Inventory → Items displays shard counts, combine thresholds and random-size
-level range, with a Combine button whenever enough shards are owned.
+Inventory → Items displays compact icon/name/count shard tiles with owned/needed
+counts and a short description in a hover/focus/tap tooltip. Combine is available
+in that tooltip whenever enough shards are owned.
 Repeated species are allowed; individual monster cards show their income. Farm labels
 display species-specific brains/second. See FARM_PROGRESSION.md.
 
@@ -631,8 +635,10 @@ Effects Quality High enables planted Brainrot idle clips/procedural sway,
 except registry entries marked `noIdle` (short-lived one-shot units).
 Low and Off stop idle playback immediately and restore cosmetic poses.
 
-Farm nameplates show size, name, level and income in four lines. Items includes
-individual farm monster cards, selectable inputs, fusion odds and a Fuse action.
+Farm nameplates show size, name, level and income in four lines.
+A dedicated Fusion page (next to Inventory) with individual farm monster
+cards, selectable inputs, fusion odds and a Fuse action. Inventory Items
+contains tickets and shard tiles; it no longer mounts fusion controls.
 Shard cards can combine further copies of owned species. Result messages show
 the generated tier and level.
 
@@ -642,3 +648,43 @@ effects and labels, restores their original visual properties when toggled off,
 and follows new residents and plot ownership changes. This is a session-local
 rendering option; server roaming, income and replication continue. Own-farm
 monsters remain visible.
+
+Shard cards now include flat faceted crystal artwork via `Utilities.ShardIcon`.
+The icon shares the world pickup's `ShardAppearance` palette (explicit thematic
+species colors, with gold for Pharaoh Mummy). It uses native UI geometry and scales with
+its containing inventory page. Shard tiles are 76 × 76 logical pixels, wrap within the available width, and
+show a 40px shard icon, monster name and owned/needed quantity. A translucent
+monster head portrait is clipped to a safe inset rectangle inside the diamond,
+beneath a denser (55% opaque) shard-facet overlay. Portraits are mounted lazily and
+use MonsterPreview's quality handling; other callers keep their existing
+framing/opacity. Boss icons pulse and sparkle, and major bosses have stronger
+accents. Tweens stop when hidden or below High quality. A shared tooltip outside the clipped list
+shows a short description and owned/required count; its Combine action appears
+when eligible. Hovering never spends shards; touch users tap for the same
+details. Counts, requirements and durable request/result behavior are unchanged.
+
+Fusion is a separate Menu-hosted page with a fixed title, its own scrolling
+monster list and an empty-state hint pointing to Inventory → Items for shard
+combining. It reuses MonsterCollection selection, odds, pending-save/retry and
+committed-result handling. UIEvents profile changes update it while closed or
+open; the page refreshes from cached state on opening. No server transaction,
+recipe or ownership rules changed. MenuIntegration covers all eight hosted
+sections, seven drawer destinations, Fusion's position beside Inventory,
+separation from Inventory, and live profile updates (215 checks in this pass).
+
+## Pause and resume ✅
+
+The Day panel replaces Start Day with Pause Day during Active, Resume Day while
+Paused, and a disabled Resuming button during the centered three-second overlay.
+Elapsed time and progress remain visible and frozen. See [DAY_PAUSE.md](DAY_PAUSE.md).
+
+## Farm Pets tab ✅
+
+Inventory's Pets tab sits immediately after Items and uses the existing Menu
+scaling. A fixed tab row stays above a scrolling grid of compact monster tiles.
+Tiles show a portrait, monster name, size/level, brains/s and Place on farm or
+Remove. The status line shows used/capacity; a full farm prevents further placement.
+Server ProfileUpdated state drives selection; only placed pets earn income.
+Ownership remains intact on removal. Fusion stays in its separate page.
+MenuIntegration now covers all three tabs, selected/stored tile states, live
+profile changes and removal of consumed pets (236 total checks).

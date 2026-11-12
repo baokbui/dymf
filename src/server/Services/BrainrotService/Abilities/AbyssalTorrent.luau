@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	AbyssalTorrent (Tralalero GOD)
 	A water jet from the mouth to the east end of the row. It pierces every
@@ -502,14 +503,14 @@ local function sprayJet(startPos: Vector3, endPos: Vector3, parent: Instance): M
 	model.Parent = parent
 	pose(0)
 
-	local started = os.clock()
+	local started = BattleClock.now(parent)
 	local spinConn: RBXScriptConnection
 	spinConn = RunService.Heartbeat:Connect(function()
 		if not model.Parent then
 			spinConn:Disconnect()
 			return
 		end
-		pose(os.clock() - started)
+		pose(BattleClock.now(parent) - started)
 	end)
 	model.Destroying:Connect(function()
 		spinConn:Disconnect()
@@ -577,7 +578,7 @@ function AbyssalTorrent.tryAct(ctx, callbacks)
 				if not model.Parent then
 					break
 				end
-				task.wait(STEP)
+				if not BattleClock.wait(ctx.plotModel, STEP) then break end
 				if not model.Parent then
 					break
 				end

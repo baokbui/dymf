@@ -30,6 +30,7 @@ Constants.TAGS = {
 	GridTile = "GridTile",
 	Plot = "Plot",
 	Coin = "Coin",
+	MonsterShard = "MonsterShard",
 	StorePrompt = "StorePrompt",
 }
 
@@ -43,7 +44,9 @@ Constants.COLLISION_GROUPS = {
 Constants.PHASE = {
 	Preparation = "Preparation", -- waiting to start the level (no planting yet)
 	Countdown = "Countdown", -- Start Day overlay (3…0) then Active
-	Active = "Active", -- plant + fight; monsters stage in forest then enter the plot
+	Active = "Active",
+	Paused = "Paused",
+	Resuming = "Resuming", -- plant + fight; monsters stage in forest then enter the plot
 	Victory = "Victory", -- all groups cleared — level won
 	Defeat = "Defeat", -- monsters breached the house — level lost
 }

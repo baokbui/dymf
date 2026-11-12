@@ -1,89 +1,105 @@
 --!strict
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Config = require(Shared.Config.FarmProgressionConfig)
-local Farm = require(Shared.Utilities.FarmProgression)
 local Monsters = require(Shared.Monsters)
 local Remotes = require(Shared.Remotes)
 local Theme = require(Shared.Config.UITheme)
 local HttpService = game:GetService("HttpService")
+local Utilities = script.Parent.Parent.Parent.Utilities
+local ShardIcon = require(Utilities.ShardIcon)
+local ShardTooltip = require(Utilities.ShardTooltip)
 local ShardInventory = {}
+local Visual = require(Shared.Config.ShardVisualConfig)
+local TILE_WIDTH, TILE_HEIGHT, GAP = Visual.TILE_WIDTH, Visual.TILE_HEIGHT, Visual.TILE_GAP
 
 function ShardInventory.new(list: ScrollingFrame): (any) -> boolean
-	local rows = {}
-	local ids = {}
+	local holder = Instance.new("Frame")
+	holder.Name, holder.LayoutOrder, holder.Visible = "ShardTiles", 10, false
+	holder.BackgroundTransparency, holder.Size = 1, UDim2.new(1, 0, 0, 0)
+	holder.Parent = list
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize, grid.CellPadding = UDim2.fromOffset(TILE_WIDTH, TILE_HEIGHT), UDim2.fromOffset(GAP, GAP)
+	grid.SortOrder, grid.Parent = Enum.SortOrder.LayoutOrder, holder
+	local rows, ids, operations = {}, {}, {}
 	for id in Config.MONSTERS do table.insert(ids, id) end
 	table.sort(ids)
 	local pending: string? = nil
 	local requestId = 0
-	local operations: { [string]: string } = {}
-	for index, id in ids do
-		local card = Instance.new("Frame")
-		card.Name, card.LayoutOrder = id .. "Shards", index + 10
-		card.Size, card.Visible = UDim2.new(1, 0, 0, 108), false
-		Theme.applyButtonLook(card, Theme.INVENTORY_PACKET, 12)
-		card.Parent = list
-		local title = Instance.new("TextLabel")
-		title.BackgroundTransparency = 1
-		title.Position, title.Size = UDim2.fromOffset(12, 8), UDim2.new(1, -145, 0, 30)
-		title.Text = Monsters.get(id).name .. " Shards"
-		title.TextSize, title.Font = 16, Enum.Font.GothamBold
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = Theme.INVENTORY_INK
-		title.TextWrapped = true
-		title.Parent = card
-		local detail = title:Clone()
-		detail.Name = "ShardProgress"
-		detail.Position, detail.Size = UDim2.fromOffset(12, 42), UDim2.new(1, -145, 0, 52)
-		detail.TextSize, detail.Font = 13, Enum.Font.Gotham
-		detail.Parent = card
-		local button = Instance.new("TextButton")
-		button.Position, button.Size = UDim2.new(1, -130, 0, 26), UDim2.fromOffset(118, 50)
-		button.TextSize = 14
-		Theme.applyButtonLook(button, Theme.SUCCESS, 10)
-		Theme.applyOutlinedTitle(button)
-		button.Parent = card
-		button.Activated:Connect(function()
-			if not button.Active or pending then return end
-			pending = id
-			requestId += 1
-			local request = requestId
-			task.delay(15, function()
-				if list.Parent and requestId == request and pending == id then
-					pending = nil
-					button.Text = "Retry"
-				end
-			end)
-			button.Text = "Combining…"
-			operations[id] = operations[id] or HttpService:GenerateGUID(false)
-			Remotes.getEvent("CombineMonsterShards"):FireServer(id, operations[id])
-		end)
-		rows[id] = { card = card, detail = detail, button = button }
-	end
 	local state: any = nil
-	local function refresh(profile: any): boolean
+	local refresh: (any) -> boolean
+	local tooltip
+	local messages: { [string]: string } = {}
+	local function combine(id: string)
+		local amount = if state and state.monsterShards then state.monsterShards[id] or 0 else 0
+		if pending or amount < Config.MONSTERS[id].shards then return end
+		pending = id
+		requestId += 1
+		local request = requestId
+		messages[id] = "Combining…"
+		operations[id] = operations[id] or HttpService:GenerateGUID(false)
+		refresh(state)
+		task.delay(15, function()
+			if list.Parent and requestId == request and pending == id then
+				pending, messages[id] = nil, "Retry"
+				refresh(state)
+			end
+		end)
+		Remotes.getEvent("CombineMonsterShards"):FireServer(id, operations[id])
+	end
+	tooltip = ShardTooltip.new(list, combine)
+	for index, id in ids do
+		local tile = Instance.new("TextButton")
+		tile.Name, tile.LayoutOrder, tile.Visible, tile.Text = id .. "Shards", index, false, ""
+		tile.Size = UDim2.fromOffset(TILE_WIDTH, TILE_HEIGHT)
+		Theme.applyButtonLook(tile, Theme.INVENTORY_PACKET, 10)
+		tile.Parent = holder
+		local icon = ShardIcon.new(tile, id)
+		icon.AnchorPoint, icon.Position, icon.Size = Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 0), UDim2.fromOffset(40, 40)
+		local title = Instance.new("TextLabel")
+		title.Name, title.Text = "Name", Monsters.get(id).name
+		title.BackgroundTransparency = 1
+		title.Position, title.Size = UDim2.fromOffset(3, 40), UDim2.new(1, -6, 0, 22)
+		title.TextSize, title.Font, title.TextWrapped = 10, Enum.Font.GothamBold, true
+		title.TextColor3, title.Parent = Theme.INVENTORY_INK, tile
+		local count = Instance.new("TextLabel")
+		count.Name, count.BackgroundTransparency = "Quantity", 1
+		count.Position, count.Size = UDim2.fromOffset(3, 63), UDim2.new(1, -6, 0, 12)
+		count.TextSize, count.Font, count.TextColor3 = 10, Enum.Font.GothamMedium, Theme.INVENTORY_INK
+		count.Parent = tile
+		rows[id] = tile
+		tooltip.bind(tile, id, function() refresh(state) end)
+	end
+	local function fitGrid()
+		local first = rows[ids[1]]
+		local scale = if first.AbsoluteSize.Y > 0 then first.AbsoluteSize.Y / TILE_HEIGHT else 1
+		holder.Size = UDim2.new(1, 0, 0, grid.AbsoluteContentSize.Y / math.max(scale, 0.01))
+	end
+	local resize = grid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(fitGrid)
+	refresh = function(profile: any): boolean
 		state = profile
 		local anyItems = false
-		for id, row in rows do
+		for id, tile in rows do
 			local amount = if profile and profile.monsterShards then profile.monsterShards[id] or 0 else 0
 			local owned = profile and table.find(profile.collectedMonsters or {}, id) ~= nil
-			row.card.Visible = amount > 0 or owned == true
-			anyItems = anyItems or row.card.Visible
-			row.detail.Text = string.format("%d / %d shards\n%s", amount, Config.MONSTERS[id].shards, "Random size • Lv. 1–12")
-			row.button.Active = amount >= Config.MONSTERS[id].shards and pending == nil
-			row.button.Text = if pending == id then "Combining…" elseif amount < Config.MONSTERS[id].shards then "Need shards" else "Combine"
+			tile.Visible = amount > 0 or owned == true
+			anyItems = anyItems or tile.Visible
+			tile.Quantity.Text = string.format("%d / %d", amount, Config.MONSTERS[id].shards)
+			if tile.Visible then ShardIcon.mountPortrait(tile.ShardIcon) end
+			tooltip.update(id, Monsters.get(id).name, amount, Config.MONSTERS[id].shards, messages[id], pending ~= nil)
 		end
+		holder.Visible = anyItems
+		task.defer(function() if list.Parent then fitGrid() end end)
 		return anyItems
 	end
 	local result = Remotes.getEvent("MonsterCombineResult").OnClientEvent:Connect(function(payload)
-		if payload.operation ~= operations[payload.monsterId] then return end
+		if type(payload) ~= "table" or type(payload.monsterId) ~= "string" or not operations[payload.monsterId]
+			or payload.operation ~= operations[payload.monsterId] then return end
 		pending = nil
 		if payload.success then operations[payload.monsterId] = nil end
+		messages[payload.monsterId] = if payload.success then "Combined!" else "Try again"
 		refresh(state)
-		local row = rows[payload.monsterId]
-		if row and not payload.success then row.button.Text = "Try again"
-		elseif row and payload.monster then row.button.Text = payload.monster.tier .. " · Lv. " .. tostring(require(Shared.Utilities.MonsterFusion).tier(payload.monster.tier).level) end
 	end)
-	list.Destroying:Once(function() result:Disconnect() end)
+	list.Destroying:Once(function() result:Disconnect(); resize:Disconnect() end)
 	return refresh
 end
 

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	ShadowRequiem (Cappuccino GOD)
 	Plays the dual-slash clip, then at the end of that animation one
@@ -116,15 +117,15 @@ local function waveOrigin(model: Model): Vector3
 	return fallback
 end
 
-local function clipWait(callbacks): number
-	local deadline = os.clock() + 0.4
+local function clipWait(callbacks, plotModel: Model): number
+	local deadline = BattleClock.now(plotModel) + 0.4
 	local length: number? = nil
-	while os.clock() < deadline do
+	while BattleClock.now(plotModel) < deadline do
 		length = callbacks.getAbilityLength(ABILITY_ID)
 		if type(length) == "number" and length > 0 then
 			break
 		end
-		task.wait(0.05)
+		if not BattleClock.wait(plotModel, 0.05) then return 0 end
 	end
 	if type(length) == "number" and length > 0 then
 		return math.max(0, length - CombatConfig.SWORD_WAVE_RELEASE_LEAD)
@@ -138,7 +139,7 @@ local function fireWaves(ctx, damage: number, laneEndBonus: number, travelBonus:
 	end
 
 	local origin = waveOrigin(ctx.model)
-	local waveGroupId = string.format("%s_%.3f", ctx.instanceId, os.clock())
+	local waveGroupId = string.format("%s_%.3f", ctx.instanceId, BattleClock.now(ctx.plotModel))
 	local options = {
 		sourceBrainrotId = ctx.definition.id,
 		sourceInstanceId = ctx.instanceId,
@@ -202,19 +203,19 @@ function ShadowRequiem.tryAct(ctx, callbacks)
 	setRowBusy(ctx.plotModel, ctx.position.row, true)
 	task.spawn(function()
 		local ok, err = pcall(function()
-			local untilWave = clipWait(callbacks)
+			local untilWave = clipWait(callbacks, ctx.plotModel)
 			local lead = math.max(0, CombatConfig.SWORD_WAVE_SOUND_LEAD)
 			if untilWave > lead then
-				task.wait(untilWave - lead)
+				if not BattleClock.wait(ctx.plotModel, untilWave - lead) then return end
 			end
 			if not ctx.plotModel.Parent or not ctx.model.Parent then
 				return
 			end
 			callbacks.playSound("SwordWave")
 			if untilWave > lead then
-				task.wait(lead)
+				if not BattleClock.wait(ctx.plotModel, lead) then return end
 			elseif untilWave > 0 then
-				task.wait(untilWave)
+				if not BattleClock.wait(ctx.plotModel, untilWave) then return end
 			end
 			if not ctx.plotModel.Parent or not ctx.model.Parent then
 				return

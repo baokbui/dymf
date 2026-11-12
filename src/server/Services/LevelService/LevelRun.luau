@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	LevelRun
 	Spawn-group scheduler for one active level attempt. LevelService owns lifecycle;
@@ -20,6 +21,7 @@ export type RunPhase = "group_delay" | "big_wave_warning" | "spawning" | "done_s
 export type LevelRun = typeof(setmetatable(
 	{} :: {
 		definition: Types.LevelDefinition,
+		plotModel: Model?,
 		totalToSpawn: number,
 		totalSpawned: number,
 		groupIndex: number,
@@ -39,9 +41,10 @@ local function totalMonsters(definition: Types.LevelDefinition): number
 	return total
 end
 
-function LevelRun.new(definition: Types.LevelDefinition): LevelRun
+function LevelRun.new(definition: Types.LevelDefinition, plotModel: Model?): LevelRun
 	local self = setmetatable({
 		definition = definition,
+		plotModel = plotModel,
 		totalToSpawn = totalMonsters(definition),
 		totalSpawned = 0,
 		groupIndex = 1,
@@ -53,7 +56,7 @@ function LevelRun.new(definition: Types.LevelDefinition): LevelRun
 
 	local firstGroup = definition.groups[1]
 	local delay = if firstGroup and firstGroup.startDelay ~= nil then firstGroup.startDelay else 0
-	self.nextActionTime = os.clock() + delay
+	self.nextActionTime = BattleClock.now(self.plotModel) + delay
 	return self
 end
 

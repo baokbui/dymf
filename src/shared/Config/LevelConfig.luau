@@ -11,6 +11,7 @@ local LevelConfig = {
 	-- Brief Start Day overlay: UI shows 3, 2, 1, 0 (1s each) then Active.
 	-- Forest march after Active is still the plant/setup window.
 	COUNTDOWN_TIME = 4,
+	PAUSE_RESUME_SECONDS = 3,
 
 	STARTING_PLAYER_HEALTH = 5, -- hearts; one lost per house breach
 

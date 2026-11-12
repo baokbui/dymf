@@ -289,6 +289,7 @@ local function ensureSharedHeartbeat()
 				table.insert(dead, model)
 				continue
 			end
+			if model:GetAttribute("DayPaused") == true then continue end
 			if not state.active or #state.joints == 0 then
 				continue
 			end

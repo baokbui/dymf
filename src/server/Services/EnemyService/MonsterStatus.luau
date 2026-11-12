@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MonsterStatus
 	Applies and ticks combat status effects on monster runtime state.
@@ -28,6 +29,7 @@ export type StatusFields = {
 }
 
 export type StatusRuntime = StatusFields & {
+	plotModel: Model,
 	column: number,
 }
 
@@ -46,7 +48,7 @@ function MonsterStatus.createFields(): StatusFields
 end
 
 function MonsterStatus.apply(runtime: StatusRuntime, kind: Types.StatusEffectKind, duration: number, magnitude: number?)
-	local now = os.clock()
+	local now = BattleClock.now(runtime.plotModel)
 	if kind == "Freeze" or kind == "Stun" then
 		runtime.frozenUntil = math.max(runtime.frozenUntil, now + duration)
 	elseif kind == "Slow" then

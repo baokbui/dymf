@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 local CombatService = require(script.Parent.Parent.Parent.CombatService)
 
 local ThrowKnife = {}
@@ -16,7 +17,7 @@ function ThrowKnife.tryAct(ctx, callbacks)
 
 	callbacks.pulseAttack()
 
-	local piercing = os.clock() < ctx.buffs.pierceUntil
+	local piercing = BattleClock.now(ctx.plotModel) < ctx.buffs.pierceUntil
 	local pierceCount = if piercing then 1 else 0
 
 	ctx.buffs.attackCount += 1
@@ -50,7 +51,7 @@ function ThrowKnife.tryAct(ctx, callbacks)
 
 	if type(hitDelay) == "number" and hitDelay > 0 then
 		local model = ctx.model
-		task.delay(hitDelay, function()
+		BattleClock.delay(ctx.plotModel, hitDelay, function()
 			if model.Parent then
 				launch()
 			end

@@ -129,8 +129,8 @@ StarterPlayerScripts/Client/           (init.client.luau = bootstrap)
         PlotUtil/         (local plot helpers — M11)
         TextShine.luau    (shared rarity-title gleam)
         MenuRouter.luau  (single Menu window, page registry, badges and responsive hosting)
-        MenuTiles.luau   (shared icon/name artwork for the six drawer destinations and reward entries)
-        MenuDrawer.luau  (six HUD destinations, slide-out/retraction and Menu/X morph)
+        MenuTiles.luau   (shared icon/name artwork for the seven drawer destinations and reward entries)
+        MenuDrawer.luau  (seven HUD destinations, slide-out/retraction and Menu/X morph)
         SettingsShortcut.luau (safe-inset top-bar Settings entry)
         BrainAmount.luau (inline number + brain texture for rewards/statistics)
         UISizing.luau    (event-driven desktop HUD scaling and screen bounds)
@@ -631,7 +631,7 @@ not receive authored HUD offset scaling. See `UI.md` for removal regressions.
 
 Menu navigation now uses an animated horizontal HUD drawer, not a large grid
 launcher. MenuRouter retains its feature-panel registry/hosting; MenuDrawer
-manages the six drawer icons and Menu/X state, including resize/tween cancellation.
+manages the seven drawer icons and Menu/X state, including resize/tween cancellation.
 Settings uses its own safe-inset top-bar shortcut into the same Menu host.
 Selecting a section leaves the drawer open; feature windows have no top-left
 Menu button. HudLayout keeps hosted and standalone windows within the reserved
@@ -684,3 +684,34 @@ SaveService atomically commits shard combining and 3–5 input fusion;
 MonsterFusionConfig/Utilities.MonsterFusion own size tiers, recipes and receipt
 validation. ShardInventory, MonsterCollection and DayGoals present the feature.
 See FARM_PROGRESSION.md.
+
+### Shard presentation
+
+`ShardVisualConfig` and `Utilities.ShardAppearance` share cosmetic tuning/colors
+between server `Utilities.ShardModel` and client `Utilities.ShardIcon`.
+`FarmProgressionService.SkyShard` moves the entire faceted model using one
+CFrameValue tween and attaches its server-validated prompt to the invisible
+root. `UIController.FusionPanel` owns the separate Fusion page, reusing
+MonsterCollection without duplicating recipe/request logic. Inventory Items
+retains tickets and shard combining. `UIController.ShardInventory` adds compact matching icon/name/count tiles. A shared
+`Utilities.ShardTooltip` presents the description, quantities and eligible
+combine action on hover, focus or tap. `ShardController` watches tagged world pickups and applies graphics-quality
+particle rates. `Utilities.ShardEffects` owns visibility-aware boss icon
+tweens. MonsterPreview optionally supports translucent head framing, and
+world shards contain static, sanitized monster miniatures. No animation
+frame loop, asset upload, remote or save schema change is needed.
+
+## Per-player day pause ✅
+
+LevelService owns pause phases; its PauseScene helper captures animation and
+character freeze state. Shared.Utilities.BattleClock owns per-player simulation
+time, delayed callbacks and tracked tweens. Combat systems use it without a
+LevelService dependency. See [DAY_PAUSE.md](DAY_PAUSE.md).
+
+## Farm pet equipment ✅
+
+InventoryPets renders owned monsters and forwards place/remove intent.
+Shared.Utilities.FarmResidents holds pure legacy selection and capacity rules.
+HouseService validates requests, ProgressService owns the live selection and
+SaveService persists the optional per-monster onFarm field. Refreshing resident
+visuals after equipment changes does not run an income tick. See HOUSE.md.

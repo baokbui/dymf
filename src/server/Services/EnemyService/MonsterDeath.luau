@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MonsterDeath
 	Server-replicated death pose, then linger + fade. EnemyService destroys the
@@ -61,7 +62,7 @@ local function tweenPivot(model: Model, start: CFrame, goal: CFrame, duration: n
 		model:PivotTo(start:Lerp(goal, value))
 	end)
 
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(model,
 		alpha,
 		TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ Value = 1 }
@@ -83,9 +84,9 @@ local function fadeOut(model: Model, duration: number)
 	local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
-			TweenService:Create(descendant, info, { Transparency = 1 }):Play()
+			BattleClock.tween(model, descendant, info, { Transparency = 1 }):Play()
 		elseif descendant:IsA("Decal") or descendant:IsA("Texture") then
-			TweenService:Create(descendant, info, { Transparency = 1 }):Play()
+			BattleClock.tween(model, descendant, info, { Transparency = 1 }):Play()
 		end
 	end
 end
@@ -200,7 +201,7 @@ local function freezeCorpse(model: Model)
 end
 
 local function scheduleLingerAndFade(model: Model)
-	task.delay(CombatConfig.DEATH_CORPSE_LINGER, function()
+	BattleClock.delay(model, CombatConfig.DEATH_CORPSE_LINGER, function()
 		if not model.Parent then
 			return
 		end
@@ -302,7 +303,7 @@ function MonsterDeath.playRiseFromGround(model: Model, duration: number, onRisen
 
 	local waitFor = if type(lead) == "number" then math.max(0, lead) else 0
 	if waitFor > 0 then
-		task.delay(waitFor, beginRise)
+		BattleClock.delay(model, waitFor, beginRise)
 	else
 		beginRise()
 	end

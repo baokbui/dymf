@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	PullToLane (La Vacca Saturno Saturnita)
 	One-shot on place. Hovers, then pulls the closest legal monster on each
@@ -114,14 +115,14 @@ local function foldIntoHole(model: Model, seconds: number, goal: Vector3)
 	local startScale = model:GetScale()
 	local start = model:GetPivot()
 	local rotation = start - start.Position
-	local started = os.clock()
+	local started = BattleClock.now(model)
 	local conn: RBXScriptConnection
 	conn = RunService.Heartbeat:Connect(function()
 		if not model.Parent then
 			conn:Disconnect()
 			return
 		end
-		local alpha = math.clamp((os.clock() - started) / seconds, 0, 1)
+		local alpha = math.clamp((BattleClock.now(model) - started) / seconds, 0, 1)
 		model:ScaleTo(math.max(0.05, startScale * (1 - alpha)))
 		model:PivotTo(CFrame.new(start.Position:Lerp(goal, alpha)) * rotation)
 		if alpha >= 1 then
@@ -141,7 +142,7 @@ local function suckTo(instanceId: string, goal: Vector3, seconds: number, brainr
 	local start = model:GetPivot()
 	local rotation = start - start.Position
 	local startScale = model:GetScale()
-	local started = os.clock()
+	local started = BattleClock.now(model)
 	local done = false
 	local function finish()
 		if done then
@@ -163,7 +164,7 @@ local function suckTo(instanceId: string, goal: Vector3, seconds: number, brainr
 			finish()
 			return
 		end
-		local alpha = math.clamp((os.clock() - started) / seconds, 0, 1)
+		local alpha = math.clamp((BattleClock.now(model) - started) / seconds, 0, 1)
 		local eased = alpha * alpha
 		model:ScaleTo(math.max(0.02, startScale * (1 - eased)))
 		model:PivotTo(CFrame.new(start.Position:Lerp(goal, eased)) * rotation)
@@ -192,12 +193,12 @@ local function collapse(ctx, callbacks)
 	foldIntoHole(model, openSeconds, center)
 	CombatService.notifyBlackHole(ctx.ownerUserId, center, openSeconds + holdSeconds + closeSeconds)
 
-	task.delay(openSeconds, function()
+	BattleClock.delay(ctx.plotModel, openSeconds, function()
 		if not model.Parent then
 			return
 		end
 		for index, instanceId in victims do
-			task.delay((index - 1) * stagger, function()
+			BattleClock.delay(ctx.plotModel, (index - 1) * stagger, function()
 				if model.Parent then
 					suckTo(instanceId, center, suckSeconds, brainrotId)
 				end
@@ -205,7 +206,7 @@ local function collapse(ctx, callbacks)
 		end
 	end)
 
-	task.delay(openSeconds + holdSeconds + closeSeconds, function()
+	BattleClock.delay(ctx.plotModel, openSeconds + holdSeconds + closeSeconds, function()
 		if model.Parent then
 			callbacks.destroySelf()
 		end
@@ -234,11 +235,11 @@ function PullToLane.onPlaced(ctx, callbacks)
 			conn:Disconnect()
 			return
 		end
-		local bob = math.sin(os.clock() * BOB_SPEED) * BOB_HEIGHT
+		local bob = math.sin(BattleClock.now(ctx.plotModel) * BOB_SPEED) * BOB_HEIGHT
 		model:PivotTo(base + Vector3.new(0, bob, 0))
 	end)
 
-	task.delay(PULL_DELAY, function()
+	BattleClock.delay(ctx.plotModel, PULL_DELAY, function()
 		if not plotModel.Parent or not model.Parent then
 			return
 		end
@@ -253,7 +254,7 @@ function PullToLane.onPlaced(ctx, callbacks)
 				table.insert(origins, monster:GetPivot().Position)
 			end
 			if EnemyService.pullToRow(targetId, row, ctx.position.column) and stun > 0 then
-				task.delay(PULL_SLIDE_SECONDS, function()
+				BattleClock.delay(ctx.plotModel, PULL_SLIDE_SECONDS, function()
 					CombatService.applyStatusToMonster(targetId, "Stun", stun)
 				end)
 			end
@@ -261,7 +262,7 @@ function PullToLane.onPlaced(ctx, callbacks)
 		CombatService.notifyGravityPull(ctx.ownerUserId, model:GetPivot().Position, origins)
 	end)
 
-	task.delay(DESPAWN_AFTER, function()
+	BattleClock.delay(ctx.plotModel, DESPAWN_AFTER, function()
 		bobbing = false
 		if conn.Connected then
 			conn:Disconnect()

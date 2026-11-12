@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 -- Quest/login reward authority. Clients send intent, never amounts or progress.
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Config = require(Shared.Config.RetentionConfig)
@@ -216,8 +217,9 @@ local function onClaim(player: Player, request: any)
 end
 
 function RetentionService.init()
-	Remotes.getEvent("ClaimRetentionReward").OnServerEvent:Connect(onClaim)
+	Remotes.getEvent("ClaimRetentionReward").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onClaim(player, ...) end end)
 	Remotes.getEvent("ViewRetentionGoal").OnServerEvent:Connect(function(player: Player, id: any)
+		if BattleClock.isPaused(player) then return end
 		if type(id) ~= "string" or #id > 96 or not states[player.UserId] then return end
 		local now = os.clock()
 		if now < (goalViews[player.UserId] or 0) then return end

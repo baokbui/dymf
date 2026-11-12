@@ -455,7 +455,15 @@ local function buildMenu()
 	end)
 end
 
+local dayPaused = false
 local function applyLevelState(state: { [string]: any }?)
+	if type(state) == "table" then
+		dayPaused = state.dayPaused == true
+		if dayPaused then
+			local vfx = workspace:FindFirstChild("ClientVfx")
+			if vfx then for _, effect in vfx:GetChildren() do if effect.Name == "InkDrop" then effect:Destroy() end end end
+		end
+	end
 	if levelPanel and type(state) == "table" then
 		levelPanel:applyState(state)
 	end
@@ -852,10 +860,10 @@ function UIController.start()
 	task.spawn(function()
 		while true do
 			task.wait(0.1)
-			if shop then
+			if shop and not dayPaused then
 				shop:refresh()
 			end
-			if magnetHud then
+			if magnetHud and not dayPaused then
 				magnetHud:tick()
 			end
 		end

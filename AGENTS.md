@@ -310,9 +310,12 @@ Each plot has a house in the `HOUSE_ZONE` (west of the lawn). Built by
 - Numbered campaign clears grant star-rated brains and regional monster shards.
   Players combine species-specific shards into individual farm monsters through
   a durable SaveService spend/unlock transaction. **HouseService** displays
-  the most recently created individual monsters up to purchased farm capacity as roaming miniatures and grants
+  player-selected individual monsters up to purchased farm capacity as roaming miniatures and grants
   online brains. SaveService v16 persists individual monsters, shards, best day stars and recent
-  farm-operation receipts. Combining permits duplicate species. Fusion consumes
+  farm-operation receipts. Inventory → Pets equips/removes exact owned monster ids; only placed pets earn
+  income. Optional `onFarm` flags persist in v16 monster records. Legacy saves
+  preserve their newest residents until selection is edited; new outputs are
+  stored off-farm. Combining permits duplicate species. Fusion consumes
   3–5 exact owned ids of one species for one random-size output. Size tier
   determines a fixed level, visual scale and a multiplier on the species income
   rate; level is not a separate XP or income multiplier. Offline income is planned.
@@ -404,9 +407,11 @@ Use versioned save data for future compatibility.
 
 # UI
 
-Inventory, Index, Upgrades, Settings, Statistics, Quests and Achievements
+Inventory, Fusion, Index, Upgrades, Settings, Statistics, Quests and Achievements
 share one Menu window via `Client.Utilities.MenuRouter`. Settings opens from
-the top bar, and the other six sections open from the HUD drawer. Reuse existing feature panels
+the top bar, and the other seven sections open from the HUD drawer. Fusion
+has its own page immediately after Inventory; fusion controls do not live in
+Inventory Items. Reuse existing feature panels
 and register sections instead of recreating those HUD entries. Daily Spinner and First-time Rewards use separate HUD entries and windows.
 First-time Rewards is hidden only after server-confirmed
 completion of all seven rewards. The physical
@@ -440,6 +445,9 @@ is a client Settings toggle (High = Full, Low = Reduced, Off = Minimal). The
 server always authors the full effect. Settings can hide Brainrot VFX on other
 players' plots. A separate session-local Hide Other Farm Monsters option hides
 other farms' resident visuals; server roaming, income and replication continue.
+ShardController scales shard pickup particles with graphics quality; boss
+shard icon glow tweens run only while visible on High. Static shard monster
+miniatures have no gameplay simulation.
 Damage, targeting, status, and combat animations are never throttled.
 
 ---
@@ -485,3 +493,9 @@ Always:
 - Follow Roblox best practices.
 
 If requirements are unclear, ask for clarification instead of making assumptions.
+
+Day pause is server-owned by LevelService. Paused and Resuming freeze the owned
+battle through BattleClock, remove in-flight projectiles without impacts, and
+reject modifying gameplay requests. Resume holds a three-second countdown.
+Pause state is never saved; rejoin restarts the same day from its checkpoint.
+See `docs/DAY_PAUSE.md`.

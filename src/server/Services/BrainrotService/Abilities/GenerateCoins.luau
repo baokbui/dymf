@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 local GenerateCoins = {}
 
 local function resolveSpitDelay(definition: any): number
@@ -26,7 +27,7 @@ function GenerateCoins.tryAct(ctx, callbacks)
 	end
 
 	local model = ctx.model
-	task.delay(spitDelay, function()
+	BattleClock.delay(ctx.plotModel, spitDelay, function()
 		if not model.Parent then
 			return
 		end

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	FogRows
 	Tracks lawn rows whose NightFog plant-block is lifted. Giraffa applies a
@@ -100,7 +101,7 @@ function FogRows.applyTimed(plotModel: Model, row: number, duration: number)
 		return
 	end
 
-	task.delay(seconds, function()
+	BattleClock.delay(plotModel, seconds, function()
 		if not plotModel.Parent then
 			return
 		end
@@ -124,7 +125,7 @@ function FogRows.applyPlotTimed(plotModel: Model, duration: number)
 	plotWideOn[plotModel] = true
 	broadcast(plotModel)
 
-	task.delay(seconds, function()
+	BattleClock.delay(plotModel, seconds, function()
 		if not plotModel.Parent then
 			return
 		end

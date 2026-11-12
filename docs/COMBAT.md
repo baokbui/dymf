@@ -354,3 +354,10 @@ Pharaoh walk / chew / summon / steal clips live on the definition
 (`abilityAnimationIds` for summon + steal; chew uses the Small Mummy attack id).
 Summon/steal wait `summonHitDelay` / `stealHitDelay` after the clip starts.
 Pharaoh **stops walking** for the clip length (`beginChannel`), then resumes walk.
+
+## Day pause ✅
+
+Combat deadlines, delayed hits and movement tweens use the per-owner BattleClock.
+Paused and Resuming skip runtime updates. In-flight projectiles (including dropped
+Bombardino bombs) are destroyed without damage; attack windups retain remaining
+time. See [DAY_PAUSE.md](DAY_PAUSE.md) for ownership and cleanup rules.

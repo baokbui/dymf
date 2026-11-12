@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MonsterFeedback
 	Server-side visual feedback on monster models (replicates to clients).
@@ -240,12 +241,12 @@ function MonsterFeedback.pulseAttack(model: Model)
 
 	model:ScaleTo(base * MonsterConfig.ATTACK_PULSE_SCALE)
 	local half = MonsterConfig.ATTACK_PULSE_DURATION / 2
-	task.delay(half, function()
+	BattleClock.delay(model, half, function()
 		if pulseTokens[model] ~= token or not model.Parent then
 			return
 		end
 		model:ScaleTo(base)
-		task.delay(half, function()
+		BattleClock.delay(model, half, function()
 			if pulseTokens[model] == token then
 				pulseTokens[model] = nil
 			end
@@ -283,7 +284,7 @@ function MonsterFeedback.flashHit(model: Model, _isFatal: boolean?)
 		local baseColor = bases[part]
 		if baseColor then
 			remaining += 1
-			local tween = TweenService:Create(
+			local tween = BattleClock.tween(model,
 				part,
 				TweenInfo.new(MonsterConfig.HIT_FLASH_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 				{ Color = baseColor }
@@ -454,7 +455,7 @@ local function popBubbleShell(model: Model)
 	bubbledModels[model] = nil
 
 	local popSize = shell.Size * 1.45
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(model,
 		shell,
 		TweenInfo.new(MonsterConfig.BUBBLE_POP_DURATION, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
 		{

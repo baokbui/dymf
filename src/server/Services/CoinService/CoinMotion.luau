@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	CoinMotion
 	Server-replicated drop animations for ground coins (rain from sky, spit arc
@@ -31,7 +32,7 @@ local function markLanded(part: BasePart)
 	part:SetAttribute("Landed", true)
 end
 
-local function tweenAlpha(duration: number, easing: Enum.EasingStyle, direction: Enum.EasingDirection, onStep: (t: number) -> (), onDone: (() -> ())?)
+local function tweenAlpha(part: BasePart, duration: number, easing: Enum.EasingStyle, direction: Enum.EasingDirection, onStep: (t: number) -> (), onDone: (() -> ())?)
 	local alpha = Instance.new("NumberValue")
 	alpha.Value = 0
 	local conn: RBXScriptConnection
@@ -39,7 +40,7 @@ local function tweenAlpha(duration: number, easing: Enum.EasingStyle, direction:
 		onStep(value)
 	end)
 
-	local tween = TweenService:Create(
+	local tween = BattleClock.tween(part,
 		alpha,
 		TweenInfo.new(duration, easing, direction),
 		{ Value = 1 }
@@ -72,7 +73,7 @@ function CoinMotion.rainFromSky(part: BasePart, landPosition: Vector3)
 	part.CFrame = flatCFrame(start)
 	local generation = nextMotion(part)
 
-	tweenAlpha(
+	tweenAlpha(part,
 		EconomyConfig.PASSIVE_RAIN_DURATION,
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.In,
@@ -101,7 +102,7 @@ function CoinMotion.spitFromOrigin(part: BasePart, fromPosition: Vector3, landPo
 	local generation = nextMotion(part)
 
 	local arc = EconomyConfig.PRODUCER_SPIT_ARC_HEIGHT
-	tweenAlpha(
+	tweenAlpha(part,
 		EconomyConfig.PRODUCER_SPIT_DURATION,
 		Enum.EasingStyle.Sine,
 		Enum.EasingDirection.InOut,
@@ -130,7 +131,7 @@ function CoinMotion.pullToward(part: BasePart, getTarget: () -> Vector3?, durati
 	part.CanTouch = false
 	local generation = nextMotion(part)
 	local start = part.Position
-	tweenAlpha(
+	tweenAlpha(part,
 		duration,
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.Out,

@@ -4,6 +4,7 @@ local UITheme = require(game:GetService("ReplicatedStorage").Shared.Config.UIThe
 local Menu = require(script.Parent.Parent.Parent.Utilities.MenuRouter)
 local FirstTimeRewards = require(script.Parent.Parent.QuestController.FirstTimeRewards)
 local DailySpinHud = require(script.Parent.Parent.QuestController.DailySpinHud)
+local FusionPanel = require(script.Parent.FusionPanel)
 local MenuPages = {}
 
 function MenuPages.register(main: ScreenGui, panels: any, refreshSettings: () -> ())
@@ -21,6 +22,12 @@ function MenuPages.register(main: ScreenGui, panels: any, refreshSettings: () ->
 		close = function() panels.inventory:setOpen(false) end,
 		detail = panels.inventory.inspect.frame,
 		back = function() panels.inventory:hideStats() end,
+	})
+	local fusion = FusionPanel.new(main)
+	Menu.register("Fusion", fusion.frame, {
+		selfScrolling = true,
+		open = function() fusion:setOpen(true) end,
+		close = function() fusion:setOpen(false) end,
 	})
 	Menu.register("Index", panels.index.frame, {
 		selfScrolling = true,

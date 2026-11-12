@@ -245,11 +245,17 @@ return function(sources: any, modules: any): string
 	assert(Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", ids, "fusion-operation-1"), "fusion retry failed after inputs consumed")
 	assert(#profile.farmMonsters == beforeCount + 1, "fusion retry duplicated output")
 	assert(select(2, Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", { ids[1], ids[1], ids[1] }, "invalid-fusion-1")) == "NotReady")
+	-- Equipment flags use the ordinary save writer and survive hydration.
+	profile.farmMonsters[1].onFarm = true
+	profile.farmMonsters[#profile.farmMonsters].onFarm = false
+	Save.saveNow(player, "farm-pets")
+	assert(backend.record.farmMonsters[1].onFarm == true and backend.record.farmMonsters[#profile.farmMonsters].onFarm == false, "pet equipment flags not saved")
 	local savedMonsterCount = #profile.farmMonsters
 	handlers.remove(player)
 	player.Parent = true
 	handlers.add(player)
 	assert(#profile.farmMonsters == savedMonsterCount, "rejoin lost individual monsters")
+	assert(profile.farmMonsters[1].onFarm == true and profile.farmMonsters[#profile.farmMonsters].onFarm == false, "rejoin lost pet selection")
 	assert(Save.claimRetentionReward(player, "MonsterFusion", 0, "Fusion", ids, "fusion-operation-1"), "saved fusion receipt was lost on rejoin")
 	assert(#profile.farmMonsters == savedMonsterCount, "rejoin retry duplicated fusion output")
 	local spinDay=time.dayKey(now)

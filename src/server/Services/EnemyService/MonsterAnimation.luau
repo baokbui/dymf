@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MonsterAnimation
 	Plays walk / attack AnimationTracks on authored monster models that keep a
@@ -267,7 +268,7 @@ local function beginHold(model: Model, state: AnimState)
 	track:AdjustSpeed(1)
 	track.TimePosition = 0
 	local holdAt = state.attackHoldTime
-	task.delay(holdAt, function()
+	BattleClock.delay(model, holdAt, function()
 		if states[model] ~= state or not state.holding or state.holdToken ~= token then
 			return
 		end

@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	ClearFogRow (Giraffa Celeste)
 	One-shot on place: play the gust animation, then a plot-wide wind VFX
@@ -34,7 +35,7 @@ function ClearFogRow.onPlaced(ctx, callbacks)
 		end
 	end
 
-	task.delay(animLength, function()
+	BattleClock.delay(ctx.plotModel, animLength, function()
 		if not plotModel.Parent or not plantModel.Parent then
 			return
 		end

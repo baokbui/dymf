@@ -63,6 +63,11 @@ return function(source: string, config: any?, registry: any?): string
 	frame:Fire(); task.wait()
 	assert(root.CFrame ~= restingRoot, "High quality idle did not visibly move anchored rig")
 	assertExcluded()
+	model:SetAttribute("DayPaused", true)
+	local pausedPose = root.CFrame
+	frame:Fire(); task.wait(); frame:Fire(); task.wait()
+	assert(root.CFrame == pausedPose, "Day pause did not freeze local idle pose")
+	model:SetAttribute("DayPaused", nil)
 	high = false; changed(); frame:Fire(); task.wait()
 	assert(joint.C0 == base, "Low/Off did not restore original pose")
 	assert(model:GetPivot():FuzzyEq(restingRig), "Low/Off did not restore body pose")

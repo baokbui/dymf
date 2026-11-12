@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	InkPuddle (Blueberrinni Octopusini)
 	Every attackInterval, lobs ink from the head onto a random empty tile in
@@ -94,7 +95,7 @@ local function spawnPuddle(plotModel: Model, row: number, column: number, durati
 		plotModel = plotModel,
 		row = row,
 		column = column,
-		expiresAt = os.clock() + duration,
+		expiresAt = BattleClock.now(plotModel) + duration,
 		slowFactor = slowFactor,
 		part = disc,
 	})
@@ -126,7 +127,7 @@ function InkPuddle.tryAct(ctx, callbacks): boolean
 	local model = ctx.model
 	local ownerUserId = ctx.ownerUserId
 
-	task.delay(hitDelay, function()
+	BattleClock.delay(ctx.plotModel, hitDelay, function()
 		if not model.Parent or not plotModel.Parent then
 			return
 		end
@@ -137,7 +138,7 @@ function InkPuddle.tryAct(ctx, callbacks): boolean
 		local head = headOrigin(model)
 		local goal = landing + Vector3.new(0, 0.2, 0)
 		CombatService.notifyInkDrop(ownerUserId, head, goal, arc)
-		task.delay(VfxConfig.INK_FLIGHT_SECONDS, function()
+		BattleClock.delay(ctx.plotModel, VfxConfig.INK_FLIGHT_SECONDS, function()
 			if plotModel.Parent then
 				spawnPuddle(plotModel, row, column, duration, slowFactor)
 			end
@@ -147,10 +148,11 @@ function InkPuddle.tryAct(ctx, callbacks): boolean
 end
 
 function InkPuddle.tick()
-	local now = os.clock()
 	local index = 1
 	while index <= #puddles do
 		local puddle = puddles[index]
+		local now = BattleClock.now(puddle.plotModel)
+		if BattleClock.isPaused(puddle.plotModel) then index += 1; continue end
 		if now >= puddle.expiresAt or not puddle.part.Parent then
 			if puddle.part.Parent then
 				puddle.part:Destroy()

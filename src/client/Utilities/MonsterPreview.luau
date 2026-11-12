@@ -27,10 +27,12 @@ local function centerAtOrigin(model: Model)
 	model:PivotTo(model:GetPivot() - cf.Position)
 end
 
-local function frameModel(camera: Camera, model: Model)
+local function frameModel(camera: Camera, model: Model, focusHead: boolean?)
 	local cf, size = model:GetBoundingBox()
+	local head = if focusHead then model:FindFirstChild("Head", true) else nil
+	if head and head:IsA("BasePart") then cf, size = head.CFrame, head.Size * 1.3 end
 	local extent = math.max(size.X, size.Y, size.Z)
-	local distance = math.max(extent * 2.1, 3.6)
+	local distance = math.max(extent * 2.1, if focusHead and head then 0.3 else 3.6)
 
 	local face = PREVIEW_FACE
 	if face.Magnitude < 1e-4 then
@@ -68,6 +70,8 @@ type Mount = {
 	gui: GuiObject,
 	definition: Types.MonsterDefinition,
 	viewportTransparency: number?,
+	imageTransparency: number?,
+	focusHead: boolean?,
 	silhouette: boolean,
 	keepModel: boolean,
 }
@@ -123,7 +127,7 @@ local function makeSwatch(definition: Types.MonsterDefinition, silhouette: boole
 	return swatch
 end
 
-local function makeViewport(definition: Types.MonsterDefinition, silhouette: boolean): GuiObject
+local function makeViewport(definition: Types.MonsterDefinition, silhouette: boolean, focusHead: boolean?): GuiObject
 	local modelId = definition.modelId or definition.id
 	local template = ModelUtil.findMonsterTemplate(modelId)
 	if not template then
@@ -172,7 +176,7 @@ local function makeViewport(definition: Types.MonsterDefinition, silhouette: boo
 	model.Name = "PreviewModel"
 	centerAtOrigin(model)
 	model.Parent = world
-	frameModel(camera, model)
+	frameModel(camera, model, focusHead)
 	if silhouette then
 		paintSilhouette(model)
 	end
@@ -181,11 +185,12 @@ end
 
 local function realize(mount: Mount, layout: Layout): GuiObject
 	local gui = if VfxLoad.usesModelPortrait(mount.keepModel)
-		then makeViewport(mount.definition, mount.silhouette)
+		then makeViewport(mount.definition, mount.silhouette, mount.focusHead)
 		else makeSwatch(mount.definition, mount.silhouette)
 	applyLayout(gui, layout)
 	if gui:IsA("ViewportFrame") then
 		gui.BackgroundTransparency = mount.viewportTransparency or gui.BackgroundTransparency
+		gui.ImageTransparency = mount.imageTransparency or 0
 	end
 	return gui
 end
@@ -224,12 +229,16 @@ function MonsterPreview.mount(
 	definition: Types.MonsterDefinition,
 	size: UDim2,
 	position: UDim2,
-	keepModel: boolean?
+	keepModel: boolean?,
+	imageTransparency: number?,
+	focusHead: boolean?
 ): GuiObject
 	local mount: Mount = {
 		gui = nil :: any,
 		definition = definition,
-		viewportTransparency = nil,
+		viewportTransparency = if imageTransparency then 1 else nil,
+		imageTransparency = imageTransparency,
+		focusHead = focusHead,
 		silhouette = false,
 		keepModel = keepModel == true,
 	}

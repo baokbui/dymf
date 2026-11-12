@@ -52,6 +52,7 @@ end
 -- Releases ownership and clears per-owner contents so the plot can be reused.
 function Plot.release(self: Plot)
 	self.ownerUserId = nil
+	self.model:SetAttribute("DayPaused", nil)
 	self.model:SetAttribute("OwnerUserId", nil)
 	for _, folderName in DYNAMIC_FOLDERS do
 		local folder = self.model:FindFirstChild(folderName)

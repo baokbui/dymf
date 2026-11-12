@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	MagnetService
 	Server-owned magnet ability. Client sends ActivateMagnet; this service
@@ -95,6 +96,7 @@ local function onActivate(player: Player)
 end
 
 local function tickPlayer(player: Player, runtime: Runtime)
+	if BattleClock.isPaused(player) then return end
 	if runtime.pausedRemaining > 0 then
 		return
 	end
@@ -156,11 +158,18 @@ function MagnetService.resumeCooldown(player: Player)
 	broadcast(player)
 end
 
+function MagnetService.resumeDayTimers(player: Player, duration: number)
+	local runtime = getRuntime(player.UserId)
+	if runtime.activeUntil > 0 then runtime.activeUntil += duration end
+	if runtime.readyAt > 0 then runtime.readyAt += duration end
+	broadcast(player)
+end
+
 function MagnetService.init()
 end
 
 function MagnetService.start()
-	Remotes.getEvent("ActivateMagnet").OnServerEvent:Connect(onActivate)
+	Remotes.getEvent("ActivateMagnet").OnServerEvent:Connect(function(player, ...) if not BattleClock.isPaused(player) then onActivate(player, ...) end end)
 	Players.PlayerRemoving:Connect(function(player)
 		runtimes[player.UserId] = nil
 	end)

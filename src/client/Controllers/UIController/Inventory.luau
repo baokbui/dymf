@@ -23,6 +23,7 @@ local AudioController = require(script.Parent.Parent.AudioController)
 local UIEvents = require(script.Parent.Parent.Parent.UIEvents)
 local BrainrotInspect = require(script.Parent.BrainrotInspect)
 local InventoryItems = require(script.Parent.InventoryItems)
+local InventoryPets = require(script.Parent.InventoryPets)
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -62,6 +63,8 @@ export type InventoryPanel = typeof(setmetatable(
 		loadoutCount: TextLabel,
 		title: TextLabel,
 		itemsList: ScrollingFrame,
+		petsList: ScrollingFrame,
+		petsTab: TextButton,
 		loadoutTab: TextButton,
 		itemsTab: TextButton,
 		inspect: BrainrotInspect.InspectCard,
@@ -230,7 +233,8 @@ function Inventory.new(parent: Frame): InventoryPanel
 		button.Parent = parent
 		return button
 	end
-	local loadoutTab, itemsTab = tab("Loadout", 16), tab("Items", 132)
+	local loadoutTab, itemsTab, petsTab = tab("Loadout", 16), tab("Items", 132), tab("Pets", 248)
+	local petsList = InventoryPets.new(parent)
 	local itemsList, updateItems = InventoryItems.new(parent)
 	local connection = UIEvents.retentionUpdated:Connect(updateItems)
 	parent.Destroying:Once(function() connection:Disconnect() end)
@@ -250,6 +254,8 @@ function Inventory.new(parent: Frame): InventoryPanel
 		loadoutCount = loadoutCount,
 		title = title,
 		itemsList = itemsList,
+		petsList = petsList,
+		petsTab = petsTab,
 		loadoutTab = loadoutTab,
 		itemsTab = itemsTab,
 		inspect = inspect,
@@ -276,6 +282,10 @@ function Inventory.new(parent: Frame): InventoryPanel
 	itemsTab.Activated:Connect(function()
 		AudioController.play("UiClick")
 		self:showItems(true)
+	end)
+	petsTab.Activated:Connect(function()
+		AudioController.play("UiClick")
+		self:showPets()
 	end)
 	self:showItems(false)
 
@@ -318,6 +328,8 @@ function Inventory.syncEquipButton(self: InventoryPanel)
 end
 
 function Inventory.showItems(self: InventoryPanel, show: boolean)
+	self.petsList.Visible = false
+	UITheme.applyButtonLook(self.petsTab, UITheme.INVENTORY_INSET, 8)
 	if show and not self.itemsList.Visible then self:hideStats() end
 	self.itemsList.Visible = show
 	self.list.Visible = not show
@@ -328,8 +340,18 @@ function Inventory.showItems(self: InventoryPanel, show: boolean)
 	UITheme.applyButtonLook(self.loadoutTab, if show then UITheme.INVENTORY_INSET else UITheme.INVENTORY_INK, 8)
 end
 
+function Inventory.showPets(self: InventoryPanel)
+	self:hideStats()
+	self:showItems(false)
+	self.list.Visible, self.hint.Visible, self.loadoutCount.Visible = false, false, false
+	self.petsList.Visible = true
+	self.title.Text = "Farm Pets"
+	UITheme.applyButtonLook(self.loadoutTab, UITheme.INVENTORY_INSET, 8)
+	UITheme.applyButtonLook(self.petsTab, UITheme.INVENTORY_INK, 8)
+end
+
 function Inventory.showStats(self: InventoryPanel, definition: Types.BrainrotDefinition)
-	if self.itemsList.Visible then self:showItems(false) end
+	if self.itemsList.Visible or self.petsList.Visible then self:showItems(false) end
 	self.selectedId = definition.id
 	layoutInventory(self, true)
 	local equipped = isEquipped(self.equipped, definition.id)

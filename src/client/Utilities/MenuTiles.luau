@@ -28,6 +28,19 @@ function MenuTiles.illustrate(parent: Instance, name: string)
 		icon.ScaleType = Enum.ScaleType.Fit
 		icon.Size = UDim2.fromScale(1, 1)
 		icon.Parent = parent
+	elseif name == "Fusion" then
+		for _, x in { 0.1, 0.64 } do
+			local gem = shape(parent, Theme.SUCCESS, x, 0.12, 0.25, 0.25)
+			gem.Rotation = 45
+			Theme.applyStroke(gem, 2)
+		end
+		for _, x in { 0.27, 0.59 } do
+			local beam = shape(parent, Theme.TITLE, x, 0.38, 0.08, 0.3)
+			beam.Rotation = if x < 0.5 then -35 else 35
+		end
+		local result = shape(parent, Theme.CHIP_BG_BRAINS, 0.35, 0.64, 0.3, 0.3)
+		result.Rotation = 45
+		Theme.applyStroke(result, 3)
 	elseif name == "Statistics" then
 		for index, height in { 0.35, 0.55, 0.8 } do
 			local bar = shape(parent, Theme.SUCCESS, 0.12 + (index - 1) * 0.27, 0.9 - height, 0.2, height)

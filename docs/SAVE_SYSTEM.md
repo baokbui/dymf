@@ -283,3 +283,20 @@ MonsterFusion transactions validate and consume 3–5 exact same-species owned
 ids, then save one random-tier output with the spend. Both farm transaction
 kinds use the existing session/revision writer, merge concurrent snapshots,
 and return committed receipt outcomes on retries. Reset clears these fields.
+
+## Paused attempts ✅
+
+Pause flags, countdowns and simulation timers are not persisted. A paused
+campaign save uses pre-attempt hearts and the existing committed lawn/XP
+checkpoint. Leaving and rejoining returns to Preparation on the same saved day.
+Daily Challenge retains its campaign restoration rules. See [DAY_PAUSE.md](DAY_PAUSE.md).
+
+## Farm pet selection ✅
+
+v16 farmMonsters records optionally include `onFarm: boolean`. Sanitization
+preserves explicit true/false through snapshots, writer merges and hydration.
+Missing flags keep the legacy newest-resident default until an equipment edit
+materializes flags on all owned monsters. New combine/fusion outputs have false.
+Selections use ordinary `saveNow` equipment saves, not currency-spend receipts.
+Reset clears them with the farm inventory. Consumed fusion inputs disappear from
+selection with their records. SaveRetention.spec verifies saved and rejoined flags.

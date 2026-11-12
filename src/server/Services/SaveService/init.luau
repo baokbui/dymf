@@ -1,4 +1,5 @@
 --!strict
+local BattleClock = require(game:GetService("ReplicatedStorage").Shared.Utilities.BattleClock)
 --[[
 	SaveService
 	The ONLY system that touches DataStore. Persists player-owned progression
@@ -740,6 +741,7 @@ end
 function SaveService.init()
 	local Remotes = require(Shared.Remotes)
 	Remotes.getEvent("ResetProgress").OnServerEvent:Connect(function(player: Player)
+		if BattleClock.isPaused(player) then return end
 		SaveService.resetProgress(player)
 	end)
 
