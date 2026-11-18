@@ -1,4 +1,4 @@
-# Brainrots vs. Monsters (BVM)
+# Defend your Monster Farm!
 
 A 3D Roblox tower defense game inspired by Plants vs. Zombies. Each player
 defends their own lawn by planting **Brainrots** on a grid while **monsters**
