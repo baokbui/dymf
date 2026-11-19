@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlotConfig = require(ReplicatedStorage.Shared.Config.PlotConfig)
 local Decor = require(script.Parent.ForestDecor)
+local WorldStyle = require(ReplicatedStorage.Shared.Utilities.WorldStyle)
 local ForestBuilder = {}
 
 function ForestBuilder.build(enemyColumnCenterX: number, startZ: number): Folder
@@ -52,6 +53,7 @@ function ForestBuilder.build(enemyColumnCenterX: number, startZ: number): Folder
 		local x = minX + rng:NextNumber(4, 14)
 		Decor.undergrowth(folder, Vector3.new(x, 0, z), rng)
 	end
+	WorldStyle.apply(folder, "Scenery")
 	return folder
 end
 

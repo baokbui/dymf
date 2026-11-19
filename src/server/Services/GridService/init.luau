@@ -23,6 +23,7 @@ local Constants = require(Shared.Constants)
 local GridConfig = require(Shared.Config.GridConfig)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local GridUtil = require(Shared.Utilities.GridUtil)
+local WorldStyle = require(Shared.Utilities.WorldStyle)
 local Logger = require(Shared.Utilities.Logger)
 local Types = require(Shared.Types)
 
@@ -45,6 +46,7 @@ local function paintGrass(part: BasePart, position: Types.GridPosition)
 	local isLight = (position.row + position.column) % 2 == 0
 	part.Material = GridConfig.TILE_MATERIAL
 	part.Color = if isLight then GridConfig.TILE_COLOR_A else GridConfig.TILE_COLOR_B
+	WorldStyle.applyPart(part, "Ground")
 end
 
 local function createTile(position: Types.GridPosition, center: Vector3, parent: Instance): BasePart

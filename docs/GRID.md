@@ -148,3 +148,10 @@ Shovel input can resolve a directly clicked planted model via its replicated
 Row/Column and PlotUtil local ownership check, falling back to the occupied
 grid tile. Raw screen coordinates still feed the camera ray; GUI inset
 subtraction applies only to the cosmetic cursor position, not world targeting.
+
+## Lawn finish ✅
+
+GridService keeps its existing checker colors, dimensions, tags and occupancy.
+WorldStyle applies BvmStudsGround at tile construction. The finish is a shared
+PBR material with no extra geometry; original physical properties are retained.
+DesertVisuals switches the colors while keeping that pattern. See WORLD_STYLE.md.

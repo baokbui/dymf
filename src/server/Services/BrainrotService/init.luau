@@ -179,7 +179,8 @@ local function applyEvolutionAura(model: Model, userId: number, brainrotId: stri
 		model,
 		EvolutionConfig.worldAura(rarity),
 		EvolutionConfig.BRAINROT_AURA_SCALE,
-		EvolutionConfig.isRainbow(rarity)
+		EvolutionConfig.isRainbow(rarity),
+		rarity
 	)
 end
 
@@ -826,7 +827,7 @@ function BrainrotService.restorePlacements(player: Player, brainrots: { Types.Pl
 end
 
 -- Re-compose Epic (and later) stats + aura on every living plant of this id.
-function BrainrotService.applyEvolutionStats(player: Player, brainrotId: string)
+function BrainrotService.applyEvolutionStats(player: Player, brainrotId: string, celebrate: boolean?)
 	local base = Brainrots.get(brainrotId)
 	if not base then
 		return
@@ -849,6 +850,12 @@ function BrainrotService.applyEvolutionStats(player: Player, brainrotId: string)
 		syncHealthDisplay(placement)
 		applyEvolutionAura(placement.model, player.UserId, brainrotId)
 		applyNameplateAttributes(placement)
+		if celebrate then
+			local serial = (placement.model:GetAttribute("EvolutionBurst") or 0) + 1
+			local aura = placement.model:FindFirstChild("AuraVfx")
+			if aura then aura:SetAttribute("BurstId", serial) end
+			placement.model:SetAttribute("EvolutionBurst", serial)
+		end
 	end
 end
 

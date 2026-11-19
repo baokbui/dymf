@@ -161,7 +161,7 @@ function Settings.new(parent: Frame): SettingsPanel
 		VfxLoad.cycle()
 		qualityButton.Text = VfxLoad.label()
 	end)
-	hint(graphicsSection, "High shows all effects. Low reduces them. Off keeps the colored outline on your Brainrots.", 2, 42)
+	hint(graphicsSection, "High adds detail. Low simplifies effects. Off keeps rarity outlines. Auras also follow Roblox graphics.", 2, 42)
 	local otherPlots = Controls.row(graphicsSection, "OtherPlots", "Other Plots", "▦", 3)
 	Controls.switch(otherPlots, "Toggle", VfxLoad.showsOtherPlots(), function(enabled)
 		AudioController.play("UiClick")

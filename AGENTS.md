@@ -29,12 +29,14 @@ Then consult the system-specific docs relevant to the task:
 - docs/MONSTERS.md — Monster registry and definitions
 - docs/LEVELS.md — PvZ-style campaign: days, spawn groups, victory / defeat / rewind
 - docs/WEATHER.md — per-day weather (NightFog, plant rules, client visuals)
+- docs/WORLD_STYLE.md — shared studded materials and authored-art preservation
 - docs/COMBAT.md — damage, projectiles, targeting, status effects
 - docs/ECONOMY.md — coins, brains, and currency rules
 - docs/STORE.md — Progression Store catalogs, Magnet / Speed upgrades
 - docs/HOUSE.md — monster farm residents, capacity, and online income (Milestone 21)
 - docs/FARM_PROGRESSION.md — day stars, regional shards, size tiers, and fusion (Milestone 21B)
 - docs/EVOLUTIONS.md — Brainrot leveling + Epic→God tiers (Milestone 19)
+- docs/EVOLUTION_AURAS.md — adaptive aura layers and viewer budgets
 - docs/SAVE_SYSTEM.md — persistence schema and rejoin behavior
 - docs/UI.md — UI structure and rules
 - docs/AUDIO.md — client audio (BGM, SFX, ambient)
@@ -88,6 +90,7 @@ add one.
 Services (current):
 
 - PlotService
+- WorldStyleService (baseplate finish and daytime lighting baseline)
 - HouseService (monster farm residents and online passive brains)
 - FarmProgressionService (day stars, regional shards, rare sky drops and combining)
 - GridService
@@ -499,3 +502,29 @@ battle through BattleClock, remove in-flight projectiles without impacts, and
 reject modifying gameplay requests. Resume holds a three-second countdown.
 Pause state is never saved; rejoin restarts the same day from its checkpoint.
 See `docs/DAY_PAUSE.md`.
+
+WorldStyle applies shared PBR stud variants at construction boundaries. Preserve
+authored mesh textures, effects, valid custom variants and original physics;
+`KeepAuthoredMaterial` opts out a subtree. Material definitions/maps live in
+`default.project.json` and `assets/materials/studded`; tuning lives in config.
+Do not add physical studs or per-frame material scans. See docs/WORLD_STYLE.md.
+
+EvolutionAura authors the full cosmetic core/outer-flame/ember/glint/burst layers. AuraQuality
+uses local High/Medium/Low bands from Effects Quality and Roblox's saved graphics
+preference, plus distance/count limits; Automatic uses conservative Medium.
+Off retains the rarity outline. Pause freezes particle TimeScale and Stoneheart
+retains appearance ownership. Never throttle combat for aura quality.
+
+Evolution core flame columns remain visible on Low. Accepted evolution purchases may signal
+transient matched model/carrier burst serials; clients cap simultaneous bursts.
+Never celebrate ordinary placement, restore or developer roster application,
+and never replay suppressed bursts after quality/visibility changes.
+
+Aura bounds include rendered-part boxes and padded rig Bone positions. Keep
+this cosmetic calculation separate from placement/feet snapping and preserve
+wide/tall bounds. A nested FlameVolume starts at the feet with a lowered ceiling
+to allow flame sprite extent and upward travel. Flames and sparse rising sparks
+share its Box/Volume; do not add concentrated leg/torso spark anchors or assume
+Box/Surface covers every face. Confirm visual source changes in an isolated
+running probe; property fixtures alone do not establish appearance acceptance.
+See docs/EVOLUTION_AURAS.md for current tuning and pending visual QA.

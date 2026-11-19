@@ -11,7 +11,8 @@ Farm capacity upgrades and size tiers/fusion are implemented.
 open sanctuary through `SanctuaryBuilder`. It occupies the original house slot,
 using asset **1911880871**, stored as Assets.Houses.Farm1911880871, scaled
 to the house footprint with its entrance facing the lawn. The farm retains its
-large owner-name sign outside the fence. Monsters roam inside the fitted enclosure bounds
+large owner-name sign outside the fence, with both support posts behind the
+signboard so they cannot cover its front. Monsters roam inside the fitted enclosure bounds
 and stand on the imported grass surface. If the template is unavailable, the
 procedural farm provides a fallback. Authored templates are stored in Studio
 and must be saved with the place. The physical Brainrot shop
@@ -75,3 +76,10 @@ automatically placing stored pets after explicit selection.
 FarmResidents.spec and FarmPetsService.spec cover migration, capacity, ownership,
 selection/removal, fusion, pause/save locks and no extra income on toggles.
 SaveRetention.spec verifies flags through the actual in-memory save/rejoin path.
+
+## Farm materials ✅
+
+Farm scenery and eligible resident bodies use the shared studded toy-world
+finish. Authored textured faces/meshes and special-effect materials are retained.
+This changes appearance only; resident selection, income and movement rules are
+unchanged. See WORLD_STYLE.md.

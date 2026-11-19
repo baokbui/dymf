@@ -95,7 +95,7 @@ Visual: aura color tracks the **highest** owned (claimed) tier for that Brainrot
 Planted units with Epic+ claimed get a Super Saiyan column (stretched flame
 spikes, thin silhouette outline) tinted by
 `EvolutionConfig.worldAura` — purple at Epic, gold at Legendary, red-orange
-at Mythic, dark red at Immortal, rainbow at GOD (`BrainrotFeedback.applyAura`). Mesh is not filled. Stacked FX and later-tier
+at Mythic, dark red at Immortal, rainbow at GOD (`BrainrotFeedback.applyAura`). The Highlight retains a faint body tint. Stacked FX and later-tier
 colors land with those tiers. Prefer tint / particle auras over a full mesh
 swap unless a prestige `modelId` is authored later.
 
@@ -283,12 +283,12 @@ authored on this sheet. The ladder already adds actives, passives, and ultimates
   overlay in combat. **GOD** ultimates tick the same extras path
   (`SahurWrath`, `Jackpot`, `PrimalRetaliation`, `ShadowRequiem`, `AbyssalTorrent` ✅; Lirili Glacial Dominion
   on plant ✅; Boneca Last Laugh on her last headbutt ✅; Orangutini Pineapple Express ✅; La Vacca Black Hole on plant ✅).
--   Aura VFX: Super Saiyan-style column on planted units (`BrainrotFeedback`);
-  Epic purple, Legendary gold, Mythic red-orange, Immortal dark red, GOD rainbow (`EvolutionConfig.worldAura`).
-  The server authors a dense flame column (core + extra layer). **High** shows both,
-  **Low** keeps a thin core (`BRAINROT_AURA_SPIKES_RATE_LOW`), and **Off** clears the
-  flames on that client. The rarity **Highlight outline** stays on every setting.
-  Size/speed stay fixed so the column does not grow. Combat and
-  unlocks server-authoritative.
+- Aura VFX: classic flame columns with bright cores, saturated outer flames and glints on planted
+  units. Epic violet, Legendary gold, Mythic red-orange, Immortal crimson and
+  GOD rainbow remain distinct. The server authors full layers; AuraQuality
+  applies High/Medium/Low bands from Effects Quality and Roblox graphics,
+  plus distance/crowd budgets. Accepted purchases trigger a brief budgeted local burst; restoration does not.
+  Off keeps the rarity outline and faint tint. Stoneheart
+  and day pause are respected. See `EVOLUTION_AURAS.md` for exact budgets.
 
 See `ROADMAP.md` Milestone 19 for ship criteria.

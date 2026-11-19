@@ -19,6 +19,7 @@ local Types = require(Shared.Types)
 local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
 
+local WorldStyle = require(Shared.Utilities.WorldStyle)
 local BrainrotModel = {}
 
 local log = Logger.new("BrainrotModel")
@@ -77,6 +78,7 @@ local function createPlaceholder(
 	body.BottomSurface = Enum.SurfaceType.Smooth
 	body.Material = Enum.Material.SmoothPlastic
 	body.Color = definition.color or DEFAULT_COLOR
+	WorldStyle.applyPart(body, "Unit")
 	body.Parent = model
 	model.PrimaryPart = body
 

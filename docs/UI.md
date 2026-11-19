@@ -143,7 +143,7 @@ hardcode a second palette in new UI.
   Music and Sound Effects use separate 0–100% sliders with live readouts.
   Mute, Brainrot Sounds, and Other Plots use on/off switches. Effects Quality
   cycles High, Low, and Off. Audio changes apply locally as the controls move.
-  Behind that: High is full combat effects and a dense aura; Low thins the aura and freezes shine; Off clears aura flames (outline stays) and swaps shop, inventory, and index portraits to color swatches. Inspect portraits stay 3D. **Danger Zone → Reset
+  Behind that: High is full combat effects with adaptive aura detail; Low keeps core flames and sparse sparks and freezes shine; Off clears aura particles (outline stays) and swaps shop, inventory, and index portraits to color swatches. Inspect portraits stay 3D. **Danger Zone → Reset
   Progress** (red button, **two confirmations**). Confirmed reset → Day 1,
   empty lawn, coins = 125 (`SaveService.resetProgress`).
 - **Statistics** ✅ — a separate Menu tile. Displays days cleared, Brainrots
@@ -210,8 +210,9 @@ hardcode a second palette in new UI.
   / plant recharge); **Legendary** extras and **Mythic** / **Immortal**
   passives tick in
   combat. Planted Epic+ units get a rarity-tinted aura (purple / gold /
-  red-orange / dark red / rainbow). **High** shows the full flame column, **Low**
-  a thin core, and **Off** no flames — the rarity outline stays on every setting. GOD ultimates: Tung Tung
+  red-orange / dark red / rainbow). Aura detail follows High/Medium/Low Roblox graphics and the game's Effects Quality, with camera-distance/crowd limits. **Off** retains the softer
+  rarity outline and faint tint. The core flame column stays on Low;
+  accepted evolutions trigger a short quality-scaled burst. See `EVOLUTION_AURAS.md`. GOD ultimates: Tung Tung
   **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini **Primal Retaliation**,
   Lirili **Glacial Dominion**, Cappuccino **Shadow Requiem**, Tralalero **Abyssal Torrent** ✅.
   (`Shared.Evolutions` + `EvolutionConfig`). Built from

@@ -21,6 +21,7 @@ local Logger = require(Shared.Utilities.Logger)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
 local CollisionUtil = require(Shared.Utilities.CollisionUtil)
 
+local WorldStyle = require(Shared.Utilities.WorldStyle)
 local MonsterModel = {}
 
 local log = Logger.new("MonsterModel")
@@ -134,6 +135,7 @@ local function createPlaceholder(
 	body.CastShadow = true
 	body.Material = Enum.Material.SmoothPlastic
 	body.Color = definition.color or MonsterConfig.DEFAULT_COLOR
+	WorldStyle.applyPart(body, "Unit")
 	body.Parent = model
 	model.PrimaryPart = body
 

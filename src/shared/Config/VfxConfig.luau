@@ -385,13 +385,7 @@ local VfxConfig = {
 	JACKPOT_BURST_SIZE = 0.42,
 	JACKPOT_BURST_LIFETIME = 0.55,
 
-	-- Planted evolution aura: flame spikes only (no sparkles / speed lines).
-	-- High plays the core column plus an extra layer. Low keeps a thin core.
-	-- Off drops the flames on the client; the Highlight outline stays.
-	-- Size/speed stay in BrainrotFeedback so the column does not grow.
-	BRAINROT_AURA_SPIKES_RATE = 48,
-	BRAINROT_AURA_EXTRA_RATE = 40,
-	BRAINROT_AURA_SPIKES_RATE_LOW = 12,
+	-- Evolution aura presentation lives in EvolutionVfxConfig.
 
 	-- Tralalero Abyssal Torrent. Purple beam from the snout: dim core, darker
 	-- glow, rings, and spiral streaks. Sized under a full tile.

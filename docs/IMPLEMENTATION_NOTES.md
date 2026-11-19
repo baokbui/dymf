@@ -244,3 +244,36 @@ The latest compact pass reduces desktop enlargement, keeps menu captions white,
 and uses one Daily/Weekly tracker heading. ScrollPolicy hides chrome for fitting
 content and balances gutters; 207 UI, 17 viewport, 15 reserved-HUD layout and 7 scrollbar checks pass.
 These isolated tests do not establish full device or four-player visual QA.
+
+## Studded world appearance — 2026-11-19
+
+Shared PBR material variants and procedural source maps implement the reference's
+raised-square finish without extra physical studs. Construction-time assignment
+preserves authored mesh artwork, effects, animation joints and original physics.
+The new maps uploaded under the user's account; after initial propagation, the
+isolated preview preloaded successfully. Studio source checks found no external
+changes in the files touched by this pass before sync. Material/weather fixtures
+and Rojo build pass. The temporary Edit preview was removed; real saves and
+DevConfig were not accessed or changed. Full live/device QA remains open.
+See WORLD_STYLE.md for the material ids, scope and preservation policy.
+
+## Evolution aura refresh — 2026-11-19
+
+The current presentation is classic flame columns with sparse rising sparkles,
+rarity outline and faint tint. AuraBounds includes mesh boxes and padded rig
+bones without changing placement. Two invisible welded volumes support five
+emitters; sparks share the flames' Box/Volume instead of leg/torso anchors.
+Flame emission ceiling accounts for travel and estimated stretched sprite extent.
+Exact tuning, rate tables and viewer limits live in EVOLUTION_AURAS.md.
+
+Tier/bounds/35-unit quality fixtures and Rojo build pass. Fixtures cover volume
+sources, rising motion, budgets, purchase serials, pause/stone and cleanup.
+The current shared-volume revision has not been visually verified in a running
+playtest. Device frame time and full multiplayer battle QA remain open.
+
+Earlier isolated probes verified sprite loading, full rig bounds and the
+Top-face Surface-emission problem. Intermediate leg-anchor previews do not
+establish acceptance of the current revision. Those probes disabled normal
+bootstraps only temporarily, restored them afterward and removed test scenes;
+no real progression or DevConfig changes were made. Halo/shell designs and
+point-source tuning are superseded, not alternate current implementations.

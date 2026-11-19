@@ -8,10 +8,10 @@
 	`showsOtherPlots` (default on) hides Brainrot auras and Brainrot projectiles
 	on plots the local player does not own. Monster attacks stay visible.
 
-	High (Full): full combat effects, dense Brainrot aura, moving shine, 3D portraits.
-	Low (Reduced): fewer client bursts, thin Brainrot aura, shine stays still,
+	High (Full): full combat effects, adaptive Brainrot aura, moving shine, 3D portraits.
+	Low (Reduced): fewer client bursts, core flames and sparse sparks, shine stays still,
 	3D portraits stay.
-	Off (Minimal): no heavy particles/trails and no Brainrot aura flames (the
+	Off (Minimal): no heavy particles/trails and no Brainrot aura particles (the
 	rarity outline stays). Shop, inventory, and index portraits become color
 	swatches. Inspect portraits stay 3D.
 ]]

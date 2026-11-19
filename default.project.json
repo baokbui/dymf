@@ -240,6 +240,43 @@
       "$properties": {
         "MaxPlayers": 4
       }
+    },
+    "MaterialService": {
+      "$className": "MaterialService",
+      "$ignoreUnknownInstances": true,
+      "BvmStudsGround": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plastic",
+          "ColorMap": "rbxassetid://122972533723280",
+          "NormalMap": "rbxassetid://86498502678851",
+          "RoughnessMap": "rbxassetid://88643028508905",
+          "StudsPerTile": 2.8,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "BvmStudsScenery": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plastic",
+          "ColorMap": "rbxassetid://122972533723280",
+          "NormalMap": "rbxassetid://86498502678851",
+          "RoughnessMap": "rbxassetid://88643028508905",
+          "StudsPerTile": 2.0,
+          "MaterialPattern": "Regular"
+        }
+      },
+      "BvmStudsUnits": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plastic",
+          "ColorMap": "rbxassetid://122972533723280",
+          "NormalMap": "rbxassetid://86498502678851",
+          "RoughnessMap": "rbxassetid://88643028508905",
+          "StudsPerTile": 0.85,
+          "MaterialPattern": "Regular"
+        }
+      }
     }
   }
 }

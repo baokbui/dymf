@@ -18,6 +18,8 @@ local EvolutionConfig = require(ReplicatedStorage.Shared.Config.EvolutionConfig)
 local VfxConfig = require(ReplicatedStorage.Shared.Config.VfxConfig)
 local ModelUtil = require(ReplicatedStorage.Shared.Utilities.ModelUtil)
 
+local EvolutionAura = require(script.Parent.EvolutionAura)
+
 local BrainrotFeedback = {}
 
 local baseScales: { [Model]: number } = {}
@@ -762,109 +764,13 @@ function BrainrotFeedback.setRetaliation(model: Model, active: boolean)
 	)
 end
 
-local function discEmitter(parent: BasePart, name: string): ParticleEmitter
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = name
-	emitter.LightInfluence = 0
-	emitter.LockedToPart = false
-	emitter.EmissionDirection = Enum.NormalId.Top
-	emitter.Shape = Enum.ParticleEmitterShape.Disc
-	emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
-	emitter.Orientation = Enum.ParticleOrientation.VelocityParallel
-	emitter.Parent = parent
-	return emitter
-end
-
--- Super Saiyan column: stretched flame spikes + thin rarity silhouette.
--- Flames only — no sparkles or speed lines. The server authors the dense
--- column (core + extra layer). Clients thin or clear the flames by VFX
--- setting; the Highlight outline always stays. Size and speed stay fixed
--- so the column does not grow taller or thicker.
-function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?, rainbow: boolean?)
+-- Public feedback API retains stone/status integration; construction lives in EvolutionAura.
+function BrainrotFeedback.applyAura(model: Model, auraColor: Color3?, auraScale: number?, rainbow: boolean?, rarity: string?)
 	BrainrotFeedback.clearAura(model)
-	if not auraColor then
-		return
-	end
-
+	if not auraColor then return end
 	local body = resolveBody(model)
-	if not body then
-		return
-	end
-
-	local scale = auraScale or 1
-	local visualSize, center = ModelUtil.getVisualSizeAndCenter(model)
-	local width = math.max(visualSize.X, visualSize.Z, 1.8)
-	local feetY = center.Y - visualSize.Y * 0.48
-
-	local disc = Instance.new("Part")
-	disc.Name = "AuraVfx"
-	disc.Size = Vector3.new(width * 1.55, 0.3, width * 1.55)
-	disc.CFrame = CFrame.new(center.X, feetY, center.Z)
-	disc.Transparency = 1
-	disc.Anchored = false
-	disc.CanCollide = false
-	disc.CanQuery = false
-	disc.CanTouch = false
-	disc.Massless = true
-	disc.CastShadow = false
-	disc.Parent = model
-
-	local discWeld = Instance.new("WeldConstraint")
-	discWeld.Part0 = body
-	discWeld.Part1 = disc
-	discWeld.Parent = disc
-
-	local hot = auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.55)
-	local spikeColor = if rainbow
-		then EvolutionConfig.rainbowSequence()
-		else ColorSequence.new({
-			ColorSequenceKeypoint.new(0, hot),
-			ColorSequenceKeypoint.new(0.4, auraColor),
-			ColorSequenceKeypoint.new(1, auraColor:Lerp(Color3.fromRGB(20, 10, 5), 0.28)),
-		})
-
-	local function styleFlames(emitter: ParticleEmitter, layer: string, rate: number)
-		emitter.Color = spikeColor
-		emitter.Texture = "rbxasset://textures/particles/fire_main.dds"
-		emitter.LightEmission = 1
-		emitter.Brightness = 6.5
-		emitter.Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.95 * scale),
-			NumberSequenceKeypoint.new(0.45, 1.55 * scale),
-			NumberSequenceKeypoint.new(1, 0.4 * scale),
-		})
-		emitter.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.02),
-			NumberSequenceKeypoint.new(0.55, 0.22),
-			NumberSequenceKeypoint.new(1, 1),
-		})
-		emitter.Lifetime = NumberRange.new(0.35, 0.7)
-		emitter.Speed = NumberRange.new(7 * scale, 13 * scale)
-		emitter.SpreadAngle = Vector2.new(40, 52)
-		emitter.Rate = rate
-		emitter.Acceleration = Vector3.new(0, 26 * scale, 0)
-		emitter.Drag = 0.5
-		emitter.Squash = NumberSequence.new(-1.35)
-		emitter.ZOffset = 2
-		emitter:SetAttribute("AuraLayer", layer)
-		emitter:SetAttribute("AuraFullRate", rate)
-	end
-
-	-- Core stays on Low (thinned by the client). Extra is High only.
-	styleFlames(discEmitter(disc, "AuraSpikes"), "Core", VfxConfig.BRAINROT_AURA_SPIKES_RATE)
-	styleFlames(discEmitter(disc, "AuraFlames"), "High", VfxConfig.BRAINROT_AURA_EXTRA_RATE)
-
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "AuraHighlight"
-	highlight.Adornee = model
-	highlight.FillColor = auraColor
-	highlight.FillTransparency = 1
-	highlight.OutlineColor = if rainbow
-		then Color3.fromRGB(255, 255, 255)
-		else auraColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)
-	highlight.OutlineTransparency = 0.15
-	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
-	highlight.Parent = model
+	if not body then return end
+	EvolutionAura.create(model, body, auraColor, auraScale or 1, rainbow, rarity)
 
 	local look = stoneLooks[model]
 	if look and model:GetAttribute("Stoned") == true then

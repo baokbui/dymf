@@ -361,8 +361,9 @@ split across plants on the lawn; coin / soak / freeze / bubble-every-2 /
 melee-every-3 jobs). Claiming an evolution after the level gate spends
 brains (`evolutions` save v6). **Epic** stat overrides apply on place / restore
 / claim; planted Epic+ units get a rarity-tinted aura (purple / gold /
-red-orange). **High** shows the dense flame column, **Low** a thin core, and
-**Off** no flames (the rarity outline stays). **Legendary** extras, **Mythic** passives, and **Immortal**
+red-orange). AuraQuality adapts the flame-column/spark layers to High/Medium/Low graphics,
+with distance/crowd limits; **Off** retains the softer rarity outline. See
+`EVOLUTION_AURAS.md`. **Legendary** extras, **Mythic** passives, and **Immortal**
 passives tick in combat from evolution ability ids / `abilityParams`. GOD
 ultimates: Tung Tung **Sahur's Wrath**, Ballerina **Jackpot**, Chimpanzini
 **Primal Retaliation**, Lirili **Glacial Dominion**, Cappuccino **Shadow

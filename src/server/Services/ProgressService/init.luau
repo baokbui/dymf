@@ -1212,7 +1212,7 @@ local function onEvolveBrainrot(player: Player, rawId: unknown, rawRarity: unkno
 	table.insert(claimed, rarity)
 	profile.evolutions[brainrotId] = claimed
 	local BrainrotService = require(script.Parent.BrainrotService)
-	BrainrotService.applyEvolutionStats(player, brainrotId)
+	BrainrotService.applyEvolutionStats(player, brainrotId, true)
 	broadcast(player)
 	Remotes.getEvent("StorePurchaseSucceeded"):FireClient(player, cost)
 end

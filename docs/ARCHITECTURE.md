@@ -91,6 +91,7 @@ ReplicatedStorage/Shared/
 ServerScriptService/Server/            (init.server.luau = bootstrap)
     Services/
         HouseService/     (online farm income + roaming Resident models)
+        WorldStyleService/ (baseplate/daytime style; shared WorldStyle helper)
         FarmProgressionService/ (day-star attempts, regional shards, sky pickups, combine/fusion intents)
         PlotService/      (init + Plot + PlotBuilder, HouseBuilder, SanctuaryBuilder)
             PlotDecor     (permanent side gardens, paths, benches and small trees)
@@ -373,10 +374,11 @@ Full details in `BRAINROTS.md`. Summary:
   procedural motion; skips definitions marked `noIdle`, leaving action clips
   server-owned.
 - **`BrainrotFeedback`** — ScaleTo attack pulse (skipped when `animated`) +
-  replicated hit flash on damage + rarity-tinted Super Saiyan aura.
+  replicated hit flash on damage + EvolutionAura construction/stone integration.
 - **`BrainrotController`** (client) — plays sounds from `BrainrotAction`
   pushes; ScaleTo pulse only for non-animated melee (gameplay stays server-side);
-  local aura density (High dense, Low thin, Off flames off / outline kept).
+  local aura detail from graphics preference, distance/crowd budgets and pause;
+  Off retains the rarity outline. See EVOLUTION_AURAS.md.
 - **`CombatService`** — row-based Brainrot attacks + monster damage/death (M6).
   Full combat: projectiles, target acquisition, status effects (M7).
 
@@ -715,3 +717,24 @@ Shared.Utilities.FarmResidents holds pure legacy selection and capacity rules.
 HouseService validates requests, ProgressService owns the live selection and
 SaveService persists the optional per-monster onFarm field. Refreshing resident
 visuals after equipment changes does not run an income tick. See HOUSE.md.
+
+## Studded material construction ✅
+
+WorldStyle owns reusable PBR material assignment and artwork/physics exclusions.
+Plot/forest/grid construction and sanitized ModelUtil clones apply it once.
+WorldStyleService owns the daytime baseline; client weather retains night and
+desert transitions. Shared MaterialVariants are source-controlled in the Rojo
+project. See [WORLD_STYLE.md](WORLD_STYLE.md).
+
+Evolution purchase presentation uses an optional celebration flag on
+BrainrotService.applyEvolutionStats. Transient model/carrier serials let
+AuraQuality play one matched, quality/count-limited local burst. Normal
+placement, restore and dev overrides do not trigger it. No combat or save
+schema changes. See EVOLUTION_AURAS.md.
+
+EvolutionAura uses its cosmetic-only AuraBounds helper to include visible mesh
+bounds and transformed rig bones. AuraVfx spans the full body; nested FlameVolume
+starts at the feet with a lowered ceiling for flame sprite extent/travel.
+Five emitters share that Box/Volume, including sparse rising Motes/Glints.
+No leg/torso point sources remain. Placement and ModelUtil snapping remain
+unchanged. See EVOLUTION_AURAS.md.

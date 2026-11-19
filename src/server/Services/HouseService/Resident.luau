@@ -5,6 +5,7 @@ local Config = require(Shared.Config.SanctuaryConfig)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
 local Fusion = require(Shared.Utilities.MonsterFusion)
 local Farm = require(Shared.Utilities.FarmProgression)
+local WorldStyle = require(Shared.Utilities.WorldStyle)
 local Resident = {}
 
 local function addNameplate(model: Model, definition: any, monster: Fusion.Monster)
@@ -57,6 +58,7 @@ function Resident.spawn(parent: Folder, definition: any, center: Vector3, bounds
 		body.Name = "Body"
 		body.Size = Vector3.new(3, Config.CREATURE_HEIGHT, 3) * tier.scale
 		body.Color = definition.color or Color3.fromRGB(133, 171, 108)
+		WorldStyle.applyPart(body, "Unit")
 		body.Parent = model
 		model.PrimaryPart = body
 	end

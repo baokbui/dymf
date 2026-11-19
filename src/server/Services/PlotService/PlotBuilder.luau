@@ -35,6 +35,7 @@ local HouseBuilder = require(script.Parent.HouseBuilder)
 local PlotDecor = require(script.Parent.PlotDecor)
 local StoreService = require(script.Parent.Parent.StoreService)
 
+local WorldStyle = require(ReplicatedStorage.Shared.Utilities.WorldStyle)
 local PlotBuilder = {}
 
 local function newPart(name: string, size: Vector3, position: Vector3, parent: Instance): Part
@@ -137,6 +138,7 @@ function PlotBuilder.build(index: number, originPosition: Vector3): (Model, Base
 	addFolder("Coins", model)
 	PlotDecor.build(model, originPosition, playLeftX, index)
 
+	WorldStyle.apply(model, "Scenery")
 	return model, base, spawnLocation
 end
 

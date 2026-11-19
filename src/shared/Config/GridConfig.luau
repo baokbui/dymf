@@ -19,8 +19,8 @@ local GridConfig = {
 	TILE_GAP = 0.6, -- studs of bare grass between tiles (the "grid lines")
 	TILE_Y_OFFSET = 0.05, -- lift above the grass to avoid z-fighting
 	TILE_MATERIAL = Enum.Material.Grass,
-	TILE_COLOR_A = Color3.fromRGB(120, 190, 70), -- checkerboard light
-	TILE_COLOR_B = Color3.fromRGB(96, 168, 58), -- checkerboard dark
+	TILE_COLOR_A = Color3.fromRGB(136, 224, 65), -- checkerboard light
+	TILE_COLOR_B = Color3.fromRGB(107, 198, 45), -- checkerboard dark
 	TILE_TRANSPARENCY = 0,
 
 	-- Hover highlight (client-only overlay, see GridController).

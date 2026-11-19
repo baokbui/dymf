@@ -122,9 +122,9 @@ Crescent / pillar percents: `Evolutions` `abilityParams` (`damagePercent`,
 `travelPercent`, `finisherPercent`).
 
 **Heavy VFX** ✅ — `VfxLoad` quality is a **Settings** choice (**VFX: High / Low /
-Off**). **High** = **Full** (full combat effects, dense Brainrot aura, moving
-shine, 3D portraits). **Low** = **Reduced** (fewer bursts, thin aura, shine
-stays still, portraits stay 3D). **Off** = **Minimal** (no flame particles,
+Off**). **High** = **Full** (full combat effects, adaptive Brainrot aura, moving
+shine, 3D portraits). **Low** = **Reduced** (fewer bursts, core-flame/spark aura, shine
+stays still, portraits stay 3D). **Off** = **Minimal** (no aura particles,
 hit/death/coin sparks, or heavy ult decoration — the rarity outline stays).
 Off also turns shop, inventory, and index portraits into color swatches.
 Inspect portraits stay 3D. The server always authors the full GOD ult. Turning **Other
@@ -190,7 +190,7 @@ Uses the default tip-over death like other monsters.
 - **Assassin's Verdict** — `EnemyService.damageMonster` executes if remaining HP% is ≤ `executeHealthPercent` (bosses use `executeBossPercent`) before the hit.
 - **Wound of the Shark** — when a `"Bubble"` freeze ends, `CombatService.applyBubbleExitSlow`.
 - **Frostbound Neighbor** — `FreezeTime` also freezes one adjacent row (`freezeAdjacentLane`).
-- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`. Model reads as **granite** (`BrainrotFeedback.setStoned`): the aura Highlight fill becomes a cool gray wash (Roblox only draws one Highlight per model; aura outline would otherwise hide a second one), aura flames pause, and mesh Color / `Rock` apply after stripping SurfaceAppearance / textures. Restored when the 10s ends.
+- **Stoneheart** — invulnerable + skip extras / attacks while `stoneUntil`. Model reads as **granite** (`BrainrotFeedback.setStoned`): the aura Highlight fill becomes a cool gray wash (Roblox only draws one Highlight per model; aura outline would otherwise hide a second one), aura emission pauses, and mesh Color / `Rock` apply after stripping SurfaceAppearance / textures. Restored when the 10s ends.
 - **Tenfold Guard** — timed shield every N attacks; stun-immune while that shield lasts. `abilityParams.orbitShield` clones a small `Assets.Projectiles.Shield` in orbit (Tung); Banana Bastion stays a ForceField bubble.
 
 **Scorpion** ✅ — `spawnStyle = RiseFromGround` in the forest (same mummy
@@ -361,3 +361,8 @@ Combat deadlines, delayed hits and movement tweens use the per-owner BattleClock
 Paused and Resuming skip runtime updates. In-flight projectiles (including dropped
 Bombardino bombs) are destroyed without damage; attack windups retain remaining
 time. See [DAY_PAUSE.md](DAY_PAUSE.md) for ownership and cleanup rules.
+
+Evolution aura layers now use a layered flame-column/ember/glint presentation with local
+High/Medium/Low and distance/crowd budgets. Aura detail is capped by the existing Effects Quality setting plus Roblox graphics
+preferences; it does not change combat simulation or damage. Particles freeze during DayPaused; Stoneheart still owns
+the stone appearance. See EVOLUTION_AURAS.md.

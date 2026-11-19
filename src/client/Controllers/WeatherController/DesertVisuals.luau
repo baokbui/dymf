@@ -15,6 +15,7 @@ local GridConfig = require(Shared.Config.GridConfig)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local WeatherConfig = require(Shared.Config.WeatherConfig)
 local ModelUtil = require(Shared.Utilities.ModelUtil)
+local WorldStyle = require(Shared.Utilities.WorldStyle)
 
 local DesertVisuals = {}
 
@@ -85,6 +86,7 @@ local function paintBaseplate(desert: boolean)
 		end
 		ground.Color = WeatherConfig.DESERT_BASEPLATE_COLOR
 		ground.Material = WeatherConfig.DESERT_TILE_MATERIAL
+		WorldStyle.applyPart(ground, "Ground")
 	else
 		if paintedBaseplate == ground then
 			if savedBaseplateColor then
@@ -118,6 +120,7 @@ local function paintLawnPlots(desert: boolean)
 			tile.Material = GridConfig.TILE_MATERIAL
 			tile.Color = if isLight then GridConfig.TILE_COLOR_A else GridConfig.TILE_COLOR_B
 		end
+		WorldStyle.applyPart(tile, "Ground")
 	end
 end
 
@@ -160,6 +163,7 @@ local function addSandBed(plotModel: Model)
 	)
 	local thickness = WeatherConfig.DESERT_SAND_BED_THICKNESS
 	bed.Position = Vector3.new(base.Position.X, thickness / 2 + 0.02, base.Position.Z)
+	WorldStyle.applyPart(bed, "Ground")
 	bed.Parent = gridFolder
 	table.insert(sandBeds, bed)
 end
@@ -397,6 +401,7 @@ function DesertVisuals.apply(plotModel: Model)
 	end
 	builtPyramidLayout = PYRAMID_LAYOUT
 	buildPyramids(plotModel)
+	if decorFolder then WorldStyle.apply(decorFolder, "Scenery") end
 end
 
 return DesertVisuals

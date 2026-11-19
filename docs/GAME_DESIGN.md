@@ -66,7 +66,8 @@ Preparation Phase
 
 # Battlefield
 
-The world is one shared grass baseplate. The playable area is split into two
+The world is one shared green, studded baseplate with a bright toy-brick finish
+(see `WORLD_STYLE.md`). The playable area is split into two
 side-by-side columns along X:
 
 ```

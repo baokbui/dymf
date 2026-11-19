@@ -39,10 +39,10 @@ Fog does **not** hide monsters (keeps combat readable and avoids heavy per-tile 
 
 | Effect | Owner | Behavior |
 | ------ | ----- | -------- |
-| Sand tiles | Client `DesertVisuals` | Local Color/Material on **every** plot's grid tiles + local sand beds. Server lawn stays grass so grassy-weather players never see sand plots. |
+| Sand tiles | Client `DesertVisuals` | Local sand colors plus the shared studded material on **every** plot's grid tiles and local sand beds. Server lawn keeps its green studded finish so grassy-weather players never see sand plots. |
 | Hot lighting | Client `WeatherController` | Local Lighting / Atmosphere (sandy haze). Other players keep their own day's look |
 | Hide forest | Client `DesertVisuals` | Entire `Workspace.Maps.DarkForest` hidden locally (`LocalTransparencyModifier` on all parts, including the forest floor). Other clients still see trees. |
-| World floor | Client `DesertVisuals` | `Workspace.Baseplate` Color/Material set to sand **locally** (FilteringEnabled: other players still see grass) |
+| World floor | Client `DesertVisuals` | `Workspace.Baseplate` gets sand colors and the shared studded material **locally** (FilteringEnabled: other players keep green ground) |
 | Pyramids | Client `DesertVisuals` | Procedural ziggurats in the forest AABB, or clone `Assets.Decor.Pyramid` when present |
 | Graves | — | Desert days do **not** place graves |
 
@@ -112,3 +112,8 @@ through the player margin + full enemy-column forest (aligned with
 3. Author `weather = "..."` on the relevant `Shared.Levels` entries.
 4. Teach `WeatherController` (and any server rules) the new id — do **not**
    hardcode day numbers in Services.
+
+The shared material style survives Desert/day transitions. Procedural and
+eligible authored pyramids receive the scenery variant; sand beds and lawn use
+the ground variant. Weather lighting and fog still take precedence over the
+daytime baseline. See WORLD_STYLE.md for art-preservation rules and verification.

@@ -121,8 +121,8 @@ local PlotConfig = {
 	FOREST_MAX_SCALE = 1.6,
 	FOREST_REAR_HEIGHT_BONUS = 0.35,
 	FOREST_TRUNK_COLOR = Color3.fromRGB(83, 62, 44),
-	FOREST_FOLIAGE_A = Color3.fromRGB(52, 106, 68),
-	FOREST_FOLIAGE_B = Color3.fromRGB(35, 78, 65),
+	FOREST_FOLIAGE_A = Color3.fromRGB(61, 133, 57),
+	FOREST_FOLIAGE_B = Color3.fromRGB(36, 91, 55),
 }
 
 table.freeze(PlotConfig)

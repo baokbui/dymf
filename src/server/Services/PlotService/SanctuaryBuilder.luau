@@ -97,12 +97,15 @@ function SanctuaryBuilder.build(origin: Vector3, westX: number, playLeftX: numbe
 			part("BaleTwine", Vector3.new(0.25, 2.5, 3.1), Vector3.new(x, 1.3, shelterZ), HouseConfig.TRIM_COLOR, Enum.Material.Fabric)
 		end
 	end
-	for _, side in { -1, 1 } do
-		part("SignPost", Vector3.new(1, signY, 1), Vector3.new(signX, signY / 2, side * 14),
-			HouseConfig.TRIM_COLOR, Enum.Material.Wood)
-	end
 	local sign = part("Sign", Vector3.new(0.5, 7, 34), Vector3.new(signX, signY, 0),
 		Color3.fromRGB(39, 68, 51), Enum.Material.Wood)
+	local postSize = Vector3.new(1, signY, 1)
+	-- The label faces +X. Mount supports flush against the opposite (-X) face.
+	local postX = signX - (sign.Size.X + postSize.X) / 2
+	for _, side in { -1, 1 } do
+		part("SignPost", postSize, Vector3.new(postX, signY / 2, side * 14),
+			HouseConfig.TRIM_COLOR, Enum.Material.Wood)
+	end
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Right
 	gui.CanvasSize = Vector2.new(700, 240)

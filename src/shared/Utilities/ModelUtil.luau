@@ -12,6 +12,8 @@ local BrainrotConfig = require(script.Parent.Parent.Config.BrainrotConfig)
 local PlotConfig = require(script.Parent.Parent.Config.PlotConfig)
 local Types = require(script.Parent.Parent.Types)
 
+local WorldStyle = require(script.Parent.WorldStyle)
+
 local ModelUtil = {}
 
 -- True when the clone has joints or a skinned mesh an Animator can drive.
@@ -703,6 +705,8 @@ function ModelUtil.cloneTemplate(template: Model, options: PrepareOptions): Mode
 		end
 	end
 
+	local styleKind = WorldStyle.templateKind(template)
+	if styleKind and not options.ghost then WorldStyle.apply(model, styleKind) end
 	return model
 end
 

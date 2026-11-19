@@ -1036,3 +1036,22 @@ owned farm monsters, with capacity and income controlled by HouseService.
 Selection persists through ordinary equipment saves; combining/fusing creates
 stored pets. Isolated UI, service, rules and save/rejoin fixtures pass. Live
 multiplayer/device validation remains open. See HOUSE.md.
+
+## Studded world art follow-up ✅
+
+Shared PBR materials now style the ground, lawn, forest, farm and eligible
+Brainrot/Monster bodies, with brighter daytime color/lighting and authored-art
+preservation. Studio Edit previews, material/weather fixtures and Rojo build
+pass. Full device/campaign/multiplayer QA remains open. See WORLD_STYLE.md.
+
+## Evolution aura art follow-up ✅
+
+Classic flame columns, sparse rising volume-distributed sparkles, rarity outline
+and faint tint are implemented. Five emitters share a lowered-ceiling volume;
+leg/torso anchors and temporary halo/shell designs are removed. Graphics bands,
+nearby-unit budgets, hidden plots, pause/Stoneheart and matched purchase bursts
+are covered by isolated tier/bounds/35-unit fixtures. Rojo build passes.
+
+🔜 Current shared-volume appearance in a running playtest, mobile/full combat
+and four-player performance QA remain open. Earlier visual previews apply to
+prior revisions. See EVOLUTION_AURAS.md for current tuning and verification.
